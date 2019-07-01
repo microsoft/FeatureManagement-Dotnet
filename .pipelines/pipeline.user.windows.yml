@@ -1,0 +1,45 @@
+environment:
+  host:
+    os: windows
+  runtime:
+    provider: appcontainer
+    image: microsoft/dotnet:2.1-sdk
+  
+restore:
+  commands:
+    - !!defaultcommand
+      name: 'Restore'
+      command: 'build.cmd'
+      arguments: 'RestoreOnly'
+
+build:
+  commands:
+    - !!buildcommand
+      name: 'Dotnet Build'
+      command: 'build.cmd'
+      logs:
+        - from: 'buildlogs'
+          to: 'Build Logs'
+          include:
+            - '**/*'
+      artifacts:
+        - from: 'src'
+          to: 'Binaries'
+          include:
+            - '*/bin/BuildOutput/**/*'
+
+package:
+  commands:
+    - !!buildcommand
+      name: 'Dotnet Pack'
+      command: 'pack.cmd'
+      logs:
+        - from: 'buildlogs'
+          to: 'Build Logs'
+          include:
+            - '**/*'
+      artifacts:
+        - from: 'src'
+          to: 'Packages'
+          include:
+            - '*/bin/PackageOutput/**/*.nupkg'
