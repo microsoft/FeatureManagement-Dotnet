@@ -1,0 +1,2 @@
+signing_options:
+  profile: 'external_distribution '   # These binaries are released through NuGet
