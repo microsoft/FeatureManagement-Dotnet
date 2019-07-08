@@ -49,10 +49,10 @@ The feature management library supports appsettings.json as a feature flag sourc
           "Name": "AlwaysOn"
         }
       ]
-    }
+    },
     "FeatureU": {
       "EnabledFor": []
-    }
+    },
     "FeatureV": {
       "EnabledFor": [
         {
