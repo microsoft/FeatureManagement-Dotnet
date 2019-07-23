@@ -12,24 +12,40 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Used to evaluate whether a feature is enabled or disabled.
     /// </summary>
-    class FeatureManager : IFeatureManager
+    class FeatureManager : IFeatureManager, IContextualFeatureManager
     {
         private readonly IFeatureSettingsProvider _settingsProvider;
         private readonly IEnumerable<IFeatureFilter> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
         private readonly ILogger _logger;
         private readonly ConcurrentDictionary<string, IFeatureFilter> _filterCache;
+        private readonly ConcurrentDictionary<ContextualKey, ContextualFeatureFilterEvaluator> _contextualFilterCache;
 
-        public FeatureManager(IFeatureSettingsProvider settingsProvider, IEnumerable<IFeatureFilter> featureFilters, IEnumerable<ISessionManager> sessionManagers, ILoggerFactory loggerFactory)
+        public FeatureManager(
+            IFeatureSettingsProvider settingsProvider,
+            IEnumerable<IFeatureFilter> featureFilters,
+            IEnumerable<ISessionManager> sessionManagers,
+            ILoggerFactory loggerFactory)
         {
             _settingsProvider = settingsProvider;
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
             _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
             _logger = loggerFactory.CreateLogger<FeatureManager>();
             _filterCache = new ConcurrentDictionary<string, IFeatureFilter>();
+            _contextualFilterCache = new ConcurrentDictionary<ContextualKey, ContextualFeatureFilterEvaluator>();
         }
 
         public bool IsEnabled(string feature)
+        {
+            return IsEnabled<IFeatureFilterContext>(feature, null, false);
+        }
+
+        public bool IsEnabled<TContext>(string feature, TContext appContext) where TContext : IFeatureFilterContext
+        {
+            return IsEnabled(feature, appContext, true);
+        }
+
+        private bool IsEnabled<TContext>(string feature, TContext appContext, bool useContext) where TContext : IFeatureFilterContext
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
@@ -61,7 +77,7 @@ namespace Microsoft.FeatureManagement
 
                     foreach (IFeatureFilterSettings featureFilterSettings in settings.EnabledFor)
                     {
-                        IFeatureFilter filter = GetFeatureFilter(featureFilterSettings.Name);
+                        IFeatureFilter filter = GetFeatureFilter(featureFilterSettings.Name, !useContext ? null : typeof(TContext));
 
                         if (filter == null)
                         {
@@ -73,10 +89,17 @@ namespace Microsoft.FeatureManagement
                         var context = new FeatureFilterEvaluationContext()
                         {
                             FeatureName = feature,
-                            Parameters = featureFilterSettings.Parameters 
+                            Parameters = featureFilterSettings.Parameters
                         };
 
-                        if (filter.Evaluate(context))
+                        if (filter != null && filter.Evaluate(context))
+                        {
+                            enabled = true;
+
+                            break;
+                        }
+
+                        if (filter is ContextualFeatureFilterEvaluator contextualFilterEvaluator && contextualFilterEvaluator.Evaluate(context, appContext))
                         {
                             enabled = true;
 
@@ -94,7 +117,7 @@ namespace Microsoft.FeatureManagement
             return enabled;
         }
 
-        private IFeatureFilter GetFeatureFilter(string filterName)
+        private IFeatureFilter GetFeatureFilter(string filterName, Type appContextType = null)
         {
             const string filterSuffix = "filter";
 
@@ -142,7 +165,57 @@ namespace Microsoft.FeatureManagement
                 }
             );
 
+            if (filter is IContextualFeatureFilter && appContextType != null)
+            {
+                ContextualFeatureFilterEvaluator contextualFeatureFilterEvaluator = _contextualFilterCache.GetOrAdd(
+                    new ContextualKey
+                    {
+                        FilterName = filterName,
+                        ContextType = appContextType
+                    },
+                    (_) => {
+
+                        IContextualFeatureFilter contextualFeatureFilter = filter as IContextualFeatureFilter;
+
+                        if (contextualFeatureFilter == null)
+                        {
+                            throw new InvalidOperationException($"Multiple feature filters match the configured filter named '{filterName}'.");
+                        }
+
+                        return contextualFeatureFilter == null ? null : new ContextualFeatureFilterEvaluator(contextualFeatureFilter, appContextType);
+                    }
+                );
+            }
+
             return filter;
+        }
+
+        private class ContextualKey
+        {
+            public string FilterName { get; set; }
+
+            public Type ContextType { get; set; }
+
+            public override bool Equals(object obj)
+            {
+                if (obj is ContextualKey other)
+                {
+                    return other.FilterName == FilterName && other.ContextType == ContextType;
+                }
+
+                return base.Equals(obj);
+            }
+
+            //
+            // Visual Studio Auto-Generated
+            //
+            public override int GetHashCode()
+            {
+                var hashCode = -410492056;
+                hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(FilterName);
+                hashCode = hashCode * -1521134295 + EqualityComparer<Type>.Default.GetHashCode(ContextType);
+                return hashCode;
+            }
         }
     }
 }
