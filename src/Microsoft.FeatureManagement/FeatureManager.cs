@@ -167,7 +167,7 @@ namespace Microsoft.FeatureManagement
 
             if (filter is IContextualFeatureFilter contextualFeatureFilter && appContextType != null)
             {
-                ContextualFeatureFilterEvaluator contextualFeatureFilterEvaluator = _contextualFilterCache.GetOrAdd(
+                filter = _contextualFilterCache.GetOrAdd(
                     filterName + "\n" + appContextType.FullName,
                     (_) => contextualFeatureFilter == null ? null : new ContextualFeatureFilterEvaluator(contextualFeatureFilter, appContextType));
             }

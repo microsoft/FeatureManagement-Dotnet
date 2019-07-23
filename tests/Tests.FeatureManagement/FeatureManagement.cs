@@ -236,5 +236,31 @@ namespace Tests.FeatureManagement
 
             Assert.True(enabledCount > 0 && enabledCount < 10);
         }
+
+        [Fact]
+        public void UsesContext()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider provider = serviceCollection.BuildServiceProvider();
+
+            IContextualFeatureManager featureManager = provider.GetRequiredService<IContextualFeatureManager>();
+
+            AppContext context = new AppContext();
+
+            context.AccountId = "NotEnabledAccount";
+
+            Assert.False(featureManager.IsEnabled(ConditionalFeature, context));
+
+            context.AccountId = "abc";
+
+            Assert.True(featureManager.IsEnabled(ConditionalFeature, context));
+        }
     }
 }

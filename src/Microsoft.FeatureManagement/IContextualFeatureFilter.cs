@@ -1,4 +1,7 @@
-﻿namespace Microsoft.FeatureManagement
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+namespace Microsoft.FeatureManagement
 {
     /// <summary>
     /// Common interface for all contextual feature filters

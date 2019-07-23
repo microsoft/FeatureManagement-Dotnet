@@ -13,11 +13,9 @@ namespace Consoto.Banking.AccountServer.FeatureManagement
     /// A filter that uses the feature management context to ensure that the current task has the notion of an account id, and that the account id is allowed.
     /// </summary>
     [FilterAlias("AccountId")]
-    class AccountIdFilter : IContextualFeatureFilter<IAccountId>
+    class AccountIdFilter : IContextualFeatureFilter<IAccountContext>
     {
-        public const string AccountIdKey = "AccountId";
-
-        public bool Evaluate(FeatureFilterEvaluationContext featureEvaluationContext, IAccountId accountId)
+        public bool Evaluate(FeatureFilterEvaluationContext featureEvaluationContext, IAccountContext accountId)
         {
             if (string.IsNullOrEmpty(accountId?.AccountId))
             {

@@ -1,4 +1,7 @@
-﻿namespace Microsoft.FeatureManagement
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+namespace Microsoft.FeatureManagement
 {
     /// <summary>
     /// Used to evaluate whether a feature is enabled or disabled.
