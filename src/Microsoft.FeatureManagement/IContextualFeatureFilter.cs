@@ -1,6 +1,13 @@
 ﻿namespace Microsoft.FeatureManagement
 {
     /// <summary>
+    /// Common interface for all contextual feature filters
+    /// </summary>
+    public interface IContextualFeatureFilter
+    {
+    }
+
+    /// <summary>
     /// A filter that can be used to determine whether some criteria is met to enable a feature. A feature filter is free to use any criteria available, such as process state or request content.
     /// Feature filters can be registered for a given feature and if any feature filter evaluates to true, that feature will be considered enabled.
     /// A contextual feature filter can take advantage of contextual data passed in from callers of the feature management system.
@@ -15,13 +22,5 @@
         /// <param name="appContext">A context defined by the application that is passed in to the feature management system to provide contextual information for evaluating a feature's state.</param>
         /// <returns>True if the filter's criteria has been met, false otherwise.</returns>
         bool Evaluate(FeatureFilterEvaluationContext featureFilterContext, TContext appContext);
-    }
-
-    public interface IContextualFeatureFilter
-    {
-    }
-
-    public interface IFeatureFilterContext
-    {
     }
 }

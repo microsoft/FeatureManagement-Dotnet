@@ -19,7 +19,7 @@ namespace Microsoft.FeatureManagement
         private readonly IEnumerable<ISessionManager> _sessionManagers;
         private readonly ILogger _logger;
         private readonly ConcurrentDictionary<string, IFeatureFilter> _filterCache;
-        private readonly ConcurrentDictionary<ContextualKey, ContextualFeatureFilterEvaluator> _contextualFilterCache;
+        private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFilterCache;
 
         public FeatureManager(
             IFeatureSettingsProvider settingsProvider,
@@ -32,7 +32,7 @@ namespace Microsoft.FeatureManagement
             _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
             _logger = loggerFactory.CreateLogger<FeatureManager>();
             _filterCache = new ConcurrentDictionary<string, IFeatureFilter>();
-            _contextualFilterCache = new ConcurrentDictionary<ContextualKey, ContextualFeatureFilterEvaluator>();
+            _contextualFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
         }
 
         public bool IsEnabled(string feature)
@@ -92,14 +92,14 @@ namespace Microsoft.FeatureManagement
                             Parameters = featureFilterSettings.Parameters
                         };
 
-                        if (filter != null && filter.Evaluate(context))
+                        if (filter is ContextualFeatureFilterEvaluator contextualFilterEvaluator && contextualFilterEvaluator.Evaluate(context, appContext))
                         {
                             enabled = true;
 
                             break;
                         }
 
-                        if (filter is ContextualFeatureFilterEvaluator contextualFilterEvaluator && contextualFilterEvaluator.Evaluate(context, appContext))
+                        if (filter != null && filter.Evaluate(context))
                         {
                             enabled = true;
 
@@ -165,57 +165,14 @@ namespace Microsoft.FeatureManagement
                 }
             );
 
-            if (filter is IContextualFeatureFilter && appContextType != null)
+            if (filter is IContextualFeatureFilter contextualFeatureFilter && appContextType != null)
             {
                 ContextualFeatureFilterEvaluator contextualFeatureFilterEvaluator = _contextualFilterCache.GetOrAdd(
-                    new ContextualKey
-                    {
-                        FilterName = filterName,
-                        ContextType = appContextType
-                    },
-                    (_) => {
-
-                        IContextualFeatureFilter contextualFeatureFilter = filter as IContextualFeatureFilter;
-
-                        if (contextualFeatureFilter == null)
-                        {
-                            throw new InvalidOperationException($"Multiple feature filters match the configured filter named '{filterName}'.");
-                        }
-
-                        return contextualFeatureFilter == null ? null : new ContextualFeatureFilterEvaluator(contextualFeatureFilter, appContextType);
-                    }
-                );
+                    filterName + "\n" + appContextType.FullName,
+                    (_) => contextualFeatureFilter == null ? null : new ContextualFeatureFilterEvaluator(contextualFeatureFilter, appContextType));
             }
 
             return filter;
-        }
-
-        private class ContextualKey
-        {
-            public string FilterName { get; set; }
-
-            public Type ContextType { get; set; }
-
-            public override bool Equals(object obj)
-            {
-                if (obj is ContextualKey other)
-                {
-                    return other.FilterName == FilterName && other.ContextType == ContextType;
-                }
-
-                return base.Equals(obj);
-            }
-
-            //
-            // Visual Studio Auto-Generated
-            //
-            public override int GetHashCode()
-            {
-                var hashCode = -410492056;
-                hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(FilterName);
-                hashCode = hashCode * -1521134295 + EqualityComparer<Type>.Default.GetHashCode(ContextType);
-                return hashCode;
-            }
         }
     }
 }

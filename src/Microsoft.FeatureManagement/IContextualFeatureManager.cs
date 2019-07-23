@@ -1,5 +1,8 @@
 ﻿namespace Microsoft.FeatureManagement
 {
+    /// <summary>
+    /// Used to evaluate whether a feature is enabled or disabled.
+    /// </summary>
     public interface IContextualFeatureManager
     {
         /// <summary>
