@@ -3,6 +3,7 @@
 //
 using Microsoft.FeatureManagement;
 using System;
+using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
 {
@@ -10,9 +11,9 @@ namespace Tests.FeatureManagement
     {
         public Func<FeatureFilterEvaluationContext, bool> Callback { get; set; }
 
-        public bool Evaluate(FeatureFilterEvaluationContext context)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
-            return Callback?.Invoke(context) ?? false;
+            return Task.FromResult(Callback?.Invoke(context) ?? false);
         }
     }
 }

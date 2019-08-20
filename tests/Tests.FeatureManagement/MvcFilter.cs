@@ -1,19 +1,18 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace Tests.FeatureManagement
 {
-    public class MvcFilter : IActionFilter
+    public class MvcFilter : IAsyncActionFilter
     {
-        public void OnActionExecuted(ActionExecutedContext context)
+        public Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
             context.HttpContext.Response.Headers[nameof(MvcFilter)] = true.ToString();
-        }
 
-        public void OnActionExecuting(ActionExecutingContext context)
-        {
+            return next();
         }
     }
 }

@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using System.Threading.Tasks;
+
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
@@ -8,15 +10,16 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     class EmptySessionManager : ISessionManager
     {
-        public void Set(string featureName, bool enabled)
+        public Task SetAsync(string featureName, bool enabled)
         {
+            return Task.CompletedTask;
         }
 
-        public bool TryGet(string featureName, out bool enabled)
+        public Task<bool> TryGetAsync(string featureName, out bool enabled)
         {
             enabled = false;
 
-            return false;
+            return Task.FromResult(enabled);
         }
     }
 }

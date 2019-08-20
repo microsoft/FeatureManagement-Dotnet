@@ -1,12 +1,13 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
 
 namespace FeatureFlagDemo
 {
-    public class ThirdPartyActionFilter : IActionFilter
+    public class ThirdPartyActionFilter : IAsyncActionFilter
     {
         private ILogger _logger;
 
@@ -15,13 +16,12 @@ namespace FeatureFlagDemo
             _logger = loggerFactory.CreateLogger<ThirdPartyActionFilter>();
         }
 
-        public void OnActionExecuted(ActionExecutedContext context)
+        public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
             _logger.LogInformation("Third party action filter inward path.");
-        }
 
-        public void OnActionExecuting(ActionExecutingContext context)
-        {
+            await next();
+
             _logger.LogInformation("Third party action filter outward path.");
         }
     }

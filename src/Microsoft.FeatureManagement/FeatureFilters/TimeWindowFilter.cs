@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
 {
@@ -30,7 +31,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// </summary>
         /// <param name="context">The feature evaluation context.</param>
         /// <returns>True if the feature is enabled, false otherwise.</returns>
-        public bool Evaluate(FeatureFilterEvaluationContext context)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
             TimeWindowSettings settings = context.Parameters.Get<TimeWindowSettings>() ?? new TimeWindowSettings();
 
@@ -40,10 +41,10 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 _logger.LogWarning($"The '{Alias}' feature filter is not valid for feature '{context.FeatureName}'. It must have have specify either '{nameof(settings.Start)}', '{nameof(settings.End)}', or both.");
 
-                return false;
+                return Task.FromResult(false);
             }
 
-            return (!settings.Start.HasValue || now >= settings.Start.Value) && (!settings.End.HasValue || now < settings.End.Value);
+            return Task.FromResult((!settings.Start.HasValue || now >= settings.Start.Value) && (!settings.End.HasValue || now < settings.End.Value));
         }
     }
 }

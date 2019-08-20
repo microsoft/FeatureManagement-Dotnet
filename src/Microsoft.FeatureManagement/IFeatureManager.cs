@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using System.Threading.Tasks;
+
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
@@ -13,6 +15,6 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="feature">The name of the feature to check.</param>
         /// <returns>True if the feature is enabled, otherwise false.</returns>
-        bool IsEnabled(string feature);
+        Task<bool> IsEnabledAsync(string feature);
     }
 }

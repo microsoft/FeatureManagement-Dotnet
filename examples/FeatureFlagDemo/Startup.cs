@@ -71,10 +71,6 @@ namespace FeatureFlagDemo
 
             app.UseMvc(routes =>
             {
-                //
-                // Use a route that requires a feature to be enabled
-                //routes.MapRouteForFeature("Beta", "betaDefault", "{controller=Beta}/{action=Index}/{id?}", null, null, null);
-
                 routes.MapRoute(
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");

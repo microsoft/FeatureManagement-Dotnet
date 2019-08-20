@@ -4,6 +4,7 @@
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
 {
@@ -11,9 +12,9 @@ namespace Microsoft.FeatureManagement
     /// A place holder MVC filter that is used to dynamically activate a filter based on whether a feature is enabled.
     /// </summary>
     /// <typeparam name="T">The filter that will be used instead of this placeholder.</typeparam>
-    class FeatureGatedFilter<T> : IFilterFactory where T : IFilterMetadata
+    class FeatureGatedAsyncActionFilter<T> : IAsyncActionFilter where T : IAsyncActionFilter
     {
-        public FeatureGatedFilter(string featureName)
+        public FeatureGatedAsyncActionFilter(string featureName)
         {
             if (string.IsNullOrEmpty(featureName))
             {
@@ -25,21 +26,21 @@ namespace Microsoft.FeatureManagement
 
         public string FeatureName { get; }
 
-        public bool IsReusable => false;
-
-        public IFilterMetadata CreateInstance(IServiceProvider serviceProvider)
+        public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
-            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManagerSnapshot>();
+            IFeatureManager featureManager = context.HttpContext.RequestServices.GetRequiredService<IFeatureManagerSnapshot>();
 
-            if (featureManager.IsEnabled(FeatureName))
+            if (await featureManager.IsEnabledAsync(FeatureName))
             {
-                return (IFilterMetadata)ActivatorUtilities.CreateInstance(serviceProvider, typeof(T));
+                IServiceProvider serviceProvider = context.HttpContext.RequestServices.GetRequiredService<IServiceProvider>();
+
+                IAsyncActionFilter filter = ActivatorUtilities.CreateInstance<T>(serviceProvider);
+
+                await filter.OnActionExecutionAsync(context, next);
             }
             else
             {
-                //
-                // TODO check if null
-                return new DisabledFeatureFilter(FeatureName);
+                await next();
             }
         }
     }

@@ -106,8 +106,8 @@ namespace Microsoft.FeatureManagement.Mvc
             //
             // Enabled state is determined by either 'any' or 'all' features being enabled.
             bool enabled = RequirementType == RequirementType.All ?
-                             Features.All(feature => fm.IsEnabled(feature)) :
-                             Features.Any(feature => fm.IsEnabled(feature));
+                             await Features.All(async feature => await fm.IsEnabledAsync(feature)) :
+                             await Features.Any(async feature => await fm.IsEnabledAsync(feature));
 
             if (enabled)
             {

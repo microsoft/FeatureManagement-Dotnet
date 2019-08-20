@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using System.Threading.Tasks;
+
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
@@ -13,6 +15,6 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="context">A feature filter evaluation context that contains information that may be needed to evalute the filter. This context includes configuration, if any, for this filter for the feature being evaluated.</param>
         /// <returns>True if the filter's criteria has been met, false otherwise.</returns>
-        bool Evaluate(FeatureFilterEvaluationContext context);
+        Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context);
     }
 }
