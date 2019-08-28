@@ -91,7 +91,7 @@ namespace Tests.FeatureManagement
 
                 app.UseForFeature(ConditionalFeature, a => a.Use(async (ctx, next) =>
                 {
-                    ctx.Response.Headers[nameof(RouterMiddleware)] = true.ToString();
+                    ctx.Response.Headers[nameof(RouterMiddleware)] = bool.TrueString;
 
                     await next();
                 }));

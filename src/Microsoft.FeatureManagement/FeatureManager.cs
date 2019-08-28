@@ -34,7 +34,7 @@ namespace Microsoft.FeatureManagement
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                if (await sessionManager.TryGetAsync(feature, out bool cachedEnabled))
+                if (await sessionManager.TryGetAsync(feature, out bool cachedEnabled).ConfigureAwait(false))
                 {
                     return cachedEnabled;
                 }
@@ -77,7 +77,7 @@ namespace Microsoft.FeatureManagement
                             Parameters = featureFilterSettings.Parameters 
                         };
 
-                        if (await filter.EvaluateAsync(context))
+                        if (await filter.EvaluateAsync(context).ConfigureAwait(false))
                         {
                             enabled = true;
 
@@ -89,7 +89,7 @@ namespace Microsoft.FeatureManagement
 
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                await sessionManager.SetAsync(feature, enabled);
+                await sessionManager.SetAsync(feature, enabled).ConfigureAwait(false);
             }
 
             return enabled;

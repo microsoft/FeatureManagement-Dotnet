@@ -10,7 +10,7 @@ namespace Tests.FeatureManagement
     {
         public Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
-            context.HttpContext.Response.Headers[nameof(MvcFilter)] = true.ToString();
+            context.HttpContext.Response.Headers[nameof(MvcFilter)] = bool.TrueString;
 
             return next();
         }

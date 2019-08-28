@@ -13,7 +13,7 @@ namespace System.Collections.Generic
 
             foreach (TSource item in source)
             {
-                if (await predicate(item))
+                if (await predicate(item).ConfigureAwait(false))
                 {
                     enabled = true;
 
@@ -30,7 +30,7 @@ namespace System.Collections.Generic
 
             foreach (TSource item in source)
             {
-                if (!await predicate(item))
+                if (!await predicate(item).ConfigureAwait(false))
                 {
                     enabled = false;
 

@@ -57,13 +57,13 @@ namespace Microsoft.FeatureManagement
                 {
                     IFeatureManager fm = context.RequestServices.GetRequiredService<IFeatureManagerSnapshot>();
 
-                    if (await fm.IsEnabledAsync(featureName))
+                    if (await fm.IsEnabledAsync(featureName).ConfigureAwait(false))
                     {
-                        await branch(context);
+                        await branch(context).ConfigureAwait(false);
                     }
                     else
                     {
-                        await main(context);
+                        await main(context).ConfigureAwait(false);
                     }
                 };
             });

@@ -29,7 +29,7 @@ namespace Microsoft.FeatureManagement
                 return _flagCache[feature];
             }
 
-            bool enabled = await _featureManager.IsEnabledAsync(feature);
+            bool enabled = await _featureManager.IsEnabledAsync(feature).ConfigureAwait(false);
 
             _flagCache[feature] = enabled;
 

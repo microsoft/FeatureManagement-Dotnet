@@ -106,18 +106,18 @@ namespace Microsoft.FeatureManagement.Mvc
             //
             // Enabled state is determined by either 'any' or 'all' features being enabled.
             bool enabled = RequirementType == RequirementType.All ?
-                             await Features.All(async feature => await fm.IsEnabledAsync(feature)) :
-                             await Features.Any(async feature => await fm.IsEnabledAsync(feature));
+                             await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false)) :
+                             await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
 
             if (enabled)
             {
-                await next();
+                await next().ConfigureAwait(false);
             }
             else
             {
                 IDisabledFeaturesHandler disabledFeaturesHandler = context.HttpContext.RequestServices.GetService<IDisabledFeaturesHandler>() ?? new NotFoundDisabledFeaturesHandler();
 
-                await disabledFeaturesHandler.HandleDisabledFeatures(Features, context);
+                await disabledFeaturesHandler.HandleDisabledFeatures(Features, context).ConfigureAwait(false);
             }
         }
     }
