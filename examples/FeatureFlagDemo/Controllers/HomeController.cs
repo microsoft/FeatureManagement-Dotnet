@@ -7,6 +7,7 @@ using FeatureFlagDemo.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc;
+using System.Threading.Tasks;
 
 namespace FeatureFlagDemo.Controllers
 {
@@ -25,11 +26,11 @@ namespace FeatureFlagDemo.Controllers
             return View();
         }
 
-        public IActionResult About()
+        public async Task<IActionResult> About()
         {
             ViewData["Message"] = "Your application description page.";
 
-            if (_featureManager.IsEnabled(nameof(MyFeatureFlags.CustomViewData)))
+            if (await _featureManager.IsEnabledAsync(nameof(MyFeatureFlags.CustomViewData)))
             {
                 ViewData["Message"] = $"This is FANCY CONTENT you can see only if '{nameof(MyFeatureFlags.CustomViewData)}' is enabled.";
             };

@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using System.Threading.Tasks;
+
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
@@ -13,7 +15,7 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="featureName">The name of the feature.</param>
         /// <param name="enabled">The state of the feature.</param>
-        void Set(string featureName, bool enabled);
+        Task SetAsync(string featureName, bool enabled);
 
         /// <summary>
         /// Queries the session manager for the session's feature state, if any, for the given feature.
@@ -21,6 +23,6 @@ namespace Microsoft.FeatureManagement
         /// <param name="featureName">The name of the feature.</param>
         /// <param name="enabled">The state from the session, if any.</param>
         /// <returns>True if the session manager was able to provide a state for the feature. False otherwise.</returns>
-        bool TryGet(string featureName, out bool enabled);
+        Task<bool> TryGetAsync(string featureName, out bool enabled);
     }
 }

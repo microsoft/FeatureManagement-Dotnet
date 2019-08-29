@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.FeatureManagement;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace FeatureFlagDemo.FeatureManagement.FeatureFilters
 {
@@ -22,20 +23,20 @@ namespace FeatureFlagDemo.FeatureManagement.FeatureFilters
             _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
         }
 
-        public bool Evaluate(FeatureFilterEvaluationContext context)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
             BrowserFilterSettings settings = context.Parameters.Get<BrowserFilterSettings>() ?? new BrowserFilterSettings();
 
             if (settings.AllowedBrowsers.Any(browser => browser.Equals(Chrome, StringComparison.OrdinalIgnoreCase)) && IsChrome())
             {
-                return true;
+                return Task.FromResult(true);
             }
             else if (settings.AllowedBrowsers.Any(browser => browser.Equals(Edge, StringComparison.OrdinalIgnoreCase)) && IsEdge())
             {
-                return true;
+                return Task.FromResult(true);
             }
 
-            return false;
+            return Task.FromResult(false);
         }
 
         private bool IsChrome()

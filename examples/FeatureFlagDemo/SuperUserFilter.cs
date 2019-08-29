@@ -2,14 +2,15 @@
 // Licensed under the MIT license.
 //
 using Microsoft.FeatureManagement;
+using System.Threading.Tasks;
 
 namespace FeatureFlagDemo.FeatureManagement.FeatureFilters
 {
     public class SuperUserFilter : IFeatureFilter
     {
-        public bool Evaluate(FeatureFilterEvaluationContext context)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
-            return false;
+            return Task.FromResult(false);
         }
     }
 }

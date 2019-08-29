@@ -6,6 +6,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
 {
@@ -29,11 +30,11 @@ namespace Microsoft.FeatureManagement
             _filterCache = new ConcurrentDictionary<string, IFeatureFilter>();
         }
 
-        public bool IsEnabled(string feature)
+        public async Task<bool> IsEnabledAsync(string feature)
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                if (sessionManager.TryGet(feature, out bool cachedEnabled))
+                if (await sessionManager.TryGetAsync(feature, out bool cachedEnabled).ConfigureAwait(false))
                 {
                     return cachedEnabled;
                 }
@@ -76,7 +77,7 @@ namespace Microsoft.FeatureManagement
                             Parameters = featureFilterSettings.Parameters 
                         };
 
-                        if (filter.Evaluate(context))
+                        if (await filter.EvaluateAsync(context).ConfigureAwait(false))
                         {
                             enabled = true;
 
@@ -88,7 +89,7 @@ namespace Microsoft.FeatureManagement
 
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                sessionManager.Set(feature, enabled);
+                await sessionManager.SetAsync(feature, enabled).ConfigureAwait(false);
             }
 
             return enabled;

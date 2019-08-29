@@ -4,6 +4,7 @@
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.Mvc.TagHelpers
 {
@@ -43,7 +44,7 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
         /// </summary>
         /// <param name="context">The tag helper context.</param>
         /// <param name="output">The tag helper output.</param>
-        public override void Process(TagHelperContext context, TagHelperOutput output)
+        public override async Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
         {
             output.TagName = null; // We don't want the feature to actually be a part of HTML, so we strip it
 
@@ -54,8 +55,8 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
                 IEnumerable<string> names = Name.Split(',').Select(n => n.Trim());
 
                 enabled = Requirement == RequirementType.All ?
-                    names.All(n => _featureManager.IsEnabled(n)) :
-                    names.Any(n => _featureManager.IsEnabled(n));
+                    await names.All(async n => await _featureManager.IsEnabledAsync(n).ConfigureAwait(false)) :
+                    await names.Any(async n => await _featureManager.IsEnabledAsync(n).ConfigureAwait(false));
             }
 
             if (Negate)

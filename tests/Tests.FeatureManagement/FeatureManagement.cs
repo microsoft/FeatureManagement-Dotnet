@@ -26,7 +26,7 @@ namespace Tests.FeatureManagement
         private const string ConditionalFeature = "ConditionalFeature";
 
         [Fact]
-        public void ReadsConfiguration()
+        public async Task ReadsConfiguration()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
@@ -41,12 +41,14 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            Assert.True(featureManager.IsEnabled(OnFeature));
+            Assert.True(await featureManager.IsEnabledAsync(OnFeature));
 
-            Assert.False(featureManager.IsEnabled(OffFeature));
+            Assert.False(await featureManager.IsEnabledAsync(OffFeature));
 
             IEnumerable<IFeatureFilter> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilter>>();
 
+            //
+            // Sync filter
             TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
 
             bool called = false;
@@ -62,7 +64,7 @@ namespace Tests.FeatureManagement
                 return true;
             };
 
-            featureManager.IsEnabled(ConditionalFeature);
+            await featureManager.IsEnabledAsync(ConditionalFeature);
 
             Assert.True(called);
         }
@@ -88,7 +90,7 @@ namespace Tests.FeatureManagement
 
                 app.UseForFeature(ConditionalFeature, a => a.Use(async (ctx, next) =>
                 {
-                    ctx.Response.Headers[nameof(RouterMiddleware)] = true.ToString();
+                    ctx.Response.Headers[nameof(RouterMiddleware)] = bool.TrueString;
 
                     await next();
                 }));
@@ -167,7 +169,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public void TimeWindow()
+        public async Task TimeWindow()
         {
             string feature1 = "feature1";
             string feature2 = "feature2";
@@ -198,14 +200,14 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
 
-            Assert.True(featureManager.IsEnabled(feature1));
-            Assert.False(featureManager.IsEnabled(feature2));
-            Assert.True(featureManager.IsEnabled(feature3));
-            Assert.False(featureManager.IsEnabled(feature4));
+            Assert.True(await featureManager.IsEnabledAsync(feature1));
+            Assert.False(await featureManager.IsEnabledAsync(feature2));
+            Assert.True(await featureManager.IsEnabledAsync(feature3));
+            Assert.False(await featureManager.IsEnabledAsync(feature4));
         }
 
         [Fact]
-        public void Percentage()
+        public async Task Percentage()
         {
             string feature1 = "feature1";
 
@@ -228,7 +230,7 @@ namespace Tests.FeatureManagement
 
             for (int i = 0; i < 10; i++)
             {
-                if (featureManager.IsEnabled(feature1))
+                if (await featureManager.IsEnabledAsync(feature1))
                 {
                     enabledCount++;
                 }

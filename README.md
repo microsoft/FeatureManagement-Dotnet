@@ -10,6 +10,9 @@ Here are some of the benefits of using this library:
   * Supports JSON file feature flag setup
 * Feature Flag lifetime management
   * Configuration values can change in real-time, feature flags can be consistent across the entire request
+* Simple to Complex Scenarios Covered
+  * Toggle on/off features through declarative configuration file
+  * Dynamically evaluate state of feature based on call to server
 * API extensions for ASP.Net Core and MVC framework
   * Routing
   * Filters
@@ -128,13 +131,13 @@ This tells the feature manager to use the "FeatureManagement" section from the c
 The simplest use case for feature flags is to do a conditional check for whether a feature is enabled to take different paths in code. The uses cases grow from there as the feature flag API begins to offer extensions into ASP.Net Core.
 
 ### Feature Check
-The basic form of feature management is checking if a feature is enabled and then performing actions based on the result. This is done through the `IFeatureManager`'s `IsEnabled` method.
+The basic form of feature management is checking if a feature is enabled and then performing actions based on the result. This is done through the `IFeatureManager`'s `IsEnabledAsync` method.
 
 ```
 ...
 IFeatureManager featureManager;
 ...
-if (featureManager.IsEnabled(nameof(MyFeatureFlags.FeatureU)))
+if (await featureManager.IsEnabledAsync(nameof(MyFeatureFlags.FeatureU)))
 {
     // Do something
 }
@@ -207,7 +210,8 @@ The `<feature>` tag requires a tag helper to work. This can be done by adding th
 
 ### MVC Filters
 
-MVC filters can be set up to conditionally execute based on the state of a feature. This is done by registering MVC filters in a feature aware manner.
+MVC action filters can be set up to conditionally execute based on the state of a feature. This is done by registering MVC filters in a feature aware manner.
+The feature management pipeline supports async MVC Action filters, which implement `IAsyncActionFilter`.
 
 ```
 services.AddMvc(o => 
@@ -217,18 +221,6 @@ services.AddMvc(o =>
 ```
 
 The code above adds an MVC filter named `SomeMvcFilter`. This filter is only triggered within the MVC pipeline if the feature it specifies, "FeatureV", is enabled.
-
-### Routing
-Certain routes may expose application capabilites that are gated by features. These routes can be dynamically registered and exposed based on whether a feature is enabled.
-
-```
-app.UseMvc(routes =>
-{
-    routes.MapRouteForFeature(nameof(MyFeatureFlags.Beta), "betaDefault" /* route name */, "{controller=Beta}/{action=Index}/{id?}"
-});
-```
-
-The route above exposes beta functionality of some application that is gated behind the "Beta" feature flag. The state of this feature is evaluated on every request, which means routes can be exposed to a subset of requests and or users. Furthermore, routes can dynamically be added or removed based on the toggling of feature states.
 
 ### Application building
 
@@ -251,13 +243,13 @@ app.UseForFeature(featureName, appBuilder =>
 
 ## Implementing a Feature Filter
 
-Creating a feature filter provides a way to enable features based on criteria that you define. To implement a feature filter, the `IFeatureFilter` interface must be implemented. `IFeatureFilter` has a single method named `Evaluate`. When a feature specifies that it can be enabled for a feature filter, the `Evaluate` method is called. If `Evaluate` returns `true` it means the feature should be enabled.
+Creating a feature filter provides a way to enable features based on criteria that you define. To implement a feature filter, the `IFeatureFilter` interface must be implemented. `IFeatureFilter` has a single method named `EvaluateAsync`. When a feature specifies that it can be enabled for a feature filter, the `EvaluateAsync` method is called. If `EvaluateAsync` returns `true` it means the feature should be enabled.
 
 Feature filters are registered by the `IFeatureManagementBuilder` when `AddFeatureManagement` is called. These feature filters have access to the services that exist within the service collection that was used to add feature flags. Dependency injection can be used to retrieve these services.
 
 ### Parameterized Feature Filters
 
-Some feature filters require parameters to decide whether a feature should be turned on or not. For example a browser feature filter may turn on a feature for a certain set of browsers. It may be desired that Edge and Chrome browsers enable a feature, while FireFox does not. To do this a feature filter can be designed to expect parameters. These parameters would be specified in the feature configuration, and in code would be accessible via the `FeatureFilterEvaluationContext` parameter of `IFeatureFilter.Evaluate`.
+Some feature filters require parameters to decide whether a feature should be turned on or not. For example a browser feature filter may turn on a feature for a certain set of browsers. It may be desired that Edge and Chrome browsers enable a feature, while FireFox does not. To do this a feature filter can be designed to expect parameters. These parameters would be specified in the feature configuration, and in code would be accessible via the `FeatureFilterEvaluationContext` parameter of `IFeatureFilter.EvaluateAsync`.
 
 ```
   public class FeatureFilterEvaluationContext
@@ -282,7 +274,7 @@ Some feature filters require parameters to decide whether a feature should be tu
   {
       ... Removed for example
 
-      public bool Evaluate(FeatureFilterEvaluationContext context)
+      public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
       {
           BrowserFilterSettings settings = context.Parameters.Get<BrowserFilterSettings>() ?? new BrowserFilterSettings();
 
@@ -360,7 +352,8 @@ This filter provides the capability to enable a feature based on a set percentag
 
 This filter provides the capability to enable a feature based on a time window. If only `End` is specified, the feature will be considered on until that time. If only start is specified, the feature will be considered on at all points after that time.
 
-```    "EnhancedPipeline": {
+```
+    "EnhancedPipeline": {
       "EnabledFor": [
         {
           "Name": "Microsoft.TimeWindow",
