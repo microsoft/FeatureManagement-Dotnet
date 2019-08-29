@@ -20,7 +20,7 @@ namespace FeatureFlagDemo
         {
             _logger.LogInformation("Third party action filter inward path.");
 
-            await next();
+            await next().ConfigureAwait(false);
 
             _logger.LogInformation("Third party action filter outward path.");
         }

@@ -24,7 +24,6 @@ namespace Tests.FeatureManagement
         private const string OnFeature = "OnTestFeature";
         private const string OffFeature = "OffFeature";
         private const string ConditionalFeature = "ConditionalFeature";
-        private const string ConditionalFeature3 = "ConditionalFeature3";
 
         [Fact]
         public async Task ReadsConfiguration()
