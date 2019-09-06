@@ -35,5 +35,21 @@ namespace Microsoft.FeatureManagement
 
             return enabled;
         }
+
+        public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
+        {
+            //
+            // First, check local cache
+            if (_flagCache.ContainsKey(feature))
+            {
+                return _flagCache[feature];
+            }
+
+            bool enabled = await _featureManager.IsEnabledAsync(feature, context).ConfigureAwait(false);
+
+            _flagCache[feature] = enabled;
+
+            return enabled;
+        }
     }
 }

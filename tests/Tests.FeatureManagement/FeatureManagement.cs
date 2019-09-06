@@ -45,7 +45,7 @@ namespace Tests.FeatureManagement
 
             Assert.False(await featureManager.IsEnabledAsync(OffFeature));
 
-            IEnumerable<IFeatureFilter> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilter>>();
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
 
             //
             // Sync filter
@@ -98,7 +98,7 @@ namespace Tests.FeatureManagement
                 app.UseMvc();
             }));
 
-            IEnumerable<IFeatureFilter> featureFilters = testServer.Host.Services.GetRequiredService<IEnumerable<IFeatureFilter>>();
+            IEnumerable<IFeatureFilterMetadata> featureFilters = testServer.Host.Services.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
 
             TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
 
@@ -133,7 +133,7 @@ namespace Tests.FeatureManagement
             })
             .Configure(app => app.UseMvc()));
 
-            IEnumerable<IFeatureFilter> featureFilters = testServer.Host.Services.GetRequiredService<IEnumerable<IFeatureFilter>>();
+            IEnumerable<IFeatureFilterMetadata> featureFilters = testServer.Host.Services.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
 
             TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
 
@@ -237,6 +237,32 @@ namespace Tests.FeatureManagement
             }
 
             Assert.True(enabledCount > 0 && enabledCount < 10);
+        }
+
+        [Fact]
+        public async Task UsesContext()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider provider = serviceCollection.BuildServiceProvider();
+
+            IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
+
+            AppContext context = new AppContext();
+
+            context.AccountId = "NotEnabledAccount";
+
+            Assert.False(await featureManager.IsEnabledAsync(ConditionalFeature, context));
+
+            context.AccountId = "abc";
+
+            Assert.True(await featureManager.IsEnabledAsync(ConditionalFeature, context));
         }
     }
 }

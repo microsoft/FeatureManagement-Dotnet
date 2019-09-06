@@ -19,15 +19,15 @@ namespace Microsoft.FeatureManagement
 
         public IServiceCollection Services { get; }
 
-        public IFeatureManagementBuilder AddFeatureFilter<T>() where T : IFeatureFilter
+        public IFeatureManagementBuilder AddFeatureFilter<T>() where T : IFeatureFilterMetadata
         {
-            Type serviceType = typeof(IFeatureFilter);
+            Type serviceType = typeof(IFeatureFilterMetadata);
 
             Type implementationType = typeof(T);
 
             if (!Services.Any(descriptor => descriptor.ServiceType == serviceType && descriptor.ImplementationType == implementationType))
             {
-                Services.AddSingleton(typeof(IFeatureFilter), typeof(T));
+                Services.AddSingleton(typeof(IFeatureFilterMetadata), typeof(T));
             }
 
             return this;
