@@ -43,7 +43,22 @@ namespace Microsoft.FeatureManagement
             _filter = filter;
         }
 
-        public static Type GetContextualFilterInterface(IFeatureFilterMetadata filter, Type appContextType)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext evaluationContext, object context)
+        {
+            if (_evaluateFunc == null)
+            {
+                return Task.FromResult(false);
+            }
+
+            return _evaluateFunc(_filter, evaluationContext, context);
+        }
+
+        public static bool IsContextualFilter(IFeatureFilterMetadata filter, Type appContextType)
+        {
+            return GetContextualFilterInterface(filter, appContextType) != null;
+        }
+
+        private static Type GetContextualFilterInterface(IFeatureFilterMetadata filter, Type appContextType)
         {
             IEnumerable<Type> contextualFilterInterfaces = filter.GetType().GetInterfaces().Where(i => i.IsGenericType && i.GetGenericTypeDefinition().IsAssignableFrom(typeof(IContextualFeatureFilter<>)));
 
@@ -57,17 +72,7 @@ namespace Microsoft.FeatureManagement
             return targetInterface;
         }
 
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext evaluationContext, object context)
-        {
-            if (_evaluateFunc == null)
-            {
-                return Task.FromResult(false);
-            }
-
-            return _evaluateFunc(_filter, evaluationContext, context);
-        }
-
-        static Func<object, FeatureFilterEvaluationContext, object, Task<bool>> TypeAgnosticEvaluate(Type filterType, MethodInfo method)
+        private static Func<object, FeatureFilterEvaluationContext, object, Task<bool>> TypeAgnosticEvaluate(Type filterType, MethodInfo method)
         {
             //
             // Get the generic version of the evaluation helper method
@@ -81,19 +86,19 @@ namespace Microsoft.FeatureManagement
 
             //
             // Invoke the method to get the func
-            object ret = constructedHelper.Invoke(null, new object[] { method });
+            object typeAgnosticDelegate = constructedHelper.Invoke(null, new object[] { method });
 
-            return (Func<object, FeatureFilterEvaluationContext, object, Task<bool>>)ret;
+            return (Func<object, FeatureFilterEvaluationContext, object, Task<bool>>)typeAgnosticDelegate;
         }
 
-        static Func<object, FeatureFilterEvaluationContext, object, Task<bool>> GenericTypeAgnosticEvaluate<TTarget, TParam1, TParam2, TReturn>(MethodInfo method)
+        private static Func<object, FeatureFilterEvaluationContext, object, Task<bool>> GenericTypeAgnosticEvaluate<TTarget, TParam1, TParam2, TReturn>(MethodInfo method)
         {
             Func<TTarget, FeatureFilterEvaluationContext, TParam2, Task<bool>> func = (Func<TTarget, FeatureFilterEvaluationContext, TParam2, Task<bool>>)Delegate.CreateDelegate
                 (typeof(Func<TTarget, FeatureFilterEvaluationContext, TParam2, Task<bool>>), method);
 
-            Func<object, FeatureFilterEvaluationContext, object, Task<bool>> ret = (object target, FeatureFilterEvaluationContext param1, object param2) => func((TTarget)target, param1, (TParam2)param2);
+            Func<object, FeatureFilterEvaluationContext, object, Task<bool>> genericDelegate = (object target, FeatureFilterEvaluationContext param1, object param2) => func((TTarget)target, param1, (TParam2)param2);
 
-            return ret;
+            return genericDelegate;
         }
     }
 }

@@ -187,14 +187,9 @@ namespace Microsoft.FeatureManagement
 
                     IFeatureFilterMetadata metadata = GetFeatureFilterMetadata(filterName);
 
-                    ContextualFeatureFilterEvaluator f = null;
-
-                    if (ContextualFeatureFilterEvaluator.GetContextualFilterInterface(metadata, appContextType) != null)
-                    {
-                        f = new ContextualFeatureFilterEvaluator(metadata, appContextType);
-                    }
-
-                    return f;
+                    return ContextualFeatureFilterEvaluator.IsContextualFilter(metadata, appContextType) ?
+                        new ContextualFeatureFilterEvaluator(metadata, appContextType) :
+                        null;
                 }
             );
 

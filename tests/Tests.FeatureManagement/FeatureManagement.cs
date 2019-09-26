@@ -252,6 +252,17 @@ namespace Tests.FeatureManagement
 
             ServiceProvider provider = serviceCollection.BuildServiceProvider();
 
+            TestFilter testFeatureFilter = (TestFilter)provider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>().First(f => f is TestFilter);
+
+            testFeatureFilter.ContextualCallback = (ctx, accountContext) =>
+            {
+                var allowedAccounts = new List<string>();
+
+                ctx.Parameters.Bind("AllowedAccounts", allowedAccounts);
+
+                return allowedAccounts.Contains(accountContext.AccountId);
+            };
+
             IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
 
             AppContext context = new AppContext();
