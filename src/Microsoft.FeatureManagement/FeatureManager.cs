@@ -90,15 +90,6 @@ namespace Microsoft.FeatureManagement
                         };
 
                         //
-                        // IFeatureFilter
-                        if (filter is IFeatureFilter featureFilter && await featureFilter.EvaluateAsync(context).ConfigureAwait(false))
-                        {
-                            enabled = true;
-
-                            break;
-                        }
-                        
-                        //
                         // IContextualFeatureFilter
                         if (useAppContext)
                         {
@@ -110,6 +101,15 @@ namespace Microsoft.FeatureManagement
 
                                 break;
                             }
+                        }
+
+                        //
+                        // IFeatureFilter
+                        if (filter is IFeatureFilter featureFilter && await featureFilter.EvaluateAsync(context).ConfigureAwait(false))
+                        {
+                            enabled = true;
+
+                            break;
                         }
                     }
                 }

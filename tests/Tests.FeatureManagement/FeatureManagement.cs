@@ -248,13 +248,13 @@ namespace Tests.FeatureManagement
 
             serviceCollection.AddSingleton(config)
                 .AddFeatureManagement()
-                .AddFeatureFilter<TestFilter>();
+                .AddFeatureFilter<ContextualTestFilter>();
 
             ServiceProvider provider = serviceCollection.BuildServiceProvider();
 
-            TestFilter testFeatureFilter = (TestFilter)provider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>().First(f => f is TestFilter);
+            ContextualTestFilter contextualTestFeatureFilter = (ContextualTestFilter)provider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>().First(f => f is ContextualTestFilter);
 
-            testFeatureFilter.ContextualCallback = (ctx, accountContext) =>
+            contextualTestFeatureFilter.ContextualCallback = (ctx, accountContext) =>
             {
                 var allowedAccounts = new List<string>();
 
@@ -274,6 +274,28 @@ namespace Tests.FeatureManagement
             context.AccountId = "abc";
 
             Assert.True(await featureManager.IsEnabledAsync(ConditionalFeature, context));
+        }
+
+        [Fact]
+        public void LimitsFeatureFilterImplementations()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var serviceCollection = new ServiceCollection();
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                new ServiceCollection().AddSingleton(config)
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<InvalidFeatureFilter>();
+            });
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                new ServiceCollection().AddSingleton(config)
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<InvalidFeatureFilter2>();
+            });
         }
     }
 }
