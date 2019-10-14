@@ -25,6 +25,10 @@ namespace Tests.FeatureManagement
         private const string OffFeature = "OffFeature";
         private const string ConditionalFeature = "ConditionalFeature";
 
+        private const string AzureAppConfigOnFeature = "TestAzureAppConfigOnFeature";
+        private const string AzureAppConfigOffFeature = "TestAzureAppConfigOffFeature";
+        private const string AzureAppConfigConditionalFeature = "TestAzureAppConfigConditionalFeature";
+
         [Fact]
         public async Task ReadsConfiguration()
         {
@@ -65,6 +69,50 @@ namespace Tests.FeatureManagement
             };
 
             await featureManager.IsEnabledAsync(ConditionalFeature);
+
+            Assert.True(called);
+        }
+
+        [Fact]
+        public async Task ReadsConfigurationFromAzureAppConfig()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync(AzureAppConfigOnFeature));
+
+            Assert.False(await featureManager.IsEnabledAsync(AzureAppConfigOffFeature));
+
+            IEnumerable<IFeatureFilter> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilter>>();
+
+            //
+            // Sync filter
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            bool called = false;
+
+            testFeatureFilter.Callback = (evaluationContext) =>
+            {
+                called = true;
+
+                Assert.Equal("V1", evaluationContext.Parameters["P1"]);
+
+                Assert.Equal(AzureAppConfigConditionalFeature, evaluationContext.FeatureName);
+
+                return true;
+            };
+
+            await featureManager.IsEnabledAsync(AzureAppConfigConditionalFeature);
 
             Assert.True(called);
         }

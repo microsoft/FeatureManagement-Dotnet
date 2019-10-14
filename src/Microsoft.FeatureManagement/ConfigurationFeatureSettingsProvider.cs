@@ -106,10 +106,21 @@ namespace Microsoft.FeatureManagement
         private IConfigurationSection GetFeatureConfiguration(string featureName)
         {
             const string FeatureManagementSectionName = "FeatureManagement";
+            const string AzureAppConfigPrefix = ".appconfig.featureflag/";
 
             //
             // Look for settings under the "FeatureManagement" section
             IConfigurationSection featureConfiguration = _configuration.GetSection(FeatureManagementSectionName).GetChildren().FirstOrDefault(section => section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase));
+
+            //
+            // Check if there is any Azure AppConfig feature flag
+            // WARNING!
+            // This is according to the PREVIEW code as documented here:
+            // https://github.com/MicrosoftDocs/azure-docs/blob/master/articles/azure-app-configuration/manage-feature-flags.md
+            if (featureConfiguration == null)
+            {
+                featureConfiguration = _configuration.GetSection(AzureAppConfigPrefix + featureName);
+            }
 
             //
             // Fallback to the configuration section using the feature's name
