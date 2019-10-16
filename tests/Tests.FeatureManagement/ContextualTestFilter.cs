@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
 {
-    class ContextualTestFilter : IBla<IAccountContext>
+    class ContextualTestFilter : IContextualFeatureFilter<IAccountContext>
     {
         public Func<FeatureFilterEvaluationContext, IAccountContext, bool> ContextualCallback { get; set; }
 
@@ -15,10 +15,5 @@ namespace Tests.FeatureManagement
         {
             return Task.FromResult(ContextualCallback?.Invoke(context, accountContext) ?? false);
         }
-    }
-
-    public interface IBla<T> : IContextualFeatureFilter<T>
-    {
-
     }
 }
