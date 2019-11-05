@@ -8,7 +8,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// A filter that can be used to determine whether some criteria is met to enable a feature. A feature filter is free to use any criteria available, such as process state or request content. Feature filters can be registered for a given feature and if any feature filter evaluates to true, that feature will be considered enabled.
     /// </summary>
-    public interface IFeatureFilter
+    public interface IFeatureFilter : IFeatureFilterMetadata
     {
         /// <summary>
         /// Evalutates the feature filter to see if the filter's criteria for being enabled has been satisfied.

@@ -325,6 +325,46 @@ public void ConfigureServices(IServiceCollection services)
 }
 ```
 
+## Providing a Context For Feature Evaluation
+
+In console applications there is no ambient context such as `HttpContext` that feature filters can acquire and utilize to check if a feature should be on or off. In this case, applications need to provide an object representing a context into the feature management system for use by feature filters. This is done by using `IFeatureManager.IsEnabledAsync<TContext>(string featureName, TContext appContext)`. The appContext object that is provided to the feature manager can be used by feature filters to evaluate the state of a feature.
+
+```
+  MyAppContext context = new MyAppContext
+  {
+    AccountId = current.Id;
+  }
+
+  if (featureManager.IsEnabled(feature, context))
+  {
+  }
+```
+
+### Contextual Feature Filters
+
+Contextual feature filters implement the `IContextualFeatureFilter<TContext>` interface. These special feature filters can take advantage of the context that is passed in when `IFeatureManager.IsEnabledAsync<TContext>` is called. The `TContext` type parameter in `IContextualFeatureFilter<TContext>` describes what context type the filter is capable of handling. This allows the developer of a contextual feature filter to describe what is required of those who wish to utilize it. Since every type is a descendant of object, a filter that implements `IContextualFeatureFilter<object>` can be called for any provided context. To illustrate an example of a more specific contextual feature filter, consider a feature that is enabled if an account is in a configured list of enabled accounts. 
+
+```    
+  public interface IAccountContext
+  {
+    string AccountId { get; set; }
+  }
+
+  [FilterAlias("AccountId")]
+  class AccountIdFilter : IContextualFeatureFilter<IAccountContext>
+  {
+    public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext featureEvaluationContext, IAccountContext accountId)
+    {
+      //
+      // Evaluate if the feature should be on with the help of the provided IAccountContext
+    }
+  }
+```
+
+We can see that the `AccountIdFilter` requires an object that implements `IAccountContext` to be provided to be able to evalute the state of a feature. When using this feature filter, the caller needs to make sure that the passed in object implements `IAccountContext`.
+
+**Note:** Only a single feature filter interface can be implemented by a single type. Trying to add a feature filter that implements more than a single feature filter interface will result in an `ArgumentException`.
+
 ### Built-In Feature Filters
 
 There a few feature filters that come with the `Microsoft.FeatureManagement` package. These feature filters are not added automatically, but can be referenced and registered as soon as the package is registered.
