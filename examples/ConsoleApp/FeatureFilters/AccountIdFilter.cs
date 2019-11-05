@@ -17,18 +17,18 @@ namespace Consoto.Banking.AccountService.FeatureManagement
     [FilterAlias("AccountId")]
     class AccountIdFilter : IContextualFeatureFilter<IAccountContext>
     {
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext featureEvaluationContext, IAccountContext accountId)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext featureEvaluationContext, IAccountContext accountContext)
         {
-            if (string.IsNullOrEmpty(accountId?.AccountId))
+            if (string.IsNullOrEmpty(accountContext?.AccountId))
             {
-                throw new ArgumentNullException(nameof(accountId));
+                throw new ArgumentNullException(nameof(accountContext));
             }
 
             var allowedAccounts = new List<string>();
 
             featureEvaluationContext.Parameters.Bind("AllowedAccounts", allowedAccounts);
 
-            return Task.FromResult(allowedAccounts.Contains(accountId.AccountId));
+            return Task.FromResult(allowedAccounts.Contains(accountContext.AccountId));
         }
     }
 }
