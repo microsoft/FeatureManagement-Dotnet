@@ -19,7 +19,7 @@ namespace Microsoft.FeatureManagement
         private const string FeatureFiltersSectionName = "EnabledFor";
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, IFeatureSettings> _settings;
-        private readonly IDisposable _changeSubscription;
+        private IDisposable _changeSubscription;
         private int _stale = 0;
 
         public ConfigurationFeatureSettingsProvider(IConfiguration configuration)
@@ -34,7 +34,9 @@ namespace Microsoft.FeatureManagement
 
         public void Dispose()
         {
-            _changeSubscription.Dispose();
+            _changeSubscription?.Dispose();
+
+            _changeSubscription = null;
         }
 
         public IFeatureSettings TryGetFeatureSettings(string featureName)
