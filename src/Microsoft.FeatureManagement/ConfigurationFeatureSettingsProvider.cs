@@ -2,26 +2,52 @@
 // Licensed under the MIT license.
 //
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Primitives;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
     /// A feature settings provider that pulls settings from the .NET Core <see cref="IConfiguration"/> system.
     /// </summary>
-    sealed class ConfigurationFeatureSettingsProvider : IFeatureSettingsProvider
+    sealed class ConfigurationFeatureSettingsProvider : IFeatureSettingsProvider, IDisposable
     {
         private const string FeatureFiltersSectionName = "EnabledFor";
         private readonly IConfiguration _configuration;
+        private readonly ConcurrentDictionary<string, IFeatureSettings> _settings;
+        private readonly IDisposable _changeSubscription;
+        private int _stale = 0;
 
         public ConfigurationFeatureSettingsProvider(IConfiguration configuration)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _settings = new ConcurrentDictionary<string, IFeatureSettings>();
+
+            _changeSubscription = ChangeToken.OnChange(
+                () => _configuration.GetReloadToken(),
+                () => _stale = 1);
+        }
+
+        public void Dispose()
+        {
+            _changeSubscription.Dispose();
         }
 
         public IFeatureSettings TryGetFeatureSettings(string featureName)
+        {
+            if (Interlocked.Exchange(ref _stale, 0) != 0)
+            {
+                _settings.Clear();
+            }
+
+            return _settings.GetOrAdd(featureName, (name) => ReadFeatureSettings(name));
+        }
+
+        private IFeatureSettings ReadFeatureSettings(string featureName)
         {
             /*
               

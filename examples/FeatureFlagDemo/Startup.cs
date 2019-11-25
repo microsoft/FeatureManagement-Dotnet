@@ -63,6 +63,8 @@ namespace FeatureFlagDemo
                 app.UseHsts();
             }
 
+            app.UseAzureAppConfiguration();
+
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
