@@ -33,36 +33,37 @@ namespace Consoto.Banking.AccountService
 
             //
             // Get the feature manager from application services
-            IServiceProvider serviceProvider = services.BuildServiceProvider();
-
-            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
-
-            var accounts = new List<string>()
+            using (ServiceProvider serviceProvider = services.BuildServiceProvider())
             {
-                "abc",
-                "adef",
-                "abcdefghijklmnopqrstuvwxyz"
-            };
+                IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            //
-            // Mimic work items in a task-driven console application
-            foreach (var account in accounts)
-            {
-                const string FeatureName = "Beta";
-
-                //
-                // Check if feature enabled
-                //
-                var accountServiceContext = new AccountServiceContext
+                var accounts = new List<string>()
                 {
-                    AccountId = account
+                    "abc",
+                    "adef",
+                    "abcdefghijklmnopqrstuvwxyz"
                 };
 
-                bool enabled = await featureManager.IsEnabledAsync(FeatureName, accountServiceContext);
-
                 //
-                // Output results
-                Console.WriteLine($"The {FeatureName} feature is {(enabled ? "enabled" : "disabled")} for the '{account}' account.");
+                // Mimic work items in a task-driven console application
+                foreach (var account in accounts)
+                {
+                    const string FeatureName = "Beta";
+
+                    //
+                    // Check if feature enabled
+                    //
+                    var accountServiceContext = new AccountServiceContext
+                    {
+                        AccountId = account
+                    };
+
+                    bool enabled = await featureManager.IsEnabledAsync(FeatureName, accountServiceContext);
+
+                    //
+                    // Output results
+                    Console.WriteLine($"The {FeatureName} feature is {(enabled ? "enabled" : "disabled")} for the '{account}' account.");
+                }
             }
         }
     }
