@@ -3,6 +3,7 @@
 //
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.AzureAppConfiguration;
 
 namespace FeatureFlagDemo
@@ -29,7 +30,7 @@ namespace FeatureFlagDemo
                         {
                             o.Connect(settings["AppConfiguration:ConnectionString"]);
 
-                            o.Use(KeyFilter.Any);
+                            o.Select(KeyFilter.Any);
 
                             o.UseFeatureFlags();
                         });
