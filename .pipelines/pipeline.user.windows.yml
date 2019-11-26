@@ -10,7 +10,6 @@ restore:
     - !!defaultcommand
       name: 'Restore'
       command: 'build.cmd'
-      arguments: 'RestoreOnly'
 
 build:
   commands:
