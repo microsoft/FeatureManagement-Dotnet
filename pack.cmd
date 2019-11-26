@@ -1,1 +1,3 @@
-powershell.exe -ExecutionPolicy Unrestricted -NoProfile -File "%~dp0pack.ps1"
+call %~dp0build\InstallPowerShellCore.cmd
+
+%PowerShellCore% "%~dp0pack.ps1" %1
