@@ -10,7 +10,10 @@ Indicates whether the build config should be set to Debug or Release. The defaul
 param(
     [Parameter()]
     [ValidateSet('Debug','Release')]
-    [string]$BuildConfig = "Release"
+    [string]$BuildConfig = "Release",
+    
+    [Parameter()]
+    [switch]$RestoreOnly = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -24,7 +27,15 @@ if ((Test-Path -Path $LogDirectory) -ne $true) {
     New-Item -ItemType Directory -Path $LogDirectory | Write-Verbose
 }
 
-# Build
-dotnet build -o "$BuildRelativePath" -c $BuildConfig "$Solution" | Tee-Object -FilePath "$LogDirectory\build.log"
+if ($RestoreOnly)
+{
+    # Restore
+    dotnet restore "$Solution"
+}
+else
+{
+    # Build
+    dotnet build -o "$BuildRelativePath" -c $BuildConfig "$Solution" | Tee-Object -FilePath "$LogDirectory\build.log"
+}
 
 exit $LASTEXITCODE
