@@ -3,6 +3,7 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
 {
@@ -19,7 +20,7 @@ namespace Microsoft.FeatureManagement
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
         }
 
-        public bool IsEnabled(string feature)
+        public async Task<bool> IsEnabledAsync(string feature)
         {
             //
             // First, check local cache
@@ -28,7 +29,23 @@ namespace Microsoft.FeatureManagement
                 return _flagCache[feature];
             }
 
-            bool enabled = _featureManager.IsEnabled(feature);
+            bool enabled = await _featureManager.IsEnabledAsync(feature).ConfigureAwait(false);
+
+            _flagCache[feature] = enabled;
+
+            return enabled;
+        }
+
+        public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
+        {
+            //
+            // First, check local cache
+            if (_flagCache.ContainsKey(feature))
+            {
+                return _flagCache[feature];
+            }
+
+            bool enabled = await _featureManager.IsEnabledAsync(feature, context).ConfigureAwait(false);
 
             _flagCache[feature] = enabled;
 

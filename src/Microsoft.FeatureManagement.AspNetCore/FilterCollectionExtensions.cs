@@ -17,11 +17,11 @@ namespace Microsoft.FeatureManagement
         /// <param name="filters">The filter collection to add to.</param>
         /// <param name="feature">The feature that will need to enabled to trigger the execution of the MVC filter.</param>
         /// <returns></returns>
-        public static IFilterMetadata AddForFeature<TFilterType>(this FilterCollection filters, string feature) where TFilterType : IFilterMetadata
+        public static IFilterMetadata AddForFeature<TFilterType>(this FilterCollection filters, string feature) where TFilterType : IAsyncActionFilter
         {
             IFilterMetadata filterMetadata = null;
 
-            filters.Add(new FeatureGatedFilter<TFilterType>(feature));
+            filters.Add(new FeatureGatedAsyncActionFilter<TFilterType>(feature));
 
             return filterMetadata;
         }

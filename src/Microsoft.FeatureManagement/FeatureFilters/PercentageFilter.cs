@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.FeatureManagement.Utils;
+using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
 {
@@ -30,9 +31,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// </summary>
         /// <param name="context">The feature evaluation context.</param>
         /// <returns>True if the feature is enabled, false otherwise.</returns>
-        public bool Evaluate(FeatureFilterEvaluationContext context)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
-            PercentageSettings settings = context.Parameters.Get<PercentageSettings>() ?? new PercentageSettings();
+            PercentageFilterSettings settings = context.Parameters.Get<PercentageFilterSettings>() ?? new PercentageFilterSettings();
 
             bool result = true;
 
@@ -48,7 +49,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 result = (RandomGenerator.NextDouble() * 100) <= settings.Value;
             }
 
-            return result;
+            return Task.FromResult(result);
         }
     }
 }
