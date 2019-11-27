@@ -33,7 +33,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <returns>True if the feature is enabled, false otherwise.</returns>
         public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
-            PercentageSettings settings = context.Parameters.Get<PercentageSettings>() ?? new PercentageSettings();
+            PercentageFilterSettings settings = context.Parameters.Get<PercentageFilterSettings>() ?? new PercentageFilterSettings();
 
             bool result = true;
 
