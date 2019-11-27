@@ -9,7 +9,8 @@ restore:
   commands:
     - !!defaultcommand
       name: 'Restore'
-      command: 'dotnet restore'
+      command: 'build.cmd'
+      arguments: '-RestoreOnly'
 
 build:
   commands:
