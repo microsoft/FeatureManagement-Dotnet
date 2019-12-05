@@ -1,6 +1,6 @@
-# ASP.Net Core Feature Flags
+# ASP.NET Core Feature Flags
 
-Feature flags provide a way for ASP.Net Core applications to turn features on or off dynamically. Developers can use feature flags in simple use cases like conditional statements to more advanced scenarios like conditionally adding routes or MVC filters. Feature flags build on top of the .NET Core configuration system. Any .NET Core configuration provider is capable of acting as the back-bone for feature flags.
+Feature flags provide a way for ASP.NET Core applications to turn features on or off dynamically. Developers can use feature flags in simple use cases like conditional statements to more advanced scenarios like conditionally adding routes or MVC filters. Feature flags build on top of the .NET Core configuration system. Any .NET Core configuration provider is capable of acting as the back-bone for feature flags.
 
 Here are some of the benefits of using this library:
 
@@ -13,7 +13,7 @@ Here are some of the benefits of using this library:
 * Simple to Complex Scenarios Covered
   * Toggle on/off features through declarative configuration file
   * Dynamically evaluate state of feature based on call to server
-* API extensions for ASP.Net Core and MVC framework
+* API extensions for ASP.NET Core and MVC framework
   * Routing
   * Filters
   * Action Attributes
@@ -128,7 +128,7 @@ This tells the feature manager to use the "FeatureManagement" section from the c
 **Advanced:** If the root of the configuration is provided, the feature manager will first look for a configuration section with the name of the feature, and will then fall back to the "FeatureManagement" section automatically.
 
 ## Consumption
-The simplest use case for feature flags is to do a conditional check for whether a feature is enabled to take different paths in code. The uses cases grow from there as the feature flag API begins to offer extensions into ASP.Net Core.
+The simplest use case for feature flags is to do a conditional check for whether a feature is enabled to take different paths in code. The uses cases grow from there as the feature flag API begins to offer extensions into ASP.NET Core.
 
 ### Feature Check
 The basic form of feature management is checking if a feature is enabled and then performing actions based on the result. This is done through the `IFeatureManager`'s `IsEnabledAsync` method.
@@ -335,7 +335,7 @@ In console applications there is no ambient context such as `HttpContext` that f
     AccountId = current.Id;
   }
 
-  if (featureManager.IsEnabled(feature, context))
+  if (await featureManager.IsEnabledAsync(feature, context))
   {
   }
 ```
