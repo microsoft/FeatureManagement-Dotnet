@@ -75,18 +75,26 @@ namespace Tests.FeatureManagement
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             TestServer testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
+                {
+                    services
+                        .Configure<FeatureManagerOptions>(options =>
+                        {
+                            options.SwallowExceptionForUnregisteredFilter = true;
+                        });
+
+                    services
+                        .AddSingleton(config)
+                        .AddFeatureManagement()
+                        .AddFeatureFilter<TestFilter>();
+
+                    services.AddMvcCore(o =>
+                    {
+
+                        o.Filters.AddForFeature<MvcFilter>(ConditionalFeature);
+                    });
+                })
+            .Configure(app =>
             {
-                services
-                    .AddSingleton(config)
-                    .AddFeatureManagement()
-                    .AddFeatureFilter<TestFilter>();
-
-                services.AddMvcCore(o => {
-
-                    o.Filters.AddForFeature<MvcFilter>(ConditionalFeature);
-                });
-            })
-            .Configure(app => {
 
                 app.UseForFeature(ConditionalFeature, a => a.Use(async (ctx, next) =>
                 {
@@ -123,14 +131,20 @@ namespace Tests.FeatureManagement
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             TestServer testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
-            {
-                services
-                    .AddSingleton(config)
-                    .AddFeatureManagement()
-                    .AddFeatureFilter<TestFilter>();
+                {
+                    services
+                        .Configure<FeatureManagerOptions>(options =>
+                        {
+                            options.SwallowExceptionForUnregisteredFilter = true;
+                        });
 
-                services.AddMvcCore();
-            })
+                    services
+                        .AddSingleton(config)
+                        .AddFeatureManagement()
+                        .AddFeatureFilter<TestFilter>();
+
+                    services.AddMvcCore();
+                })
             .Configure(app => app.UseMvc()));
 
             IEnumerable<IFeatureFilterMetadata> featureFilters = testServer.Host.Services.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
@@ -246,6 +260,12 @@ namespace Tests.FeatureManagement
 
             var serviceCollection = new ServiceCollection();
 
+            serviceCollection
+                .Configure<FeatureManagerOptions>(options =>
+                {
+                    options.SwallowExceptionForUnregisteredFilter = true;
+                });
+
             serviceCollection.AddSingleton(config)
                 .AddFeatureManagement()
                 .AddFeatureFilter<ContextualTestFilter>();
@@ -297,5 +317,50 @@ namespace Tests.FeatureManagement
                     .AddFeatureFilter<InvalidFeatureFilter2>();
             });
         }
+
+        [Fact]
+        public void ThrowExceptionForUnregisteredFilter()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.ThrowsAsync<Exception>(async () => await featureManager.IsEnabledAsync(ConditionalFeature));
+        }
+
+        [Fact]
+        public async Task SwallowExceptionForUnregisteredFilter()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagerOptions>(options =>
+                {
+                    options.SwallowExceptionForUnregisteredFilter = true;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            var isEnabled = await featureManager.IsEnabledAsync(ConditionalFeature);
+
+            Assert.False(isEnabled);
+        }
+
     }
 }
