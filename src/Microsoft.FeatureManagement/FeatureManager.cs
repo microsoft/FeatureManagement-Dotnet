@@ -42,7 +42,7 @@ namespace Microsoft.FeatureManagement
             return IsEnabledAsync(feature, appContext, true);
         }
 
-        public async Task<IEnumerable<string>> GetFeatureNames()
+        public async Task<IEnumerable<string>> GetFeatureNamesAsync()
         {
             var featureNames = new List<string>();
 

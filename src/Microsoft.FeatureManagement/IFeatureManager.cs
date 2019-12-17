@@ -15,7 +15,7 @@ namespace Microsoft.FeatureManagement
         /// Returns a list of feature names registered in the feature manager.
         /// </summary>
         /// <returns>A list of feature names.</returns>
-        Task<IEnumerable<string>> GetFeatureNames();
+        Task<IEnumerable<string>> GetFeatureNamesAsync();
 
         /// <summary>
         /// Checks whether a given feature is enabled.

@@ -313,7 +313,7 @@ namespace Tests.FeatureManagement
             {
                 IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
                 
-                Assert.NotEmpty(await featureManager.GetFeatureNames());
+                Assert.NotEmpty(await featureManager.GetFeatureNamesAsync());
             }
         }
     }
