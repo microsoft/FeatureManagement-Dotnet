@@ -14,10 +14,21 @@ namespace Microsoft.FeatureManagement
     {
         private readonly IFeatureManager _featureManager;
         private readonly IDictionary<string, bool> _flagCache = new Dictionary<string, bool>();
+        private IEnumerable<string> _featureNames;
 
         public FeatureManagerSnapshot(IFeatureManager featureManager)
         {
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
+        }
+
+        public async Task<IEnumerable<string>> GetFeatureNames()
+        {
+            if (_featureNames != null)
+            {
+                _featureNames = await _featureManager.GetFeatureNames();
+            }
+
+            return _featureNames;
         }
 
         public async Task<bool> IsEnabledAsync(string feature)

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
@@ -10,6 +11,12 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     public interface IFeatureManager
     {
+        /// <summary>
+        /// Returns a list of feature names registered in the feature manager.
+        /// </summary>
+        /// <returns>A list of feature names.</returns>
+        Task<IEnumerable<string>> GetFeatureNames();
+
         /// <summary>
         /// Checks whether a given feature is enabled.
         /// </summary>

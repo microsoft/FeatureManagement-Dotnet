@@ -297,5 +297,24 @@ namespace Tests.FeatureManagement
                     .AddFeatureFilter<InvalidFeatureFilter2>();
             });
         }
+
+        [Fact]
+        public async Task ListsFeatures()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualTestFilter>();
+
+            using (ServiceProvider provider = serviceCollection.BuildServiceProvider())
+            {
+                IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
+                
+                Assert.NotEmpty(await featureManager.GetFeatureNames());
+            }
+        }
     }
 }

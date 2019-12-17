@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
 {
@@ -18,14 +19,14 @@ namespace Microsoft.FeatureManagement
     {
         private const string FeatureFiltersSectionName = "EnabledFor";
         private readonly IConfiguration _configuration;
-        private readonly ConcurrentDictionary<string, IFeatureSettings> _settings;
+        private readonly ConcurrentDictionary<string, FeatureSettings> _settings;
         private IDisposable _changeSubscription;
         private int _stale = 0;
 
         public ConfigurationFeatureSettingsProvider(IConfiguration configuration)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _settings = new ConcurrentDictionary<string, IFeatureSettings>();
+            _settings = new ConcurrentDictionary<string, FeatureSettings>();
 
             _changeSubscription = ChangeToken.OnChange(
                 () => _configuration.GetReloadToken(),
@@ -39,17 +40,55 @@ namespace Microsoft.FeatureManagement
             _changeSubscription = null;
         }
 
-        public IFeatureSettings TryGetFeatureSettings(string featureName)
+        public Task<IEnumerable<FeatureSettings>> GetFeatureSettings(FeatureSettingsQueryOptions queryOptions)
         {
+            if (queryOptions == null)
+            {
+                throw new ArgumentNullException(nameof(queryOptions));
+            }
+
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
                 _settings.Clear();
             }
 
-            return _settings.GetOrAdd(featureName, (name) => ReadFeatureSettings(name));
+            var featureSettings = new List<FeatureSettings>();
+
+            if (queryOptions.FeatureName != null)
+            {
+                //
+                // Query by feature name
+                FeatureSettings settings = _settings.GetOrAdd(queryOptions.FeatureName, (name) => ReadFeatureSettings(name));
+
+                if (settings != null)
+                {
+                    featureSettings.Add(settings);
+                }
+            }
+            else
+            {
+                //
+                // Query all
+                foreach (string featureName in GetFeatureConfigurationSections().Select(s => s.Key))
+                {
+                    if (!string.IsNullOrEmpty(queryOptions.After) && string.Compare(featureName, queryOptions.After) <= 0)
+                    {
+                        continue;
+                    }
+
+                    FeatureSettings settings = _settings.GetOrAdd(featureName, (name) => ReadFeatureSettings(name));
+
+                    if (settings != null)
+                    {
+                        featureSettings.Add(settings);
+                    }
+                }
+            }
+
+            return Task.FromResult<IEnumerable<FeatureSettings>>(featureSettings);
         }
 
-        private IFeatureSettings ReadFeatureSettings(string featureName)
+        private FeatureSettings ReadFeatureSettings(string featureName)
         {
             /*
               
@@ -80,7 +119,13 @@ namespace Microsoft.FeatureManagement
 
             */
 
-            IConfigurationSection configuration = GetFeatureConfiguration(featureName);
+            IConfigurationSection configuration = GetFeatureConfigurationSections()
+                                                    .FirstOrDefault(section => section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase));
+
+            if (configuration == null)
+            {
+                return null;
+            }
 
             var enabledFor = new List<FeatureFilterSettings>();
 
@@ -131,22 +176,20 @@ namespace Microsoft.FeatureManagement
             };
         }
 
-        private IConfigurationSection GetFeatureConfiguration(string featureName)
+        private IEnumerable<IConfigurationSection> GetFeatureConfigurationSections()
         {
             const string FeatureManagementSectionName = "FeatureManagement";
 
-            //
-            // Look for settings under the "FeatureManagement" section
-            IConfigurationSection featureConfiguration = _configuration.GetSection(FeatureManagementSectionName).GetChildren().FirstOrDefault(section => section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase));
-
-            //
-            // Fallback to the configuration section using the feature's name
-            if (featureConfiguration == null)
+            if (_configuration.GetChildren().Any(s => s.Key.Equals(FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase)))
             {
-                featureConfiguration = _configuration.GetSection(featureName);
+                //
+                // Look for settings under the "FeatureManagement" section
+                return _configuration.GetSection(FeatureManagementSectionName).GetChildren();
             }
-
-            return featureConfiguration;
+            else
+            {
+                return _configuration.GetChildren();
+            }
         }
     }
 }
