@@ -34,15 +34,10 @@ namespace Microsoft.FeatureManagement
 
         public Task<bool> IsEnabledAsync(string feature)
         {
-            return IsEnabledAsync<object>(feature, null, false);
+            return IsEnabledAsync<object>(feature, null);
         }
 
-        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
-        {
-            return IsEnabledAsync(feature, appContext, true);
-        }
-
-        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext)
+        public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
@@ -91,7 +86,7 @@ namespace Microsoft.FeatureManagement
 
                         //
                         // IContextualFeatureFilter
-                        if (useAppContext)
+                        if (appContext != null)
                         {
                             ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterSettings.Name, typeof(TContext));
 
