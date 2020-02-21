@@ -46,9 +46,11 @@ namespace Microsoft.FeatureManagement
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                if (await sessionManager.TryGetAsync(feature, out bool cachedEnabled).ConfigureAwait(false))
+                ReadSessionResult readSessionResult = await sessionManager.TryGetAsync(feature).ConfigureAwait(false);
+
+                if (readSessionResult.HasValue)
                 {
-                    return cachedEnabled;
+                    return readSessionResult.Value;
                 }
             }
 

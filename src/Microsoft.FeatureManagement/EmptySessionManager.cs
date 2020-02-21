@@ -15,11 +15,12 @@ namespace Microsoft.FeatureManagement
             return Task.CompletedTask;
         }
 
-        public Task<bool> TryGetAsync(string featureName, out bool enabled)
+        public Task<ReadSessionResult> TryGetAsync(string featureName)
         {
-            enabled = false;
-
-            return Task.FromResult(enabled);
+            return Task.FromResult(new ReadSessionResult
+            {
+                HasValue = false
+            });
         }
     }
 }
