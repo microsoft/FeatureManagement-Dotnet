@@ -24,6 +24,7 @@ namespace Tests.FeatureManagement
         private const string OnFeature = "OnTestFeature";
         private const string OffFeature = "OffFeature";
         private const string ConditionalFeature = "ConditionalFeature";
+        private const string ContextualFeature = "ContextualFeature";
 
         [Fact]
         public async Task ReadsConfiguration()
@@ -77,12 +78,6 @@ namespace Tests.FeatureManagement
             TestServer testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
                 {
                     services
-                        .Configure<FeatureManagerOptions>(options =>
-                        {
-                            options.SwallowExceptionForUnregisteredFilter = true;
-                        });
-
-                    services
                         .AddSingleton(config)
                         .AddFeatureManagement()
                         .AddFeatureFilter<TestFilter>();
@@ -132,12 +127,6 @@ namespace Tests.FeatureManagement
 
             TestServer testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
                 {
-                    services
-                        .Configure<FeatureManagerOptions>(options =>
-                        {
-                            options.SwallowExceptionForUnregisteredFilter = true;
-                        });
-
                     services
                         .AddSingleton(config)
                         .AddFeatureManagement()
@@ -260,12 +249,6 @@ namespace Tests.FeatureManagement
 
             var serviceCollection = new ServiceCollection();
 
-            serviceCollection
-                .Configure<FeatureManagerOptions>(options =>
-                {
-                    options.SwallowExceptionForUnregisteredFilter = true;
-                });
-
             serviceCollection.AddSingleton(config)
                 .AddFeatureManagement()
                 .AddFeatureFilter<ContextualTestFilter>();
@@ -289,11 +272,11 @@ namespace Tests.FeatureManagement
 
             context.AccountId = "NotEnabledAccount";
 
-            Assert.False(await featureManager.IsEnabledAsync(ConditionalFeature, context));
+            Assert.False(await featureManager.IsEnabledAsync(ContextualFeature, context));
 
             context.AccountId = "abc";
 
-            Assert.True(await featureManager.IsEnabledAsync(ConditionalFeature, context));
+            Assert.True(await featureManager.IsEnabledAsync(ContextualFeature, context));
         }
 
         [Fact]
@@ -319,7 +302,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public void ThrowExceptionForUnregisteredFilter()
+        public async Task ThrowsExceptionForMissingFeatureFilter()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
@@ -333,20 +316,22 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            Assert.ThrowsAsync<Exception>(async () => await featureManager.IsEnabledAsync(ConditionalFeature));
+            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.IsEnabledAsync(ConditionalFeature));
+
+            Assert.Equal(FeatureManagementError.MissingFeatureFilter, e.Error);
         }
 
         [Fact]
-        public async Task SwallowExceptionForUnregisteredFilter()
+        public async Task SwallowsExceptionForMissingFeatureFilter()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             var services = new ServiceCollection();
 
             services
-                .Configure<FeatureManagerOptions>(options =>
+                .Configure<FeatureManagementOptions>(options =>
                 {
-                    options.SwallowExceptionForUnregisteredFilter = true;
+                    options.IgnoreMissingFeatureFilters = true;
                 });
 
             services

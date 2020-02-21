@@ -22,9 +22,14 @@ namespace Microsoft.FeatureManagement
         private readonly ILogger _logger;
         private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
-        private readonly FeatureManagerOptions _options;
+        private readonly FeatureManagementOptions _options;
 
-        public FeatureManager(IFeatureSettingsProvider settingsProvider, IEnumerable<IFeatureFilterMetadata> featureFilters, IEnumerable<ISessionManager> sessionManagers, ILoggerFactory loggerFactory, IOptionsMonitor<FeatureManagerOptions> optionsAccessor)
+        public FeatureManager(
+            IFeatureSettingsProvider settingsProvider,
+            IEnumerable<IFeatureFilterMetadata> featureFilters,
+            IEnumerable<ISessionManager> sessionManagers,
+            ILoggerFactory loggerFactory,
+            IOptions<FeatureManagementOptions> options)
         {
             _settingsProvider = settingsProvider;
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
@@ -32,7 +37,7 @@ namespace Microsoft.FeatureManagement
             _logger = loggerFactory.CreateLogger<FeatureManager>();
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
-            _options = optionsAccessor.CurrentValue;
+            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         }
 
         public Task<bool> IsEnabledAsync(string feature)
@@ -81,9 +86,17 @@ namespace Microsoft.FeatureManagement
 
                         if (filter == null)
                         {
-                            if (!_options.SwallowExceptionForUnregisteredFilter)
-                                throw new Exception($"Feature filter '{featureFilterSettings.Name}' specified for feature '{feature}' was not found.");
-                            _logger.LogWarning($"Feature filter '{featureFilterSettings.Name}' specified for feature '{feature}' was not found.");
+                            string errorMessage = $"The feature filter '{featureFilterSettings.Name}' specified for feature '{feature}' was not found.";
+
+                            if (!_options.IgnoreMissingFeatureFilters)
+                            {
+                                throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
+                            }
+                            else
+                            {
+                                _logger.LogWarning(errorMessage);
+                            }
+
                             continue;
                         }
 

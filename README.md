@@ -247,15 +247,6 @@ Creating a feature filter provides a way to enable features based on criteria th
 
 Feature filters are registered by the `IFeatureManagementBuilder` when `AddFeatureManagement` is called. These feature filters have access to the services that exist within the service collection that was used to add feature flags. Dependency injection can be used to retrieve these services.
 
-If a feature is configured to be enabled for a specific feature filter and the feature hasn't been registered, an exception will be thrown when the feature will be evaluated. The exception could be silently swallowed, using the feature manager's options. 
-
-```
-services.Configure<FeatureManagerOptions>(options =>
-{
-    options.SwallowExceptionForUnregisteredFilter = true;
-});
-```
-
 ### Parameterized Feature Filters
 
 Some feature filters require parameters to decide whether a feature should be turned on or not. For example a browser feature filter may turn on a feature for a certain set of browsers. It may be desired that Edge and Chrome browsers enable a feature, while FireFox does not. To do this a feature filter can be designed to expect parameters. These parameters would be specified in the feature configuration, and in code would be accessible via the `FeatureFilterEvaluationContext` parameter of `IFeatureFilter.EvaluateAsync`.
@@ -306,6 +297,17 @@ When a feature filter is registered to be used for a feature flag, the alias use
   }
 
 This can be overridden through the use of the `FilterAliasAttribute`. A feature filter can be decorated with this attribute to declare the name that should be used in configuration to reference this feature filter within a feature flag.
+
+### Missing Feature Filters
+
+If a feature is configured to be enabled for a specific feature filter and that feature filter hasn't been registered, then an exception will be thrown when the feature is evaluated. The exception can be disabled by using the feature management options. 
+
+```
+services.Configure<FeatureManagementOptions>(options =>
+{
+    options.IgnoreMissingFeatureFilters = true;
+});
+```
 
 ### Using HttpContext
 
