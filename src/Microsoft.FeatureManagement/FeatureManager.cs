@@ -46,7 +46,7 @@ namespace Microsoft.FeatureManagement
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                ReadSessionResult readSessionResult = await sessionManager.TryGetAsync(feature).ConfigureAwait(false);
+                bool? readSessionResult = await sessionManager.GetAsync(feature).ConfigureAwait(false);
 
                 if (readSessionResult.HasValue)
                 {

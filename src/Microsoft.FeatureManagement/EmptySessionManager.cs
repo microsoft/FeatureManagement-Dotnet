@@ -15,12 +15,9 @@ namespace Microsoft.FeatureManagement
             return Task.CompletedTask;
         }
 
-        public Task<ReadSessionResult> TryGetAsync(string featureName)
+        public Task<bool?> GetAsync(string featureName)
         {
-            return Task.FromResult(new ReadSessionResult
-            {
-                HasValue = false
-            });
+            return Task.FromResult((bool?)null);
         }
     }
 }

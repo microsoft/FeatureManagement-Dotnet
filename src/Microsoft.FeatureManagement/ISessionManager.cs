@@ -21,7 +21,7 @@ namespace Microsoft.FeatureManagement
         /// Queries the session manager for the session's feature state, if any, for the given feature.
         /// </summary>
         /// <param name="featureName">The name of the feature.</param>
-        /// <returns>A result indicating whether the session was able to provide a the state of the feature, and the state, if any.</returns>
-        Task<ReadSessionResult> TryGetAsync(string featureName);
+        /// <returns>The state of the feature if it is present in the session, otherwise null.</returns>
+        Task<bool?> GetAsync(string featureName);
     }
 }
