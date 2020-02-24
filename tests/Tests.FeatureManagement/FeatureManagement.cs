@@ -312,8 +312,17 @@ namespace Tests.FeatureManagement
             using (ServiceProvider provider = serviceCollection.BuildServiceProvider())
             {
                 IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
-                
-                Assert.NotEmpty(await featureManager.GetFeatureNamesAsync());
+
+                bool hasItems = false;
+
+                await foreach (string feature in featureManager.GetFeatureNamesAsync())
+                {
+                    hasItems = true;
+
+                    break;
+                }
+
+                Assert.True(hasItems);
             }
         }
     }

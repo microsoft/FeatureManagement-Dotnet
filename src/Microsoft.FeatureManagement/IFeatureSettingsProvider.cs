@@ -14,8 +14,14 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// Retrieves settings for a given feature.
         /// </summary>
-        /// <param name="queryOptions">Options specifying what feature settings should be retrieved.</param>
-        /// <returns>A list of feature settings matching the provided query options.</returns>
-        Task<IEnumerable<FeatureSettings>> GetFeatureSettings(FeatureSettingsQueryOptions queryOptions);
+        /// <param name="featureName">The name of the feature to retrieve settings for.</param>
+        /// <returns>The feature's settings.</returns>	
+        Task<FeatureSettings> GetFeatureSettingsAsync(string featureName);
+
+        /// <summary>
+        /// Retrieves settings for all features.
+        /// </summary>
+        /// <returns>An enumerator which provides asynchronous iteration over feature settings.</returns>
+        IAsyncEnumerable<FeatureSettings> GetAllFeatureSettingsAsync();
     }
 }

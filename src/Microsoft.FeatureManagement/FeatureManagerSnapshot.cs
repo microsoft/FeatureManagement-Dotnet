@@ -21,14 +21,24 @@ namespace Microsoft.FeatureManagement
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
         }
 
-        public async Task<IEnumerable<string>> GetFeatureNamesAsync()
+        public async IAsyncEnumerable<string> GetFeatureNamesAsync()
         {
             if (_featureNames != null)
             {
-                _featureNames = await _featureManager.GetFeatureNamesAsync();
+                var featureNames = new List<string>();
+
+                await foreach (string featureName in _featureManager.GetFeatureNamesAsync())
+                {
+                    featureNames.Add(featureName);
+                }
+
+                _featureNames = featureNames;
             }
 
-            return _featureNames;
+            foreach (string featureName in _featureNames)
+            {
+                yield return featureName;
+            }
         }
 
         public async Task<bool> IsEnabledAsync(string feature)

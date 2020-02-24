@@ -42,26 +42,12 @@ namespace Microsoft.FeatureManagement
             return IsEnabledAsync(feature, appContext, true);
         }
 
-        public async Task<IEnumerable<string>> GetFeatureNamesAsync()
+        public async IAsyncEnumerable<string> GetFeatureNamesAsync()
         {
-            var featureNames = new List<string>();
-
-            IEnumerable<FeatureSettings> settings = null;
-
-            do
+            await foreach (FeatureSettings featureSettings in _settingsProvider.GetAllFeatureSettingsAsync())
             {
-                settings = await _settingsProvider.GetFeatureSettings(new FeatureSettingsQueryOptions {
-                    After = featureNames.LastOrDefault()
-                });
-
-                if (settings != null)
-                {
-                    featureNames.AddRange(settings.Select(s => s.Name));
-                }
-
-            } while (settings != null && settings.Count() > 0);
-
-            return featureNames;
+                yield return featureSettings.Name;
+            }
         }
 
         private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext)
@@ -76,11 +62,7 @@ namespace Microsoft.FeatureManagement
 
             bool enabled = false;
 
-            FeatureSettings settings = (await _settingsProvider.GetFeatureSettings(new FeatureSettingsQueryOptions
-            {
-                FeatureName = feature
-
-            })).FirstOrDefault();
+            FeatureSettings settings = await _settingsProvider.GetFeatureSettingsAsync(feature);
 
             if (settings != null)
             {

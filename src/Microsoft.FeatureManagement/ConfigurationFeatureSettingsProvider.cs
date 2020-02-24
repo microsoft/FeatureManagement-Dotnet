@@ -40,11 +40,11 @@ namespace Microsoft.FeatureManagement
             _changeSubscription = null;
         }
 
-        public Task<IEnumerable<FeatureSettings>> GetFeatureSettings(FeatureSettingsQueryOptions queryOptions)
+        public Task<FeatureSettings> GetFeatureSettingsAsync(string featureName)
         {
-            if (queryOptions == null)
+            if (featureName == null)
             {
-                throw new ArgumentNullException(nameof(queryOptions));
+                throw new ArgumentNullException(nameof(featureName));
             }
 
             if (Interlocked.Exchange(ref _stale, 0) != 0)
@@ -52,40 +52,38 @@ namespace Microsoft.FeatureManagement
                 _settings.Clear();
             }
 
+            //
+            // Query by feature name
+            FeatureSettings settings = _settings.GetOrAdd(featureName, (name) => ReadFeatureSettings(name));
+
+            return Task.FromResult(settings);
+        }
+
+        //
+        // The async key word is necessary for creating IAsyncEnumerable.
+        // The need to disable this warning occurs when implementaing async stream synchronously. 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        public async IAsyncEnumerable<FeatureSettings> GetAllFeatureSettingsAsync()
+#pragma warning restore CS1998
+        {
+            if (Interlocked.Exchange(ref _stale, 0) != 0)
+            {
+                _settings.Clear();
+            }
+
             var featureSettings = new List<FeatureSettings>();
 
-            if (queryOptions.FeatureName != null)
+            //
+            // Query all
+            foreach (string featureName in GetFeatureConfigurationSections().Select(s => s.Key))
             {
-                //
-                // Query by feature name
-                FeatureSettings settings = _settings.GetOrAdd(queryOptions.FeatureName, (name) => ReadFeatureSettings(name));
+                FeatureSettings settings = _settings.GetOrAdd(featureName, (name) => ReadFeatureSettings(name));
 
                 if (settings != null)
                 {
-                    featureSettings.Add(settings);
+                    yield return settings;
                 }
             }
-            else
-            {
-                //
-                // Query all
-                foreach (string featureName in GetFeatureConfigurationSections().Select(s => s.Key))
-                {
-                    if (!string.IsNullOrEmpty(queryOptions.After) && string.Compare(featureName, queryOptions.After) <= 0)
-                    {
-                        continue;
-                    }
-
-                    FeatureSettings settings = _settings.GetOrAdd(featureName, (name) => ReadFeatureSettings(name));
-
-                    if (settings != null)
-                    {
-                        featureSettings.Add(settings);
-                    }
-                }
-            }
-
-            return Task.FromResult<IEnumerable<FeatureSettings>>(featureSettings);
         }
 
         private FeatureSettings ReadFeatureSettings(string featureName)

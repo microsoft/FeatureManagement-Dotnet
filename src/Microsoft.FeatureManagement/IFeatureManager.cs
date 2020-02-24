@@ -12,10 +12,10 @@ namespace Microsoft.FeatureManagement
     public interface IFeatureManager
     {
         /// <summary>
-        /// Returns a list of feature names registered in the feature manager.
+        /// Retrieves a list of feature names registered in the feature manager.
         /// </summary>
-        /// <returns>A list of feature names.</returns>
-        Task<IEnumerable<string>> GetFeatureNamesAsync();
+        /// <returns>An enumerator which provides asynchronous iteration over the feature names registered in the feature manager.</returns>
+        IAsyncEnumerable<string> GetFeatureNamesAsync();
 
         /// <summary>
         /// Checks whether a given feature is enabled.
