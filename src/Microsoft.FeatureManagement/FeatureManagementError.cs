@@ -11,8 +11,8 @@
         MissingFeatureFilter,
 
         /// <summary>
-        /// Multiple feature filters match the name listed for feature evaluation.
+        /// A feature filter configured for the feature being evaluated is an ambiguous reference to multiple registered feature filters.
         /// </summary>
-        ConflictingFeatureFilter
+        AmbiguousFeatureFilter
     }
 }
