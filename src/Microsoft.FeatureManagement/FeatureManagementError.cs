@@ -8,6 +8,11 @@
         /// <summary>
         /// A feature filter that was listed for feature evaluation was not found.
         /// </summary>
-        MissingFeatureFilter
+        MissingFeatureFilter,
+
+        /// <summary>
+        /// Multiple feature filters match the name listed for feature evaluation.
+        /// </summary>
+        ConflictingFeatureFilter
     }
 }

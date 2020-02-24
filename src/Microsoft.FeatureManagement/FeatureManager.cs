@@ -181,7 +181,7 @@ namespace Microsoft.FeatureManagement
 
                     if (matchingFilters.Count() > 1)
                     {
-                        throw new InvalidOperationException($"Multiple feature filters match the configured filter named '{filterName}'.");
+                        throw new FeatureManagementException(FeatureManagementError.ConflictingFeatureFilter, $"Multiple feature filters match the configured filter named '{filterName}'.");
                     }
 
                     return matchingFilters.FirstOrDefault();
