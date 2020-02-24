@@ -298,6 +298,17 @@ When a feature filter is registered to be used for a feature flag, the alias use
 
 This can be overridden through the use of the `FilterAliasAttribute`. A feature filter can be decorated with this attribute to declare the name that should be used in configuration to reference this feature filter within a feature flag.
 
+### Missing Feature Filters
+
+If a feature is configured to be enabled for a specific feature filter and that feature filter hasn't been registered, then an exception will be thrown when the feature is evaluated. The exception can be disabled by using the feature management options. 
+
+```
+services.Configure<FeatureManagementOptions>(options =>
+{
+    options.IgnoreMissingFeatureFilters = true;
+});
+```
+
 ### Using HttpContext
 
 Feature filters can evaluate whether a feature should be enabled based off the properties of an HTTP Request. This is performed by inspecting the HTTP Context. A feature filter can get a reference to the HTTP Context by obtaining an `IHttpContextAccessor` through dependency injection.
