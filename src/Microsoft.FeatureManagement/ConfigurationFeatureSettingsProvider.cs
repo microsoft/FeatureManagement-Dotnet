@@ -71,22 +71,30 @@ namespace Microsoft.FeatureManagement
                 _settings.Clear();
             }
 
-            var featureSettings = new List<FeatureSettings>();
-
             //
-            // Query all
-            foreach (string featureName in GetFeatureConfigurationSections().Select(s => s.Key))
+            // Iterate over all features registered in the system at initial invocation time
+            foreach (IConfigurationSection featureSection in GetFeatureConfigurationSections())
             {
-                FeatureSettings settings = _settings.GetOrAdd(featureName, (name) => ReadFeatureSettings(name));
-
-                if (settings != null)
-                {
-                    yield return settings;
-                }
+                //
+                // Underlying IConfigurationSection data is dynamic so latest feature settings are returned
+                yield return  _settings.GetOrAdd(featureSection.Key, (_) => ReadFeatureSettings(featureSection));
             }
         }
 
         private FeatureSettings ReadFeatureSettings(string featureName)
+        {
+            IConfigurationSection configuration = GetFeatureConfigurationSections()
+                                                    .FirstOrDefault(section => section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase));
+
+            if (configuration == null)
+            {
+                return null;
+            }
+
+            return ReadFeatureSettings(configuration);
+        }
+
+        private FeatureSettings ReadFeatureSettings(IConfigurationSection configurationSection)
         {
             /*
               
@@ -117,21 +125,13 @@ namespace Microsoft.FeatureManagement
 
             */
 
-            IConfigurationSection configuration = GetFeatureConfigurationSections()
-                                                    .FirstOrDefault(section => section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase));
-
-            if (configuration == null)
-            {
-                return null;
-            }
-
             var enabledFor = new List<FeatureFilterSettings>();
 
-            string val = configuration.Value; // configuration[$"{featureName}"];
+            string val = configurationSection.Value; // configuration[$"{featureName}"];
 
             if (string.IsNullOrEmpty(val))
             {
-                val = configuration[FeatureFiltersSectionName];
+                val = configurationSection[FeatureFiltersSectionName];
             }
 
             if (!string.IsNullOrEmpty(val) && bool.TryParse(val, out bool result) && result)
@@ -149,7 +149,7 @@ namespace Microsoft.FeatureManagement
             }
             else
             {
-                IEnumerable<IConfigurationSection> filterSections = configuration.GetSection(FeatureFiltersSectionName).GetChildren();
+                IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(FeatureFiltersSectionName).GetChildren();
 
                 foreach (IConfigurationSection section in filterSections)
                 {
@@ -169,7 +169,7 @@ namespace Microsoft.FeatureManagement
 
             return new FeatureSettings()
             {
-                Name = featureName,
+                Name = configurationSection.Key,
                 EnabledFor = enabledFor
             };
         }
