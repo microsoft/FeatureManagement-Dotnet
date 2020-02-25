@@ -24,6 +24,7 @@ namespace Tests.FeatureManagement
         private const string OnFeature = "OnTestFeature";
         private const string OffFeature = "OffFeature";
         private const string ConditionalFeature = "ConditionalFeature";
+        private const string ContextualFeature = "ContextualFeature";
 
         [Fact]
         public async Task ReadsConfiguration()
@@ -75,18 +76,20 @@ namespace Tests.FeatureManagement
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             TestServer testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
+                {
+                    services
+                        .AddSingleton(config)
+                        .AddFeatureManagement()
+                        .AddFeatureFilter<TestFilter>();
+
+                    services.AddMvcCore(o =>
+                    {
+
+                        o.Filters.AddForFeature<MvcFilter>(ConditionalFeature);
+                    });
+                })
+            .Configure(app =>
             {
-                services
-                    .AddSingleton(config)
-                    .AddFeatureManagement()
-                    .AddFeatureFilter<TestFilter>();
-
-                services.AddMvcCore(o => {
-
-                    o.Filters.AddForFeature<MvcFilter>(ConditionalFeature);
-                });
-            })
-            .Configure(app => {
 
                 app.UseForFeature(ConditionalFeature, a => a.Use(async (ctx, next) =>
                 {
@@ -123,14 +126,14 @@ namespace Tests.FeatureManagement
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             TestServer testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
-            {
-                services
-                    .AddSingleton(config)
-                    .AddFeatureManagement()
-                    .AddFeatureFilter<TestFilter>();
+                {
+                    services
+                        .AddSingleton(config)
+                        .AddFeatureManagement()
+                        .AddFeatureFilter<TestFilter>();
 
-                services.AddMvcCore();
-            })
+                    services.AddMvcCore();
+                })
             .Configure(app => app.UseMvc()));
 
             IEnumerable<IFeatureFilterMetadata> featureFilters = testServer.Host.Services.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
@@ -269,11 +272,11 @@ namespace Tests.FeatureManagement
 
             context.AccountId = "NotEnabledAccount";
 
-            Assert.False(await featureManager.IsEnabledAsync(ConditionalFeature, context));
+            Assert.False(await featureManager.IsEnabledAsync(ContextualFeature, context));
 
             context.AccountId = "abc";
 
-            Assert.True(await featureManager.IsEnabledAsync(ConditionalFeature, context));
+            Assert.True(await featureManager.IsEnabledAsync(ContextualFeature, context));
         }
 
         [Fact]
@@ -324,6 +327,52 @@ namespace Tests.FeatureManagement
 
                 Assert.True(hasItems);
             }
+        }
+
+        [Fact]
+        public async Task ThrowsExceptionForMissingFeatureFilter()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.IsEnabledAsync(ConditionalFeature));
+
+            Assert.Equal(FeatureManagementError.MissingFeatureFilter, e.Error);
+        }
+
+        [Fact]
+        public async Task SwallowsExceptionForMissingFeatureFilter()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            var isEnabled = await featureManager.IsEnabledAsync(ConditionalFeature);
+
+            Assert.False(isEnabled);
         }
     }
 }
