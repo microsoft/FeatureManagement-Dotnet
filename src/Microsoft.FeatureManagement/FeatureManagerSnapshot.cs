@@ -23,7 +23,7 @@ namespace Microsoft.FeatureManagement
 
         public async IAsyncEnumerable<string> GetFeatureNamesAsync()
         {
-            if (_featureNames != null)
+            if (_featureNames == null)
             {
                 var featureNames = new List<string>();
 
