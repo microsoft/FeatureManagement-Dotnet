@@ -44,7 +44,7 @@ namespace Microsoft.FeatureManagement
 
         public async IAsyncEnumerable<string> GetFeatureNamesAsync()
         {
-            await foreach (FeatureSettings featureSettings in _settingsProvider.GetAllFeatureSettingsAsync())
+            await foreach (FeatureSettings featureSettings in _settingsProvider.GetAllFeatureSettingsAsync().ConfigureAwait(false))
             {
                 yield return featureSettings.Name;
             }
@@ -62,7 +62,7 @@ namespace Microsoft.FeatureManagement
 
             bool enabled = false;
 
-            FeatureSettings settings = await _settingsProvider.GetFeatureSettingsAsync(feature);
+            FeatureSettings settings = await _settingsProvider.GetFeatureSettingsAsync(feature).ConfigureAwait(false);
 
             if (settings != null)
             {

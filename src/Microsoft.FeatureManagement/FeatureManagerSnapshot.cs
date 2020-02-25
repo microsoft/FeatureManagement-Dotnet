@@ -27,7 +27,7 @@ namespace Microsoft.FeatureManagement
             {
                 var featureNames = new List<string>();
 
-                await foreach (string featureName in _featureManager.GetFeatureNamesAsync())
+                await foreach (string featureName in _featureManager.GetFeatureNamesAsync().ConfigureAwait(false))
                 {
                     featureNames.Add(featureName);
                 }
