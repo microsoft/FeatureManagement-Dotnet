@@ -50,6 +50,14 @@ namespace Microsoft.FeatureManagement
             return IsEnabledAsync(feature, appContext, true);
         }
 
+        public async IAsyncEnumerable<string> GetFeatureNamesAsync()
+        {
+            await foreach (FeatureSettings featureSettings in _settingsProvider.GetAllFeatureSettingsAsync().ConfigureAwait(false))
+            {
+                yield return featureSettings.Name;
+            }
+        }
+
         private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext)
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
@@ -64,7 +72,7 @@ namespace Microsoft.FeatureManagement
 
             bool enabled = false;
 
-            IFeatureSettings settings = _settingsProvider.TryGetFeatureSettings(feature);
+            FeatureSettings settings = await _settingsProvider.GetFeatureSettingsAsync(feature).ConfigureAwait(false);
 
             if (settings != null)
             {
@@ -82,7 +90,7 @@ namespace Microsoft.FeatureManagement
                     // For all enabling filters listed in the feature's state calculate if they return true
                     // If any executed filters return true, return true
 
-                    foreach (IFeatureFilterSettings featureFilterSettings in settings.EnabledFor)
+                    foreach (FeatureFilterSettings featureFilterSettings in settings.EnabledFor)
                     {
                         IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterSettings.Name);
 

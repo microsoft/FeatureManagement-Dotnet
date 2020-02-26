@@ -302,6 +302,34 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task ListsFeatures()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualTestFilter>();
+
+            using (ServiceProvider provider = serviceCollection.BuildServiceProvider())
+            {
+                IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
+
+                bool hasItems = false;
+
+                await foreach (string feature in featureManager.GetFeatureNamesAsync())
+                {
+                    hasItems = true;
+
+                    break;
+                }
+
+                Assert.True(hasItems);
+            }
+        }
+
+        [Fact]
         public async Task ThrowsExceptionForMissingFeatureFilter()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
@@ -346,6 +374,5 @@ namespace Tests.FeatureManagement
 
             Assert.False(isEnabled);
         }
-
     }
 }
