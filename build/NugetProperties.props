@@ -12,13 +12,13 @@
   </PropertyGroup>
 
   <!-- Local Development -->
-  <PropertyGroup Condition="'$(CDP_PATCH_NUMBER)'==''">
+  <PropertyGroup Condition="'$(CDP_BUILD_TYPE)'==''">
     <MinorVersion>9</MinorVersion>
     <PatchVersion>9999</PatchVersion>
   </PropertyGroup>
 
   <!-- Buddy builds -->
-  <PropertyGroup Condition="'$(CDP_PATCH_NUMBER)'!='' AND '$(CDP_BUILD_TYPE)'!='Official'">
+  <PropertyGroup Condition="'$(CDP_BUILD_TYPE)'!='' AND '$(CDP_BUILD_TYPE)'!='Official'">
     <!-- Note that CDP_PACKAGE_VERSION_NUMERIC uses format Major.Minor.MMddyyrrrr, which causes compile error CS7034 because .NET Core doesn't allow version numbers higher than 65534. -->
     <!-- CDP_PATCH_NUMBER is updated daily by the build system, the addition of a revision number makes the build number unique by the minute -->
     <!-- The revision number is the number of minutes since midnight [0, 1440) -->
