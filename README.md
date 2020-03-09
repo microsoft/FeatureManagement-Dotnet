@@ -36,38 +36,38 @@ The .NET Core configuration system is used to determine the state of feature fla
 
 The feature management library supports appsettings.json as a feature flag source since it is a provider for .NET Core's IConfiguration system. Below we have an example of the format used to set up feature flags in a json file.
 
-```
-{ 
-  "Logging": {
-    "LogLevel": {
-      "Default": "Warning"
-    }
-  },
+``` JavaScript
+{
+    "Logging": {
+        "LogLevel": {
+            "Default": "Warning"
+        }
+    },
 
-  // Define feature flags in a json file
-  "FeatureManagement": {
-    "FeatureT": {
-      "EnabledFor": [
-        {
-          "Name": "AlwaysOn"
+    // Define feature flags in a json file
+    "FeatureManagement": {
+        "FeatureT": {
+            "EnabledFor": [
+                {
+                    "Name": "AlwaysOn"
+                }
+            ]
+        },
+        "FeatureU": {
+            "EnabledFor": []
+        },
+        "FeatureV": {
+            "EnabledFor": [
+                {
+                    "Name": "TimeWindow",
+                    "Parameters": {
+                        "Start": "Wed, 01 May 2019 13:59:59 GMT",
+                        "End": "Mon, 01 July 2019 00:00:00 GMT"
+                    }
+                }
+            ]
         }
-      ]
-    },
-    "FeatureU": {
-      "EnabledFor": []
-    },
-    "FeatureV": {
-      "EnabledFor": [
-        {
-          "Name": "TimeWindow",
-          "Parameters": {
-            "Start": "Wed, 01 May 2019 13:59:59 GMT",
-            "End": "Mon, 01 July 2019 00:00:00 GMT"
-          }
-        }
-      ]
     }
-  }
 }
 ```
 
@@ -76,38 +76,40 @@ The `FeatureManagement` section of the json document is used by convention to lo
 ### On/Off Declaration
  
 The following snippet demonstrates an alternative way to define a feature that can be used for on/off features. 
-```
+``` JavaScript
 {
-  "Logging": {
-    "LogLevel": {
-      "Default": "Warning"
-    }
-  },
+    "Logging": {
+        "LogLevel": {
+            "Default": "Warning"
+        }
+    },
 
-  // Define feature flags in config file
-  "FeatureManagement": {
-    "FeatureT": true, // On feature
-    "FeatureX": false // Off feature
-  }
+    // Define feature flags in config file
+    "FeatureManagement": {
+        "FeatureT": true, // On feature
+            "FeatureX": false // Off feature
+    }
 }
 ```
 ### Referencing
 
 To make it easier to reference these feature flags in code, we recommend to define feature flag variables like below.
 
-    // Define feature flags in an enum
-    public enum MyFeatureFlags
-    {
-        FeatureT,
-        FeatureU,
-        FeatureV
-    }
+``` C#
+// Define feature flags in an enum
+public enum MyFeatureFlags
+{
+    FeatureT,
+    FeatureU,
+    FeatureV
+}
+```
     
 ### Service Registration
 
 Feature flags rely on .NET Core dependency injection. We can register the feature management services using standard conventions.
 
-```
+``` C#
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
 
@@ -133,10 +135,10 @@ The simplest use case for feature flags is to do a conditional check for whether
 ### Feature Check
 The basic form of feature management is checking if a feature is enabled and then performing actions based on the result. This is done through the `IFeatureManager`'s `IsEnabledAsync` method.
 
-```
-...
+``` C#
+…
 IFeatureManager featureManager;
-...
+…
 if (await featureManager.IsEnabledAsync(nameof(MyFeatureFlags.FeatureU)))
 {
     // Do something
@@ -147,7 +149,7 @@ if (await featureManager.IsEnabledAsync(nameof(MyFeatureFlags.FeatureU)))
 
 When using the feature management library with MVC, the `IFeatureManager` can be obtained through dependency injection.
 
-```
+``` C#
 public class HomeController : Controller
 {
     private readonly IFeatureManager _featureManager;
@@ -162,17 +164,17 @@ public class HomeController : Controller
 ### Controllers and Actions
 MVC controller and actions can require that a given feature, or one of any list of features, be enabled in order to execute. This can be done by using a `FeatureGateAttribute`, which can be found in the `Microsoft.FeatureManagement.Mvc` namespace. 
 
-```
+``` C#
 [FeatureGate(MyFeatureFlags.FeatureX)]
 public class HomeController : Controller
 {
-    ...
+    …
 }
 ```
 
 The `HomeController` above is gated by "FeatureX". "FeatureX" must be enabled before any action the `HomeController` contains can be executed. 
 
-```
+``` C#
 [FeatureGate(MyFeatureFlags.FeatureY)]
 public IActionResult Index()
 {
@@ -186,7 +188,7 @@ The `Index` MVC action above requires "FeatureY" to be enabled before it can exe
 
 When an MVC controller or action is blocked because none of the features it specifies are enabled, a registered `IDisabledFeaturesHandler` will be invoked. By default, a minimalistic handler is registered which returns HTTP 404. This can be overridden using the `IFeatureManagementBuilder` when registering feature flags.
 
-```
+``` C#
 public interface IDisabledFeaturesHandler
 {
     Task HandleDisabledFeature(IEnumerable<string> features, ActionExecutingContext context);
@@ -197,14 +199,14 @@ public interface IDisabledFeaturesHandler
 
 In MVC views `<feature>` tags can be used to conditionally render content based on whether a feature is enabled or not.
 
-```
+``` HTML+Razor
 <feature name=@nameof(MyFeatureFlags.FeatureX)>
   <p>This can only be seen if 'FeatureX' is enabled.</p>
 </feature>
 ```
 
-The `<feature>` tag requires a tag helper to work. This can be done by adding the feature management tag helper to the _ViewImports.cshtml file.
-```
+The `<feature>` tag requires a tag helper to work. This can be done by adding the feature management tag helper to the _ViewImports.cshtml_ file.
+``` HTML+Razor
 @addTagHelper *, Microsoft.FeatureManagement.AspNetCore
 ```
 
@@ -213,7 +215,7 @@ The `<feature>` tag requires a tag helper to work. This can be done by adding th
 MVC action filters can be set up to conditionally execute based on the state of a feature. This is done by registering MVC filters in a feature aware manner.
 The feature management pipeline supports async MVC Action filters, which implement `IAsyncActionFilter`.
 
-```
+``` C#
 services.AddMvc(o => 
 {
     o.Filters.AddForFeature<SomeMvcFilter>(nameof(MyFeatureFlags.FeatureV));
@@ -226,7 +228,7 @@ The code above adds an MVC filter named `SomeMvcFilter`. This filter is only tri
 
 The feature management library can be used to add application branches and middleware that execute conditionally based on feature state.
 
-```
+``` C#
 app.UseMiddlewareForFeature<ThirdPartyMiddleware>(nameof(MyFeatureFlags.FeatureU));
 ```
 
@@ -234,7 +236,7 @@ With the above call, the application adds a middleware component that only appea
 
 This builds off the more generic capability to branch the entire application based on a feature.
 
-```
+``` C#
 app.UseForFeature(featureName, appBuilder => 
 {
     appBuilder.UseMiddleware<T>();
@@ -251,58 +253,59 @@ Feature filters are registered by the `IFeatureManagementBuilder` when `AddFeatu
 
 Some feature filters require parameters to decide whether a feature should be turned on or not. For example a browser feature filter may turn on a feature for a certain set of browsers. It may be desired that Edge and Chrome browsers enable a feature, while FireFox does not. To do this a feature filter can be designed to expect parameters. These parameters would be specified in the feature configuration, and in code would be accessible via the `FeatureFilterEvaluationContext` parameter of `IFeatureFilter.EvaluateAsync`.
 
-```
-  public class FeatureFilterEvaluationContext
-  {
-      /// <summary>
-      /// The name of the feature being evaluated.
-      /// </summary>
-      public string FeatureName { get; set; }
+``` C#
+public class FeatureFilterEvaluationContext
+{
+    /// <summary>
+    /// The name of the feature being evaluated.
+    /// </summary>
+    public string FeatureName { get; set; }
 
-      /// <summary>
-      /// The settings provided for the feature filter to use when evaluating whether the feature should be enabled.
-      /// </summary>
-      public IConfiguration Parameters { get; set; }
-  }
+    /// <summary>
+    /// The settings provided for the feature filter to use when evaluating whether the feature should be enabled.
+    /// </summary>
+    public IConfiguration Parameters { get; set; }
+}
 ```
 
 `FeatureFilterEvaluationContext` has a property named `Parameters`. These parameters represent a raw configuration that the feature filter can use to decide how to evaluate whether the feature should be enabled or not. To use the browser feature filter as an example once again, the filter could use `Parameters` to extract a set of allowed browsers that would have been specified for the feature and then check if the request is being sent from one of those browsers.
 
-```
-  [FilterAlias("Browser")]
-  public class BrowserFilter : IFeatureFilter
-  {
-      ... Removed for example
+``` C#
+[FilterAlias("Browser")]
+public class BrowserFilter : IFeatureFilter
+{
+    … Removed for example
 
-      public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
-      {
-          BrowserFilterSettings settings = context.Parameters.Get<BrowserFilterSettings>() ?? new BrowserFilterSettings();
+    public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
+    {
+        BrowserFilterSettings settings = context.Parameters.Get<BrowserFilterSettings>() ?? new BrowserFilterSettings();
 
-          //
-          // Here we would use the settings and see if the request was sent from any of BrowserFilterSettings.AllowedBrowsers
-      }
-  }
+        //
+        // Here we would use the settings and see if the request was sent from any of BrowserFilterSettings.AllowedBrowsers
+    }
+}
 ```
 
 ### Filter Alias Attribute
 
 When a feature filter is registered to be used for a feature flag, the alias used in configuration is the name of the feature filter type with the _filter_ suffix, if any, removed. For example `MyCriteriaFilter` would be referred to as _MyCriteria_ in configuration.
 
-  "MyFeature": {
+``` JavaScript
+"MyFeature": {
     "EnabledFor": [
-      {
-        "Name": "MyCriteria"
-      }
+        {
+            "Name": "MyCriteria"
+        }
     ]
-  }
-
+}
+```
 This can be overridden through the use of the `FilterAliasAttribute`. A feature filter can be decorated with this attribute to declare the name that should be used in configuration to reference this feature filter within a feature flag.
 
 ### Missing Feature Filters
 
 If a feature is configured to be enabled for a specific feature filter and that feature filter hasn't been registered, then an exception will be thrown when the feature is evaluated. The exception can be disabled by using the feature management options. 
 
-```
+``` C#
 services.Configure<FeatureManagementOptions>(options =>
 {
     options.IgnoreMissingFeatureFilters = true;
@@ -313,7 +316,7 @@ services.Configure<FeatureManagementOptions>(options =>
 
 Feature filters can evaluate whether a feature should be enabled based off the properties of an HTTP Request. This is performed by inspecting the HTTP Context. A feature filter can get a reference to the HTTP Context by obtaining an `IHttpContextAccessor` through dependency injection.
 
-```
+``` C#
 public class BrowserFilter : IFeatureFilter
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -327,7 +330,7 @@ public class BrowserFilter : IFeatureFilter
 
 The `IHttpContextAccessor` must be added to the dependency injection container on startup for it to be available. It can be registered in the `IServiceCollection` using the following method.
 
-```
+``` C#
 public void ConfigureServices(IServiceCollection services)
 {
     …
@@ -340,36 +343,37 @@ public void ConfigureServices(IServiceCollection services)
 
 In console applications there is no ambient context such as `HttpContext` that feature filters can acquire and utilize to check if a feature should be on or off. In this case, applications need to provide an object representing a context into the feature management system for use by feature filters. This is done by using `IFeatureManager.IsEnabledAsync<TContext>(string featureName, TContext appContext)`. The appContext object that is provided to the feature manager can be used by feature filters to evaluate the state of a feature.
 
-```
-  MyAppContext context = new MyAppContext
-  {
+``` C#
+MyAppContext context = new MyAppContext
+{
     AccountId = current.Id;
-  }
+}
 
-  if (await featureManager.IsEnabledAsync(feature, context))
-  {
-  }
+if (await featureManager.IsEnabledAsync(feature, context))
+{
+…
+}
 ```
 
 ### Contextual Feature Filters
 
 Contextual feature filters implement the `IContextualFeatureFilter<TContext>` interface. These special feature filters can take advantage of the context that is passed in when `IFeatureManager.IsEnabledAsync<TContext>` is called. The `TContext` type parameter in `IContextualFeatureFilter<TContext>` describes what context type the filter is capable of handling. This allows the developer of a contextual feature filter to describe what is required of those who wish to utilize it. Since every type is a descendant of object, a filter that implements `IContextualFeatureFilter<object>` can be called for any provided context. To illustrate an example of a more specific contextual feature filter, consider a feature that is enabled if an account is in a configured list of enabled accounts. 
 
-```    
-  public interface IAccountContext
-  {
+``` C#
+public interface IAccountContext
+{
     string AccountId { get; set; }
-  }
+}
 
-  [FilterAlias("AccountId")]
-  class AccountIdFilter : IContextualFeatureFilter<IAccountContext>
-  {
+[FilterAlias("AccountId")]
+class AccountIdFilter : IContextualFeatureFilter<IAccountContext>
+{
     public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext featureEvaluationContext, IAccountContext accountId)
     {
-      //
-      // Evaluate if the feature should be on with the help of the provided IAccountContext
+        //
+        // Evaluate if the feature should be on with the help of the provided IAccountContext
     }
-  }
+}
 ```
 
 We can see that the `AccountIdFilter` requires an object that implements `IAccountContext` to be provided to be able to evalute the state of a feature. When using this feature filter, the caller needs to make sure that the passed in object implements `IAccountContext`.
@@ -386,35 +390,35 @@ Each of the built-in feature filters have their own parameters. Here is the list
 
 This filter provides the capability to enable a feature based on a set percentage.
 
-```
-    "EnhancedPipeline": {
-      "EnabledFor": [
+``` JavaScript
+"EnhancedPipeline": {
+    "EnabledFor": [
         {
-          "Name": "Microsoft.Percentage",
-          "Parameters": { 
-            "Value": 50
-          }
+            "Name": "Microsoft.Percentage",
+            "Parameters": {
+                "Value": 50
+            }
         }
-      ]
-    }
+    ]
+}
 ```
 
 #### Microsoft.TimeWindow
 
 This filter provides the capability to enable a feature based on a time window. If only `End` is specified, the feature will be considered on until that time. If only start is specified, the feature will be considered on at all points after that time.
 
-```
-    "EnhancedPipeline": {
-      "EnabledFor": [
+``` JavaScript
+"EnhancedPipeline": {
+    "EnabledFor": [
         {
-          "Name": "Microsoft.TimeWindow",
-          "Parameters": {
-            "Start": "Wed, 01 May 2019 13:59:59 GMT",
-            "End": "Mon, 01 July 2019 00:00:00 GMT"
-          }
+            "Name": "Microsoft.TimeWindow",
+            "Parameters": {
+                "Start": "Wed, 01 May 2019 13:59:59 GMT",
+                "End": "Mon, 01 July 2019 00:00:00 GMT"
+            }
         }
-      ]
-    }
+    ]
+}
 ```
 
 ### Feature Filter Alias Namespaces
