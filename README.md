@@ -99,9 +99,9 @@ To make it easier to reference these feature flags in code, we recommend to defi
 // Define feature flags in an enum
 public enum MyFeatureFlags
 {
-     FeatureT,
-     FeatureU,
-     FeatureV
+    FeatureT,
+    FeatureU,
+    FeatureV
 }
 ```
     
