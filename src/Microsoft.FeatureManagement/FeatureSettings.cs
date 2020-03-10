@@ -8,7 +8,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// The settings for a feature.
     /// </summary>
-    class FeatureSettings : IFeatureSettings
+    class FeatureSettings
     {
         /// <summary>
         /// The name of the feature.
@@ -18,6 +18,6 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The criteria that the feature can be enabled for.
         /// </summary>
-        public IEnumerable<IFeatureFilterSettings> EnabledFor { get; set; } = new List<IFeatureFilterSettings>();
+        public IEnumerable<FeatureFilterSettings> EnabledFor { get; set; } = new List<FeatureFilterSettings>();
     }
 }

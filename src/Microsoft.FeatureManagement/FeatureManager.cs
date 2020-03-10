@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -21,8 +22,14 @@ namespace Microsoft.FeatureManagement
         private readonly ILogger _logger;
         private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
+        private readonly FeatureManagementOptions _options;
 
-        public FeatureManager(IFeatureSettingsProvider settingsProvider, IEnumerable<IFeatureFilterMetadata> featureFilters, IEnumerable<ISessionManager> sessionManagers, ILoggerFactory loggerFactory)
+        public FeatureManager(
+            IFeatureSettingsProvider settingsProvider,
+            IEnumerable<IFeatureFilterMetadata> featureFilters,
+            IEnumerable<ISessionManager> sessionManagers,
+            ILoggerFactory loggerFactory,
+            IOptions<FeatureManagementOptions> options)
         {
             _settingsProvider = settingsProvider;
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
@@ -30,6 +37,7 @@ namespace Microsoft.FeatureManagement
             _logger = loggerFactory.CreateLogger<FeatureManager>();
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
+            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         }
 
         public Task<bool> IsEnabledAsync(string feature)
@@ -37,19 +45,34 @@ namespace Microsoft.FeatureManagement
             return IsEnabledAsync<object>(feature, null);
         }
 
-        public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
+        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
+        {
+            return IsEnabledAsync(feature, appContext, true);
+        }
+
+        public async IAsyncEnumerable<string> GetFeatureNamesAsync()
+        {
+            await foreach (FeatureSettings featureSettings in _settingsProvider.GetAllFeatureSettingsAsync().ConfigureAwait(false))
+            {
+                yield return featureSettings.Name;
+            }
+        }
+
+        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                if (await sessionManager.TryGetAsync(feature, out bool cachedEnabled).ConfigureAwait(false))
+                bool? readSessionResult = await sessionManager.GetAsync(feature).ConfigureAwait(false);
+
+                if (readSessionResult.HasValue)
                 {
-                    return cachedEnabled;
+                    return readSessionResult.Value;
                 }
             }
 
             bool enabled = false;
 
-            IFeatureSettings settings = _settingsProvider.TryGetFeatureSettings(feature);
+            FeatureSettings settings = await _settingsProvider.GetFeatureSettingsAsync(feature).ConfigureAwait(false);
 
             if (settings != null)
             {
@@ -67,13 +90,22 @@ namespace Microsoft.FeatureManagement
                     // For all enabling filters listed in the feature's state calculate if they return true
                     // If any executed filters return true, return true
 
-                    foreach (IFeatureFilterSettings featureFilterSettings in settings.EnabledFor)
+                    foreach (FeatureFilterSettings featureFilterSettings in settings.EnabledFor)
                     {
                         IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterSettings.Name);
 
                         if (filter == null)
                         {
-                            _logger.LogWarning($"Feature filter '{featureFilterSettings.Name}' specified for feature '{feature}' was not found.");
+                            string errorMessage = $"The feature filter '{featureFilterSettings.Name}' specified for feature '{feature}' was not found.";
+
+                            if (!_options.IgnoreMissingFeatureFilters)
+                            {
+                                throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
+                            }
+                            else
+                            {
+                                _logger.LogWarning(errorMessage);
+                            }
 
                             continue;
                         }
@@ -159,7 +191,7 @@ namespace Microsoft.FeatureManagement
 
                     if (matchingFilters.Count() > 1)
                     {
-                        throw new InvalidOperationException($"Multiple feature filters match the configured filter named '{filterName}'.");
+                        throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureFilter, $"Multiple feature filters match the configured filter named '{filterName}'.");
                     }
 
                     return matchingFilters.FirstOrDefault();

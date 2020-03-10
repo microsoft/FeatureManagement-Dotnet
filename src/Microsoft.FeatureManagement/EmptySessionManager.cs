@@ -15,11 +15,9 @@ namespace Microsoft.FeatureManagement
             return Task.CompletedTask;
         }
 
-        public Task<bool> TryGetAsync(string featureName, out bool enabled)
+        public Task<bool?> GetAsync(string featureName)
         {
-            enabled = false;
-
-            return Task.FromResult(enabled);
+            return Task.FromResult((bool?)null);
         }
     }
 }

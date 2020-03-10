@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
 {
@@ -18,14 +19,14 @@ namespace Microsoft.FeatureManagement
     {
         private const string FeatureFiltersSectionName = "EnabledFor";
         private readonly IConfiguration _configuration;
-        private readonly ConcurrentDictionary<string, IFeatureSettings> _settings;
+        private readonly ConcurrentDictionary<string, FeatureSettings> _settings;
         private IDisposable _changeSubscription;
         private int _stale = 0;
 
         public ConfigurationFeatureSettingsProvider(IConfiguration configuration)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _settings = new ConcurrentDictionary<string, IFeatureSettings>();
+            _settings = new ConcurrentDictionary<string, FeatureSettings>();
 
             _changeSubscription = ChangeToken.OnChange(
                 () => _configuration.GetReloadToken(),
@@ -39,17 +40,61 @@ namespace Microsoft.FeatureManagement
             _changeSubscription = null;
         }
 
-        public IFeatureSettings TryGetFeatureSettings(string featureName)
+        public Task<FeatureSettings> GetFeatureSettingsAsync(string featureName)
+        {
+            if (featureName == null)
+            {
+                throw new ArgumentNullException(nameof(featureName));
+            }
+
+            if (Interlocked.Exchange(ref _stale, 0) != 0)
+            {
+                _settings.Clear();
+            }
+
+            //
+            // Query by feature name
+            FeatureSettings settings = _settings.GetOrAdd(featureName, (name) => ReadFeatureSettings(name));
+
+            return Task.FromResult(settings);
+        }
+
+        //
+        // The async key word is necessary for creating IAsyncEnumerable.
+        // The need to disable this warning occurs when implementaing async stream synchronously. 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        public async IAsyncEnumerable<FeatureSettings> GetAllFeatureSettingsAsync()
+#pragma warning restore CS1998
         {
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
                 _settings.Clear();
             }
 
-            return _settings.GetOrAdd(featureName, (name) => ReadFeatureSettings(name));
+            //
+            // Iterate over all features registered in the system at initial invocation time
+            foreach (IConfigurationSection featureSection in GetFeatureConfigurationSections())
+            {
+                //
+                // Underlying IConfigurationSection data is dynamic so latest feature settings are returned
+                yield return  _settings.GetOrAdd(featureSection.Key, (_) => ReadFeatureSettings(featureSection));
+            }
         }
 
-        private IFeatureSettings ReadFeatureSettings(string featureName)
+        private FeatureSettings ReadFeatureSettings(string featureName)
+        {
+            IConfigurationSection configuration = GetFeatureConfigurationSections()
+                                                    .FirstOrDefault(section => section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase));
+
+            if (configuration == null)
+            {
+                return null;
+            }
+
+            return ReadFeatureSettings(configuration);
+        }
+
+        private FeatureSettings ReadFeatureSettings(IConfigurationSection configurationSection)
         {
             /*
               
@@ -80,15 +125,13 @@ namespace Microsoft.FeatureManagement
 
             */
 
-            IConfigurationSection configuration = GetFeatureConfiguration(featureName);
-
             var enabledFor = new List<FeatureFilterSettings>();
 
-            string val = configuration.Value; // configuration[$"{featureName}"];
+            string val = configurationSection.Value; // configuration[$"{featureName}"];
 
             if (string.IsNullOrEmpty(val))
             {
-                val = configuration[FeatureFiltersSectionName];
+                val = configurationSection[FeatureFiltersSectionName];
             }
 
             if (!string.IsNullOrEmpty(val) && bool.TryParse(val, out bool result) && result)
@@ -106,7 +149,7 @@ namespace Microsoft.FeatureManagement
             }
             else
             {
-                IEnumerable<IConfigurationSection> filterSections = configuration.GetSection(FeatureFiltersSectionName).GetChildren();
+                IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(FeatureFiltersSectionName).GetChildren();
 
                 foreach (IConfigurationSection section in filterSections)
                 {
@@ -126,27 +169,25 @@ namespace Microsoft.FeatureManagement
 
             return new FeatureSettings()
             {
-                Name = featureName,
+                Name = configurationSection.Key,
                 EnabledFor = enabledFor
             };
         }
 
-        private IConfigurationSection GetFeatureConfiguration(string featureName)
+        private IEnumerable<IConfigurationSection> GetFeatureConfigurationSections()
         {
             const string FeatureManagementSectionName = "FeatureManagement";
 
-            //
-            // Look for settings under the "FeatureManagement" section
-            IConfigurationSection featureConfiguration = _configuration.GetSection(FeatureManagementSectionName).GetChildren().FirstOrDefault(section => section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase));
-
-            //
-            // Fallback to the configuration section using the feature's name
-            if (featureConfiguration == null)
+            if (_configuration.GetChildren().Any(s => s.Key.Equals(FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase)))
             {
-                featureConfiguration = _configuration.GetSection(featureName);
+                //
+                // Look for settings under the "FeatureManagement" section
+                return _configuration.GetSection(FeatureManagementSectionName).GetChildren();
             }
-
-            return featureConfiguration;
+            else
+            {
+                return _configuration.GetChildren();
+            }
         }
     }
 }
