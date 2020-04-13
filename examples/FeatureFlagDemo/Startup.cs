@@ -42,6 +42,7 @@ namespace FeatureFlagDemo
                     .AddFeatureFilter<BrowserFilter>()
                     .AddFeatureFilter<TimeWindowFilter>()
                     .AddFeatureFilter<PercentageFilter>()
+                    .AddTargetingFilter<HttpContextTargetingContextAccessor>()
                     .UseDisabledFeaturesHandler(new FeatureNotEnabledDisabledHandler());
 
             services.AddMvc(o =>
@@ -67,7 +68,8 @@ namespace FeatureFlagDemo
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-            app.UseCookiePolicy();
+
+            app.UseMiddleware<AssignUserMiddleware>();
 
             app.UseMiddlewareForFeature<ThirdPartyMiddleware>(nameof(MyFeatureFlags.EnhancedPipeline));
 

@@ -3,6 +3,7 @@
 //
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.FeatureManagement.FeatureFilters;
 using Microsoft.FeatureManagement.Mvc;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,21 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     public static class AspNetCoreFeatureManagementBuilderExtensions
     {
+        /// <summary>
+        /// Adds the Microsoft.Targeting feature filter to the service collection along with the <see cref="ITargetingContextAccessor"/> implementation that the filter will use to access the targeting context.
+        /// </summary>
+        /// <typeparam name="T">The <see cref="ITargetingContextAccessor"/> implementation type.</typeparam>
+        /// <param name="builder">The feature management builder to extend.</param>
+        /// <returns>The feature management builder.</returns>
+        public static IFeatureManagementBuilder AddTargetingFilter<T>(this IFeatureManagementBuilder builder) where T : ITargetingContextAccessor
+        {
+            builder.Services.AddSingleton(typeof(ITargetingContextAccessor), typeof(T));
+
+            builder.AddFeatureFilter<TargetingFilter>();
+
+            return builder;
+        }
+
         /// <summary>
         /// Registers a disabled feature handler. This will be invoked for MVC actions that require a feature that is not enabled.
         /// </summary>
