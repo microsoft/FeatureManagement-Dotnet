@@ -489,13 +489,6 @@ services.AddFeatureManagement();
 
 ```
 
-Since this pattern will be needed in web applications that use the `TargetingFilter`, there is an extension method to make it simpler. The code below simplifies the above snippet using the extension method `AddTargetingFilter`. This extension method is contained in the `Microsoft.FeatureManagement.AspNetCore` package since this pattern is used in web applications.
-
-```
-services.AddFeatureManagement()
-        .AddTargetingFilter<HttpContextTargetingContextAccessor>();
-```
-
 ### ITargetingContextAccessor
 
 To use the `TargetingFilter` in a web application an implementation of `ITargetingContextAccessor` is required. This is because when a targeting evaluation is being performed information such as what user is currently being evaluated is needed. This information is known as the targeting context. Different web applications may extract this information from different places. Some common examples of where an application may pull the targeting context are the request's HTTP context or a database.
@@ -529,6 +522,17 @@ await fm.IsEnabledAsync(featureName, targetingContext);
 The `ContextualTargetingFilter` still uses the feature filter alias [Microsoft.Targeting](./README.md#Microsoft.Targeting), so the configuration for this filter is consistent with what is mentioned in that section.
 
 An example that uses the `ContextualTargetingFilter` in a console application is available in the [TargetingConsoleApp](./examples/TargetingConsoleApp) example project.
+
+## Targeting Evaluation Options
+
+Options are available to customize how targeting evaluation is performed across all features. These options can be configured when setting up feature management.
+
+```
+services.Configure<TargetingEvaluationOptions>(options =>
+{
+    options.IgnoreCase = true;
+});
+```
 
 ## Caching
 

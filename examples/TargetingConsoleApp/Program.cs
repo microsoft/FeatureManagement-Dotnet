@@ -56,7 +56,6 @@ namespace Consoto.Banking.HelpDesk
 
                     //
                     // Check if feature enabled
-                    //
                     TargetingContext targetingContext = new TargetingContext
                     {
                         UserId = user.Id,

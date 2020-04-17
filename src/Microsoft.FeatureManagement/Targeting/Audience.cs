@@ -21,7 +21,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         public List<GroupRollout> Groups { get; set; }
 
         /// <summary>
-        /// Includes users in the audience based off a percentage of the total possible audience.
+        /// Includes users in the audience based off a percentage of the total possible audience. Valid values range from 0 to 100 inclusive.
         /// </summary>
         public double DefaultRolloutPercentage { get; set; }
     }

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using FeatureFlagDemo.Authentication;
 using FeatureFlagDemo.FeatureManagement;
 using FeatureFlagDemo.FeatureManagement.FeatureFilters;
 using Microsoft.AspNetCore.Builder;
@@ -36,13 +37,22 @@ namespace FeatureFlagDemo
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
+            services.AddAuthentication(Schemes.QueryString)
+                    .AddQueryString();
+
+            //
+            // Enable the use of IHttpContextAccessor
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+            //
+            // Add required services for TargetingFilter
+            services.AddSingleton<ITargetingContextAccessor, HttpContextTargetingContextAccessor>();
 
             services.AddFeatureManagement()
                     .AddFeatureFilter<BrowserFilter>()
                     .AddFeatureFilter<TimeWindowFilter>()
                     .AddFeatureFilter<PercentageFilter>()
-                    .AddTargetingFilter<HttpContextTargetingContextAccessor>()
+                    .AddFeatureFilter<TargetingFilter>()
                     .UseDisabledFeaturesHandler(new FeatureNotEnabledDisabledHandler());
 
             services.AddMvc(o =>
@@ -66,10 +76,10 @@ namespace FeatureFlagDemo
 
             app.UseAzureAppConfiguration();
 
+            app.UseAuthentication();
+
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-
-            app.UseMiddleware<AssignUserMiddleware>();
 
             app.UseMiddlewareForFeature<ThirdPartyMiddleware>(nameof(MyFeatureFlags.EnhancedPipeline));
 

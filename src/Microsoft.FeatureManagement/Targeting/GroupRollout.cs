@@ -14,7 +14,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         public string Name { get; set; }
 
         /// <summary>
-        /// The percentage of the group that should be considered part of the rollout.
+        /// The percentage of the group that should be considered part of the rollout. Valid values range from 0 to 100 inclusive.
         /// </summary>
         public double RolloutPercentage { get; set; }
     }
