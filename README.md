@@ -87,7 +87,7 @@ The following snippet demonstrates an alternative way to define a feature that c
     // Define feature flags in config file
     "FeatureManagement": {
         "FeatureT": true, // On feature
-            "FeatureX": false // Off feature
+        "FeatureX": false // Off feature
     }
 }
 ```
@@ -251,7 +251,7 @@ Feature filters are registered by the `IFeatureManagementBuilder` when `AddFeatu
 
 ### Parameterized Feature Filters
 
-Some feature filters require parameters to decide whether a feature should be turned on or not. For example a browser feature filter may turn on a feature for a certain set of browsers. It may be desired that Edge and Chrome browsers enable a feature, while FireFox does not. To do this a feature filter can be designed to expect parameters. These parameters would be specified in the feature configuration, and in code would be accessible via the `FeatureFilterEvaluationContext` parameter of `IFeatureFilter.EvaluateAsync`.
+Some feature filters require parameters to decide whether a feature should be turned on or not. For example a browser feature filter may turn on a feature for a certain set of browsers. It may be desired that Edge and Chrome browsers enable a feature, while Firefox does not. To do this a feature filter can be designed to expect parameters. These parameters would be specified in the feature configuration, and in code would be accessible via the `FeatureFilterEvaluationContext` parameter of `IFeatureFilter.EvaluateAsync`.
 
 ``` C#
 public class FeatureFilterEvaluationContext
