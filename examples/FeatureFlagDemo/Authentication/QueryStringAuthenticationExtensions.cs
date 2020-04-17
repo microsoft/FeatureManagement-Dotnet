@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+using Microsoft.AspNetCore.Authentication;
 
 namespace FeatureFlagDemo.Authentication
 {

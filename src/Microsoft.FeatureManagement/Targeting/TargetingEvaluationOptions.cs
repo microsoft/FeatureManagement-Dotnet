@@ -1,4 +1,7 @@
-﻿namespace Microsoft.FeatureManagement.FeatureFilters
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+namespace Microsoft.FeatureManagement.FeatureFilters
 {
     /// <summary>
     /// Options that apply to all uses of a target filter inside a service collection.

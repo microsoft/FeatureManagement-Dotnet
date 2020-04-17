@@ -1,4 +1,7 @@
-﻿namespace Microsoft.FeatureManagement
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+namespace Microsoft.FeatureManagement
 {
     /// <summary>
     /// An error that can occur during feature management.

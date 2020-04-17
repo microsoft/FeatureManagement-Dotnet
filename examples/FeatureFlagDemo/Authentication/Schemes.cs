@@ -1,4 +1,7 @@
-﻿namespace FeatureFlagDemo.Authentication
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+namespace FeatureFlagDemo.Authentication
 {
     public class Schemes
     {
