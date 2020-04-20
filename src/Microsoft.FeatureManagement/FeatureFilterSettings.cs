@@ -9,7 +9,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// The settings that define a feature filter.
     /// </summary>
-    class FeatureFilterSettings
+    public class FeatureFilterSettings
     {
         /// <summary>
         /// The name of the feature filer.

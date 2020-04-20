@@ -8,7 +8,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// The settings for a feature.
     /// </summary>
-    class FeatureSettings
+    public class FeatureSettings
     {
         /// <summary>
         /// The name of the feature.

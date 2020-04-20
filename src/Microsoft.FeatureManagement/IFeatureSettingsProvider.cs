@@ -9,7 +9,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// A provider of feature settings.
     /// </summary>
-    interface IFeatureSettingsProvider
+    public interface IFeatureSettingsProvider
     {
         /// <summary>
         /// Retrieves settings for a given feature.
