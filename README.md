@@ -504,7 +504,7 @@ services.AddFeatureManagement()
         .AddFeatureFilter<ContextualTargetingFilter>();
 ```
 
-Since `ContextualTargetingFilter` is an [`IContextualTargetingFilter<ITargetingContext>`](./README.md#Contextual-Feature-Filters), an implementation of ITargetingContext must be passed in to `IFeatureManager.IsEnabledAsync` for it to be able to evaluate and turn a feature on.
+Since `ContextualTargetingFilter` is an [`IContextualTargetingFilter<ITargetingContext>`](./README.md#Contextual-Feature-Filters), an implementation of `ITargetingContext` must be passed in to `IFeatureManager.IsEnabledAsync` for it to be able to evaluate and turn a feature on.
 
 ```
 IFeatureManager fm;
