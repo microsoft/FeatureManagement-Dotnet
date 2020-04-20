@@ -374,5 +374,23 @@ namespace Tests.FeatureManagement
 
             Assert.False(isEnabled);
         }
+
+        [Fact]
+        public async Task ThirdPartySettingsProvider()
+        {
+            var services = new ServiceCollection();
+            services.AddFeatureManagement()
+                .AddFeatureSettingsProvider<TestFeatureSettingsProvider>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            var onFeatureIsEnabled = await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.OnTestFeature));
+            var offFeatureIsEnabled = await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.OffTestFeature));
+
+            Assert.True(onFeatureIsEnabled);
+            Assert.False(offFeatureIsEnabled);
+        }
     }
 }
