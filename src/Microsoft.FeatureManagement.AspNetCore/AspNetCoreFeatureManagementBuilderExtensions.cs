@@ -3,6 +3,7 @@
 //
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.FeatureManagement.Mvc;
 using System;
 using System.Collections.Generic;
@@ -42,6 +43,20 @@ namespace Microsoft.FeatureManagement
 
             builder.UseDisabledFeaturesHandler(new InlineDisabledFeaturesHandler(handler));
 
+            return builder;
+        }
+
+        /// <summary>
+        /// Provides a way to specify a custom IFeatureSettingsProvider implementation.
+        /// </summary>
+        /// <typeparam name="TFeatureSettingsProvider">The <see cref="IFeatureSettingsProvider"/> implementation.</typeparam>
+        /// <param name="builder">The feature management builder.</param>
+        /// <returns></returns>
+        public static IFeatureManagementBuilder AddFeatureSettingsProvider<TFeatureSettingsProvider>(this IFeatureManagementBuilder builder)
+            where TFeatureSettingsProvider : IFeatureSettingsProvider
+        {
+            var descriptor = new ServiceDescriptor(typeof(IFeatureSettingsProvider), typeof(TFeatureSettingsProvider), ServiceLifetime.Singleton);
+            builder.Services.Replace(descriptor);
             return builder;
         }
     }
