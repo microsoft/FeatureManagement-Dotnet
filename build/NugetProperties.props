@@ -9,6 +9,7 @@
     <MajorVersion>2</MajorVersion>
     <MinorVersion>1</MinorVersion>
     <PatchVersion>0</PatchVersion>
+    <PreviewVersion>-preview</PreviewVersion>
   </PropertyGroup>
 
   <!-- Local Development -->
