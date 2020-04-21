@@ -421,9 +421,118 @@ This filter provides the capability to enable a feature based on a time window. 
 }
 ```
 
+#### Microsoft.Targeting
+
+This filter provides the capability to enable a feature for a target audience. An in-depth explanation of targeting is explained in the [targeting](./README.md#Targeting) section below. The filter parameters include an audience object which describes users, groups, and a default percentage of the user base that should have access to the feature. Each group object that is listed in the target audience must also specify what percentage of the group's members should have access. If a user is specified in the users section directly, or if the user is in the included percentage of any of the group rollouts, or if the user falls into the default rollout percentage then that user will have the feature enabled.
+
+``` JavaScript
+"EnhancedPipeline": {
+    "EnabledFor": [
+        {
+            "Name": "Microsoft.Targeting",
+            "Parameters": {
+                "Audience": {
+                    "Users": [
+                        "Jeff",
+                        "Alicia"
+                    ],
+                    "Groups": [
+                        {
+                            "Name": "Ring0",
+                            "RolloutPercentage": 100
+                        },
+                        {
+                            "Name": "Ring1",
+                            "RolloutPercentage": 50
+                        }
+                    ],
+                    "DefaultRolloutPercentage": 20
+                }
+            }
+        }
+    ]
+}
+```
+
 ### Feature Filter Alias Namespaces
 
 All of the built-in feature filter alias' are in the 'Microsoft' feature filter namespace. This is to prevent conflicts with other feature filters that may share the same simple alias. The segments of a feature filter namespace are split by the '.' character. A feature filter can be referenced by its fully qualified alias such as 'Microsoft.Percentage' or by the last segment which in the case of 'Microsoft.Percentage' is 'Percentage'.
+
+## Targeting
+
+Targeting is a feature management strategy that enables developers to progressively roll out new features to their user base. The strategy is built on the concept of targeting a set of users known as the target _audience_. An audience is made up of specific users, groups, and a designated percentage of the entire user base. The groups that are included in the audience can be broken down further into percentages of their total members.
+
+The following steps demonstrate an example of a progressive rollout for a new 'Beta' feature:
+
+1. Individual users Jeff and Alicia are granted access to the Beta
+2. Another user, Mark, asks to opt-in and is included.
+3. Twenty percent of a group known as "Ring1" users are included in the Beta.
+5. The number of "Ring1" users included in the beta is bumped up to 100 percent.
+5. Five percent of the user base is included in the beta.
+6. The rollout percentage is bumped up to 100 percent and the feature is completely rolled out.
+
+This strategy for rolling out a feature is built in to the library through the included [Microsoft.Targeting](./README.md#Microsoft.Targeting) feature filter.
+
+## Targeting in a Web Application
+
+An example web application that uses the targeting feature filter is available in the [FeatureFlagDemo](./examples/FeatureFlagDemo) example project.
+
+To begin using the `TargetingFilter` in an application it must be added to the application's service collection just as any other feature filter. Unlike other built in filters, the `TargetingFilter` relies on another service to be added to the application's service collection. That service is an `ITargetingContextAccessor`.
+
+The implementation type used for the `ITargetingContextAccessor` service must be implemented by the application that is using the targeting filter. Here is an example setting up feature management in a web application to use the `TargetingFilter` with an implementation of `ITargetingContextAccessor` called `HttpContextTargetingContextAccessor`.
+
+```
+services.AddSingleton<ITargetingContextAccessor, HttpContextTargetingContextAccessor>();
+
+services.AddFeatureManagement();
+        .AddFeatureFilter<TargetingFilter>();
+
+```
+
+### ITargetingContextAccessor
+
+To use the `TargetingFilter` in a web application an implementation of `ITargetingContextAccessor` is required. This is because when a targeting evaluation is being performed information such as what user is currently being evaluated is needed. This information is known as the targeting context. Different web applications may extract this information from different places. Some common examples of where an application may pull the targeting context are the request's HTTP context or a database.
+
+An example that extracts targeting context information from the application's HTTP context is included in the [FeatureFlagDemo](./examples/FeatureFlagDemo/HttpContextTargetingContextAccessor.cs) example project. This method relies on the use of `IHttpContextAccessor` which is discussed [here](./README.md#Using-HttpContext).
+
+## Targeting in a Console Application
+
+The targeting filter relies on a targeting context to evaluate whether a feature should be turned on. This targeting context contains information such as what user is currently being evaluated, and what groups the user in. In console applications there is typically no ambient context available to flow this information in to the targeting filter, thus it must be passed directly when `FeatureManager.IsEnabledAsync` is called. This is supported through the use of the `ContextualTargetingFilter`. Applications that need to float the targeting context into the feature manager should use this instead of the `TargetingFilter.`
+
+```
+services.AddFeatureManagement()
+        .AddFeatureFilter<ContextualTargetingFilter>();
+```
+
+Since `ContextualTargetingFilter` is an [`IContextualTargetingFilter<ITargetingContext>`](./README.md#Contextual-Feature-Filters), an implementation of `ITargetingContext` must be passed in to `IFeatureManager.IsEnabledAsync` for it to be able to evaluate and turn a feature on.
+
+```
+IFeatureManager fm;
+…
+// userId and groups defined somewhere earlier in application
+TargetingContext targetingContext = new TargetingContext
+{
+   UserId = userId,
+   Groups = groups;
+}
+
+await fm.IsEnabledAsync(featureName, targetingContext);
+```
+
+The `ContextualTargetingFilter` still uses the feature filter alias [Microsoft.Targeting](./README.md#Microsoft.Targeting), so the configuration for this filter is consistent with what is mentioned in that section.
+
+An example that uses the `ContextualTargetingFilter` in a console application is available in the [TargetingConsoleApp](./examples/TargetingConsoleApp) example project.
+
+## Targeting Evaluation Options
+
+Options are available to customize how targeting evaluation is performed across all features. These options can be configured when setting up feature management.
+
+```
+services.Configure<TargetingEvaluationOptions>(options =>
+{
+    options.IgnoreCase = true;
+});
+```
 
 ## Caching
 
