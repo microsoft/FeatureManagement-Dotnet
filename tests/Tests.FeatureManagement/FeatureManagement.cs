@@ -305,6 +305,53 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task TargetingAccessor()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
+
+            services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor);
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TargetingFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            string beta = Enum.GetName(typeof(Features), Features.Beta);
+
+            //
+            // Targeted by user id
+            targetingContextAccessor.Current = new TargetingContext
+            {
+                UserId = "Jeff"
+            };
+
+            Assert.True(await featureManager.IsEnabledAsync(beta));
+
+            //
+            // Not targeted by user id or default rollout
+            targetingContextAccessor.Current = new TargetingContext
+            {
+                UserId = "Tanya"
+            };
+
+            Assert.False(await featureManager.IsEnabledAsync(beta));
+        }
+
+        [Fact]
         public async Task UsesContext()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
