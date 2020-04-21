@@ -243,6 +243,68 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task Targeting()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualTargetingFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            string beta = Enum.GetName(typeof(Features), Features.Beta);
+
+            //
+            // Targeted by user id
+            Assert.True(await featureManager.IsEnabledAsync(beta, new TargetingContext
+            {
+                UserId = "Jeff"
+            }));
+
+            //
+            // Not targeted by user id, but targeted by default rollout
+            Assert.True(await featureManager.IsEnabledAsync(beta, new TargetingContext
+            {
+                UserId = "Anne"
+            }));
+
+            //
+            // Not targeted by user id or default rollout
+            Assert.False(await featureManager.IsEnabledAsync(beta, new TargetingContext
+            {
+                UserId = "Tanya"
+            }));
+
+            //
+            // Targeted by group rollout
+            Assert.True(await featureManager.IsEnabledAsync(beta, new TargetingContext
+            {
+                UserId = "Tanya",
+                Groups = new List<string>() { "Ring1" }
+            }));
+
+            //
+            // Not targeted by user id, default rollout or group rollout
+            Assert.False(await featureManager.IsEnabledAsync(beta, new TargetingContext
+            {
+                UserId = "Isaac",
+                Groups = new List<string>() { "Ring1" }
+            }));
+        }
+
+        [Fact]
         public async Task UsesContext()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();

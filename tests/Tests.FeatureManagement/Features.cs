@@ -5,6 +5,7 @@ namespace Tests.FeatureManagement
 {
     enum Features
     {
+        Beta,
         OnTestFeature,
         OffTestFeature,
         ConditionalFeature,
