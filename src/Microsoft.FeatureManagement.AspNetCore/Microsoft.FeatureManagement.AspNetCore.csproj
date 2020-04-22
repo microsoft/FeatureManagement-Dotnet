@@ -31,7 +31,7 @@
   </PropertyGroup>
 
   <Target Name="PrepublishScript" BeforeTargets="PrepareForPublish">
-    <Copy SourceFiles="$(DocumentationFile)" DestinationFolder="$(PublishDir)\XMLComments" SkipUnchangedFiles="false" />
+    <Copy SourceFiles="$(DocumentationFile)" DestinationFolder="$(OutDir)\XMLComments" SkipUnchangedFiles="false" />
   </Target>
 
 </Project>
