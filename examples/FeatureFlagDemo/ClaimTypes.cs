@@ -3,8 +3,8 @@
 //
 namespace FeatureFlagDemo
 {
-    static class ClaimTypes
+	internal static class ClaimTypes
     {
-        public static string GroupName = "http://schemas.featureflagdemo.featuremanagement.microsoft.com/claims/groupname";
+        public static readonly string GroupName = "http://schemas.featureflagdemo.featuremanagement.microsoft.com/claims/groupname";
     }
 }

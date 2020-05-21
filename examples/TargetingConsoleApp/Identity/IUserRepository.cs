@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Consoto.Banking.AccountService.Identity
 {
-    interface IUserRepository
+	internal interface IUserRepository
     {
         Task<User> GetUser(string id);
     }

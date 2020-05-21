@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Consoto.Banking.AccountService.Identity
 {
-    class User
+	internal class User
     {
         public string Id { get; set; }
 

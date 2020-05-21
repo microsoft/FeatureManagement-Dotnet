@@ -1,12 +1,13 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+
 using System.Collections.Generic;
 
-namespace FeatureFlagDemo.FeatureManagement.FeatureFilters
+namespace FeatureFlagDemo
 {
-    public class BrowserFilterSettings
+	public class BrowserFilterSettings
     {
-        public IList<string> AllowedBrowsers { get; set; } = new List<string>();
+        public IEnumerable<string> AllowedBrowsers { get; } = new List<string>();
     }
 }

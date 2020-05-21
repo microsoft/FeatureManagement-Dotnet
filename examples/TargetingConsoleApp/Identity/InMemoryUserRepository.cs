@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace Consoto.Banking.AccountService.Identity
 {
-    class InMemoryUserRepository : IUserRepository
+	internal class InMemoryUserRepository : IUserRepository
     {
-        public static readonly IEnumerable<User> Users = new User[]
+        public static readonly IEnumerable<User> Users = new[]
         {
             new User
             {
@@ -29,7 +29,7 @@ namespace Consoto.Banking.AccountService.Identity
             new User
             {
                 Id = "JohnDoe",
-                Groups = new List<string>()
+                Groups = new List<string>
                 {
                     "Management"
                 }
@@ -37,7 +37,7 @@ namespace Consoto.Banking.AccountService.Identity
             new User
             {
                 Id = "JaneDoe",
-                Groups = new List<string>()
+                Groups = new List<string>
                 {
                     "Management"
                 }
@@ -45,7 +45,7 @@ namespace Consoto.Banking.AccountService.Identity
             new User
             {
                 Id = "Tim",
-                Groups = new List<string>()
+                Groups = new List<string>
                 {
                     "TeamMembers"
                 }
@@ -53,7 +53,7 @@ namespace Consoto.Banking.AccountService.Identity
             new User
             {
                 Id = "Tanya",
-                Groups = new List<string>()
+                Groups = new List<string>
                 {
                     "TeamMembers"
                 }
@@ -61,7 +61,7 @@ namespace Consoto.Banking.AccountService.Identity
             new User
             {
                 Id = "Alec",
-                Groups = new List<string>()
+                Groups = new List<string>
                 {
                     "TeamMembers"
                 }
@@ -69,7 +69,7 @@ namespace Consoto.Banking.AccountService.Identity
             new User
             {
                 Id = "Betty",
-                Groups = new List<string>()
+                Groups = new List<string>
                 {
                     "TeamMembers"
                 }

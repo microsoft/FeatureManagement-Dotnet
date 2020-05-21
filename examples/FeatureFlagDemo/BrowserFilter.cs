@@ -1,56 +1,60 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
-using Microsoft.FeatureManagement;
+
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+using Microsoft.FeatureManagement;
 
-namespace FeatureFlagDemo.FeatureManagement.FeatureFilters
+namespace FeatureFlagDemo
 {
-    [FilterAlias("Browser")]
-    public class BrowserFilter : IFeatureFilter
-    {
-        private const string Chrome = "Chrome";
-        private const string Edge = "Edge";
+	[FilterAlias("Browser")]
+	public class BrowserFilter : IFeatureFilter
+	{
+		private const string Chrome = "Chrome";
+		private const string Edge = "Edge";
 
-        private readonly IHttpContextAccessor _httpContextAccessor;
+		private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public BrowserFilter(IHttpContextAccessor httpContextAccessor)
-        {
-            _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
-        }
+		public BrowserFilter(IHttpContextAccessor httpContextAccessor)
+		{
+			_httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+		}
 
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
-        {
-            BrowserFilterSettings settings = context.Parameters.Get<BrowserFilterSettings>() ?? new BrowserFilterSettings();
+		public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
+		{
+			var settings = context.Parameters.Get<BrowserFilterSettings>() ?? new BrowserFilterSettings();
 
-            if (settings.AllowedBrowsers.Any(browser => browser.Equals(Chrome, StringComparison.OrdinalIgnoreCase)) && IsChrome())
-            {
-                return Task.FromResult(true);
-            }
-            else if (settings.AllowedBrowsers.Any(browser => browser.Equals(Edge, StringComparison.OrdinalIgnoreCase)) && IsEdge())
-            {
-                return Task.FromResult(true);
-            }
+			if (settings.AllowedBrowsers.Any(browser => browser.Equals(Chrome, StringComparison.OrdinalIgnoreCase))
+			    && IsChrome())
+			{
+				return Task.FromResult(true);
+			}
 
-            return Task.FromResult(false);
-        }
+			return Task.FromResult(settings.AllowedBrowsers
+				                       .Any(browser => browser.Equals(Edge, StringComparison.OrdinalIgnoreCase))
+			                       && IsEdge());
+		}
 
-        private bool IsChrome()
-        {
-            string userAgent = _httpContextAccessor.HttpContext.Request.Headers["User-Agent"];
+		private bool IsChrome()
+		{
+			string userAgent = _httpContextAccessor.HttpContext.Request.Headers["User-Agent"];
 
-            return userAgent != null && userAgent.Contains("Chrome", StringComparison.OrdinalIgnoreCase) && !userAgent.Contains("edge", StringComparison.OrdinalIgnoreCase);
-        }
+			return userAgent != null && userAgent.Contains(Chrome, StringComparison.OrdinalIgnoreCase) &&
+			       !userAgent.Contains(Edge, StringComparison.OrdinalIgnoreCase);
+		}
 
-        private bool IsEdge()
-        {
-            // Return true if current request is sent from Edge browser
+		private bool IsEdge()
+		{
+			// Return true if current request is sent from Edge browser
 
-            return false;
-        }
-    }
+			string userAgent = _httpContextAccessor.HttpContext.Request.Headers["User-Agent"];
+
+			return userAgent != null && userAgent.Contains(Edge, StringComparison.OrdinalIgnoreCase) &&
+			       !userAgent.Contains(Chrome, StringComparison.OrdinalIgnoreCase);
+		}
+	}
 }

@@ -1,21 +1,22 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
-using Microsoft.FeatureManagement.Mvc;
 
-namespace FeatureFlagDemo.FeatureManagement
+namespace FeatureFlagDemo
 {
-    public class FeatureNotEnabledDisabledHandler : IDisabledFeaturesHandler
+	using System.Collections.Generic;
+	using System.Threading.Tasks;
+	using Microsoft.AspNetCore.Mvc;
+	using Microsoft.AspNetCore.Mvc.Filters;
+	using Microsoft.AspNetCore.Mvc.ModelBinding;
+	using Microsoft.AspNetCore.Mvc.ViewFeatures;
+	using Microsoft.FeatureManagement.Mvc;
+
+	public class FeatureNotEnabledDisabledHandler : IDisabledFeaturesHandler
     {
         public Task HandleDisabledFeatures(IEnumerable<string> features, ActionExecutingContext context)
         {
-            var result = new ViewResult()
+            var result = new ViewResult
             {
                 ViewName = "Views/Shared/FeatureNotEnabled.cshtml",
                 ViewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())

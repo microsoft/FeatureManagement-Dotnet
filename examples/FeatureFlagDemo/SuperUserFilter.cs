@@ -1,12 +1,13 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.FeatureManagement;
-using System.Threading.Tasks;
 
-namespace FeatureFlagDemo.FeatureManagement.FeatureFilters
+using System.Threading.Tasks;
+using Microsoft.FeatureManagement;
+
+namespace FeatureFlagDemo
 {
-    public class SuperUserFilter : IFeatureFilter
+	public class SuperUserFilter : IFeatureFilter
     {
         public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {

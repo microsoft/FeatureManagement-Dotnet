@@ -5,7 +5,7 @@ using Consoto.Banking.AccountService.FeatureFilters;
 
 namespace Consoto.Banking.AccountService
 {
-    class AccountServiceContext : IAccountContext
+	internal class AccountServiceContext : IAccountContext
     {
         public string AccountId { get; set; }
     }
