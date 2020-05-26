@@ -337,6 +337,12 @@ namespace Tests.FeatureManagement
             var services = new ServiceCollection();
 
             services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = false;
+                });
+
+            services
                 .AddSingleton(config)
                 .AddFeatureManagement();
 
