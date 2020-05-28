@@ -141,6 +141,13 @@ namespace Microsoft.FeatureManagement
                     }
                 }
             }
+            else
+            {
+                if (_options.OnMissingFeatureConfiguration != null)
+                {
+                    await _options.OnMissingFeatureConfiguration(feature);
+                }
+            }
 
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
