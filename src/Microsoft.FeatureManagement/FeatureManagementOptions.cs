@@ -22,6 +22,6 @@ namespace Microsoft.FeatureManagement
         /// Enables notification of feature flags that are missing a configuration.
         /// If a feature flag exists with no configuration then this delegate will be invoked.
         /// </summary>
-        public Func<string, Task> OnMissingFeatureConfiguration { get; set; }
+        public Func<string, Task> OnMissingFeature { get; set; }
     }
 }

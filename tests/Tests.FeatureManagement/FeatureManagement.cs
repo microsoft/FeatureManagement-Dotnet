@@ -25,7 +25,7 @@ namespace Tests.FeatureManagement
         private const string OffFeature = "OffFeature";
         private const string ConditionalFeature = "ConditionalFeature";
         private const string ContextualFeature = "ContextualFeature";
-        private const string MissingConfiguration = "MissingConfiguration";
+        private const string MissingFeature = "MissingFeature";
 
         [Fact]
         public async Task ReadsConfiguration()
@@ -388,7 +388,7 @@ namespace Tests.FeatureManagement
                 .Configure<FeatureManagementOptions>(options =>
                 {
                     options.IgnoreMissingFeatureFilters = true;
-                    options.OnMissingFeatureConfiguration = (feature) =>
+                    options.OnMissingFeature = (feature) =>
                     {
                         missingFeatureName = feature;
                         return Task.CompletedTask;
@@ -403,9 +403,9 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            _ = await featureManager.IsEnabledAsync(MissingConfiguration);
+            _ = await featureManager.IsEnabledAsync(MissingFeature);
 
-            Assert.Equal(missingFeatureName, MissingConfiguration);
+            Assert.Equal(missingFeatureName, MissingFeature);
         }
     }
 }

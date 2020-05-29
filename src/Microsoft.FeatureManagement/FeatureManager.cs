@@ -143,9 +143,9 @@ namespace Microsoft.FeatureManagement
             }
             else
             {
-                if (_options.OnMissingFeatureConfiguration != null)
+                if (_options.OnMissingFeature != null)
                 {
-                    await _options.OnMissingFeatureConfiguration(feature);
+                    await _options.OnMissingFeature(feature).ConfigureAwait(false);
                 }
             }
 
