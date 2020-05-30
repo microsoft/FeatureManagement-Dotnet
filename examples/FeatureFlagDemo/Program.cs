@@ -9,7 +9,7 @@ using Microsoft.Extensions.Configuration.AzureAppConfiguration;
 
 namespace FeatureFlagDemo
 {
-	public class Program
+    public class Program
     {
         public static void Main(string[] args)
         {

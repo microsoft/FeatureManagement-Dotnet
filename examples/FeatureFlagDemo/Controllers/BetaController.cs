@@ -7,12 +7,12 @@ using Microsoft.FeatureManagement.Mvc;
 
 namespace FeatureFlagDemo.Controllers
 {
-	public class BetaController : Controller
-	{
-		[FeatureGate(MyFeatureFlags.Beta)]
-		public IActionResult Index()
-		{
-			return View();
-		}
-	}
+    public class BetaController : Controller
+    {
+        [FeatureGate(MyFeatureFlags.Beta)]
+        public IActionResult Index()
+        {
+            return View();
+        }
+    }
 }

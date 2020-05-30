@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace FeatureFlagDemo
 {
-	public class ThirdPartyActionFilter : IAsyncActionFilter
+    public class ThirdPartyActionFilter : IAsyncActionFilter
     {
         private readonly ILogger _logger;
 

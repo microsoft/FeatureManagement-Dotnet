@@ -15,71 +15,71 @@ using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace FeatureFlagDemo
 {
-	public class Startup
-	{
-		public void ConfigureServices(IServiceCollection services)
-		{
-			services.Configure<CookiePolicyOptions>(options =>
-			{
-				options.CheckConsentNeeded = context => true;
-				options.MinimumSameSitePolicy = SameSiteMode.None;
-			});
+    public class Startup
+    {
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.Configure<CookiePolicyOptions>(options =>
+            {
+                options.CheckConsentNeeded = context => true;
+                options.MinimumSameSitePolicy = SameSiteMode.None;
+            });
 
-			services.AddAuthentication(Schemes.QueryString)
-				.AddQueryString();
+            services.AddAuthentication(Schemes.QueryString)
+                .AddQueryString();
 
-			//
-			// Enable the use of IHttpContextAccessor
-			services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            //
+            // Enable the use of IHttpContextAccessor
+            services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
-			//
-			// Add required services for TargetingFilter
-			services.AddSingleton<ITargetingContextAccessor, HttpContextTargetingContextAccessor>();
+            //
+            // Add required services for TargetingFilter
+            services.AddSingleton<ITargetingContextAccessor, HttpContextTargetingContextAccessor>();
 
-			services.AddFeatureManagement()
-				.AddFeatureFilter<BrowserFilter>()
-				.AddFeatureFilter<TimeWindowFilter>()
-				.AddFeatureFilter<PercentageFilter>()
-				.AddFeatureFilter<TargetingFilter>()
-				.UseDisabledFeaturesHandler(disabledFeaturesHandler: new FeatureNotEnabledDisabledHandler());
+            services.AddFeatureManagement()
+                .AddFeatureFilter<BrowserFilter>()
+                .AddFeatureFilter<TimeWindowFilter>()
+                .AddFeatureFilter<PercentageFilter>()
+                .AddFeatureFilter<TargetingFilter>()
+                .UseDisabledFeaturesHandler(disabledFeaturesHandler: new FeatureNotEnabledDisabledHandler());
 
-			services.AddControllers();
+            services.AddControllers();
 
-			services.AddMvc(options =>
-			{
-				options.Filters.AddForFeature<ThirdPartyActionFilter>(nameof(MyFeatureFlags.EnhancedPipeline));
-			}).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
-		}
+            services.AddMvc(options =>
+            {
+                options.Filters.AddForFeature<ThirdPartyActionFilter>(nameof(MyFeatureFlags.EnhancedPipeline));
+            }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
+        }
 
-		public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-		{
-			if (env.IsDevelopment())
-			{
-				app.UseDeveloperExceptionPage();
-			}
-			else
-			{
-				app.UseExceptionHandler("/Home/Error");
-				app.UseHsts();
-			}
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseExceptionHandler("/Home/Error");
+                app.UseHsts();
+            }
 
-			app.UseAzureAppConfiguration();
+            app.UseAzureAppConfiguration();
 
-			app.UseAuthentication();
+            app.UseAuthentication();
 
-			app.UseHttpsRedirection();
-			app.UseStaticFiles();
-			app.UseRouting();
+            app.UseHttpsRedirection();
+            app.UseStaticFiles();
+            app.UseRouting();
 
-			app.UseMiddlewareForFeature<ThirdPartyMiddleware>(nameof(MyFeatureFlags.EnhancedPipeline));
+            app.UseMiddlewareForFeature<ThirdPartyMiddleware>(nameof(MyFeatureFlags.EnhancedPipeline));
 
-			app.UseEndpoints(endpoints =>
-			{
-				endpoints.MapControllerRoute(
-					name: "default",
-					pattern: "{controller}/{action}/{id?}",
-					defaults: new {controller = "Home", action = "Index"});
-			});
-		}
-	}
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllerRoute(
+                    name: "default",
+                    pattern: "{controller}/{action}/{id?}",
+                    defaults: new {controller = "Home", action = "Index"});
+            });
+        }
+    }
 }

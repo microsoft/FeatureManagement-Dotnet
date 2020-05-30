@@ -7,7 +7,7 @@ using Microsoft.FeatureManagement;
 
 namespace FeatureFlagDemo
 {
-	public class SuperUserFilter : IFeatureFilter
+    public class SuperUserFilter : IFeatureFilter
     {
         public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {

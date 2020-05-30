@@ -6,10 +6,10 @@ using Microsoft.AspNetCore.Authentication;
 
 namespace FeatureFlagDemo.Authentication
 {
-	internal class QueryStringAuthenticationOptions : AuthenticationSchemeOptions
-	{
-		public string UsernameParameterName { get; } = "username";
+    internal class QueryStringAuthenticationOptions : AuthenticationSchemeOptions
+    {
+        public string UsernameParameterName { get; } = "username";
 
-		public string GroupsParameterName { get; } = "groups";
-	}
+        public string GroupsParameterName { get; } = "groups";
+    }
 }
