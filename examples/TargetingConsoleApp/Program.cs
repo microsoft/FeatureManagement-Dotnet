@@ -13,63 +13,59 @@ using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace Consoto.Banking.AccountService
 {
-	internal class Program
-	{
-		public static async Task Main()
-		{
-			//
-			// Setup configuration
-			IConfiguration configuration = new ConfigurationBuilder()
-				.AddJsonFile("appsettings.json")
-				.Build();
+    internal class Program
+    {
+        public static async Task Main()
+        {
+            //
+            // Setup configuration
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
 
-			//
-			// Setup application services + feature management
-			IServiceCollection services = new ServiceCollection();
+            //
+            // Setup application services + feature management
+            IServiceCollection services = new ServiceCollection();
 
-			services.AddSingleton(configuration)
-				.AddFeatureManagement()
-				.AddFeatureFilter<ContextualTargetingFilter>();
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualTargetingFilter>();
 
-			IUserRepository userRepository = new InMemoryUserRepository();
+            IUserRepository userRepository = new InMemoryUserRepository();
 
-			//
-			// Get the feature manager from application services
-			using (var serviceProvider = services.BuildServiceProvider())
-			{
-				var featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+            //
+            // Get the feature manager from application services
+            using (var serviceProvider = services.BuildServiceProvider())
+            {
+                var featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-				//
-				// We'll simulate a task to run on behalf of each known user
-				// To do this we enumerate all the users in our user repository
-				var userIds = InMemoryUserRepository.Users.Select(u => u.Id);
+                //
+                // We'll simulate a task to run on behalf of each known user
+                // To do this we enumerate all the users in our user repository
+                var userIds = InMemoryUserRepository.Users.Select(u => u.Id);
 
-				//
-				// Mimic work items in a task-driven console application
-				foreach (var userId in userIds)
-				{
-					const string featureName = "Beta";
+                //
+                // Mimic work items in a task-driven console application
+                foreach (var userId in userIds)
+                {
+                    const string featureName = "Beta";
 
-					//
-					// Get user
-					var user = await userRepository.GetUser(userId);
+                    //
+                    // Get user
+                    var user = await userRepository.GetUser(userId);
 
-					//
-					// Check if feature enabled
-					var targetingContext = new TargetingContext
-					{
-						UserId = user.Id,
-						Groups = user.Groups
-					};
+                    //
+                    // Check if feature enabled
+                    var targetingContext = new TargetingContext {UserId = user.Id, Groups = user.Groups};
 
-					var enabled = await featureManager.IsEnabledAsync(featureName, targetingContext);
+                    var enabled = await featureManager.IsEnabledAsync(featureName, targetingContext);
 
-					//
-					// Output results
-					Console.WriteLine(
-						$"The {featureName} feature is {(enabled ? "enabled" : "disabled")} for the user '{userId}'.");
-				}
-			}
-		}
-	}
+                    //
+                    // Output results
+                    Console.WriteLine(
+                        $"The {featureName} feature is {(enabled ? "enabled" : "disabled")} for the user '{userId}'.");
+                }
+            }
+        }
+    }
 }
