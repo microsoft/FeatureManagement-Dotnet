@@ -377,7 +377,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task NotifyUserOfMissingConfiguration()
+        public async Task CaptureMissingFeatureName()
         {
             IConfiguration config = new ConfigurationBuilder().Build();
 
@@ -387,11 +387,10 @@ namespace Tests.FeatureManagement
             services
                 .Configure<FeatureManagementOptions>(options =>
                 {
-                    options.IgnoreMissingFeatureFilters = true;
                     options.OnMissingFeature = (feature) =>
                     {
                         missingFeatureName = feature;
-                        return Task.CompletedTask;
+                        return Task.FromResult(false);
                     };
                 });
 
@@ -406,6 +405,35 @@ namespace Tests.FeatureManagement
             _ = await featureManager.IsEnabledAsync(MissingFeature);
 
             Assert.Equal(missingFeatureName, MissingFeature);
+        }
+
+        [Fact]
+        public async Task MissingFeatureCanBeEnabled()
+        {
+            IConfiguration config = new ConfigurationBuilder().Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.OnMissingFeature = (_) =>
+                    {
+                        return Task.FromResult(true);
+                    };
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            var isEnabled = await featureManager.IsEnabledAsync(MissingFeature);
+
+            Assert.True(isEnabled);
         }
     }
 }

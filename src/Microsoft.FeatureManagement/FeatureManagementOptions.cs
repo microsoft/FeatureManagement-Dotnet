@@ -19,9 +19,9 @@ namespace Microsoft.FeatureManagement
         public bool IgnoreMissingFeatureFilters { get; set; }
 
         /// <summary>
-        /// Enables notification of feature flags that are missing a configuration.
-        /// If a feature flag exists with no configuration then this delegate will be invoked.
+        /// Override default behaviour of a missing feature
+        /// If a feature flag exists with no configuration then this delegate will be invoked enabling you to capture the missing feature name and/or override the default behaviour.
         /// </summary>
-        public Func<string, Task> OnMissingFeature { get; set; }
+        public Func<string, Task<bool>> OnMissingFeature { get; set; }
     }
 }
