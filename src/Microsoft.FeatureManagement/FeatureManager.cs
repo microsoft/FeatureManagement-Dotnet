@@ -145,7 +145,7 @@ namespace Microsoft.FeatureManagement
             {
                 if (_options.OnMissingFeature != null)
                 {
-                    return await _options.OnMissingFeature(feature).ConfigureAwait(false);
+                    enabled = await _options.OnMissingFeature(feature).ConfigureAwait(false);
                 }
             }
 
