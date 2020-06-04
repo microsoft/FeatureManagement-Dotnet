@@ -29,9 +29,7 @@ namespace Tests.FeatureManagement
         [Fact]
         public async Task ReadsConfiguration()
         {
-            IConfiguration config = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json")
-                .Build();
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             var services = new ServiceCollection();
 

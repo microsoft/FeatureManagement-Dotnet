@@ -34,8 +34,4 @@
     <ProjectReference Include="..\..\src\Microsoft.FeatureManagement.AspNetCore\Microsoft.FeatureManagement.AspNetCore.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="FailingTest.cs" />
-  </ItemGroup>
-
 </Project>
