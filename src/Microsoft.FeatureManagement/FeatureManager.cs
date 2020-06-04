@@ -84,6 +84,10 @@ namespace Microsoft.FeatureManagement
                 {
                     enabled = true;
                 }
+                else if (settings.EnabledFor.Any(featureFilter => string.Equals(featureFilter.Name, "AlwaysOff", StringComparison.OrdinalIgnoreCase)))
+                {
+                    enabled = false;
+                }
                 else
                 {
                     //

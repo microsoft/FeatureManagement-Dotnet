@@ -134,7 +134,7 @@ namespace Microsoft.FeatureManagement
                 val = configurationSection[FeatureFiltersSectionName];
             }
 
-            if (!string.IsNullOrEmpty(val) && bool.TryParse(val, out bool result) && result)
+            if (!string.IsNullOrEmpty(val) && bool.TryParse(val, out bool result))
             {
                 //
                 //myAlwaysEnabledFeature: true
@@ -144,7 +144,7 @@ namespace Microsoft.FeatureManagement
                 //}
                 enabledFor.Add(new FeatureFilterSettings
                 {
-                    Name = "AlwaysOn"
+                    Name = result ? "AlwaysOn" : "AlwaysOff"
                 });
             }
             else

@@ -29,7 +29,9 @@ namespace Tests.FeatureManagement
         [Fact]
         public async Task ReadsConfiguration()
         {
-            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+            IConfiguration config = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
 
             var services = new ServiceCollection();
 
@@ -68,6 +70,53 @@ namespace Tests.FeatureManagement
             await featureManager.IsEnabledAsync(ConditionalFeature);
 
             Assert.True(called);
+        }
+
+        [Fact]
+        public async Task ReadsOverriddenConfiguration()
+        {
+            IConfiguration config = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .AddJsonFile("appsettings.development.json")
+                .Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync(OnFeature));
+
+            Assert.True(await featureManager.IsEnabledAsync("OffTestFeatureOverriddenOn"));
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            //
+            // Sync filter
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            bool called = false;
+
+            testFeatureFilter.Callback = (evaluationContext) =>
+            {
+                called = true;
+
+                Assert.Equal("V1", evaluationContext.Parameters["P1"]);
+
+                Assert.Equal(ConditionalFeature, evaluationContext.FeatureName);
+
+                return true;
+            };
+
+            await featureManager.IsEnabledAsync(ConditionalFeature);
+
+            Assert.False(called);
         }
 
         [Fact]

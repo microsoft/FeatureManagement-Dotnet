@@ -15,6 +15,10 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
+    <Content Include="appsettings.development.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -28,6 +32,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.FeatureManagement.AspNetCore\Microsoft.FeatureManagement.AspNetCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="FailingTest.cs" />
   </ItemGroup>
 
 </Project>
