@@ -4,6 +4,7 @@
 
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.FeatureManagement
 {
@@ -22,6 +23,6 @@ namespace Microsoft.FeatureManagement
         /// Override default behaviour of a missing feature
         /// If a feature flag exists with no configuration then this delegate will be invoked enabling you to capture the missing feature name and/or override the default behaviour.
         /// </summary>
-        public Func<string, Task<bool>> OnMissingFeature { get; set; }
+        public Func<string, ILogger, Task<bool>> OnMissingFeature { get; set; }
     }
 }

@@ -15,6 +15,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Tests.FeatureManagement
@@ -382,13 +383,16 @@ namespace Tests.FeatureManagement
             IConfiguration config = new ConfigurationBuilder().Build();
 
             var services = new ServiceCollection();
+
             string missingFeatureName = null;
+            ILogger localLogger = null;
 
             services
                 .Configure<FeatureManagementOptions>(options =>
                 {
-                    options.OnMissingFeature = (feature) =>
+                    options.OnMissingFeature = (feature, logger) =>
                     {
+                        localLogger = logger;
                         missingFeatureName = feature;
                         return Task.FromResult(false);
                     };
@@ -405,6 +409,8 @@ namespace Tests.FeatureManagement
             _ = await featureManager.IsEnabledAsync(MissingFeature);
 
             Assert.Equal(missingFeatureName, MissingFeature);
+
+            Assert.NotNull(localLogger);
         }
 
         [Fact]
@@ -417,7 +423,7 @@ namespace Tests.FeatureManagement
             services
                 .Configure<FeatureManagementOptions>(options =>
                 {
-                    options.OnMissingFeature = (_) =>
+                    options.OnMissingFeature = (_, __) =>
                     {
                         return Task.FromResult(true);
                     };
