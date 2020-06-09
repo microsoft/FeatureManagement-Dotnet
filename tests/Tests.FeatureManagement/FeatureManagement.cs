@@ -264,40 +264,40 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            string beta = Enum.GetName(typeof(Features), Features.Beta);
+            string targetingTestFeature = Enum.GetName(typeof(Features), Features.TargetingTestFeature);
 
             //
             // Targeted by user id
-            Assert.True(await featureManager.IsEnabledAsync(beta, new TargetingContext
+            Assert.True(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
             {
                 UserId = "Jeff"
             }));
 
             //
             // Not targeted by user id, but targeted by default rollout
-            Assert.True(await featureManager.IsEnabledAsync(beta, new TargetingContext
+            Assert.True(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
             {
                 UserId = "Anne"
             }));
 
             //
             // Not targeted by user id or default rollout
-            Assert.False(await featureManager.IsEnabledAsync(beta, new TargetingContext
+            Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
             {
-                UserId = "Tanya"
+                UserId = "Patty"
             }));
 
             //
             // Targeted by group rollout
-            Assert.True(await featureManager.IsEnabledAsync(beta, new TargetingContext
+            Assert.True(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
             {
-                UserId = "Tanya",
+                UserId = "Patty",
                 Groups = new List<string>() { "Ring1" }
             }));
 
             //
             // Not targeted by user id, default rollout or group rollout
-            Assert.False(await featureManager.IsEnabledAsync(beta, new TargetingContext
+            Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
             {
                 UserId = "Isaac",
                 Groups = new List<string>() { "Ring1" }
@@ -330,7 +330,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            string beta = Enum.GetName(typeof(Features), Features.Beta);
+            string beta = Enum.GetName(typeof(Features), Features.TargetingTestFeature);
 
             //
             // Targeted by user id
@@ -345,7 +345,7 @@ namespace Tests.FeatureManagement
             // Not targeted by user id or default rollout
             targetingContextAccessor.Current = new TargetingContext
             {
-                UserId = "Tanya"
+                UserId = "Patty"
             };
 
             Assert.False(await featureManager.IsEnabledAsync(beta));
