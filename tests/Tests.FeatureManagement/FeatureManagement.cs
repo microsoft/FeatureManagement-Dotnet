@@ -243,6 +243,115 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task Targeting()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualTargetingFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            string targetingTestFeature = Enum.GetName(typeof(Features), Features.TargetingTestFeature);
+
+            //
+            // Targeted by user id
+            Assert.True(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Jeff"
+            }));
+
+            //
+            // Not targeted by user id, but targeted by default rollout
+            Assert.True(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Anne"
+            }));
+
+            //
+            // Not targeted by user id or default rollout
+            Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Patty"
+            }));
+
+            //
+            // Targeted by group rollout
+            Assert.True(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Patty",
+                Groups = new List<string>() { "Ring1" }
+            }));
+
+            //
+            // Not targeted by user id, default rollout or group rollout
+            Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Isaac",
+                Groups = new List<string>() { "Ring1" }
+            }));
+        }
+
+        [Fact]
+        public async Task TargetingAccessor()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
+
+            services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor);
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TargetingFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            string beta = Enum.GetName(typeof(Features), Features.TargetingTestFeature);
+
+            //
+            // Targeted by user id
+            targetingContextAccessor.Current = new TargetingContext
+            {
+                UserId = "Jeff"
+            };
+
+            Assert.True(await featureManager.IsEnabledAsync(beta));
+
+            //
+            // Not targeted by user id or default rollout
+            targetingContextAccessor.Current = new TargetingContext
+            {
+                UserId = "Patty"
+            };
+
+            Assert.False(await featureManager.IsEnabledAsync(beta));
+        }
+
+        [Fact]
         public async Task UsesContext()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
