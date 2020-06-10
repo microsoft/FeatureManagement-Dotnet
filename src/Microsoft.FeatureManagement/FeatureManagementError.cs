@@ -16,6 +16,11 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// A feature filter configured for the feature being evaluated is an ambiguous reference to multiple registered feature filters.
         /// </summary>
-        AmbiguousFeatureFilter
+        AmbiguousFeatureFilter,
+
+        /// <summary>
+        /// A feature filter is missing configuration
+        /// </summary>
+        MissingFeature
     }
 }

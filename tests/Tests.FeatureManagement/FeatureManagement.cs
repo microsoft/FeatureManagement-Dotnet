@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -25,6 +26,7 @@ namespace Tests.FeatureManagement
         private const string OffFeature = "OffFeature";
         private const string ConditionalFeature = "ConditionalFeature";
         private const string ContextualFeature = "ContextualFeature";
+        private const string MissingFeature = "MissingFeature";
 
         [Fact]
         public async Task ReadsConfiguration()
@@ -33,6 +35,12 @@ namespace Tests.FeatureManagement
 
             var services = new ServiceCollection();
 
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatures = true;
+                });
+            
             services
                 .AddSingleton(config)
                 .AddFeatureManagement()
@@ -483,5 +491,59 @@ namespace Tests.FeatureManagement
 
             Assert.False(isEnabled);
         }
+
+        [Fact]
+        public async Task ThrowsOnMissingFeature()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatures = false;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.IsEnabledAsync(MissingFeature));
+
+            Assert.Equal(FeatureManagementError.MissingFeature, e.Error);
+        }
+
+        [Fact]
+        public async Task SwallowsOnMissingFeature()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatures = true;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            var isEnabled = await featureManager.IsEnabledAsync(ConditionalFeature);
+
+            Assert.False(isEnabled);
+        } 
     }
 }
