@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
 
@@ -37,6 +38,11 @@ namespace FeatureFlagDemo
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
+            services.Configure<MvcOptions>(options =>
+            {
+                options.EnableEndpointRouting = false;
+            });
+
             services.AddAuthentication(Schemes.QueryString)
                     .AddQueryString();
 
@@ -59,10 +65,10 @@ namespace FeatureFlagDemo
             {
                 o.Filters.AddForFeature<ThirdPartyActionFilter>(nameof(MyFeatureFlags.EnhancedPipeline));
 
-            }).SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
