@@ -16,7 +16,7 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     class FeatureManager : IFeatureManager
     {
-        private readonly IFeatureSettingsProvider _settingsProvider;
+        private readonly IFeatureDefinitionProvider _settingsProvider;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
         private readonly ILogger _logger;
@@ -25,7 +25,7 @@ namespace Microsoft.FeatureManagement
         private readonly FeatureManagementOptions _options;
 
         public FeatureManager(
-            IFeatureSettingsProvider settingsProvider,
+            IFeatureDefinitionProvider settingsProvider,
             IEnumerable<IFeatureFilterMetadata> featureFilters,
             IEnumerable<ISessionManager> sessionManagers,
             ILoggerFactory loggerFactory,
@@ -52,7 +52,7 @@ namespace Microsoft.FeatureManagement
 
         public async IAsyncEnumerable<string> GetFeatureNamesAsync()
         {
-            await foreach (FeatureSettings featureSettings in _settingsProvider.GetAllFeatureSettingsAsync().ConfigureAwait(false))
+            await foreach (FeatureDefinition featureSettings in _settingsProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
             {
                 yield return featureSettings.Name;
             }
@@ -72,7 +72,7 @@ namespace Microsoft.FeatureManagement
 
             bool enabled = false;
 
-            FeatureSettings settings = await _settingsProvider.GetFeatureSettingsAsync(feature).ConfigureAwait(false);
+            FeatureDefinition settings = await _settingsProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
 
             if (settings != null)
             {
@@ -90,7 +90,7 @@ namespace Microsoft.FeatureManagement
                     // For all enabling filters listed in the feature's state calculate if they return true
                     // If any executed filters return true, return true
 
-                    foreach (FeatureFilterSettings featureFilterSettings in settings.EnabledFor)
+                    foreach (FeatureFilterConfiguration featureFilterSettings in settings.EnabledFor)
                     {
                         IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterSettings.Name);
 

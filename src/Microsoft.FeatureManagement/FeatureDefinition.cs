@@ -6,9 +6,9 @@ using System.Collections.Generic;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// The settings for a feature.
+    /// The definition of a feature.
     /// </summary>
-    class FeatureSettings
+    public class FeatureDefinition
     {
         /// <summary>
         /// The name of the feature.
@@ -16,8 +16,8 @@ namespace Microsoft.FeatureManagement
         public string Name { get; set; }
 
         /// <summary>
-        /// The criteria that the feature can be enabled for.
+        /// The feature filters that the feature can be enabled for.
         /// </summary>
-        public IEnumerable<FeatureFilterSettings> EnabledFor { get; set; } = new List<FeatureFilterSettings>();
+        public IEnumerable<FeatureFilterConfiguration> EnabledFor { get; set; } = new List<FeatureFilterConfiguration>();
     }
 }

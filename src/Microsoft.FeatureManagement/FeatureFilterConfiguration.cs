@@ -7,12 +7,12 @@ using System.Collections.Generic;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// The settings that define a feature filter.
+    /// The configuration of a feature filter.
     /// </summary>
-    class FeatureFilterSettings
+    public class FeatureFilterConfiguration
     {
         /// <summary>
-        /// The name of the feature filer.
+        /// The name of the feature filter.
         /// </summary>
         public string Name { get; set; }
 

@@ -4,7 +4,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 
 namespace Microsoft.FeatureManagement
@@ -25,7 +24,7 @@ namespace Microsoft.FeatureManagement
 
             //
             // Add required services
-            services.TryAddSingleton<IFeatureSettingsProvider, ConfigurationFeatureSettingsProvider>();
+            services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
 
             services.AddSingleton<IFeatureManager, FeatureManager>();
 
@@ -49,7 +48,7 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            services.AddSingleton<IFeatureSettingsProvider>(new ConfigurationFeatureSettingsProvider(configuration));
+            services.AddSingleton<IFeatureDefinitionProvider>(new ConfigurationFeatureDefinitionProvider(configuration));
 
             return services.AddFeatureManagement();
         }

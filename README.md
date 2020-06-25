@@ -541,6 +541,28 @@ Feature state is provided by the IConfiguration system. Any caching and dynamic 
 ### Snapshot
 There are scenarios which require the state of a feature to remain consistent during the lifetime of a request. The values returned from the standard `IFeatureManager` may change if the `IConfiguration` source which it is pulling from is updated during the request. This can be prevented by using `IFeatureManagerSnapshot`. `IFeatureManagerSnapshot` can be retrieved in the same manner as `IFeatureManager`. `IFeatureManagerSnapshot` implements the interface of `IFeatureManager`, but it caches the first evaluated state of a feature during a request and will return the same state of a feature during its lifetime.
 
+## Custom Feature Providers
+
+The built-in mechanism for defining feature flags relies on .NET Core's configuration system. This allows for features to be defined in an [appsettings.json](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-3.1#jcp) file or in configuration providers like [Azure App Configuration](https://docs.microsoft.com/en-us/azure/azure-app-configuration/quickstart-feature-flag-aspnet-core?tabs=core2x). It is possible to substitute this behavior and take complete control of where feature definitions are read from. This enables applications to pull feature flags from custom sources such as a database or a feature management service.
+
+To customize the loading of feature definitions, one must implement the `IFeatureDefinitionProvider` interface.
+
+```
+public interface IFeatureDefinitionProvider
+{
+    Task<FeatureDefinition> GetFeatureDefinitionAsync(string featureName);
+
+    IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync();
+}
+```
+
+To use an implementation of `IFeatureDefinitionProvider` it must be added into the service collection before adding feature management. The following example adds an implementation of `IFeatureDefinitionProvider` named `InMemoryFeatureSettingsProvider`.
+
+```
+services.AddSingleton<IFeatureDefinitionProvider, InMemoryFeatureSettingsProvider>()
+        .AddFeatureManagement()
+```
+
 # Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a

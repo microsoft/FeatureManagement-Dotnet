@@ -483,5 +483,64 @@ namespace Tests.FeatureManagement
 
             Assert.False(isEnabled);
         }
+
+        [Fact]
+        public async Task CustomSettingsProvider()
+        {
+            FeatureDefinition testFeature = new FeatureDefinition
+            {
+                Name = ConditionalFeature,
+                EnabledFor = new List<FeatureFilterConfiguration>()
+                {
+                    new FeatureFilterConfiguration
+                    {
+                        Name = "Test",
+                        Parameters = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()
+                        {
+                           { "P1", "V1" },
+                        }).Build()
+                    }
+                }
+            };
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(new InMemoryFeatureSettingsProvider(new FeatureDefinition[] { testFeature }))
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            //
+            // Sync filter
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            bool called = false;
+
+            testFeatureFilter.Callback = (evaluationContext) =>
+            {
+                called = true;
+
+                Assert.Equal("V1", evaluationContext.Parameters["P1"]);
+
+                Assert.Equal(ConditionalFeature, evaluationContext.FeatureName);
+
+                return true;
+            };
+
+            await featureManager.IsEnabledAsync(ConditionalFeature);
+
+            Assert.True(called);
+        }
     }
 }
