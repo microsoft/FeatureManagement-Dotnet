@@ -84,7 +84,7 @@ namespace Tests.FeatureManagement
 
                     services.AddMvcCore(o =>
                     {
-
+                        o.EnableEndpointRouting = false;
                         o.Filters.AddForFeature<MvcFilter>(ConditionalFeature);
                     });
                 })
@@ -132,7 +132,7 @@ namespace Tests.FeatureManagement
                         .AddFeatureManagement()
                         .AddFeatureFilter<TestFilter>();
 
-                    services.AddMvcCore();
+                    services.AddMvcCore(o => o.EnableEndpointRouting = false);
                 })
             .Configure(app => app.UseMvc()));
 
