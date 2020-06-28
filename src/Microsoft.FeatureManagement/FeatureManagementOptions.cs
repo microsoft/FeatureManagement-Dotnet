@@ -15,8 +15,8 @@ namespace Microsoft.FeatureManagement
         public bool IgnoreMissingFeatureFilters { get; set; }
 
         /// <summary>
-        /// Controls the behavior of feature evaluation when the dependent feature declaration is missing.
-        /// If missing feature declaration is not ignored an exception will be thrown when attempting to evaluate a feature that depends on a missing feature declaration.
+        /// Controls the behavior of feature evaluation when the specified feature does not exist.
+        /// If missing features are not ignored, an exception will be thrown when attempting to evaluate them.
         /// </summary>
         public bool IgnoreMissingFeatures { get; set; }
     }

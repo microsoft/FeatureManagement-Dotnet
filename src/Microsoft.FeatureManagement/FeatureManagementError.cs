@@ -19,7 +19,7 @@ namespace Microsoft.FeatureManagement
         AmbiguousFeatureFilter,
 
         /// <summary>
-        /// A feature filter is missing configuration
+        /// The specified feature does not exist.
         /// </summary>
         MissingFeature
     }
