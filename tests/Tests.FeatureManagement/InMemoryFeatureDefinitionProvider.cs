@@ -6,28 +6,28 @@ using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
 {
-    class InMemoryFeatureSettingsProvider : IFeatureDefinitionProvider
+    class InMemoryFeatureDefinitionProvider : IFeatureDefinitionProvider
     {
-        private IEnumerable<FeatureDefinition> _settings;
+        private IEnumerable<FeatureDefinition> _definitions;
 
-        public InMemoryFeatureSettingsProvider(IEnumerable<FeatureDefinition> featureSettings)
+        public InMemoryFeatureDefinitionProvider(IEnumerable<FeatureDefinition> featureDefinitions)
         {
-            _settings = featureSettings ?? throw new ArgumentNullException(nameof(featureSettings));
+            _definitions = featureDefinitions ?? throw new ArgumentNullException(nameof(featureDefinitions));
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            foreach (FeatureDefinition settings in _settings)
+            foreach (FeatureDefinition definition in _definitions)
             {
-                yield return settings;
+                yield return definition;
             }
         }
 
         public Task<FeatureDefinition> GetFeatureDefinitionAsync(string featureName)
         {
-            return Task.FromResult(_settings.FirstOrDefault(settings => settings.Name.Equals(featureName, StringComparison.OrdinalIgnoreCase)));
+            return Task.FromResult(_definitions.FirstOrDefault(definitions => definitions.Name.Equals(featureName, StringComparison.OrdinalIgnoreCase)));
         }
     }
 }

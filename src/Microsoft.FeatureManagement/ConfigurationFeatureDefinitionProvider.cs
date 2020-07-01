@@ -13,20 +13,20 @@ using System.Threading.Tasks;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// A feature definition provider that pulls settings from the .NET Core <see cref="IConfiguration"/> system.
+    /// A feature definition provider that pulls feature definitions from the .NET Core <see cref="IConfiguration"/> system.
     /// </summary>
     sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable
     {
         private const string FeatureFiltersSectionName = "EnabledFor";
         private readonly IConfiguration _configuration;
-        private readonly ConcurrentDictionary<string, FeatureDefinition> _settings;
+        private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
 
         public ConfigurationFeatureDefinitionProvider(IConfiguration configuration)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _settings = new ConcurrentDictionary<string, FeatureDefinition>();
+            _definitions = new ConcurrentDictionary<string, FeatureDefinition>();
 
             _changeSubscription = ChangeToken.OnChange(
                 () => _configuration.GetReloadToken(),
@@ -49,14 +49,14 @@ namespace Microsoft.FeatureManagement
 
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
-                _settings.Clear();
+                _definitions.Clear();
             }
 
             //
             // Query by feature name
-            FeatureDefinition settings = _settings.GetOrAdd(featureName, (name) => ReadFeatureSettings(name));
+            FeatureDefinition definition = _definitions.GetOrAdd(featureName, (name) => ReadFeatureDefinition(name));
 
-            return Task.FromResult(settings);
+            return Task.FromResult(definition);
         }
 
         //
@@ -68,22 +68,22 @@ namespace Microsoft.FeatureManagement
         {
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
-                _settings.Clear();
+                _definitions.Clear();
             }
 
             //
             // Iterate over all features registered in the system at initial invocation time
-            foreach (IConfigurationSection featureSection in GetFeatureConfigurationSections())
+            foreach (IConfigurationSection featureSection in GetFeatureDefinitionSections())
             {
                 //
-                // Underlying IConfigurationSection data is dynamic so latest feature settings are returned
-                yield return  _settings.GetOrAdd(featureSection.Key, (_) => ReadFeatureSettings(featureSection));
+                // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
+                yield return  _definitions.GetOrAdd(featureSection.Key, (_) => ReadFeatureDefinition(featureSection));
             }
         }
 
-        private FeatureDefinition ReadFeatureSettings(string featureName)
+        private FeatureDefinition ReadFeatureDefinition(string featureName)
         {
-            IConfigurationSection configuration = GetFeatureConfigurationSections()
+            IConfigurationSection configuration = GetFeatureDefinitionSections()
                                                     .FirstOrDefault(section => section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase));
 
             if (configuration == null)
@@ -91,10 +91,10 @@ namespace Microsoft.FeatureManagement
                 return null;
             }
 
-            return ReadFeatureSettings(configuration);
+            return ReadFeatureDefinition(configuration);
         }
 
-        private FeatureDefinition ReadFeatureSettings(IConfigurationSection configurationSection)
+        private FeatureDefinition ReadFeatureDefinition(IConfigurationSection configurationSection)
         {
             /*
               
@@ -174,14 +174,14 @@ namespace Microsoft.FeatureManagement
             };
         }
 
-        private IEnumerable<IConfigurationSection> GetFeatureConfigurationSections()
+        private IEnumerable<IConfigurationSection> GetFeatureDefinitionSections()
         {
             const string FeatureManagementSectionName = "FeatureManagement";
 
             if (_configuration.GetChildren().Any(s => s.Key.Equals(FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase)))
             {
                 //
-                // Look for settings under the "FeatureManagement" section
+                // Look for feature definitions under the "FeatureManagement" section
                 return _configuration.GetSection(FeatureManagementSectionName).GetChildren();
             }
             else

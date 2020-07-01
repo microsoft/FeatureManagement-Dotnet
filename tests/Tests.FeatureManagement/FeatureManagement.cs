@@ -485,7 +485,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task CustomSettingsProvider()
+        public async Task CustomFeatureDefinitionProvider()
         {
             FeatureDefinition testFeature = new FeatureDefinition
             {
@@ -505,13 +505,7 @@ namespace Tests.FeatureManagement
 
             var services = new ServiceCollection();
 
-            services
-                .Configure<FeatureManagementOptions>(options =>
-                {
-                    options.IgnoreMissingFeatureFilters = true;
-                });
-
-            services.AddSingleton<IFeatureDefinitionProvider>(new InMemoryFeatureSettingsProvider(new FeatureDefinition[] { testFeature }))
+            services.AddSingleton<IFeatureDefinitionProvider>(new InMemoryFeatureDefinitionProvider(new FeatureDefinition[] { testFeature }))
                     .AddFeatureManagement()
                     .AddFeatureFilter<TestFilter>();
 

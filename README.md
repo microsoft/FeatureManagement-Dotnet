@@ -556,10 +556,10 @@ public interface IFeatureDefinitionProvider
 }
 ```
 
-To use an implementation of `IFeatureDefinitionProvider` it must be added into the service collection before adding feature management. The following example adds an implementation of `IFeatureDefinitionProvider` named `InMemoryFeatureSettingsProvider`.
+To use an implementation of `IFeatureDefinitionProvider` it must be added into the service collection before adding feature management. The following example adds an implementation of `IFeatureDefinitionProvider` named `InMemoryFeatureDefinitionProvider`.
 
 ```
-services.AddSingleton<IFeatureDefinitionProvider, InMemoryFeatureSettingsProvider>()
+services.AddSingleton<IFeatureDefinitionProvider, InMemoryFeatureDefinitionProvider>()
         .AddFeatureManagement()
 ```
 
