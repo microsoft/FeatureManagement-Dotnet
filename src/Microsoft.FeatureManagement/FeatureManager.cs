@@ -16,7 +16,7 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     class FeatureManager : IFeatureManager
     {
-        private readonly IFeatureDefinitionProvider _settingsProvider;
+        private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
         private readonly ILogger _logger;
@@ -25,13 +25,13 @@ namespace Microsoft.FeatureManagement
         private readonly FeatureManagementOptions _options;
 
         public FeatureManager(
-            IFeatureDefinitionProvider settingsProvider,
+            IFeatureDefinitionProvider featureDefinitionProvider,
             IEnumerable<IFeatureFilterMetadata> featureFilters,
             IEnumerable<ISessionManager> sessionManagers,
             ILoggerFactory loggerFactory,
             IOptions<FeatureManagementOptions> options)
         {
-            _settingsProvider = settingsProvider;
+            _featureDefinitionProvider = featureDefinitionProvider;
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
             _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
             _logger = loggerFactory.CreateLogger<FeatureManager>();
@@ -52,9 +52,9 @@ namespace Microsoft.FeatureManagement
 
         public async IAsyncEnumerable<string> GetFeatureNamesAsync()
         {
-            await foreach (FeatureDefinition featureSettings in _settingsProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
+            await foreach (FeatureDefinition featureDefintion in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
             {
-                yield return featureSettings.Name;
+                yield return featureDefintion.Name;
             }
         }
 
@@ -72,15 +72,15 @@ namespace Microsoft.FeatureManagement
 
             bool enabled = false;
 
-            FeatureDefinition settings = await _settingsProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
+            FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
 
-            if (settings != null)
+            if (featureDefinition != null)
             {
                 //
                 // Check if feature is always on
                 // If it is, result is true, goto: cache
 
-                if (settings.EnabledFor.Any(featureFilter => string.Equals(featureFilter.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase)))
+                if (featureDefinition.EnabledFor.Any(featureFilter => string.Equals(featureFilter.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase)))
                 {
                     enabled = true;
                 }
@@ -90,13 +90,13 @@ namespace Microsoft.FeatureManagement
                     // For all enabling filters listed in the feature's state calculate if they return true
                     // If any executed filters return true, return true
 
-                    foreach (FeatureFilterConfiguration featureFilterSettings in settings.EnabledFor)
+                    foreach (FeatureFilterConfiguration featureFilterConfiguration in featureDefinition.EnabledFor)
                     {
-                        IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterSettings.Name);
+                        IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
 
                         if (filter == null)
                         {
-                            string errorMessage = $"The feature filter '{featureFilterSettings.Name}' specified for feature '{feature}' was not found.";
+                            string errorMessage = $"The feature filter '{featureFilterConfiguration.Name}' specified for feature '{feature}' was not found.";
 
                             if (!_options.IgnoreMissingFeatureFilters)
                             {
@@ -113,14 +113,14 @@ namespace Microsoft.FeatureManagement
                         var context = new FeatureFilterEvaluationContext()
                         {
                             FeatureName = feature,
-                            Parameters = featureFilterSettings.Parameters 
+                            Parameters = featureFilterConfiguration.Parameters 
                         };
 
                         //
                         // IContextualFeatureFilter
                         if (useAppContext)
                         {
-                            ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterSettings.Name, typeof(TContext));
+                            ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
 
                             if (contextualFilter != null && await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false))
                             {
