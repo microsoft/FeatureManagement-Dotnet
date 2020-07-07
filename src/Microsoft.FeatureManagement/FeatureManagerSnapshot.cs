@@ -72,5 +72,16 @@ namespace Microsoft.FeatureManagement
 
             return enabled;
         }
+
+        public async Task<Dictionary<string,bool>> GetFeatureNameAndValues(){
+            var features=new Lazy<Dictionary<string,bool>>();
+            await foreach(var feature in this.GetFeatureNamesAsync()){
+                features.Value.Add(feature,
+                await this.IsEnabledAsync(feature)
+                );
+            }
+
+            return features.Value;
+        }
     }
 }
