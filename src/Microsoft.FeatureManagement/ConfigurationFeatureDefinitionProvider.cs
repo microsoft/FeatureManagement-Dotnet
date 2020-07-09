@@ -13,20 +13,20 @@ using System.Threading.Tasks;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// A feature settings provider that pulls settings from the .NET Core <see cref="IConfiguration"/> system.
+    /// A feature definition provider that pulls feature definitions from the .NET Core <see cref="IConfiguration"/> system.
     /// </summary>
-    sealed class ConfigurationFeatureSettingsProvider : IFeatureSettingsProvider, IDisposable
+    sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable
     {
         private const string FeatureFiltersSectionName = "EnabledFor";
         private readonly IConfiguration _configuration;
-        private readonly ConcurrentDictionary<string, FeatureSettings> _settings;
+        private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
 
-        public ConfigurationFeatureSettingsProvider(IConfiguration configuration)
+        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _settings = new ConcurrentDictionary<string, FeatureSettings>();
+            _definitions = new ConcurrentDictionary<string, FeatureDefinition>();
 
             _changeSubscription = ChangeToken.OnChange(
                 () => _configuration.GetReloadToken(),
@@ -40,7 +40,7 @@ namespace Microsoft.FeatureManagement
             _changeSubscription = null;
         }
 
-        public Task<FeatureSettings> GetFeatureSettingsAsync(string featureName)
+        public Task<FeatureDefinition> GetFeatureDefinitionAsync(string featureName)
         {
             if (featureName == null)
             {
@@ -49,41 +49,41 @@ namespace Microsoft.FeatureManagement
 
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
-                _settings.Clear();
+                _definitions.Clear();
             }
 
             //
             // Query by feature name
-            FeatureSettings settings = _settings.GetOrAdd(featureName, (name) => ReadFeatureSettings(name));
+            FeatureDefinition definition = _definitions.GetOrAdd(featureName, (name) => ReadFeatureDefinition(name));
 
-            return Task.FromResult(settings);
+            return Task.FromResult(definition);
         }
 
         //
         // The async key word is necessary for creating IAsyncEnumerable.
         // The need to disable this warning occurs when implementaing async stream synchronously. 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        public async IAsyncEnumerable<FeatureSettings> GetAllFeatureSettingsAsync()
+        public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998
         {
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
-                _settings.Clear();
+                _definitions.Clear();
             }
 
             //
             // Iterate over all features registered in the system at initial invocation time
-            foreach (IConfigurationSection featureSection in GetFeatureConfigurationSections())
+            foreach (IConfigurationSection featureSection in GetFeatureDefinitionSections())
             {
                 //
-                // Underlying IConfigurationSection data is dynamic so latest feature settings are returned
-                yield return  _settings.GetOrAdd(featureSection.Key, (_) => ReadFeatureSettings(featureSection));
+                // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
+                yield return  _definitions.GetOrAdd(featureSection.Key, (_) => ReadFeatureDefinition(featureSection));
             }
         }
 
-        private FeatureSettings ReadFeatureSettings(string featureName)
+        private FeatureDefinition ReadFeatureDefinition(string featureName)
         {
-            IConfigurationSection configuration = GetFeatureConfigurationSections()
+            IConfigurationSection configuration = GetFeatureDefinitionSections()
                                                     .FirstOrDefault(section => section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase));
 
             if (configuration == null)
@@ -91,10 +91,10 @@ namespace Microsoft.FeatureManagement
                 return null;
             }
 
-            return ReadFeatureSettings(configuration);
+            return ReadFeatureDefinition(configuration);
         }
 
-        private FeatureSettings ReadFeatureSettings(IConfigurationSection configurationSection)
+        private FeatureDefinition ReadFeatureDefinition(IConfigurationSection configurationSection)
         {
             /*
               
@@ -125,7 +125,7 @@ namespace Microsoft.FeatureManagement
 
             */
 
-            var enabledFor = new List<FeatureFilterSettings>();
+            var enabledFor = new List<FeatureFilterConfiguration>();
 
             string val = configurationSection.Value; // configuration[$"{featureName}"];
 
@@ -142,7 +142,7 @@ namespace Microsoft.FeatureManagement
                 //myAlwaysEnabledFeature: {
                 //  enabledFor: true
                 //}
-                enabledFor.Add(new FeatureFilterSettings
+                enabledFor.Add(new FeatureFilterConfiguration
                 {
                     Name = "AlwaysOn"
                 });
@@ -156,32 +156,32 @@ namespace Microsoft.FeatureManagement
                     //
                     // Arrays in json such as "myKey": [ "some", "values" ]
                     // Are accessed through the configuration system by using the array index as the property name, e.g. "myKey": { "0": "some", "1": "values" }
-                    if (int.TryParse(section.Key, out int i) && !string.IsNullOrEmpty(section[nameof(FeatureFilterSettings.Name)]))
+                    if (int.TryParse(section.Key, out int i) && !string.IsNullOrEmpty(section[nameof(FeatureFilterConfiguration.Name)]))
                     {
-                        enabledFor.Add(new FeatureFilterSettings()
+                        enabledFor.Add(new FeatureFilterConfiguration()
                         {
-                            Name = section[nameof(FeatureFilterSettings.Name)],
-                            Parameters = section.GetSection(nameof(FeatureFilterSettings.Parameters))
+                            Name = section[nameof(FeatureFilterConfiguration.Name)],
+                            Parameters = section.GetSection(nameof(FeatureFilterConfiguration.Parameters))
                         });
                     }
                 }
             }
 
-            return new FeatureSettings()
+            return new FeatureDefinition()
             {
                 Name = configurationSection.Key,
                 EnabledFor = enabledFor
             };
         }
 
-        private IEnumerable<IConfigurationSection> GetFeatureConfigurationSections()
+        private IEnumerable<IConfigurationSection> GetFeatureDefinitionSections()
         {
             const string FeatureManagementSectionName = "FeatureManagement";
 
             if (_configuration.GetChildren().Any(s => s.Key.Equals(FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase)))
             {
                 //
-                // Look for settings under the "FeatureManagement" section
+                // Look for feature definitions under the "FeatureManagement" section
                 return _configuration.GetSection(FeatureManagementSectionName).GetChildren();
             }
             else
