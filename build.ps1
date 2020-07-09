@@ -35,7 +35,7 @@ if ($RestoreOnly)
 else
 {
     # Build
-    dotnet build -c $BuildConfig "$Solution" /p:OutDir=$BuildRelativePath | Tee-Object -FilePath "$LogDirectory\build.log"
+    dotnet build -c $BuildConfig "$Solution" | Tee-Object -FilePath "$LogDirectory\build.log"
 }
 
 exit $LASTEXITCODE
