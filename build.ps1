@@ -18,7 +18,6 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$BuildRelativePath = "bin\BuildOutput"
 $LogDirectory = "$PSScriptRoot\buildlogs"
 $Solution     = "$PSScriptRoot\Microsoft.FeatureManagement.sln"
 
