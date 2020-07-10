@@ -1,3 +1,8 @@
-call %~dp0build\InstallPowerShellCore.cmd
+call %~dp0build\ChoosePowerShell.cmd
 
-%PowerShellCore% "%~dp0build.ps1" %*
+IF %ERRORLEVEL% NEQ 0 (
+
+    exit /B 1
+)
+
+%PowerShell% "%~dp0build.ps1" %*

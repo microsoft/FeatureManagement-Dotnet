@@ -8,11 +8,13 @@ Note: build.cmd should be run before running this script.
 
 [CmdletBinding()]
 param(
+    [Parameter()]
+    [ValidateSet('Debug','Release')]
+    [string]$BuildConfig = "Release"
 )
 
 $ErrorActionPreference = "Stop"
 
-$PrebuiltBinariesDir = "bin\BuildOutput"
 $PublishRelativePath = "bin\PackageOutput"
 $LogDirectory = "$PSScriptRoot\buildlogs"
 
@@ -32,9 +34,7 @@ foreach ($project in $targetProjects)
     $projectPath = "$PSScriptRoot\src\$project\$project.csproj"
     $outputPath = "$PSScriptRoot\src\$project\$PublishRelativePath"
 
-    #
-    # The build system expects pre-built binaries to be in the folder pointed to by 'OutDir'.
-    dotnet pack -o "$outputPath" /p:OutDir=$PrebuiltBinariesDir "$projectPath" --no-build | Tee-Object -FilePath "$LogDirectory\build.log"
+    dotnet pack -c $BuildConfig -o "$outputPath" "$projectPath" --no-build | Tee-Object -FilePath "$LogDirectory\build.log"
 }
 
 exit $LASTEXITCODE
