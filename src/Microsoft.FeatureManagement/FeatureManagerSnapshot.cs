@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -14,6 +15,10 @@ namespace Microsoft.FeatureManagement
     {
         private readonly IFeatureManager _featureManager;
         private readonly IDictionary<string, bool> _flagCache = new Dictionary<string, bool>();
+
+        private readonly IDictionary<(string, string), bool> _flagContextCache =
+            new Dictionary<(string, string), bool>();
+
         private IEnumerable<string> _featureNames;
 
         public FeatureManagerSnapshot(IFeatureManager featureManager)
@@ -57,18 +62,18 @@ namespace Microsoft.FeatureManagement
             return enabled;
         }
 
-        public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
+        public async Task<bool> IsEnabledAsync(string feature, IFeatureContext context)
         {
             //
             // First, check local cache
-            if (_flagCache.ContainsKey(feature))
+            if (_flagContextCache.ContainsKey((feature, context.ID)))
             {
-                return _flagCache[feature];
+                return _flagContextCache[(feature, context.ID)];
             }
 
             bool enabled = await _featureManager.IsEnabledAsync(feature, context).ConfigureAwait(false);
 
-            _flagCache[feature] = enabled;
+            _flagContextCache[(feature, context.ID)] = enabled;
 
             return enabled;
         }

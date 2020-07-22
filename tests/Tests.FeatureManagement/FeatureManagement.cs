@@ -352,7 +352,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task UsesContext()
+        public async Task FeatureManagerUsesContext()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
@@ -386,6 +386,45 @@ namespace Tests.FeatureManagement
             context.AccountId = "abc";
 
             Assert.True(await featureManager.IsEnabledAsync(ContextualFeature, context));
+        }
+        
+        [Fact]
+        public async Task FeatureManagerSnapshotUsesContext()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualTestFilter>();
+
+            ServiceProvider provider = serviceCollection.BuildServiceProvider();
+
+            ContextualTestFilter contextualTestFeatureFilter = (ContextualTestFilter)provider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>().First(f => f is ContextualTestFilter);
+
+            contextualTestFeatureFilter.ContextualCallback = (ctx, accountContext) =>
+            {
+                var allowedAccounts = new List<string>();
+
+                ctx.Parameters.Bind("AllowedAccounts", allowedAccounts);
+
+                return allowedAccounts.Contains(accountContext.AccountId);
+            };
+
+            IFeatureManagerSnapshot featureManager = provider.GetRequiredService<IFeatureManagerSnapshot>();
+
+            // these two will also serve as feature context identifiers
+            string failingAccountId = "NotEnabledAccount";
+            string passingAccountId = "abc";
+
+            AppContext failingContext = new AppContext(failingAccountId) { AccountId = failingAccountId };
+            
+            Assert.False(await featureManager.IsEnabledAsync(ContextualFeature, failingContext));
+
+            AppContext passingContext = new AppContext(passingAccountId) { AccountId = passingAccountId };
+
+            Assert.True(await featureManager.IsEnabledAsync(ContextualFeature, passingContext));
         }
 
         [Fact]

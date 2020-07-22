@@ -42,12 +42,12 @@ namespace Microsoft.FeatureManagement
 
         public Task<bool> IsEnabledAsync(string feature)
         {
-            return IsEnabledAsync<object>(feature, null, false);
+            return IsEnabledAsync(feature, null, false);
         }
 
-        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
+        public Task<bool> IsEnabledAsync(string feature, IFeatureContext featureContext)
         {
-            return IsEnabledAsync(feature, appContext, true);
+            return IsEnabledAsync(feature, featureContext, true);
         }
 
         public async IAsyncEnumerable<string> GetFeatureNamesAsync()
@@ -58,7 +58,7 @@ namespace Microsoft.FeatureManagement
             }
         }
 
-        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext)
+        private async Task<bool> IsEnabledAsync(string feature, IFeatureContext featureContext, bool useFeatureContext)
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
@@ -118,11 +118,11 @@ namespace Microsoft.FeatureManagement
 
                         //
                         // IContextualFeatureFilter
-                        if (useAppContext)
+                        if (useFeatureContext)
                         {
-                            ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
+                            ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, featureContext.GetType());
 
-                            if (contextualFilter != null && await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false))
+                            if (contextualFilter != null && await contextualFilter.EvaluateAsync(context, featureContext).ConfigureAwait(false))
                             {
                                 enabled = true;
 
@@ -201,21 +201,21 @@ namespace Microsoft.FeatureManagement
             return filter;
         }
 
-        private ContextualFeatureFilterEvaluator GetContextualFeatureFilter(string filterName, Type appContextType)
+        private ContextualFeatureFilterEvaluator GetContextualFeatureFilter(string filterName, Type featureContextType)
         {
-            if (appContextType == null)
+            if (featureContextType == null)
             {
-                throw new ArgumentNullException(nameof(appContextType));
+                throw new ArgumentNullException(nameof(featureContextType));
             }
 
             ContextualFeatureFilterEvaluator filter = _contextualFeatureFilterCache.GetOrAdd(
-                $"{filterName}{Environment.NewLine}{appContextType.FullName}",
+                $"{filterName}{Environment.NewLine}{featureContextType.FullName}",
                 (_) => {
 
                     IFeatureFilterMetadata metadata = GetFeatureFilterMetadata(filterName);
 
-                    return ContextualFeatureFilterEvaluator.IsContextualFilter(metadata, appContextType) ?
-                        new ContextualFeatureFilterEvaluator(metadata, appContextType) :
+                    return ContextualFeatureFilterEvaluator.IsContextualFilter(metadata, featureContextType) ?
+                        new ContextualFeatureFilterEvaluator(metadata, featureContextType) :
                         null;
                 }
             );

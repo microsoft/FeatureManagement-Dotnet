@@ -12,30 +12,30 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Provides a performance efficient method of evaluating IContextualFeatureFilter&lt;T&gt; without knowing what the generic type parameter is.
     /// </summary>
-    class ContextualFeatureFilterEvaluator : IContextualFeatureFilter<object>
+    class ContextualFeatureFilterEvaluator : IContextualFeatureFilter<IFeatureContext>
     {
         private IFeatureFilterMetadata _filter;
         private Func<object, FeatureFilterEvaluationContext, object, Task<bool>> _evaluateFunc;
 
-        public ContextualFeatureFilterEvaluator(IFeatureFilterMetadata filter, Type appContextType)
+        public ContextualFeatureFilterEvaluator(IFeatureFilterMetadata filter, Type featureContextType)
         {
             if (filter == null)
             {
                 throw new ArgumentNullException(nameof(filter));
             }
 
-            if (appContextType == null)
+            if (featureContextType == null)
             {
-                throw new ArgumentNullException(nameof(appContextType));
+                throw new ArgumentNullException(nameof(featureContextType));
             }
 
-            Type targetInterface = GetContextualFilterInterface(filter, appContextType);
+            Type targetInterface = GetContextualFilterInterface(filter, featureContextType);
 
             //
             // Extract IContextualFeatureFilter<T>.EvaluateAsync method.
             if (targetInterface != null)
             {
-                MethodInfo evaluateMethod = targetInterface.GetMethod(nameof(IContextualFeatureFilter<object>.EvaluateAsync), BindingFlags.Public | BindingFlags.Instance);
+                MethodInfo evaluateMethod = targetInterface.GetMethod(nameof(IContextualFeatureFilter<IFeatureContext>.EvaluateAsync), BindingFlags.Public | BindingFlags.Instance);
 
                 _evaluateFunc = TypeAgnosticEvaluate(filter.GetType(), evaluateMethod);
             }
@@ -43,7 +43,7 @@ namespace Microsoft.FeatureManagement
             _filter = filter;
         }
 
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext evaluationContext, object context)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext evaluationContext, IFeatureContext context)
         {
             if (_evaluateFunc == null)
             {
@@ -53,12 +53,12 @@ namespace Microsoft.FeatureManagement
             return _evaluateFunc(_filter, evaluationContext, context);
         }
 
-        public static bool IsContextualFilter(IFeatureFilterMetadata filter, Type appContextType)
+        public static bool IsContextualFilter(IFeatureFilterMetadata filter, Type featureContextType)
         {
-            return GetContextualFilterInterface(filter, appContextType) != null;
+            return GetContextualFilterInterface(filter, featureContextType) != null;
         }
 
-        private static Type GetContextualFilterInterface(IFeatureFilterMetadata filter, Type appContextType)
+        private static Type GetContextualFilterInterface(IFeatureFilterMetadata filter, Type featureContextType)
         {
             IEnumerable<Type> contextualFilterInterfaces = filter.GetType().GetInterfaces().Where(i => i.IsGenericType && i.GetGenericTypeDefinition().IsAssignableFrom(typeof(IContextualFeatureFilter<>)));
 
@@ -66,7 +66,7 @@ namespace Microsoft.FeatureManagement
 
             if (contextualFilterInterfaces != null)
             {
-                targetInterface = contextualFilterInterfaces.FirstOrDefault(i => i.GetGenericArguments()[0].IsAssignableFrom(appContextType));
+                targetInterface = contextualFilterInterfaces.FirstOrDefault(i => i.GetGenericArguments()[0].IsAssignableFrom(featureContextType));
             }
 
             return targetInterface;
