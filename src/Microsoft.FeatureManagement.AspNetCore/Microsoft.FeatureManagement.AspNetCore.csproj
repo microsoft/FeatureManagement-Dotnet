@@ -14,7 +14,7 @@
     <Company>Microsoft</Company>
     <PackageLicenseUrl>https://aka.ms/AzureAppConfigurationDotnetCorePublicPreviewEula</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/Azure/AppConfiguration</PackageProjectUrl>
-    <PackageReleaseNotes>The latest release notes can be found at https://aka.ms/MicrosoftFeatureManagementReleaseNotes</PackageReleaseNotes>
+    <PackageReleaseNotes>Release notes can be found at https://aka.ms/MicrosoftFeatureManagementReleaseNotes</PackageReleaseNotes>
     <PackageTags>Microsoft FeatureManagement FeatureFlags AzureAppConfiguration aspnetcore</PackageTags>
     <PackageIconUrl>https://aka.ms/AzureAppConfigurationPackageIcon</PackageIconUrl>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
