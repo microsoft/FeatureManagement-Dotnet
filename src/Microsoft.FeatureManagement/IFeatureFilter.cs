@@ -11,9 +11,9 @@ namespace Microsoft.FeatureManagement
     public interface IFeatureFilter : IFeatureFilterMetadata
     {
         /// <summary>
-        /// Evalutates the feature filter to see if the filter's criteria for being enabled has been satisfied.
+        /// Evaluates the feature filter to see if the filter's criteria for being enabled has been satisfied.
         /// </summary>
-        /// <param name="context">A feature filter evaluation context that contains information that may be needed to evalute the filter. This context includes configuration, if any, for this filter for the feature being evaluated.</param>
+        /// <param name="context">A feature filter evaluation context that contains information that may be needed to evaluate the filter. This context includes configuration, if any, for this filter for the feature being evaluated.</param>
         /// <returns>True if the filter's criteria has been met, false otherwise.</returns>
         Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context);
     }
