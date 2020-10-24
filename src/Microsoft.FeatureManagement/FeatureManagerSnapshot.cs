@@ -13,8 +13,8 @@ namespace Microsoft.FeatureManagement
     class FeatureManagerSnapshot : IFeatureManagerSnapshot
     {
         private readonly IFeatureManager _featureManager;
-        private readonly IDictionary<string, bool> _flagCache = new Dictionary<string, bool>();
-        private IEnumerable<string> _featureNames;
+        private readonly Dictionary<string, Task<bool>> _flagCache = new Dictionary<string, Task<bool>>();
+        private List<string> _featureNames;
 
         public FeatureManagerSnapshot(IFeatureManager featureManager)
         {
@@ -25,52 +25,77 @@ namespace Microsoft.FeatureManagement
         {
             if (_featureNames == null)
             {
-                var featureNames = new List<string>();
-
-                await foreach (string featureName in _featureManager.GetFeatureNamesAsync().ConfigureAwait(false))
-                {
-                    featureNames.Add(featureName);
-                }
-
-                _featureNames = featureNames;
+                _featureNames = await CreateListAsync(_featureManager).ConfigureAwait(false);
             }
 
             foreach (string featureName in _featureNames)
             {
                 yield return featureName;
             }
+
+            static async ValueTask<List<string>> CreateListAsync(IFeatureManager featureManager)
+            {
+                var featureNames = new List<string>();
+
+                await foreach (string featureName in featureManager.GetFeatureNamesAsync().ConfigureAwait(false))
+                {
+                    featureNames.Add(featureName);
+                }
+
+                return featureNames;
+            }
         }
 
-        public async Task<bool> IsEnabledAsync(string feature)
+        public Task<bool> IsEnabledAsync(string feature)
         {
-            //
-            // First, check local cache
-            if (_flagCache.ContainsKey(feature))
+            if (_flagCache.TryGetValue(feature, out Task<bool> task))
             {
-                return _flagCache[feature];
+                return task;
             }
 
-            bool enabled = await _featureManager.IsEnabledAsync(feature).ConfigureAwait(false);
+            return Core();
 
-            _flagCache[feature] = enabled;
+            Task<bool> Core()
+            {
+                lock (_flagCache)
+                {
+                    if (_flagCache.TryGetValue(feature, out task))
+                    {
+                        return task;
+                    }
 
-            return enabled;
+                    task = _featureManager.IsEnabledAsync(feature);
+                    _flagCache.Add(feature, task);
+
+                    return task;
+                }
+            }
         }
 
-        public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
+        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
         {
-            //
-            // First, check local cache
-            if (_flagCache.ContainsKey(feature))
+            if (_flagCache.TryGetValue(feature, out Task<bool> task))
             {
-                return _flagCache[feature];
+                return task;
             }
 
-            bool enabled = await _featureManager.IsEnabledAsync(feature, context).ConfigureAwait(false);
+            return Core();
 
-            _flagCache[feature] = enabled;
+            Task<bool> Core()
+            {
+                lock (_flagCache)
+                {
+                    if (_flagCache.TryGetValue(feature, out task))
+                    {
+                        return task;
+                    }
 
-            return enabled;
+                    task = _featureManager.IsEnabledAsync(feature, context);
+                    _flagCache.Add(feature, task);
+
+                    return task;
+                }
+            }
         }
     }
 }
