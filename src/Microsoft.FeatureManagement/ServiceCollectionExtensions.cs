@@ -26,7 +26,7 @@ namespace Microsoft.FeatureManagement
             // Add required services
             services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
 
-            services.AddSingleton<IFeatureManager, FeatureManager>();
+            services.AddScoped<IFeatureManager, FeatureManager>();
 
             services.AddSingleton<ISessionManager, EmptySessionManager>();
 
