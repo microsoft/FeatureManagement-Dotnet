@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -13,7 +14,7 @@ namespace Microsoft.FeatureManagement
     class FeatureManagerSnapshot : IFeatureManagerSnapshot
     {
         private readonly IFeatureManager _featureManager;
-        private readonly Dictionary<string, Task<bool>> _flagCache = new Dictionary<string, Task<bool>>();
+        private readonly ConcurrentDictionary<string, Task<bool>> _flagCache = new ConcurrentDictionary<string, Task<bool>>();
         private List<string> _featureNames;
 
         public FeatureManagerSnapshot(IFeatureManager featureManager)
@@ -48,54 +49,26 @@ namespace Microsoft.FeatureManagement
 
         public Task<bool> IsEnabledAsync(string feature)
         {
-            if (_flagCache.TryGetValue(feature, out Task<bool> task))
-            {
-                return task;
-            }
-
-            return Core();
-
-            Task<bool> Core()
-            {
-                lock (_flagCache)
-                {
-                    if (_flagCache.TryGetValue(feature, out task))
-                    {
-                        return task;
-                    }
-
-                    task = _featureManager.IsEnabledAsync(feature);
-                    _flagCache.Add(feature, task);
-
-                    return task;
-                }
-            }
+#if NETSTANDARD2_0
+            return _flagCache.GetOrAdd(feature, arg => _featureManager.IsEnabledAsync(arg));
+#else
+            return _flagCache.GetOrAdd(
+                feature,
+                (arg, fm) => fm.IsEnabledAsync(arg),
+                _featureManager);
+#endif
         }
 
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
         {
-            if (_flagCache.TryGetValue(feature, out Task<bool> task))
-            {
-                return task;
-            }
-
-            return Core();
-
-            Task<bool> Core()
-            {
-                lock (_flagCache)
-                {
-                    if (_flagCache.TryGetValue(feature, out task))
-                    {
-                        return task;
-                    }
-
-                    task = _featureManager.IsEnabledAsync(feature, context);
-                    _flagCache.Add(feature, task);
-
-                    return task;
-                }
-            }
+#if NETSTANDARD2_0
+            return _flagCache.GetOrAdd(feature, arg => _featureManager.IsEnabledAsync(arg, context));
+#else
+            return _flagCache.GetOrAdd(
+                feature,
+                (arg, state) => state.FeatureManager.IsEnabledAsync(arg, state.Context),
+                (FeatureManager: _featureManager, Context: context));
+#endif
         }
     }
 }
