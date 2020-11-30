@@ -43,3 +43,15 @@ package:
           to: 'Packages'
           include:
             - '*/bin/PackageOutput/**/*.nupkg'
+
+test:
+  commands:
+    - !!testcommand
+      name: 'Dotnet Test'
+      command: 'test.cmd'
+      fail_on_stderr: false
+      testresults:
+        - title: 'Unit Tests'
+          type: 'vstest'
+          include:
+            - '**/*.trx'
