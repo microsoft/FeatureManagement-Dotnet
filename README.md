@@ -471,7 +471,7 @@ The following steps demonstrate an example of a progressive rollout for a new 'B
 5. Five percent of the user base is included in the beta.
 6. The rollout percentage is bumped up to 100 percent and the feature is completely rolled out.
 
-This strategy for rolling out a feature is built in to the library through the included [Microsoft.Targeting](./README.md#Microsoft.Targeting) feature filter.
+This strategy for rolling out a feature is built in to the library through the included [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter.
 
 ## Targeting in a Web Application
 
@@ -519,7 +519,7 @@ TargetingContext targetingContext = new TargetingContext
 await fm.IsEnabledAsync(featureName, targetingContext);
 ```
 
-The `ContextualTargetingFilter` still uses the feature filter alias [Microsoft.Targeting](./README.md#Microsoft.Targeting), so the configuration for this filter is consistent with what is mentioned in that section.
+The `ContextualTargetingFilter` still uses the feature filter alias [Microsoft.Targeting](./README.md#MicrosoftTargeting), so the configuration for this filter is consistent with what is mentioned in that section.
 
 An example that uses the `ContextualTargetingFilter` in a console application is available in the [TargetingConsoleApp](./examples/TargetingConsoleApp) example project.
 
