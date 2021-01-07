@@ -3,7 +3,7 @@ environment:
     os: windows
   runtime:
     provider: appcontainer
-    image: mcr.microsoft.com/dotnet/sdk:5.0
+    image: cdpxwin1809.azurecr.io/global/vse2019:16.8.2
   
 restore:
   commands:
