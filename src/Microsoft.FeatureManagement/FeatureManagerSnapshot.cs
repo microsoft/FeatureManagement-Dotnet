@@ -26,24 +26,19 @@ namespace Microsoft.FeatureManagement
         {
             if (_featureNames == null)
             {
-                _featureNames = await CreateListAsync(_featureManager).ConfigureAwait(false);
+                var featureNames = new List<string>();
+
+                await foreach (string featureName in _featureManager.GetFeatureNamesAsync().ConfigureAwait(false))
+                {
+                    featureNames.Add(featureName);
+                }
+
+                _featureNames = featureNames;
             }
 
             foreach (string featureName in _featureNames)
             {
                 yield return featureName;
-            }
-
-            static async ValueTask<List<string>> CreateListAsync(IFeatureManager featureManager)
-            {
-                var featureNames = new List<string>();
-
-                await foreach (string featureName in featureManager.GetFeatureNamesAsync().ConfigureAwait(false))
-                {
-                    featureNames.Add(featureName);
-                }
-
-                return featureNames;
             }
         }
 
