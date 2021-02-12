@@ -16,9 +16,3 @@ static_analysis_options:
       - exclude:
           - 'examples/**/*.*'
           - 'tests/**/*.*'
-
-package_sources:
-  nuget:
-    config_files:
-      - include:
-          - "NuGet.Config"
