@@ -4,6 +4,7 @@
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -84,7 +85,7 @@ namespace Tests.FeatureManagement
 
                     services.AddMvcCore(o =>
                     {
-                        o.EnableEndpointRouting = false;
+                        DisableEndpointRouting(o);
                         o.Filters.AddForFeature<MvcFilter>(ConditionalFeature);
                     });
                 })
@@ -132,7 +133,7 @@ namespace Tests.FeatureManagement
                         .AddFeatureManagement()
                         .AddFeatureFilter<TestFilter>();
 
-                    services.AddMvcCore(o => o.EnableEndpointRouting = false);
+                    services.AddMvcCore(o => DisableEndpointRouting(o));
                 })
             .Configure(app => app.UseMvc()));
 
@@ -535,6 +536,15 @@ namespace Tests.FeatureManagement
             await featureManager.IsEnabledAsync(ConditionalFeature);
 
             Assert.True(called);
+        }
+
+        private static void DisableEndpointRouting(MvcOptions options)
+        {
+#if NET5_0 || NETCOREAPP3_1
+            //
+            // Endpoint routing is disabled by default in .NET Core 2.1 since it didn't exist.
+            options.EnableEndpointRouting = false;
+#endif
         }
     }
 }

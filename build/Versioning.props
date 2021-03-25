@@ -1,0 +1,28 @@
+<Project>
+
+  <!-- Local Development -->
+  <PropertyGroup Condition="'$(CDP_BUILD_TYPE)'==''">
+    <MinorVersion>9999</MinorVersion>
+    <PatchVersion>9999</PatchVersion>
+  </PropertyGroup>
+
+  <!-- Buddy builds -->
+  <PropertyGroup Condition="'$(CDP_BUILD_TYPE)'!='' AND '$(CDP_BUILD_TYPE)'!='Official'">
+    <!-- Note that CDP_PACKAGE_VERSION_NUMERIC uses format Major.Minor.MMddyyrrrr, which causes compile error CS7034 because .NET Core doesn't allow version numbers higher than 65534. -->
+    <!-- CDP_PATCH_NUMBER is updated daily by the build system, the addition of a revision number makes the build number unique by the minute -->
+    <!-- The revision number is the number of minutes since midnight [0, 1440) -->
+    <!-- Example build number, 1.0.573.1227 -->
+    <NowTicks>$([System.DateTime]::Now.Ticks)</NowTicks>
+    <TodayTicks>$([System.DateTime]::Today.Ticks)</TodayTicks>
+    <TicksSinceMidnight>$([MSBuild]::Subtract($(NowTicks), $(TodayTicks)))</TicksSinceMidnight>
+    <MinutesSinceMidnight>$([MSBuild]::Divide($(TicksSinceMidnight), 600000000))</MinutesSinceMidnight>
+    <Floored>$([System.Math]::Floor($(MinutesSinceMidnight)))</Floored>
+    <Revision>$(Floored)</Revision>
+    <PreviewVersion>-preview-$(CDP_PATCH_NUMBER)-$(Revision)</PreviewVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)$(PreviewVersion)</Version>
+  </PropertyGroup>
+
+</Project>
