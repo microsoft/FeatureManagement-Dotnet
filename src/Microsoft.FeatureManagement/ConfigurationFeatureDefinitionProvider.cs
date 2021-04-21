@@ -47,6 +47,11 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(featureName));
             }
 
+            if (featureName.Contains(ConfigurationPath.KeyDelimiter))
+            {
+                throw new ArgumentException($"The value '{ConfigurationPath.KeyDelimiter}' is not allowed in the feature name.", nameof(featureName));
+            }
+
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
                 _definitions.Clear();
