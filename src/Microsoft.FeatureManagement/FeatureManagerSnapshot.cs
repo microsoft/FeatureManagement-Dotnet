@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -13,8 +14,8 @@ namespace Microsoft.FeatureManagement
     class FeatureManagerSnapshot : IFeatureManagerSnapshot
     {
         private readonly IFeatureManager _featureManager;
-        private readonly IDictionary<string, bool> _flagCache = new Dictionary<string, bool>();
-        private IEnumerable<string> _featureNames;
+        private readonly ConcurrentDictionary<string, Task<bool>> _flagCache = new ConcurrentDictionary<string, Task<bool>>();
+        private List<string> _featureNames;
 
         public FeatureManagerSnapshot(IFeatureManager featureManager)
         {
@@ -41,36 +42,28 @@ namespace Microsoft.FeatureManagement
             }
         }
 
-        public async Task<bool> IsEnabledAsync(string feature)
+        public Task<bool> IsEnabledAsync(string feature)
         {
-            //
-            // First, check local cache
-            if (_flagCache.ContainsKey(feature))
-            {
-                return _flagCache[feature];
-            }
-
-            bool enabled = await _featureManager.IsEnabledAsync(feature).ConfigureAwait(false);
-
-            _flagCache[feature] = enabled;
-
-            return enabled;
+#if NETSTANDARD2_0
+            return _flagCache.GetOrAdd(feature, arg => _featureManager.IsEnabledAsync(arg));
+#else
+            return _flagCache.GetOrAdd(
+                feature,
+                (arg, fm) => fm.IsEnabledAsync(arg),
+                _featureManager);
+#endif
         }
 
-        public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
+        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
         {
-            //
-            // First, check local cache
-            if (_flagCache.ContainsKey(feature))
-            {
-                return _flagCache[feature];
-            }
-
-            bool enabled = await _featureManager.IsEnabledAsync(feature, context).ConfigureAwait(false);
-
-            _flagCache[feature] = enabled;
-
-            return enabled;
+#if NETSTANDARD2_0
+            return _flagCache.GetOrAdd(feature, arg => _featureManager.IsEnabledAsync(arg, context));
+#else
+            return _flagCache.GetOrAdd(
+                feature,
+                (arg, state) => state.FeatureManager.IsEnabledAsync(arg, state.Context),
+                (FeatureManager: _featureManager, Context: context));
+#endif
         }
     }
 }
