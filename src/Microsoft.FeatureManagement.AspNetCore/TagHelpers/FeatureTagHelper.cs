@@ -4,6 +4,7 @@
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.Mvc.TagHelpers
@@ -55,8 +56,8 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
                 IEnumerable<string> names = Name.Split(',').Select(n => n.Trim());
 
                 enabled = Requirement == RequirementType.All ?
-                    await names.All(async n => await _featureManager.IsEnabledAsync(n).ConfigureAwait(false)) :
-                    await names.Any(async n => await _featureManager.IsEnabledAsync(n).ConfigureAwait(false));
+                    await names.All(async n => await _featureManager.IsEnabledAsync(n, CancellationToken.None).ConfigureAwait(false)) :
+                    await names.Any(async n => await _featureManager.IsEnabledAsync(n, CancellationToken.None).ConfigureAwait(false));
             }
 
             if (Negate)
