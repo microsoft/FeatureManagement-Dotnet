@@ -8,6 +8,7 @@ using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Consoto.Banking.AccountService
@@ -58,7 +59,7 @@ namespace Consoto.Banking.AccountService
                         AccountId = account
                     };
 
-                    bool enabled = await featureManager.IsEnabledAsync(FeatureName, accountServiceContext);
+                    bool enabled = await featureManager.IsEnabledAsync(FeatureName, accountServiceContext, CancellationToken.None);
 
                     //
                     // Output results

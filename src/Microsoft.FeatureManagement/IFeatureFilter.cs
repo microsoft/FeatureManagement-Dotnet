@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
@@ -14,7 +15,8 @@ namespace Microsoft.FeatureManagement
         /// Evaluates the feature filter to see if the filter's criteria for being enabled has been satisfied.
         /// </summary>
         /// <param name="context">A feature filter evaluation context that contains information that may be needed to evaluate the filter. This context includes configuration, if any, for this filter for the feature being evaluated.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>True if the filter's criteria has been met, false otherwise.</returns>
-        Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context);
+        Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken);
     }
 }
