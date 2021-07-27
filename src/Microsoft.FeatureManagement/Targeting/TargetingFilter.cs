@@ -49,7 +49,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             //
             // Acquire targeting context via accessor
-            TargetingContext targetingContext = await _contextAccessor.GetContextAsync().ConfigureAwait(false);
+            TargetingContext targetingContext = await _contextAccessor.GetContextAsync(cancellationToken).ConfigureAwait(false);
 
             //
             // Ensure targeting can be performed
