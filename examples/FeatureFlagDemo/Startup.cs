@@ -59,6 +59,7 @@ namespace FeatureFlagDemo
                     .AddFeatureFilter<TimeWindowFilter>()
                     .AddFeatureFilter<PercentageFilter>()
                     .AddFeatureFilter<TargetingFilter>()
+                    .AddFeatureVariantAssigner<TargetingFeatureVariantAssigner>()
                     .UseDisabledFeaturesHandler(new FeatureNotEnabledDisabledHandler());
 
             services.AddMvc(o =>

@@ -30,5 +30,14 @@ namespace Microsoft.FeatureManagement
         /// <typeparam name="T">An implementation of <see cref="ISessionManager"/></typeparam>
         /// <returns>The feature management builder.</returns>
         IFeatureManagementBuilder AddSessionManager<T>() where T : ISessionManager;
+
+        /// <summary>
+        /// Adds a given feature variant assigner to the list of feature variant assigners that will be available to assign feature variants during runtime.
+        /// Possible feature variant assigner metadata types include <see cref="IFeatureVariantAssigner"/> and <see cref="IContextualFeatureVariantAssigner{TContext}"/>
+        /// Only one feature variant assigner interface can be implemented by a single type.
+        /// </summary>
+        /// <typeparam name="T">An implementation of <see cref="IFeatureVariantAssignerMetadata"/></typeparam>
+        /// <returns>The feature management builder.</returns>
+        IFeatureManagementBuilder AddFeatureVariantAssigner<T>() where T : IFeatureVariantAssignerMetadata;
     }
 }

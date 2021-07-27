@@ -19,6 +19,7 @@ namespace Microsoft.FeatureManagement
     sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable
     {
         private const string FeatureFiltersSectionName = "EnabledFor";
+        private const string FeatureVariantsSectionName = "Variants";
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
@@ -128,6 +129,10 @@ namespace Microsoft.FeatureManagement
 
             var enabledFor = new List<FeatureFilterConfiguration>();
 
+            var variants = new List<FeatureVariant>();
+
+            string assigner = null;
+
             string val = configurationSection.Value; // configuration[$"{featureName}"];
 
             if (string.IsNullOrEmpty(val))
@@ -159,19 +164,39 @@ namespace Microsoft.FeatureManagement
                     // Are accessed through the configuration system by using the array index as the property name, e.g. "myKey": { "0": "some", "1": "values" }
                     if (int.TryParse(section.Key, out int i) && !string.IsNullOrEmpty(section[nameof(FeatureFilterConfiguration.Name)]))
                     {
-                        enabledFor.Add(new FeatureFilterConfiguration()
+                        enabledFor.Add(new FeatureFilterConfiguration
                         {
                             Name = section[nameof(FeatureFilterConfiguration.Name)],
                             Parameters = section.GetSection(nameof(FeatureFilterConfiguration.Parameters))
                         });
                     }
                 }
+
+                IEnumerable<IConfigurationSection> variantSections = configurationSection.GetSection(FeatureVariantsSectionName).GetChildren();
+
+                foreach (IConfigurationSection section in variantSections)
+                {
+                    if (int.TryParse(section.Key, out int i) && !string.IsNullOrEmpty(section[nameof(FeatureVariant.Name)]))
+                    {
+                        variants.Add(new FeatureVariant
+                        {
+                            Default = section.GetValue<bool>(nameof(FeatureVariant.Default)),
+                            Name = section.GetValue<string>(nameof(FeatureVariant.Name)),
+                            ConfigurationReference = section.GetValue<string>(nameof(FeatureVariant.ConfigurationReference)),
+                            AssignmentParameters = section.GetSection(nameof(FeatureVariant.AssignmentParameters))
+                        });
+                    }
+                }
+
+                assigner = configurationSection.GetValue<string>(nameof(FeatureDefinition.Assigner));
             }
 
             return new FeatureDefinition()
             {
                 Name = configurationSection.Key,
-                EnabledFor = enabledFor
+                EnabledFor = enabledFor,
+                Variants = variants,
+                Assigner = assigner
             };
         }
 

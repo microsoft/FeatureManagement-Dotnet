@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// Allows the name of an <see cref="IFeatureFilter"/> to be customized to relate to the name specified in configuration.
+    /// Allows the name of an <see cref="IFeatureFilter"/> or <see cref="IFeatureVariantAssigner"/> to be customized to relate to the name specified in configuration.
     /// </summary>
     public class FilterAliasAttribute : Attribute
     {

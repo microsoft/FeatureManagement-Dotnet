@@ -16,6 +16,7 @@ namespace Microsoft.FeatureManagement
     {
         private readonly IFeatureManager _featureManager;
         private readonly IDictionary<string, bool> _flagCache = new Dictionary<string, bool>();
+        private readonly IDictionary<string, object> _variantCache = new Dictionary<string, object>();
         private IEnumerable<string> _featureNames;
 
         public FeatureManagerSnapshot(IFeatureManager featureManager)
