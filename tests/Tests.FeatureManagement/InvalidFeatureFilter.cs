@@ -11,12 +11,12 @@ namespace Tests.FeatureManagement
     // Cannot implement more than one IFeatureFilter interface
     class InvalidFeatureFilter : IContextualFeatureFilter<IAccountContext>, IContextualFeatureFilter<object>
     {
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, IAccountContext accountContext, CancellationToken _)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, IAccountContext accountContext, CancellationToken cancellationToken)
         {
             return Task.FromResult(false);
         }
 
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext featureFilterContext, object appContext, CancellationToken _)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext featureFilterContext, object appContext, CancellationToken cancellationToken)
         {
             return Task.FromResult(false);
         }
@@ -26,12 +26,12 @@ namespace Tests.FeatureManagement
     // Cannot implement more than one IFeatureFilter interface
     class InvalidFeatureFilter2 : IFeatureFilter, IContextualFeatureFilter<object>
     {
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext featureFilterContext, object appContext, CancellationToken _)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext featureFilterContext, object appContext, CancellationToken cancellationToken)
         {
             return Task.FromResult(false);
         }
 
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken _)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken)
         {
             return Task.FromResult(false);
         }

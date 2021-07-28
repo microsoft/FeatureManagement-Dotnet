@@ -12,7 +12,7 @@ namespace Tests.FeatureManagement
     {
         public Func<FeatureFilterEvaluationContext, IAccountContext, bool> ContextualCallback { get; set; }
 
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, IAccountContext accountContext, CancellationToken _)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, IAccountContext accountContext, CancellationToken cancellationToken)
         {
             return Task.FromResult(ContextualCallback?.Invoke(context, accountContext) ?? false);
         }
