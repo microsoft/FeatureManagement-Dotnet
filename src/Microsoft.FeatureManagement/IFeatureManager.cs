@@ -17,7 +17,7 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>An enumerator which provides asynchronous iteration over the feature names registered in the feature manager.</returns>
-        IAsyncEnumerable<string> GetFeatureNamesAsync(CancellationToken cancellationToken);
+        IAsyncEnumerable<string> GetFeatureNamesAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Checks whether a given feature is enabled.
@@ -25,7 +25,7 @@ namespace Microsoft.FeatureManagement
         /// <param name="feature">The name of the feature to check.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>True if the feature is enabled, otherwise false.</returns>
-        Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken);
+        Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Checks whether a given feature is enabled.
@@ -34,6 +34,6 @@ namespace Microsoft.FeatureManagement
         /// <param name="context">A context providing information that can be used to evaluate whether a feature should be on or off.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>True if the feature is enabled, otherwise false.</returns>
-        Task<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken);
+        Task<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken = default);
     }
 }
