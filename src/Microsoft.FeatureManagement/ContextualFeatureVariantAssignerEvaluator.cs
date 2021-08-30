@@ -11,11 +11,11 @@ using System.Threading.Tasks;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// Provides a performance efficient method of evaluating IContextualFeatureVariantAssigner&lt;T&gt; without knowing what the generic type parameter is.
+    /// Provides a performance efficient method of evaluating <see cref="IContextualFeatureVariantAssigner{TContext}"/> without knowing what the generic type parameter is.
     /// </summary>
     sealed class ContextualFeatureVariantAssignerEvaluator : IContextualFeatureVariantAssigner<object>
     {
-        private IFeatureVariantAssignerMetadata _filter;
+        private IFeatureVariantAssignerMetadata _assigner;
         private Func<object, FeatureVariantAssignmentContext, object, CancellationToken, ValueTask<FeatureVariant>> _evaluateFunc;
 
         public ContextualFeatureVariantAssignerEvaluator(IFeatureVariantAssignerMetadata assigner, Type appContextType)
@@ -33,7 +33,7 @@ namespace Microsoft.FeatureManagement
             Type targetInterface = GetContextualAssignerInterface(assigner, appContextType);
 
             //
-            // Extract IContextualFeatureFilter<T>.EvaluateAsync method.
+            // Extract IContextualFeatureVariantAssigner<T>.AssignVariantAsync method.
             if (targetInterface != null)
             {
                 MethodInfo evaluateMethod = targetInterface.GetMethod(nameof(IContextualFeatureVariantAssigner<object>.AssignVariantAsync), BindingFlags.Public | BindingFlags.Instance);
@@ -41,21 +41,36 @@ namespace Microsoft.FeatureManagement
                 _evaluateFunc = TypeAgnosticEvaluate(assigner.GetType(), evaluateMethod);
             }
 
-            _filter = assigner;
+            _assigner = assigner;
         }
 
         public ValueTask<FeatureVariant> AssignVariantAsync(FeatureVariantAssignmentContext assignmentContext, object context, CancellationToken cancellationToken)
         {
+            if (assignmentContext == null)
+            {
+                throw new ArgumentNullException(nameof(assignmentContext));
+            }
+
             if (_evaluateFunc == null)
             {
                 return new ValueTask<FeatureVariant>((FeatureVariant)null);
             }
 
-            return _evaluateFunc(_filter, assignmentContext, context, cancellationToken);
+            return _evaluateFunc(_assigner, assignmentContext, context, cancellationToken);
         }
 
-        public static bool IsContextualFilter(IFeatureVariantAssignerMetadata assigner, Type appContextType)
+        public static bool IsContextualVariantAssigner(IFeatureVariantAssignerMetadata assigner, Type appContextType)
         {
+            if (assigner == null)
+            {
+                throw new ArgumentNullException(nameof(assigner));
+            }
+
+            if (appContextType == null)
+            {
+                throw new ArgumentNullException(nameof(appContextType));
+            }
+
             return GetContextualAssignerInterface(assigner, appContextType) != null;
         }
 
@@ -73,7 +88,7 @@ namespace Microsoft.FeatureManagement
             return targetInterface;
         }
 
-        private static Func<object, FeatureVariantAssignmentContext, object, CancellationToken, ValueTask<FeatureVariant>> TypeAgnosticEvaluate(Type filterType, MethodInfo method)
+        private static Func<object, FeatureVariantAssignmentContext, object, CancellationToken, ValueTask<FeatureVariant>> TypeAgnosticEvaluate(Type assignerType, MethodInfo method)
         {
             //
             // Get the generic version of the evaluation helper method
@@ -83,7 +98,7 @@ namespace Microsoft.FeatureManagement
             //
             // Create a type specific version of the evaluation helper method
             MethodInfo constructedHelper = genericHelper.MakeGenericMethod
-                (filterType,
+                (assignerType,
                 method.GetParameters()[0].ParameterType,
                 method.GetParameters()[1].ParameterType,
                 method.GetParameters()[2].ParameterType,

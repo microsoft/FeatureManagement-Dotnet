@@ -19,9 +19,14 @@ namespace Microsoft.FeatureManagement
         AmbiguousFeatureFilter,
 
         /// <summary>
-        /// A feature assigner that was listed for variant assignment was not found.
+        /// A feature variant assigner that was listed for variant assignment was not found.
         /// </summary>
         MissingFeatureAssigner,
+
+        /// <summary>
+        /// The feature variant assigner configured for the feature being evaluated is an ambiguous reference to multiple registered feature assigners.
+        /// </summary>
+        AmbiguousFeatureAssigner,
 
         /// <summary>
         /// An assigned feature variant does not have a valid configuration reference.
@@ -29,7 +34,7 @@ namespace Microsoft.FeatureManagement
         MissingConfigurationReference,
 
         /// <summary>
-        /// An invalid configuration was encountered when performing a feature managment operation.
+        /// An invalid configuration was encountered when performing a feature management operation.
         /// </summary>
         InvalidConfiguration
     }

@@ -67,32 +67,6 @@ namespace Microsoft.FeatureManagement.Targeting
             return IsTargeted(defaultContextId, settings.Audience.DefaultRolloutPercentage);
         }
 
-
-        /// <summary>
-        /// Determines if a given context id should be targeted based off the provided percentage
-        /// </summary>
-        /// <param name="contextId">A context identifier that determines what the percentage is applicable for</param>
-        /// <param name="percentage">The total percentage of possible context identifiers that should be targeted</param>
-        /// <returns>A boolean representing if the context identifier should be targeted</returns>
-        private static bool IsTargeted(string contextId, double percentage)
-        {
-            byte[] hash;
-
-            using (HashAlgorithm hashAlgorithm = SHA256.Create())
-            {
-                hash = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(contextId));
-            }
-
-            //
-            // Use first 4 bytes for percentage calculation
-            // Cryptographic hashing algorithms ensure adequate entropy across hash
-            uint contextMarker = BitConverter.ToUInt32(hash, 0);
-
-            double contextPercentage = (contextMarker / (double)uint.MaxValue) * 100;
-
-            return contextPercentage < percentage;
-        }
-
         /// <summary>
         /// Performs validation of targeting settings.
         /// </summary>
@@ -100,7 +74,7 @@ namespace Microsoft.FeatureManagement.Targeting
         /// <param name="paramName">The name of the invalid setting, if any.</param>
         /// <param name="reason">The reason that the setting is invalid.</param>
         /// <returns>True if the provided settings are valid. False if the provided settings are invalid.</returns>
-        private static bool TryValidateSettings(TargetingFilterSettings targetingSettings, out string paramName, out string reason)
+        public static bool TryValidateSettings(TargetingFilterSettings targetingSettings, out string paramName, out string reason)
         {
             const string OutOfRange = "The value is out of the accepted range.";
 
@@ -109,15 +83,6 @@ namespace Microsoft.FeatureManagement.Targeting
             paramName = null;
 
             reason = null;
-
-            if (targetingSettings == null)
-            {
-                paramName = nameof(targetingSettings);
-
-                reason = RequiredParameter;
-
-                return false;
-            }
 
             if (targetingSettings.Audience == null)
             {
@@ -159,6 +124,32 @@ namespace Microsoft.FeatureManagement.Targeting
             }
 
             return true;
+        }
+
+
+        /// <summary>
+        /// Determines if a given context id should be targeted based off the provided percentage
+        /// </summary>
+        /// <param name="contextId">A context identifier that determines what the percentage is applicable for</param>
+        /// <param name="percentage">The total percentage of possible context identifiers that should be targeted</param>
+        /// <returns>A boolean representing if the context identifier should be targeted</returns>
+        private static bool IsTargeted(string contextId, double percentage)
+        {
+            byte[] hash;
+
+            using (HashAlgorithm hashAlgorithm = SHA256.Create())
+            {
+                hash = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(contextId));
+            }
+
+            //
+            // Use first 4 bytes for percentage calculation
+            // Cryptographic hashing algorithms ensure adequate entropy across hash
+            uint contextMarker = BitConverter.ToUInt32(hash, 0);
+
+            double contextPercentage = (contextMarker / (double)uint.MaxValue) * 100;
+
+            return contextPercentage < percentage;
         }
     }
 }

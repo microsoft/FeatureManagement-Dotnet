@@ -4,12 +4,13 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.FeatureManagement;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Consoto.Banking.AccountService
 {
-    class DayOfWeekAssigner : IFeatureVariantAssigner
+    class RecurringAssigner : IFeatureVariantAssigner
     {
         public ValueTask<FeatureVariant> AssignVariantAsync(FeatureVariantAssignmentContext variantAssignmentContext, CancellationToken _)
         {
@@ -21,11 +22,11 @@ namespace Consoto.Banking.AccountService
 
             foreach (var variant in featureDefinition.Variants)
             {
-                DayOfWeekAssignmentParameters p = variant.AssignmentParameters.Get<DayOfWeekAssignmentParameters>() ??
-                                                    new DayOfWeekAssignmentParameters();
+                RecurringAssignmentParameters p = variant.AssignmentParameters.Get<RecurringAssignmentParameters>() ??
+                                                    new RecurringAssignmentParameters();
 
-                if (!string.IsNullOrEmpty(p.DayOfWeek) &&
-                    p.DayOfWeek.Equals(currentDay, StringComparison.OrdinalIgnoreCase))
+                if (p.Days != null &&
+                    p.Days.Any(d => d.Equals(currentDay, StringComparison.OrdinalIgnoreCase)))
                 {
                     chosenVariant = variant;
 

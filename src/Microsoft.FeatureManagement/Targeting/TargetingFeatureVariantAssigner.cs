@@ -32,7 +32,7 @@ namespace Microsoft.FeatureManagement
                                                ILoggerFactory loggerFactory)
         {
             _contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
-            _contextualResolver = new ContextualTargetingFeatureVariantAssigner();
+            _contextualResolver = new ContextualTargetingFeatureVariantAssigner(options);
             _logger = loggerFactory?.CreateLogger<TargetingFeatureVariantAssigner>() ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 

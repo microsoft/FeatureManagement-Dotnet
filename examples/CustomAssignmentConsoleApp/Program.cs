@@ -25,11 +25,11 @@ namespace Consoto.Banking.HelpDesk
             // Setup application services + feature management
             IServiceCollection services = new ServiceCollection();
 
-            services.AddSingleton(typeof(IFeatureVariantAssignerMetadata), typeof(DayOfWeekAssigner));
+            services.AddSingleton(typeof(IFeatureVariantAssignerMetadata), typeof(RecurringAssigner));
 
             services.AddSingleton(configuration)
                     .AddFeatureManagement()
-                    .AddFeatureVariantAssigner<DayOfWeekAssigner>();
+                    .AddFeatureVariantAssigner<RecurringAssigner>();
 
             //
             // Get the feature manager from application services

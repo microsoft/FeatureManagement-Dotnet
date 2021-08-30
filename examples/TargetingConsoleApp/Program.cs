@@ -67,7 +67,7 @@ namespace Consoto.Banking.HelpDesk
 
                     //
                     // Evaluate feature flag using targeting
-                    bool enabled = await featureManager.IsEnabledAsync("Beta", targetingContext, CancellationToken.None);
+                    bool enabled = await featureManager.IsEnabledAsync(FeatureName, targetingContext, CancellationToken.None);
 
                     //
                     // Retrieve feature variant using targeting
@@ -81,7 +81,7 @@ namespace Consoto.Banking.HelpDesk
                     // Output results
                     Console.WriteLine($"The {FeatureName} feature is {(enabled ? "enabled" : "disabled")} for the user '{userId}'.");
 
-                    Console.WriteLine($"User {user.Id}'s cart size: {cartOptions.Size}.");
+                    Console.WriteLine($"User {user.Id} has a {cartOptions.Color} cart with a size of {cartOptions.Size} pixels.");
                 }
             }
         }

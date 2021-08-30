@@ -2,7 +2,6 @@
 // Licensed under the MIT license.
 //
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.Targeting;
 using System;
@@ -19,20 +18,15 @@ namespace Microsoft.FeatureManagement.FeatureFilters
     {
         private const string Alias = "Microsoft.Targeting";
         private readonly TargetingEvaluationOptions _options;
-        private readonly ILogger _logger;
 
         /// <summary>
         /// Creates a targeting contextual feature filter.
         /// </summary>
         /// <param name="options">Options controlling the behavior of the targeting evaluation performed by the filter.</param>
-        /// <param name="loggerFactory">A logger factory for creating loggers.</param>
-        public ContextualTargetingFilter(IOptions<TargetingEvaluationOptions> options, ILoggerFactory loggerFactory)
+        public ContextualTargetingFilter(IOptions<TargetingEvaluationOptions> options)
         {
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
-            _logger = loggerFactory?.CreateLogger<ContextualTargetingFilter>() ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
-
-        private StringComparison ComparisonType => _options.IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
         /// <summary>
         /// Performs a targeting evaluation using the provided <see cref="TargetingContext"/> to determine if a feature should be enabled.

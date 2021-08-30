@@ -304,7 +304,7 @@ namespace Microsoft.FeatureManagement
 
                     if (matchingAssigners.Count() > 1)
                     {
-                        throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureFilter, $"Multiple feature filters match the configured filter named '{assignerName}'.");
+                        throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureFilter, $"Multiple feature assigners match the configured assigner named '{assignerName}'.");
                     }
 
                     return matchingAssigners.FirstOrDefault();
@@ -397,7 +397,7 @@ namespace Microsoft.FeatureManagement
 
                     IFeatureVariantAssignerMetadata metadata = GetFeatureAssignerMetadata(assignerName);
 
-                    return ContextualFeatureVariantAssignerEvaluator.IsContextualFilter(metadata, appContextType) ?
+                    return ContextualFeatureVariantAssignerEvaluator.IsContextualVariantAssigner(metadata, appContextType) ?
                         new ContextualFeatureVariantAssignerEvaluator(metadata, appContextType) :
                         null;
                 }

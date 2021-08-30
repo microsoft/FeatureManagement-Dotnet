@@ -2,8 +2,10 @@
 // Licensed under the MIT license.
 //
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.FeatureFilters;
 using Microsoft.FeatureManagement.Targeting;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,6 +19,16 @@ namespace Microsoft.FeatureManagement
     public class ContextualTargetingFeatureVariantAssigner : IContextualFeatureVariantAssigner<ITargetingContext>
     {
         private const string Alias = "Microsoft.Targeting";
+        private readonly TargetingEvaluationOptions _options;
+
+        /// <summary>
+        /// Creates a targeting contextual feature filter.
+        /// </summary>
+        /// <param name="options">Options controlling the behavior of the targeting evaluation performed by the filter.</param>
+        public ContextualTargetingFeatureVariantAssigner(IOptions<TargetingEvaluationOptions> options)
+        {
+            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+        }
 
         /// <summary>
         /// Assigns one of the variants configured for a feature based off the provided targeting context.
@@ -55,14 +67,26 @@ namespace Microsoft.FeatureManagement
 
                     if (targetingSettings == null)
                     {
-                        //
-                        // Valid to omit audience for default variant
-                        continue;
+                        if (v.Default)
+                        {
+                            //
+                            // Valid to omit audience for default variant
+                            continue;
+                        }
+                        else
+                        {
+                            targetingSettings = new TargetingFilterSettings();
+                        }
+                    }
+
+                    if (!TargetingEvaluator.TryValidateSettings(targetingSettings, out string paramName, out string reason))
+                    {
+                        throw new ArgumentException(reason, paramName);
                     }
 
                     AccumulateAudience(targetingSettings.Audience, ref cumulativePercentage, ref cumulativeGroups);
 
-                    if (TargetingEvaluator.IsTargeted(targetingSettings, targetingContext, true, featureDefinition.Name))
+                    if (TargetingEvaluator.IsTargeted(targetingSettings, targetingContext, _options.IgnoreCase, featureDefinition.Name))
                     {
                         variant = v;
 
