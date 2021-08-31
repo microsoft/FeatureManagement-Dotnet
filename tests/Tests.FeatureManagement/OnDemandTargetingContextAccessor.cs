@@ -11,7 +11,7 @@ namespace Tests.FeatureManagement
     {
         public TargetingContext Current { get; set; }
 
-        public ValueTask<TargetingContext> GetContextAsync(CancellationToken cancellationToken)
+        public ValueTask<TargetingContext> GetContextAsync(CancellationToken _)
         {
             return new ValueTask<TargetingContext>(Current);
         }

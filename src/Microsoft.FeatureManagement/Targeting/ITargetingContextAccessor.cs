@@ -16,6 +16,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// </summary>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>The current targeting context.</returns>
-        ValueTask<TargetingContext> GetContextAsync(CancellationToken cancellationToken = default);
+        ValueTask<TargetingContext> GetContextAsync(CancellationToken cancellationToken);
     }
 }
