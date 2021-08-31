@@ -9,7 +9,7 @@ namespace FeatureFlagDemo.FeatureManagement.FeatureFilters
 {
     public class SuperUserFilter : IFeatureFilter
     {
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken _)
         {
             return Task.FromResult(false);
         }

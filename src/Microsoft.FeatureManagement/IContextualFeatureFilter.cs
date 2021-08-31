@@ -21,6 +21,6 @@ namespace Microsoft.FeatureManagement
         /// <param name="appContext">A context defined by the application that is passed in to the feature management system to provide contextual information for evaluating a feature's state.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>True if the filter's criteria has been met, false otherwise.</returns>
-        Task<bool> EvaluateAsync(FeatureFilterEvaluationContext featureFilterContext, TContext appContext, CancellationToken cancellationToken = default);
+        Task<bool> EvaluateAsync(FeatureFilterEvaluationContext featureFilterContext, TContext appContext, CancellationToken cancellationToken);
     }
 }
