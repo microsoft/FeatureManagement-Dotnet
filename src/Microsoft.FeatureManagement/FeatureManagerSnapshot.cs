@@ -3,8 +3,6 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
@@ -23,13 +21,13 @@ namespace Microsoft.FeatureManagement
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
         }
 
-        public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation]CancellationToken cancellationToken)
+        public async IAsyncEnumerable<string> GetFeatureNamesAsync()
         {
             if (_featureNames == null)
             {
                 var featureNames = new List<string>();
 
-                await foreach (string featureName in _featureManager.GetFeatureNamesAsync(cancellationToken).ConfigureAwait(false))
+                await foreach (string featureName in _featureManager.GetFeatureNamesAsync().ConfigureAwait(false))
                 {
                     featureNames.Add(featureName);
                 }
@@ -43,7 +41,7 @@ namespace Microsoft.FeatureManagement
             }
         }
 
-        public async Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
+        public async Task<bool> IsEnabledAsync(string feature)
         {
             //
             // First, check local cache
@@ -52,14 +50,14 @@ namespace Microsoft.FeatureManagement
                 return _flagCache[feature];
             }
 
-            bool enabled = await _featureManager.IsEnabledAsync(feature, cancellationToken).ConfigureAwait(false);
+            bool enabled = await _featureManager.IsEnabledAsync(feature).ConfigureAwait(false);
 
             _flagCache[feature] = enabled;
 
             return enabled;
         }
 
-        public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
+        public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
         {
             //
             // First, check local cache
@@ -68,7 +66,7 @@ namespace Microsoft.FeatureManagement
                 return _flagCache[feature];
             }
 
-            bool enabled = await _featureManager.IsEnabledAsync(feature, context, cancellationToken).ConfigureAwait(false);
+            bool enabled = await _featureManager.IsEnabledAsync(feature, context).ConfigureAwait(false);
 
             _flagCache[feature] = enabled;
 

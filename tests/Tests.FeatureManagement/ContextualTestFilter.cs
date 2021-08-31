@@ -3,7 +3,6 @@
 //
 using Microsoft.FeatureManagement;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
@@ -12,7 +11,7 @@ namespace Tests.FeatureManagement
     {
         public Func<FeatureFilterEvaluationContext, IAccountContext, bool> ContextualCallback { get; set; }
 
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, IAccountContext accountContext, CancellationToken _)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, IAccountContext accountContext)
         {
             return Task.FromResult(ContextualCallback?.Invoke(context, accountContext) ?? false);
         }
