@@ -2,8 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
@@ -18,7 +16,7 @@ namespace Tests.FeatureManagement
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync([EnumeratorCancellation] CancellationToken _)
+        public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             foreach (FeatureDefinition definition in _definitions)
@@ -27,7 +25,7 @@ namespace Tests.FeatureManagement
             }
         }
 
-        public Task<FeatureDefinition> GetFeatureDefinitionAsync(string featureName, CancellationToken _)
+        public Task<FeatureDefinition> GetFeatureDefinitionAsync(string featureName)
         {
             return Task.FromResult(_definitions.FirstOrDefault(definitions => definitions.Name.Equals(featureName, StringComparison.OrdinalIgnoreCase)));
         }

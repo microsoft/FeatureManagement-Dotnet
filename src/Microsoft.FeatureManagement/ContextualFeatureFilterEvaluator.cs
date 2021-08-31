@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
@@ -16,7 +15,7 @@ namespace Microsoft.FeatureManagement
     class ContextualFeatureFilterEvaluator : IContextualFeatureFilter<object>
     {
         private IFeatureFilterMetadata _filter;
-        private Func<object, FeatureFilterEvaluationContext, object, CancellationToken, Task<bool>> _evaluateFunc;
+        private Func<object, FeatureFilterEvaluationContext, object, Task<bool>> _evaluateFunc;
 
         public ContextualFeatureFilterEvaluator(IFeatureFilterMetadata filter, Type appContextType)
         {
@@ -44,14 +43,14 @@ namespace Microsoft.FeatureManagement
             _filter = filter;
         }
 
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext evaluationContext, object context, CancellationToken cancellationToken)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext evaluationContext, object context)
         {
             if (_evaluateFunc == null)
             {
                 return Task.FromResult(false);
             }
 
-            return _evaluateFunc(_filter, evaluationContext, context, cancellationToken);
+            return _evaluateFunc(_filter, evaluationContext, context);
         }
 
         public static bool IsContextualFilter(IFeatureFilterMetadata filter, Type appContextType)
@@ -73,7 +72,7 @@ namespace Microsoft.FeatureManagement
             return targetInterface;
         }
 
-        private static Func<object, FeatureFilterEvaluationContext, object, CancellationToken, Task<bool>> TypeAgnosticEvaluate(Type filterType, MethodInfo method)
+        private static Func<object, FeatureFilterEvaluationContext, object, Task<bool>> TypeAgnosticEvaluate(Type filterType, MethodInfo method)
         {
             //
             // Get the generic version of the evaluation helper method
@@ -83,28 +82,21 @@ namespace Microsoft.FeatureManagement
             //
             // Create a type specific version of the evaluation helper method
             MethodInfo constructedHelper = genericHelper.MakeGenericMethod
-                (filterType,
-                 method.GetParameters()[0].ParameterType,
-                 method.GetParameters()[1].ParameterType,
-                 method.GetParameters()[2].ParameterType,
-                 method.ReturnType);
+                (filterType, method.GetParameters()[0].ParameterType, method.GetParameters()[1].ParameterType, method.ReturnType);
 
             //
             // Invoke the method to get the func
             object typeAgnosticDelegate = constructedHelper.Invoke(null, new object[] { method });
 
-            return (Func<object, FeatureFilterEvaluationContext, object, CancellationToken, Task<bool>>)typeAgnosticDelegate;
+            return (Func<object, FeatureFilterEvaluationContext, object, Task<bool>>)typeAgnosticDelegate;
         }
 
-        private static Func<object, FeatureFilterEvaluationContext, object, CancellationToken, Task<bool>> GenericTypeAgnosticEvaluate<TTarget, TParam1, TParam2, TParam3, TReturn>(MethodInfo method)
+        private static Func<object, FeatureFilterEvaluationContext, object, Task<bool>> GenericTypeAgnosticEvaluate<TTarget, TParam1, TParam2, TReturn>(MethodInfo method)
         {
-            Func<TTarget, FeatureFilterEvaluationContext, TParam2, CancellationToken, Task<bool>> func =
-                (Func<TTarget, FeatureFilterEvaluationContext, TParam2, CancellationToken, Task<bool>>)
-                Delegate.CreateDelegate(typeof(Func<TTarget, FeatureFilterEvaluationContext, TParam2, CancellationToken, Task<bool>>), method);
+            Func<TTarget, FeatureFilterEvaluationContext, TParam2, Task<bool>> func = (Func<TTarget, FeatureFilterEvaluationContext, TParam2, Task<bool>>)Delegate.CreateDelegate
+                (typeof(Func<TTarget, FeatureFilterEvaluationContext, TParam2, Task<bool>>), method);
 
-            Func<object, FeatureFilterEvaluationContext, object, CancellationToken, Task<bool>> genericDelegate =
-                (object target, FeatureFilterEvaluationContext param1, object param2, CancellationToken param3) =>
-                    func((TTarget)target, param1, (TParam2)param2, param3);
+            Func<object, FeatureFilterEvaluationContext, object, Task<bool>> genericDelegate = (object target, FeatureFilterEvaluationContext param1, object param2) => func((TTarget)target, param1, (TParam2)param2);
 
             return genericDelegate;
         }
