@@ -141,6 +141,19 @@ namespace Microsoft.FeatureManagement
                     }
                 }
             }
+            else
+            {
+                string errorMessage = $"The feature declaration for the feature '{feature}' was not found.";
+
+                if (!_options.IgnoreMissingFeatures)
+                {
+                    throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
+                }
+                else
+                {
+                    _logger.LogWarning(errorMessage);
+                }
+            }
 
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
