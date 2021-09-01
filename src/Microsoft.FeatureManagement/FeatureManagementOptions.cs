@@ -11,12 +11,14 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// Controls the behavior of feature evaluation when dependent feature filters are missing.
         /// If missing feature filters are not ignored an exception will be thrown when attempting to evaluate a feature that depends on a missing feature filter.
+        /// The default value is false.
         /// </summary>
         public bool IgnoreMissingFeatureFilters { get; set; }
 
         /// <summary>
         /// Controls the behavior of feature evaluation when the target feature is missing.
         /// If missing features are not ignored an exception will be thrown when attempting to evaluate them.
+        /// The default value is true.
         /// </summary>
         public bool IgnoreMissingFeatures { get; set; } = true;
     }
