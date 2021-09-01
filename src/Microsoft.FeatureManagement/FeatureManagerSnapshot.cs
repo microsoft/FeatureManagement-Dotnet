@@ -2,7 +2,9 @@
 // Licensed under the MIT license.
 //
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
@@ -13,7 +15,7 @@ namespace Microsoft.FeatureManagement
     class FeatureManagerSnapshot : IFeatureManagerSnapshot
     {
         private readonly IFeatureManager _featureManager;
-        private readonly IDictionary<string, bool> _flagCache = new Dictionary<string, bool>();
+        private readonly ConcurrentDictionary<string, Lazy<Task<bool>>> _flagCache = new ConcurrentDictionary<string, Lazy<Task<bool>>>();
         private IEnumerable<string> _featureNames;
 
         public FeatureManagerSnapshot(IFeatureManager featureManager)
@@ -43,34 +45,26 @@ namespace Microsoft.FeatureManagement
 
         public async Task<bool> IsEnabledAsync(string feature)
         {
-            //
-            // First, check local cache
-            if (_flagCache.ContainsKey(feature))
-            {
-                return _flagCache[feature];
-            }
+            Lazy<Task<bool>> evaluator = _flagCache.GetOrAdd(
+                feature,
+                (key) => 
+                    new Lazy<Task<bool>>(
+                        () => _featureManager.IsEnabledAsync(key),
+                        LazyThreadSafetyMode.ExecutionAndPublication));
 
-            bool enabled = await _featureManager.IsEnabledAsync(feature).ConfigureAwait(false);
-
-            _flagCache[feature] = enabled;
-
-            return enabled;
+            return await evaluator.Value.ConfigureAwait(false);
         }
 
         public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
         {
-            //
-            // First, check local cache
-            if (_flagCache.ContainsKey(feature))
-            {
-                return _flagCache[feature];
-            }
+            Lazy<Task<bool>> evaluator = _flagCache.GetOrAdd(
+                feature,
+                (key) => 
+                    new Lazy<Task<bool>>(
+                        () => _featureManager.IsEnabledAsync(key, context),
+                        LazyThreadSafetyMode.ExecutionAndPublication));
 
-            bool enabled = await _featureManager.IsEnabledAsync(feature, context).ConfigureAwait(false);
-
-            _flagCache[feature] = enabled;
-
-            return enabled;
+            return await evaluator.Value.ConfigureAwait(false);
         }
     }
 }
