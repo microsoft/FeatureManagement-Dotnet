@@ -486,6 +486,31 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task ThrowsForMissingFeatures()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatures = false;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            FeatureManagementException fme = await Assert.ThrowsAsync<FeatureManagementException>(() =>
+                featureManager.IsEnabledAsync("NonExistentFeature"));
+        }
+
+        [Fact]
         public async Task CustomFeatureDefinitionProvider()
         {
             FeatureDefinition testFeature = new FeatureDefinition
