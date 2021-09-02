@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
@@ -15,7 +14,7 @@ namespace Microsoft.FeatureManagement
     class FeatureManagerSnapshot : IFeatureManagerSnapshot
     {
         private readonly IFeatureManager _featureManager;
-        private readonly ConcurrentDictionary<string, Lazy<Task<bool>>> _flagCache = new ConcurrentDictionary<string, Lazy<Task<bool>>>();
+        private readonly ConcurrentDictionary<string, Task<bool>> _flagCache = new ConcurrentDictionary<string, Task<bool>>();
         private IEnumerable<string> _featureNames;
 
         public FeatureManagerSnapshot(IFeatureManager featureManager)
@@ -43,28 +42,18 @@ namespace Microsoft.FeatureManagement
             }
         }
 
-        public async Task<bool> IsEnabledAsync(string feature)
+        public Task<bool> IsEnabledAsync(string feature)
         {
-            Lazy<Task<bool>> evaluator = _flagCache.GetOrAdd(
+            return _flagCache.GetOrAdd(
                 feature,
-                (key) => 
-                    new Lazy<Task<bool>>(
-                        () => _featureManager.IsEnabledAsync(key),
-                        LazyThreadSafetyMode.ExecutionAndPublication));
-
-            return await evaluator.Value.ConfigureAwait(false);
+                (key) => _featureManager.IsEnabledAsync(key));
         }
 
-        public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
+        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
         {
-            Lazy<Task<bool>> evaluator = _flagCache.GetOrAdd(
+            return _flagCache.GetOrAdd(
                 feature,
-                (key) => 
-                    new Lazy<Task<bool>>(
-                        () => _featureManager.IsEnabledAsync(key, context),
-                        LazyThreadSafetyMode.ExecutionAndPublication));
-
-            return await evaluator.Value.ConfigureAwait(false);
+                (key) => _featureManager.IsEnabledAsync(key, context));
         }
     }
 }
