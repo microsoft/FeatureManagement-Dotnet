@@ -147,7 +147,7 @@ namespace Microsoft.FeatureManagement
 
                 if (!_options.IgnoreMissingFeatures)
                 {
-                    throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
+                    throw new FeatureManagementException(FeatureManagementError.MissingFeature, errorMessage);
                 }
                 else
                 {
