@@ -167,10 +167,22 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
+            bool evaluate = true;
+
+            val = configurationSection[nameof(FeatureDefinition.Evaluate)];
+
+            if (!string.IsNullOrEmpty(val) && !bool.TryParse(val, out evaluate))
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.InvalidConfiguration,
+                    $"The feature '{configurationSection.Key}' has an invalid value for the '{nameof(FeatureDefinition.Evaluate)}' property.");
+            }
+
             return new FeatureDefinition()
             {
                 Name = configurationSection.Key,
-                EnabledFor = enabledFor
+                EnabledFor = enabledFor,
+                Evaluate = evaluate
             };
         }
 
