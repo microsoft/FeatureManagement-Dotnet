@@ -46,10 +46,10 @@ namespace Microsoft.FeatureManagement
             _featureDefinitionProvider = featureDefinitionProvider ?? throw new ArgumentNullException(nameof(featureDefinitionProvider));
             _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
             _logger = loggerFactory.CreateLogger<FeatureManager>();
-            _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
-            _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
-            _assignerMetadataCache = new ConcurrentDictionary<string, IFeatureVariantAssignerMetadata>();
-            _contextualFeatureVariantAssignerCache = new ConcurrentDictionary<string, ContextualFeatureVariantAssignerEvaluator>();
+            _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>(StringComparer.OrdinalIgnoreCase);
+            _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>(StringComparer.OrdinalIgnoreCase);
+            _assignerMetadataCache = new ConcurrentDictionary<string, IFeatureVariantAssignerMetadata>(StringComparer.OrdinalIgnoreCase);
+            _contextualFeatureVariantAssignerCache = new ConcurrentDictionary<string, ContextualFeatureVariantAssignerEvaluator>(StringComparer.OrdinalIgnoreCase);
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         }
 
