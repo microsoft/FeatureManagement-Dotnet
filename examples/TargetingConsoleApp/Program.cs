@@ -51,7 +51,8 @@ namespace Consoto.Banking.HelpDesk
                 // Mimic work items in a task-driven console application
                 foreach (string userId in userIds)
                 {
-                    const string FeatureName = "Beta";
+                    const string FeatureFlagName = "Beta";
+                    const string DynamicFeatureName = "ShoppingCart";
 
                     //
                     // Get user
@@ -67,19 +68,23 @@ namespace Consoto.Banking.HelpDesk
 
                     //
                     // Evaluate feature flag using targeting
-                    bool enabled = await featureManager.IsEnabledAsync(FeatureName, targetingContext, CancellationToken.None);
+                    bool enabled = await featureManager
+                        .IsEnabledAsync<TargetingContext>(
+                            FeatureFlagName, 
+                            targetingContext,
+                            CancellationToken.None);
 
                     //
                     // Retrieve feature variant using targeting
                     CartOptions cartOptions = await variantManager
                         .GetVariantAsync<CartOptions, TargetingContext>(
-                            "ShoppingCart",
+                            DynamicFeatureName,
                             targetingContext,
                             CancellationToken.None);
 
                     //
                     // Output results
-                    Console.WriteLine($"The {FeatureName} feature is {(enabled ? "enabled" : "disabled")} for the user '{userId}'.");
+                    Console.WriteLine($"The {FeatureFlagName} feature is {(enabled ? "enabled" : "disabled")} for the user '{userId}'.");
 
                     Console.WriteLine($"User {user.Id} has a {cartOptions.Color} cart with a size of {cartOptions.Size} pixels.");
                 }

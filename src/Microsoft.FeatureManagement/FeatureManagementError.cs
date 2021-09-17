@@ -21,12 +21,12 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// A feature variant assigner that was listed for variant assignment was not found.
         /// </summary>
-        MissingFeatureAssigner,
+        MissingFeatureVariantAssigner,
 
         /// <summary>
-        /// The feature variant assigner configured for the feature being evaluated is an ambiguous reference to multiple registered feature assigners.
+        /// The feature variant assigner configured for the feature being evaluated is an ambiguous reference to multiple registered feature variant assigners.
         /// </summary>
-        AmbiguousFeatureAssigner,
+        AmbiguousFeatureVariantAssigner,
 
         /// <summary>
         /// An assigned feature variant does not have a valid configuration reference.
@@ -36,6 +36,16 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// An invalid configuration was encountered when performing a feature management operation.
         /// </summary>
-        InvalidConfiguration
+        InvalidConfiguration,
+
+        /// <summary>
+        /// A feature variant assigner being used in feature evaluation is invalid.
+        /// </summary>
+        InvalidFeatureVariantAssigner,
+
+        /// <summary>
+        /// A feature that was requested for evaluation was not found.
+        /// </summary>
+        MissingFeature
     }
 }

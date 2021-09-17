@@ -90,79 +90,113 @@ namespace Microsoft.FeatureManagement
 
             FeatureVariant variant = null;
 
-            FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature, cancellationToken).ConfigureAwait(false);
+            FeatureDefinition featureDefinition = await _featureDefinitionProvider
+                .GetFeatureDefinitionAsync(feature, cancellationToken)
+                .ConfigureAwait(false);
 
-            if (featureDefinition != null)
+            if (featureDefinition == null)
             {
-                if (string.IsNullOrEmpty(featureDefinition.Assigner))
+                throw new FeatureManagementException(
+                    FeatureManagementError.MissingFeatureFilter,
+                    $"The feature declaration for the dynamic feature '{feature}' was not found.");
+            }
+
+            if (string.IsNullOrEmpty(featureDefinition.Assigner))
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.InvalidConfiguration,
+                    $"Missing feature variant assigner name for the feature {feature}");
+            }
+
+            if (featureDefinition.Variants == null)
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.InvalidConfiguration,
+                    $"No variants are registered for the feature {feature}");
+            }
+
+            FeatureVariant defaultVariant = null;
+
+            foreach (FeatureVariant v in featureDefinition.Variants)
+            {
+                if (v.Default)
+                {
+                    if (defaultVariant != null)
+                    {
+                        throw new FeatureManagementException(
+                            FeatureManagementError.InvalidConfiguration,
+                            $"Multiple default variants are registered for the feature '{feature}'.");
+                    }
+
+                    defaultVariant = v;
+                }
+
+                if (v.ConfigurationReference == null)
                 {
                     throw new FeatureManagementException(
-                        FeatureManagementError.InvalidConfiguration,
-                        $"Invalid feature variant assigner name for the feature {feature}");
+                        FeatureManagementError.MissingConfigurationReference,
+                        $"The variant '{variant.Name}' for the feature '{feature}' does not have a configuration reference.");
                 }
+            }
 
-                IFeatureVariantAssignerMetadata assigner = GetFeatureAssignerMetadata(featureDefinition.Assigner);
+            if (defaultVariant == null)
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.InvalidConfiguration,
+                    $"A default variant cannot be found for the feature '{feature}'.");
+            }
 
-                if (assigner == null)
-                {
-                    string errorMessage = $"The feature assigner '{featureDefinition.Assigner}' specified for feature '{feature}' was not found.";
+            IFeatureVariantAssignerMetadata assigner = GetFeatureAssignerMetadata(featureDefinition.Assigner);
 
-                    if (!_options.IgnoreMissingFeatureAssigners)
-                    {
-                        throw new FeatureManagementException(FeatureManagementError.MissingFeatureAssigner, errorMessage);
-                    }
-                    else
-                    {
-                        _logger.LogWarning(errorMessage);
+            if (assigner == null)
+            {
+                throw new FeatureManagementException(
+                       FeatureManagementError.MissingFeatureVariantAssigner,
+                       $"The feature variant assigner '{featureDefinition.Assigner}' specified for feature '{feature}' was not found.");
+            }
 
-                        return default(T);
-                    }
-                }
+            var context = new FeatureVariantAssignmentContext()
+            {
+                FeatureDefinition = featureDefinition
+            };
 
-                var context = new FeatureVariantAssignmentContext()
-                {
-                    FeatureDefinition = featureDefinition
-                };
-
-                //
-                // IContextualFeatureVariantAssigner
-                if (useAppContext)
-                {
-                    ContextualFeatureVariantAssignerEvaluator contextualAssigner = GetContextualFeatureVariantAssigner(featureDefinition.Assigner, typeof(TContext));
-
-                    if (contextualAssigner != null)
-                    {
-                        variant = await contextualAssigner.AssignVariantAsync(context, appContext, cancellationToken).ConfigureAwait(false);
-                    }
-                }
-
-                //
-                // IFeatureVariantAssigner
+            if (!useAppContext)
+            {
                 if (assigner is IFeatureVariantAssigner featureVariantAssigner)
                 {
                     variant = await featureVariantAssigner.AssignVariantAsync(context, cancellationToken).ConfigureAwait(false);
                 }
-            
-                if (variant == null &&
-                    featureDefinition.Variants != null)
+                else
                 {
-                    variant = featureDefinition.Variants.FirstOrDefault(v => v.Default);
+                    throw new FeatureManagementException(
+                        FeatureManagementError.InvalidFeatureVariantAssigner,
+                        $"The feature variant assigner '{featureDefinition.Assigner}' specified for feature '{feature}' is not capable of evaluating the requested feature without a provided context.");
+                }
+            }
+            else
+            {
+                ContextualFeatureVariantAssignerEvaluator contextualAssigner = GetContextualFeatureVariantAssigner(
+                    featureDefinition.Assigner,
+                    typeof(TContext));
+
+                if (contextualAssigner != null)
+                {
+                    variant = await contextualAssigner.AssignVariantAsync(context, appContext, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    throw new FeatureManagementException(
+                        FeatureManagementError.InvalidFeatureVariantAssigner,
+                        $"The feature variant assigner '{featureDefinition.Assigner}' specified for feature '{feature}' is not capable of evaluating the requested feature with the provided context.");
                 }
             }
 
             if (variant == null)
             {
-                return default(T);
+                variant = defaultVariant;
             }
 
-            if (variant.ConfigurationReference == null)
-            {
-                throw new FeatureManagementException(
-                    FeatureManagementError.MissingConfigurationReference,
-                    $"The variant '{variant.Name}' for the feature '{feature}' does not have a configuration reference.");
-            }
-
-            return await _variantOptionsResolver.GetOptions<T>(featureDefinition, variant, cancellationToken).ConfigureAwait(false);
+            return await _variantOptionsResolver.GetOptionsAsync<T>(featureDefinition, variant, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
@@ -203,7 +237,7 @@ namespace Microsoft.FeatureManagement
                         {
                             throw new FeatureManagementException(
                                 FeatureManagementError.InvalidConfiguration,
-                                $"Invalid feature filter name for the feature {feature}");
+                                $"Missing feature filter name for the feature {feature}");
                         }
 
                         IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
@@ -226,7 +260,7 @@ namespace Microsoft.FeatureManagement
 
                         var context = new FeatureFilterEvaluationContext()
                         {
-                            FeatureName = feature,
+                            FeatureName = featureDefinition.Name,
                             Parameters = featureFilterConfiguration.Parameters
                         };
 
@@ -266,13 +300,22 @@ namespace Microsoft.FeatureManagement
 
         private IFeatureFilterMetadata GetFeatureFilterMetadata(string filterName)
         {
+            const string filterSuffix = "filter";
+
             IFeatureFilterMetadata filter = _filterMetadataCache.GetOrAdd(
                 filterName,
                 (_) => {
 
                     IEnumerable<IFeatureFilterMetadata> matchingFilters = _featureFilters.Where(f =>
                     {
-                        string name = GetMetadataName(f.GetType());
+                        Type filterType = f.GetType();
+
+                        string name = ((FilterAliasAttribute)Attribute.GetCustomAttribute(filterType, typeof(FilterAliasAttribute)))?.Alias;
+
+                        if (name == null)
+                        {
+                            name = GetTrimmedName(f.GetType(), filterSuffix);
+                        }
 
                         return IsMatchingMetadataName(name, filterName);
                     });
@@ -291,20 +334,29 @@ namespace Microsoft.FeatureManagement
 
         private IFeatureVariantAssignerMetadata GetFeatureAssignerMetadata(string assignerName)
         {
+            const string assignerSuffix = "assigner";
+
             IFeatureVariantAssignerMetadata assigner = _assignerMetadataCache.GetOrAdd(
                 assignerName,
                 (_) => {
 
-                    IEnumerable<IFeatureVariantAssignerMetadata> matchingAssigners = _variantAssigners.Where(f =>
+                    IEnumerable<IFeatureVariantAssignerMetadata> matchingAssigners = _variantAssigners.Where(a =>
                     {
-                        string name = GetMetadataName(f.GetType());
+                        Type filterType = a.GetType();
+
+                        string name = ((AssignerAliasAttribute)Attribute.GetCustomAttribute(filterType, typeof(AssignerAliasAttribute)))?.Alias;
+
+                        if (name == null)
+                        {
+                            name = GetTrimmedName(a.GetType(), assignerSuffix);
+                        }
 
                         return IsMatchingMetadataName(name, assignerName);
                     });
 
                     if (matchingAssigners.Count() > 1)
                     {
-                        throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureFilter, $"Multiple feature assigners match the configured assigner named '{assignerName}'.");
+                        throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureVariantAssigner, $"Multiple feature variant assigners match the configured assigner named '{assignerName}'.");
                     }
 
                     return matchingAssigners.FirstOrDefault();
@@ -314,27 +366,22 @@ namespace Microsoft.FeatureManagement
             return assigner;
         }
 
-        private static string GetMetadataName(Type type)
+        /// <summary>
+        /// Get's a trimmed name for the provided type
+        /// </summary>
+        /// <param name="type">The type who's name to use.</param>
+        /// <param name="suffix">The possible suffix that may need trimming.</param>
+        /// <returns></returns>
+        private static string GetTrimmedName(Type type, string suffix)
         {
-            const string filterSuffix = "filter";
-            const string assignerSuffix = "assigner";
-
             Debug.Assert(type != null);
+            Debug.Assert(suffix != null);
 
-            string name = ((FilterAliasAttribute)Attribute.GetCustomAttribute(type, typeof(FilterAliasAttribute)))?.Alias;
+            string name = type.Name;
 
-            if (name == null)
+            if (name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
             {
-                name = type.Name;
-
-                if (name.EndsWith(filterSuffix, StringComparison.OrdinalIgnoreCase))
-                {
-                    name = name.Substring(0, name.Length - filterSuffix.Length);
-                }
-                else if (name.EndsWith(assignerSuffix, StringComparison.OrdinalIgnoreCase))
-                {
-                    name = name.Substring(0, name.Length - assignerSuffix.Length);
-                }
+                name = name.Substring(0, name.Length - suffix.Length);
             }
 
             return name;
@@ -384,7 +431,7 @@ namespace Microsoft.FeatureManagement
             return filter;
         }
 
-        private ContextualFeatureVariantAssignerEvaluator GetContextualFeatureVariantAssigner(string assignerName, Type appContextType)
+        private ContextualFeatureVariantAssignerEvaluator GetContextualFeatureVariantAssigner(string assignerName,  Type appContextType)
         {
             if (appContextType == null)
             {

@@ -15,7 +15,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// A feature variant assigner that can be used to assign a variant based on targeted audiences.
     /// </summary>
-    [FilterAlias(Alias)]
+    [AssignerAlias(Alias)]
     public class ContextualTargetingFeatureVariantAssigner : IContextualFeatureVariantAssigner<ITargetingContext>
     {
         private const string Alias = "Microsoft.Targeting";
@@ -39,11 +39,26 @@ namespace Microsoft.FeatureManagement
         /// <returns></returns>
         public ValueTask<FeatureVariant> AssignVariantAsync(FeatureVariantAssignmentContext variantAssignmentContext, ITargetingContext targetingContext, CancellationToken cancellationToken)
         {
+            if (variantAssignmentContext == null)
+            {
+                throw new ArgumentNullException(nameof(variantAssignmentContext));
+            }
+
+            if (targetingContext == null)
+            {
+                throw new ArgumentNullException(nameof(targetingContext));
+            }
+
             FeatureDefinition featureDefinition = variantAssignmentContext.FeatureDefinition;
 
             if (featureDefinition == null)
             {
-                return new ValueTask<FeatureVariant>((FeatureVariant)null);
+                throw new ArgumentNullException(nameof(variantAssignmentContext.FeatureDefinition));
+            }
+
+            if (featureDefinition.Variants == null)
+            {
+                throw new ArgumentNullException(nameof(featureDefinition.Variants));
             }
 
             FeatureVariant variant = null;
@@ -54,56 +69,54 @@ namespace Microsoft.FeatureManagement
 
             var cumulativeGroups = new Dictionary<string, double>();
 
-            if (featureDefinition.Variants != null)
+            foreach (FeatureVariant v in featureDefinition.Variants)
             {
-                foreach (FeatureVariant v in featureDefinition.Variants)
+                if (defaultVariant == null && v.Default)
                 {
-                    if (defaultVariant == null && v.Default)
+                    defaultVariant = v;
+                }
+
+                TargetingFilterSettings targetingSettings = v.AssignmentParameters.Get<TargetingFilterSettings>();
+
+                if (targetingSettings == null)
+                {
+                    if (v.Default)
                     {
-                        defaultVariant = v;
+                        //
+                        // Valid to omit audience for default variant
+                        continue;
                     }
-
-                    TargetingFilterSettings targetingSettings = v.AssignmentParameters.Get<TargetingFilterSettings>();
-
-                    if (targetingSettings == null)
+                    else
                     {
-                        if (v.Default)
-                        {
-                            //
-                            // Valid to omit audience for default variant
-                            continue;
-                        }
-                        else
-                        {
-                            targetingSettings = new TargetingFilterSettings();
-                        }
-                    }
-
-                    if (!TargetingEvaluator.TryValidateSettings(targetingSettings, out string paramName, out string reason))
-                    {
-                        throw new ArgumentException(reason, paramName);
-                    }
-
-                    AccumulateAudience(targetingSettings.Audience, ref cumulativePercentage, ref cumulativeGroups);
-
-                    if (TargetingEvaluator.IsTargeted(targetingSettings, targetingContext, _options.IgnoreCase, featureDefinition.Name))
-                    {
-                        variant = v;
-
-                        break;
+                        targetingSettings = new TargetingFilterSettings();
                     }
                 }
-            }
 
-            if (variant == null)
-            {
-                variant = defaultVariant;
+                if (!TargetingEvaluator.TryValidateSettings(targetingSettings, out string paramName, out string reason))
+                {
+                    throw new ArgumentException(reason, paramName);
+                }
+
+                AccumulateAudience(targetingSettings.Audience, cumulativeGroups, ref cumulativePercentage);
+
+                if (TargetingEvaluator.IsTargeted(targetingSettings, targetingContext, _options.IgnoreCase, featureDefinition.Name))
+                {
+                    variant = v;
+
+                    break;
+                }
             }
 
             return new ValueTask<FeatureVariant>(variant);
         }
 
-        private static void AccumulateAudience(Audience audience, ref double cumulativePercentage, ref Dictionary<string, double> cumulativeGroups)
+        /// <summary>
+        /// Accumulates percentages for groups and the default rollout for an audience.
+        /// </summary>
+        /// <param name="audience">The audience that will have its percentages updated based on currently accumulated percentages</param>
+        /// <param name="cumulativePercentage">The current cumulative default rollout percentage</param>
+        /// <param name="cumulativeGroups">The current cumulative rollout percentage for each group</param>
+        private static void AccumulateAudience(Audience audience, Dictionary<string, double> cumulativeGroups, ref double cumulativePercentage)
         {
             if (audience.Groups != null)
             {
@@ -123,6 +136,8 @@ namespace Microsoft.FeatureManagement
             }
 
             cumulativePercentage = cumulativePercentage + audience.DefaultRolloutPercentage;
+
+            audience.DefaultRolloutPercentage = cumulativePercentage;
         }
     }
 }

@@ -13,7 +13,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// A feature variant assigner that can be used to assign a variant based on targeted audiences.
     /// </summary>
-    [FilterAlias(Alias)]
+    [AssignerAlias(Alias)]
     public class TargetingFeatureVariantAssigner : IFeatureVariantAssigner
     {
         private const string Alias = "Microsoft.Targeting";

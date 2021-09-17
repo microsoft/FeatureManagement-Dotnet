@@ -15,13 +15,10 @@ namespace FeatureFlagDemo.Controllers
     public class HomeController : Controller
     {
         private readonly IFeatureManager _featureManager;
-        private readonly IFeatureVariantManager _variantManager;
 
-        public HomeController(IFeatureManagerSnapshot featureSnapshot,
-                              IFeatureVariantManager variantManager)
+        public HomeController(IFeatureManagerSnapshot featureSnapshot)
         {
             _featureManager = featureSnapshot;
-            _variantManager = variantManager;
         }
 
         [FeatureGate(MyFeatureFlags.Home)]

@@ -24,7 +24,7 @@ namespace Microsoft.FeatureManagement
         /// Retrieves a typed representation of the configuration variant that should be used for a given feature.
         /// </summary>
         /// <typeparam name="T">The type that the variants configuration should be bound to.</typeparam>
-        /// <typeparam name="TContext">The type of the context being provided to the feature variant manger for use during the process of choosing which variant to use.</typeparam>
+        /// <typeparam name="TContext">The type of the context being provided to the feature variant manager for use during the process of choosing which variant to use.</typeparam>
         /// <param name="feature">The name of the feature.</param>
         /// <param name="context">A context providing information that can be used to evaluate whether a feature should be on or off.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>

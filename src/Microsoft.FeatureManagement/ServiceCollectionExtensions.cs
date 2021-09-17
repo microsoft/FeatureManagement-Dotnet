@@ -4,7 +4,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 
 namespace Microsoft.FeatureManagement
@@ -28,8 +27,6 @@ namespace Microsoft.FeatureManagement
             services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
 
             services.TryAddSingleton<IFeatureVariantOptionsResolver, ConfigurationFeatureVariantOptionsResolver>();
-
-            services.TryAddSingleton<IContextualFeatureVariantAssigner<ITargetingContext>, ContextualTargetingFeatureVariantAssigner>();
 
             services.AddSingleton<FeatureManager>();
 

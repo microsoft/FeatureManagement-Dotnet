@@ -15,7 +15,7 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// Assign a variant of a feature to be used based off of customized criteria.
         /// </summary>
-        /// <param name="variantAssignmentContext">Information provided by the system to be used during the assignment process.</param>
+        /// <param name="variantAssignmentContext">A variant assignment context that contains information needed to assign a variant for a feature.</param>
         /// <param name="appContext">A context defined by the application that is passed in to the feature management system to provide contextual information for assigning a variant of a feature.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>The variant that should be assigned for a given feature.</returns>

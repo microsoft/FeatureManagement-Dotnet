@@ -393,6 +393,98 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task AccumulatesAudience()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureVariantAssigner<ContextualTargetingFeatureVariantAssigner>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureVariantManager variantManager = serviceProvider.GetRequiredService<IFeatureVariantManager>();
+
+            var occurences = new Dictionary<string, int>();
+
+            //
+            // Test default rollout percentage accumulation
+            for (int i = 0; i < 3000; i++)
+            {
+                string result = await variantManager.GetVariantAsync<string, ITargetingContext>(
+                    "AccumulatedTargetingFeature",
+                    new TargetingContext
+                    {
+                        UserId = RandomHelper.GetRandomString(32)
+                    },
+                    CancellationToken.None);
+
+                if (!occurences.ContainsKey(result))
+                {
+                    occurences.Add(result, 1);
+                }
+                else
+                {
+                    occurences[result]++;
+                }
+            }
+
+            int total = occurences.Values.Aggregate((cur, t) => cur + t);
+
+            foreach (int count in occurences.Values)
+            {
+                double percentage = (double)count / total;
+
+                Assert.True(percentage > .25);
+                Assert.True(percentage < .4);
+            }
+            occurences.Clear();
+
+
+            //
+            // Test Group rollout accumulation
+            for (int i = 0; i < 3000; i++)
+            {
+                string result = await variantManager.GetVariantAsync<string, ITargetingContext>(
+                    "AccumulatedGroupsTargetingFeature",
+                    new TargetingContext
+                    {
+                        UserId = RandomHelper.GetRandomString(32),
+                        Groups = new string[] { "r", }
+                    },
+                    CancellationToken.None);
+
+                if (!occurences.ContainsKey(result))
+                {
+                    occurences.Add(result, 1);
+                }
+                else
+                {
+                    occurences[result]++;
+                }
+            }
+
+            total = occurences.Values.Aggregate((cur, t) => cur + t);
+
+            foreach (int count in occurences.Values)
+            {
+                double percentage = (double)count / total;
+
+                Assert.True(percentage > .25);
+                Assert.True(percentage < .4);
+            }
+        }
+
+        [Fact]
         public async Task TargetingAccessor()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();

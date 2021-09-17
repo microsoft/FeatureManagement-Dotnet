@@ -3,6 +3,7 @@
 //
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -11,7 +12,10 @@ namespace Microsoft.FeatureManagement.Targeting
 {
     static class TargetingEvaluator
     {
-        private static StringComparison ComparisonType(bool ignoreCase) => ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        private static StringComparison GetComparisonType(bool ignoreCase) =>
+            ignoreCase ?
+                StringComparison.OrdinalIgnoreCase :
+                StringComparison.Ordinal;
 
         public static bool IsTargeted(TargetingFilterSettings settings, ITargetingContext targetingContext, bool ignoreCase, string hint)
         {
@@ -34,23 +38,31 @@ namespace Microsoft.FeatureManagement.Targeting
             // Check if the user is being targeted directly
             if (targetingContext.UserId != null &&
                 settings.Audience.Users != null &&
-                settings.Audience.Users.Any(user => targetingContext.UserId.Equals(user, ComparisonType(ignoreCase))))
+                settings.Audience.Users.Any(user => targetingContext.UserId.Equals(user, GetComparisonType(ignoreCase))))
             {
                 return true;
             }
+
+            string userId = ignoreCase ?
+                targetingContext.UserId.ToLower() :
+                targetingContext.UserId;
 
             //
             // Check if the user is in a group that is being targeted
             if (targetingContext.Groups != null &&
                 settings.Audience.Groups != null)
             {
-                foreach (string group in targetingContext.Groups)
+                IEnumerable<string> groups = ignoreCase ?
+                    targetingContext.Groups.Select(g => g.ToLower()) :
+                    targetingContext.Groups;
+
+                foreach (string group in groups)
                 {
-                    GroupRollout groupRollout = settings.Audience.Groups.FirstOrDefault(g => g.Name.Equals(group, ComparisonType(ignoreCase)));
+                    GroupRollout groupRollout = settings.Audience.Groups.FirstOrDefault(g => g.Name.Equals(group, GetComparisonType(ignoreCase)));
 
                     if (groupRollout != null)
                     {
-                        string audienceContextId = $"{targetingContext.UserId}\n{hint}\n{group}";
+                        string audienceContextId = $"{userId}\n{hint}\n{group}";
 
                         if (IsTargeted(audienceContextId, groupRollout.RolloutPercentage))
                         {
@@ -62,7 +74,7 @@ namespace Microsoft.FeatureManagement.Targeting
 
             //
             // Check if the user is being targeted by a default rollout percentage
-            string defaultContextId = $"{targetingContext.UserId}\n{hint}";
+            string defaultContextId = $"{userId}\n{hint}";
 
             return IsTargeted(defaultContextId, settings.Audience.DefaultRolloutPercentage);
         }

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace Consoto.Banking.AccountService
 {
+    [AssignerAlias("Recurring")]
     class RecurringAssigner : IFeatureVariantAssigner
     {
         public ValueTask<FeatureVariant> AssignVariantAsync(FeatureVariantAssignmentContext variantAssignmentContext, CancellationToken _)
