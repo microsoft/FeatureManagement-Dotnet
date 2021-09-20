@@ -26,8 +26,6 @@ namespace Tests.FeatureManagement
         private const string OffFeature = "OffFeature";
         private const string ConditionalFeature = "ConditionalFeature";
         private const string ContextualFeature = "ContextualFeature";
-        private const string AlwaysOnFeature = "AlwaysOnFeature";
-        private const string NonEvaluatedAlwaysOnFeature = "NonEvaluatedAlwaysOnFeature";
 
         [Fact]
         public async Task ReadsConfiguration()
@@ -615,26 +613,6 @@ namespace Tests.FeatureManagement
             {
                 Assert.Equal(result, t.Result);
             }
-        }
-
-        [Fact]
-        public async Task TogglesEvaluation()
-        {
-            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-
-            var services = new ServiceCollection();
-
-            services
-                .AddSingleton(config)
-                .AddFeatureManagement();
-
-            ServiceProvider serviceProvider = services.BuildServiceProvider();
-
-            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
-
-            Assert.True(await featureManager.IsEnabledAsync(AlwaysOnFeature));
-
-            Assert.False(await featureManager.IsEnabledAsync(NonEvaluatedAlwaysOnFeature));
         }
 
         private static void DisableEndpointRouting(MvcOptions options)
