@@ -19,11 +19,5 @@ namespace Microsoft.FeatureManagement
         /// The feature filters that the feature can be enabled for.
         /// </summary>
         public IEnumerable<FeatureFilterConfiguration> EnabledFor { get; set; } = new List<FeatureFilterConfiguration>();
-
-        /// <summary>
-        /// Dictates whether the feature should be evaluated. If false, the feature will be considered disabled.
-        /// The default value is true.
-        /// </summary>
-        public bool Evaluate { get; set; } = true;
     }
 }
