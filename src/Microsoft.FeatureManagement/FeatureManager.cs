@@ -74,7 +74,8 @@ namespace Microsoft.FeatureManagement
 
             FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
 
-            if (featureDefinition != null)
+            if (featureDefinition != null
+                && featureDefinition.Evaluate)
             {
                 //
                 // Check if feature is always on
@@ -141,7 +142,7 @@ namespace Microsoft.FeatureManagement
                     }
                 }
             }
-            else
+            else if (featureDefinition == null)
             {
                 string errorMessage = $"The feature declaration for the feature '{feature}' was not found.";
 
