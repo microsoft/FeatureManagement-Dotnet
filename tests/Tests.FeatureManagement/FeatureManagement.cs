@@ -63,7 +63,7 @@ namespace Tests.FeatureManagement
 
                 Assert.Equal(ConditionalFeature, evaluationContext.FeatureName);
 
-                return true;
+                return Task.FromResult(true);
             };
 
             await featureManager.IsEnabledAsync(ConditionalFeature);
@@ -106,14 +106,14 @@ namespace Tests.FeatureManagement
 
             TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
 
-            testFeatureFilter.Callback = _ => true;
+            testFeatureFilter.Callback = _ => Task.FromResult(true);
 
             HttpResponseMessage res = await testServer.CreateClient().GetAsync("");
 
             Assert.True(res.Headers.Contains(nameof(MvcFilter)));
             Assert.True(res.Headers.Contains(nameof(RouterMiddleware)));
 
-            testFeatureFilter.Callback = _ => false;
+            testFeatureFilter.Callback = _ => Task.FromResult(false);
 
             res = await testServer.CreateClient().GetAsync("");
 
@@ -143,7 +143,7 @@ namespace Tests.FeatureManagement
 
             //
             // Enable all features
-            testFeatureFilter.Callback = ctx => true;
+            testFeatureFilter.Callback = ctx => Task.FromResult(true);
 
             HttpResponseMessage gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             HttpResponseMessage gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
@@ -153,7 +153,7 @@ namespace Tests.FeatureManagement
 
             //
             // Enable 1/2 features
-            testFeatureFilter.Callback = ctx => ctx.FeatureName == Enum.GetName(typeof(Features), Features.ConditionalFeature);
+            testFeatureFilter.Callback = ctx => Task.FromResult(ctx.FeatureName == Enum.GetName(typeof(Features), Features.ConditionalFeature));
 
             gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
@@ -163,7 +163,7 @@ namespace Tests.FeatureManagement
 
             //
             // Enable no
-            testFeatureFilter.Callback = ctx => false;
+            testFeatureFilter.Callback = ctx => Task.FromResult(false);
 
             gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
@@ -486,6 +486,31 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task ThrowsForMissingFeatures()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatures = false;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            FeatureManagementException fme = await Assert.ThrowsAsync<FeatureManagementException>(() =>
+                featureManager.IsEnabledAsync("NonExistentFeature"));
+        }
+
+        [Fact]
         public async Task CustomFeatureDefinitionProvider()
         {
             FeatureDefinition testFeature = new FeatureDefinition
@@ -530,12 +555,64 @@ namespace Tests.FeatureManagement
 
                 Assert.Equal(ConditionalFeature, evaluationContext.FeatureName);
 
-                return true;
+                return Task.FromResult(true);
             };
 
             await featureManager.IsEnabledAsync(ConditionalFeature);
 
             Assert.True(called);
+        }
+
+        [Fact]
+        public async Task ThreadsafeSnapshot()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManagerSnapshot>();
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            //
+            // Sync filter
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            bool called = false;
+
+            testFeatureFilter.Callback = async (evaluationContext) =>
+            {
+                called = true;
+
+                await Task.Delay(10);
+
+                return new Random().Next(0, 100) > 50;
+            };
+
+            var tasks = new List<Task<bool>>();
+
+            for (int i = 0; i < 1000; i++)
+            {
+                tasks.Add(featureManager.IsEnabledAsync(ConditionalFeature));
+            }
+
+            Assert.True(called);
+
+            await Task.WhenAll(tasks);
+
+            bool result = tasks.First().Result;
+
+            foreach (Task<bool> t in tasks)
+            {
+                Assert.Equal(result, t.Result);
+            }
         }
 
         private static void DisableEndpointRouting(MvcOptions options)

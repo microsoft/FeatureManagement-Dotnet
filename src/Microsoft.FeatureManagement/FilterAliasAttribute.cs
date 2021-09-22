@@ -18,7 +18,7 @@ namespace Microsoft.FeatureManagement
         {
             if (string.IsNullOrEmpty(alias))
             {
-                throw new ArgumentNullException(alias);
+                throw new ArgumentNullException(nameof(alias));
             }
 
             Alias = alias;
