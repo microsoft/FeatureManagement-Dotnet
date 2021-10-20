@@ -97,21 +97,21 @@ namespace Microsoft.FeatureManagement
             if (featureDefinition == null)
             {
                 throw new FeatureManagementException(
-                    FeatureManagementError.MissingFeatureFilter,
+                    FeatureManagementError.MissingFeature,
                     $"The feature declaration for the dynamic feature '{feature}' was not found.");
             }
 
             if (string.IsNullOrEmpty(featureDefinition.Assigner))
             {
                 throw new FeatureManagementException(
-                    FeatureManagementError.InvalidConfiguration,
+                    FeatureManagementError.MissingFeatureVariantAssigner,
                     $"Missing feature variant assigner name for the feature {feature}");
             }
 
             if (featureDefinition.Variants == null)
             {
                 throw new FeatureManagementException(
-                    FeatureManagementError.InvalidConfiguration,
+                    FeatureManagementError.MissingVariants,
                     $"No variants are registered for the feature {feature}");
             }
 
@@ -124,7 +124,7 @@ namespace Microsoft.FeatureManagement
                     if (defaultVariant != null)
                     {
                         throw new FeatureManagementException(
-                            FeatureManagementError.InvalidConfiguration,
+                            FeatureManagementError.AmbiguousDefaultVariant,
                             $"Multiple default variants are registered for the feature '{feature}'.");
                     }
 
@@ -142,11 +142,11 @@ namespace Microsoft.FeatureManagement
             if (defaultVariant == null)
             {
                 throw new FeatureManagementException(
-                    FeatureManagementError.InvalidConfiguration,
+                    FeatureManagementError.MissingDefaultVariant,
                     $"A default variant cannot be found for the feature '{feature}'.");
             }
 
-            IFeatureVariantAssignerMetadata assigner = GetFeatureAssignerMetadata(featureDefinition.Assigner);
+            IFeatureVariantAssignerMetadata assigner = GetFeatureVariantAssignerMetadata(featureDefinition.Assigner);
 
             if (assigner == null)
             {
@@ -236,7 +236,7 @@ namespace Microsoft.FeatureManagement
                         if (string.IsNullOrEmpty(featureFilterConfiguration.Name))
                         {
                             throw new FeatureManagementException(
-                                FeatureManagementError.InvalidConfiguration,
+                                FeatureManagementError.MissingFeatureFilter,
                                 $"Missing feature filter name for the feature {feature}");
                         }
 
@@ -314,10 +314,12 @@ namespace Microsoft.FeatureManagement
 
                         if (name == null)
                         {
-                            name = GetTrimmedName(f.GetType(), filterSuffix);
+                            name = filterType.Name;
                         }
 
-                        return IsMatchingMetadataName(name, filterName);
+                        return filterName.EndsWith(filterSuffix, StringComparison.OrdinalIgnoreCase) ?
+                            IsMatchingMetadataName(name, filterName) :
+                            IsMatchingMetadataName(GetTrimmedName(name, filterSuffix), filterName);
                     });
 
                     if (matchingFilters.Count() > 1)
@@ -332,7 +334,7 @@ namespace Microsoft.FeatureManagement
             return filter;
         }
 
-        private IFeatureVariantAssignerMetadata GetFeatureAssignerMetadata(string assignerName)
+        private IFeatureVariantAssignerMetadata GetFeatureVariantAssignerMetadata(string assignerName)
         {
             const string assignerSuffix = "assigner";
 
@@ -348,10 +350,12 @@ namespace Microsoft.FeatureManagement
 
                         if (name == null)
                         {
-                            name = GetTrimmedName(a.GetType(), assignerSuffix);
+                            name = filterType.Name;
                         }
 
-                        return IsMatchingMetadataName(name, assignerName);
+                        return assignerName.EndsWith(assignerSuffix, StringComparison.OrdinalIgnoreCase) ?
+                            IsMatchingMetadataName(name, assignerName) :
+                            IsMatchingMetadataName(GetTrimmedName(name, assignerSuffix), assignerName);
                     });
 
                     if (matchingAssigners.Count() > 1)
@@ -367,17 +371,15 @@ namespace Microsoft.FeatureManagement
         }
 
         /// <summary>
-        /// Get's a trimmed name for the provided type
+        /// Trims a suffix from a name if necessary
         /// </summary>
-        /// <param name="type">The type who's name to use.</param>
+        /// <param name="name">The name to trim.</param>
         /// <param name="suffix">The possible suffix that may need trimming.</param>
         /// <returns></returns>
-        private static string GetTrimmedName(Type type, string suffix)
+        private static string GetTrimmedName(string name, string suffix)
         {
-            Debug.Assert(type != null);
+            Debug.Assert(name != null);
             Debug.Assert(suffix != null);
-
-            string name = type.Name;
 
             if (name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
             {
@@ -442,7 +444,7 @@ namespace Microsoft.FeatureManagement
                 $"{assignerName}{Environment.NewLine}{appContextType.FullName}",
                 (_) => {
 
-                    IFeatureVariantAssignerMetadata metadata = GetFeatureAssignerMetadata(assignerName);
+                    IFeatureVariantAssignerMetadata metadata = GetFeatureVariantAssignerMetadata(assignerName);
 
                     return ContextualFeatureVariantAssignerEvaluator.IsContextualVariantAssigner(metadata, appContextType) ?
                         new ContextualFeatureVariantAssignerEvaluator(metadata, appContextType) :

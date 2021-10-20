@@ -63,19 +63,14 @@ namespace Microsoft.FeatureManagement
 
             FeatureVariant variant = null;
 
-            FeatureVariant defaultVariant = null;
-
             double cumulativePercentage = 0;
 
-            var cumulativeGroups = new Dictionary<string, double>();
+            var cumulativeGroups = new Dictionary<string, double>(
+                _options.IgnoreCase ? StringComparer.OrdinalIgnoreCase :
+                                      StringComparer.Ordinal);
 
             foreach (FeatureVariant v in featureDefinition.Variants)
             {
-                if (defaultVariant == null && v.Default)
-                {
-                    defaultVariant = v;
-                }
-
                 TargetingFilterSettings targetingSettings = v.AssignmentParameters.Get<TargetingFilterSettings>();
 
                 if (targetingSettings == null)
@@ -85,10 +80,6 @@ namespace Microsoft.FeatureManagement
                         //
                         // Valid to omit audience for default variant
                         continue;
-                    }
-                    else
-                    {
-                        targetingSettings = new TargetingFilterSettings();
                     }
                 }
 
@@ -114,9 +105,9 @@ namespace Microsoft.FeatureManagement
         /// Accumulates percentages for groups and the default rollout for an audience.
         /// </summary>
         /// <param name="audience">The audience that will have its percentages updated based on currently accumulated percentages</param>
-        /// <param name="cumulativePercentage">The current cumulative default rollout percentage</param>
+        /// <param name="cumulativeDefaultPercentage">The current cumulative default rollout percentage</param>
         /// <param name="cumulativeGroups">The current cumulative rollout percentage for each group</param>
-        private static void AccumulateAudience(Audience audience, Dictionary<string, double> cumulativeGroups, ref double cumulativePercentage)
+        private static void AccumulateAudience(Audience audience, Dictionary<string, double> cumulativeGroups, ref double cumulativeDefaultPercentage)
         {
             if (audience.Groups != null)
             {
@@ -135,9 +126,9 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            cumulativePercentage = cumulativePercentage + audience.DefaultRolloutPercentage;
+            cumulativeDefaultPercentage = cumulativeDefaultPercentage + audience.DefaultRolloutPercentage;
 
-            audience.DefaultRolloutPercentage = cumulativePercentage;
+            audience.DefaultRolloutPercentage = cumulativeDefaultPercentage;
         }
     }
 }

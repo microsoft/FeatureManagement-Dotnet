@@ -34,11 +34,6 @@ namespace Microsoft.FeatureManagement
         MissingConfigurationReference,
 
         /// <summary>
-        /// An invalid configuration was encountered when performing a feature management operation.
-        /// </summary>
-        InvalidConfiguration,
-
-        /// <summary>
         /// A feature variant assigner being used in feature evaluation is invalid.
         /// </summary>
         InvalidFeatureVariantAssigner,
@@ -46,6 +41,21 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// A feature that was requested for evaluation was not found.
         /// </summary>
-        MissingFeature
+        MissingFeature,
+
+        /// <summary>
+        /// A dynamic feature does not have any feature variants registered.
+        /// </summary>
+        MissingVariants,
+
+        /// <summary>
+        /// A dynamic feature has multiple default feature variants configured.
+        /// </summary>
+        AmbiguousDefaultVariant,
+
+        /// <summary>
+        /// A dynamic feature does not have a default feature variant configured.
+        /// </summary>
+        MissingDefaultVariant
     }
 }

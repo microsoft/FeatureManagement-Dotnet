@@ -27,6 +27,8 @@ namespace Tests.FeatureManagement
         private const string OffFeature = "OffFeature";
         private const string ConditionalFeature = "ConditionalFeature";
         private const string ContextualFeature = "ContextualFeature";
+        private const string WithSuffixFeature = "WithSuffixFeature";
+        private const string WithoutSuffixFeature = "WithoutSuffixFeature";
 
         [Fact]
         public async Task ReadsConfiguration()
@@ -113,6 +115,52 @@ namespace Tests.FeatureManagement
             Assert.True(called);
 
             Assert.Equal("def", val);
+        }
+
+        [Fact]
+        public async Task AllowsSuffix()
+        {
+            /*
+             * Verifies a filter named ___Filter can be referenced with "___" or "___Filter"
+             */
+
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>()
+                .AddFeatureVariantAssigner<TestAssigner>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            bool called = false;
+
+            testFeatureFilter.Callback = (evaluationContext) =>
+            {
+                called = true;
+
+                return true;
+            };
+
+            await featureManager.IsEnabledAsync(WithSuffixFeature, CancellationToken.None);
+
+            Assert.True(called);
+
+            called = false;
+
+            await featureManager.IsEnabledAsync(WithoutSuffixFeature, CancellationToken.None);
+
+            Assert.True(called);
         }
 
         [Fact]
@@ -414,11 +462,15 @@ namespace Tests.FeatureManagement
 
             IFeatureVariantManager variantManager = serviceProvider.GetRequiredService<IFeatureVariantManager>();
 
+            IFeatureDefinitionProvider featureProvider = serviceProvider.GetRequiredService<IFeatureDefinitionProvider>();
+
             var occurences = new Dictionary<string, int>();
+
+            int totalAssignments = 3000;
 
             //
             // Test default rollout percentage accumulation
-            for (int i = 0; i < 3000; i++)
+            for (int i = 0; i < totalAssignments; i++)
             {
                 string result = await variantManager.GetVariantAsync<string, ITargetingContext>(
                     "AccumulatedTargetingFeature",
@@ -438,21 +490,24 @@ namespace Tests.FeatureManagement
                 }
             }
 
-            int total = occurences.Values.Aggregate((cur, t) => cur + t);
-
-            foreach (int count in occurences.Values)
+            foreach (KeyValuePair<string, int> occurence in occurences)
             {
-                double percentage = (double)count / total;
+                double expectedPercentage = double.Parse(occurence.Key);
 
-                Assert.True(percentage > .25);
-                Assert.True(percentage < .4);
+                double tolerance = expectedPercentage * .25;
+
+                double percentage = 100 * (double)occurence.Value / totalAssignments;
+
+                Assert.True(percentage > expectedPercentage - tolerance);
+
+                Assert.True(percentage < expectedPercentage + tolerance);
             }
-            occurences.Clear();
 
+            occurences.Clear();
 
             //
             // Test Group rollout accumulation
-            for (int i = 0; i < 3000; i++)
+            for (int i = 0; i < totalAssignments; i++)
             {
                 string result = await variantManager.GetVariantAsync<string, ITargetingContext>(
                     "AccumulatedGroupsTargetingFeature",
@@ -473,14 +528,17 @@ namespace Tests.FeatureManagement
                 }
             }
 
-            total = occurences.Values.Aggregate((cur, t) => cur + t);
-
-            foreach (int count in occurences.Values)
+            foreach (KeyValuePair<string, int> occurence in occurences)
             {
-                double percentage = (double)count / total;
+                double expectedPercentage = double.Parse(occurence.Key);
 
-                Assert.True(percentage > .25);
-                Assert.True(percentage < .4);
+                double tolerance = expectedPercentage * .25;
+
+                double percentage = 100 * (double)occurence.Value / totalAssignments;
+
+                Assert.True(percentage > expectedPercentage - tolerance);
+
+                Assert.True(percentage < expectedPercentage + tolerance);
             }
         }
 

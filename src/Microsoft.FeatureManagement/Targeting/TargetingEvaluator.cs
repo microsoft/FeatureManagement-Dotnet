@@ -96,6 +96,15 @@ namespace Microsoft.FeatureManagement.Targeting
 
             reason = null;
 
+            if (targetingSettings == null)
+            {
+                paramName = nameof(FeatureFilterConfiguration.Parameters);
+
+                reason = RequiredParameter;
+
+                return false;
+            }
+
             if (targetingSettings.Audience == null)
             {
                 paramName = nameof(targetingSettings.Audience);
