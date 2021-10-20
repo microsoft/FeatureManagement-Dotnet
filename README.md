@@ -20,6 +20,12 @@ Here are some of the benefits of using this library:
 
 **API Reference**: https://go.microsoft.com/fwlink/?linkid=2091700
 
+## Packages
+
+| Namespace | Package |
+| --- | --- |
+| Microsoft.FeatureManagement | ![Nuget](https://img.shields.io/nuget/v/Microsoft.FeatureManagement?label=Nuget%20Microsoft.FeatureManagement)|
+
 ### Feature Flags
 Feature flags are composed of two parts, a name and a list of feature-filters that are used to turn the feature on.
 
@@ -576,3 +582,4 @@ provided by the bot. You will only need to do this once across all repos using o
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
 contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+
