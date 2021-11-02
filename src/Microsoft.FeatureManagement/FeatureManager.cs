@@ -317,9 +317,7 @@ namespace Microsoft.FeatureManagement
                             name = filterType.Name;
                         }
 
-                        return filterName.EndsWith(filterSuffix, StringComparison.OrdinalIgnoreCase) ?
-                            IsMatchingMetadataName(name, filterName) :
-                            IsMatchingMetadataName(GetTrimmedName(name, filterSuffix), filterName);
+                        return IsMatchingMetadataName(name, filterName, filterSuffix);
                     });
 
                     if (matchingFilters.Count() > 1)
@@ -344,18 +342,16 @@ namespace Microsoft.FeatureManagement
 
                     IEnumerable<IFeatureVariantAssignerMetadata> matchingAssigners = _variantAssigners.Where(a =>
                     {
-                        Type filterType = a.GetType();
+                        Type assignerType = a.GetType();
 
-                        string name = ((AssignerAliasAttribute)Attribute.GetCustomAttribute(filterType, typeof(AssignerAliasAttribute)))?.Alias;
+                        string name = ((AssignerAliasAttribute)Attribute.GetCustomAttribute(assignerType, typeof(AssignerAliasAttribute)))?.Alias;
 
                         if (name == null)
                         {
-                            name = filterType.Name;
+                            name = assignerType.Name;
                         }
 
-                        return assignerName.EndsWith(assignerSuffix, StringComparison.OrdinalIgnoreCase) ?
-                            IsMatchingMetadataName(name, assignerName) :
-                            IsMatchingMetadataName(GetTrimmedName(name, assignerSuffix), assignerName);
+                        return IsMatchingMetadataName(name, assignerName, assignerSuffix);
                     });
 
                     if (matchingAssigners.Count() > 1)
@@ -387,6 +383,16 @@ namespace Microsoft.FeatureManagement
             }
 
             return name;
+        }
+
+        private static bool IsMatchingMetadataName(string metadataName, string desiredName, string suffix)
+        {
+            //
+            // Support matching with suffix, i.e. "CustomFilter"
+            // Or without, i.e. "Custom"
+            return desiredName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase) ?
+                IsMatchingMetadataName(metadataName, desiredName) :
+                IsMatchingMetadataName(GetTrimmedName(metadataName, suffix), desiredName);
         }
 
         private static bool IsMatchingMetadataName(string metadataName, string desiredName)
