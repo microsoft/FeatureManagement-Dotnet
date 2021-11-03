@@ -111,7 +111,7 @@ namespace Microsoft.FeatureManagement
             if (featureDefinition.Variants == null)
             {
                 throw new FeatureManagementException(
-                    FeatureManagementError.MissingVariants,
+                    FeatureManagementError.MissingFeatureVariant,
                     $"No variants are registered for the feature {feature}");
             }
 
@@ -124,7 +124,7 @@ namespace Microsoft.FeatureManagement
                     if (defaultVariant != null)
                     {
                         throw new FeatureManagementException(
-                            FeatureManagementError.AmbiguousDefaultVariant,
+                            FeatureManagementError.AmbiguousDefaultFeatureVariant,
                             $"Multiple default variants are registered for the feature '{feature}'.");
                     }
 
@@ -142,7 +142,7 @@ namespace Microsoft.FeatureManagement
             if (defaultVariant == null)
             {
                 throw new FeatureManagementException(
-                    FeatureManagementError.MissingDefaultVariant,
+                    FeatureManagementError.MissingDefaultFeatureVariant,
                     $"A default variant cannot be found for the feature '{feature}'.");
             }
 
@@ -366,37 +366,17 @@ namespace Microsoft.FeatureManagement
             return assigner;
         }
 
-        /// <summary>
-        /// Trims a suffix from a name if necessary
-        /// </summary>
-        /// <param name="name">The name to trim.</param>
-        /// <param name="suffix">The possible suffix that may need trimming.</param>
-        /// <returns></returns>
-        private static string GetTrimmedName(string name, string suffix)
-        {
-            Debug.Assert(name != null);
-            Debug.Assert(suffix != null);
-
-            if (name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-            {
-                name = name.Substring(0, name.Length - suffix.Length);
-            }
-
-            return name;
-        }
-
         private static bool IsMatchingMetadataName(string metadataName, string desiredName, string suffix)
         {
             //
-            // Support matching with suffix, i.e. "CustomFilter"
-            // Or without, i.e. "Custom"
-            return desiredName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase) ?
-                IsMatchingMetadataName(metadataName, desiredName) :
-                IsMatchingMetadataName(GetTrimmedName(metadataName, suffix), desiredName);
-        }
+            // Feature filters can be referenced with or without the 'filter' suffix
+            // E.g. A feature can reference a filter named 'CustomFilter' as 'Custom' or 'CustomFilter'
+            if (!desiredName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase) &&
+                metadataName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                metadataName = metadataName.Substring(0, metadataName.Length - suffix.Length);
+            }
 
-        private static bool IsMatchingMetadataName(string metadataName, string desiredName)
-        {
             //
             // Feature filters can have namespaces in their alias
             // If a feature is configured to use a filter without a namespace such as 'MyFilter', then it can match 'MyOrg.MyProduct.MyFilter' or simply 'MyFilter'

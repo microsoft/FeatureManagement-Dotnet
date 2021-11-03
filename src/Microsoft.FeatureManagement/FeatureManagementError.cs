@@ -46,16 +46,16 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// A dynamic feature does not have any feature variants registered.
         /// </summary>
-        MissingVariants,
+        MissingFeatureVariant,
 
         /// <summary>
         /// A dynamic feature has multiple default feature variants configured.
         /// </summary>
-        AmbiguousDefaultVariant,
+        AmbiguousDefaultFeatureVariant,
 
         /// <summary>
         /// A dynamic feature does not have a default feature variant configured.
         /// </summary>
-        MissingDefaultVariant
+        MissingDefaultFeatureVariant
     }
 }
