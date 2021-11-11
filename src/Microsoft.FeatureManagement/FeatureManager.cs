@@ -160,35 +160,28 @@ namespace Microsoft.FeatureManagement
                 FeatureDefinition = featureDefinition
             };
 
-            if (!useAppContext)
+            //
+            // IFeatureVariantAssigner
+            if (assigner is IFeatureVariantAssigner featureVariantAssigner)
             {
-                if (assigner is IFeatureVariantAssigner featureVariantAssigner)
-                {
-                    variant = await featureVariantAssigner.AssignVariantAsync(context, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    throw new FeatureManagementException(
-                        FeatureManagementError.InvalidFeatureVariantAssigner,
-                        $"The feature variant assigner '{featureDefinition.Assigner}' specified for feature '{feature}' is not capable of evaluating the requested feature without a provided context.");
-                }
+                variant = await featureVariantAssigner.AssignVariantAsync(context, cancellationToken).ConfigureAwait(false);
             }
+            //
+            // IContextualFeatureVariantAssigner
+            else if (useAppContext &&
+                     TryGetContextualFeatureVariantAssigner(featureDefinition.Assigner, typeof(TContext), out ContextualFeatureVariantAssignerEvaluator contextualAssigner))
+            {
+                variant = await contextualAssigner.AssignVariantAsync(context, appContext, cancellationToken).ConfigureAwait(false);
+            }
+            //
+            // The assigner doesn't implement a feature variant assigner interface capable of performing the evaluation
             else
             {
-                ContextualFeatureVariantAssignerEvaluator contextualAssigner = GetContextualFeatureVariantAssigner(
-                    featureDefinition.Assigner,
-                    typeof(TContext));
-
-                if (contextualAssigner != null)
-                {
-                    variant = await contextualAssigner.AssignVariantAsync(context, appContext, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    throw new FeatureManagementException(
-                        FeatureManagementError.InvalidFeatureVariantAssigner,
-                        $"The feature variant assigner '{featureDefinition.Assigner}' specified for feature '{feature}' is not capable of evaluating the requested feature with the provided context.");
-                }
+                throw new FeatureManagementException(
+                    FeatureManagementError.InvalidFeatureVariantAssigner,
+                    useAppContext ?
+                        $"The feature variant assigner '{featureDefinition.Assigner}' specified for the feature '{feature}' is not capable of evaluating the requested feature with the provided context." :
+                        $"The feature variant assigner '{featureDefinition.Assigner}' specified for the feature '{feature}' is not capable of evaluating the requested feature.");
             }
 
             if (variant == null)
@@ -265,26 +258,37 @@ namespace Microsoft.FeatureManagement
                         };
 
                         //
-                        // IContextualFeatureFilter
-                        if (useAppContext)
+                        // IFeatureFilter
+                        if (filter is IFeatureFilter featureFilter)
                         {
-                            ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
-
-                            if (contextualFilter != null && await contextualFilter.EvaluateAsync(context, appContext, cancellationToken).ConfigureAwait(false))
+                            if (await featureFilter.EvaluateAsync(context, cancellationToken).ConfigureAwait(false))
                             {
                                 enabled = true;
 
                                 break;
                             }
                         }
-
                         //
-                        // IFeatureFilter
-                        if (filter is IFeatureFilter featureFilter && await featureFilter.EvaluateAsync(context, cancellationToken).ConfigureAwait(false))
+                        // IContextualFeatureFilter
+                        else if (useAppContext &&
+                                 TryGetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext), out ContextualFeatureFilterEvaluator contextualFilter))
                         {
-                            enabled = true;
+                            if (await contextualFilter.EvaluateAsync(context, appContext, cancellationToken).ConfigureAwait(false))
+                            {
+                                enabled = true;
 
-                            break;
+                                break;
+                            }
+                        }
+                        //
+                        // The filter doesn't implement a feature filter interface capable of performing the evaluation
+                        else
+                        {
+                            throw new FeatureManagementException(
+                                FeatureManagementError.InvalidFeatureFilter,
+                                useAppContext ?
+                                    $"The feature filter '{featureFilterConfiguration.Name}' specified for the feature '{feature}' is not capable of evaluating the requested feature with the provided context." :
+                                    $"The feature filter '{featureFilterConfiguration.Name}' specified for the feature '{feature}' is not capable of evaluating the requested feature.");
                         }
                     }
                 }
@@ -397,14 +401,14 @@ namespace Microsoft.FeatureManagement
             }
         }
 
-        private ContextualFeatureFilterEvaluator GetContextualFeatureFilter(string filterName, Type appContextType)
+        private bool TryGetContextualFeatureFilter(string filterName, Type appContextType, out ContextualFeatureFilterEvaluator filter)
         {
             if (appContextType == null)
             {
                 throw new ArgumentNullException(nameof(appContextType));
             }
 
-            ContextualFeatureFilterEvaluator filter = _contextualFeatureFilterCache.GetOrAdd(
+            filter = _contextualFeatureFilterCache.GetOrAdd(
                 $"{filterName}{Environment.NewLine}{appContextType.FullName}",
                 (_) => {
 
@@ -416,17 +420,17 @@ namespace Microsoft.FeatureManagement
                 }
             );
 
-            return filter;
+            return filter != null;
         }
 
-        private ContextualFeatureVariantAssignerEvaluator GetContextualFeatureVariantAssigner(string assignerName,  Type appContextType)
+        private bool TryGetContextualFeatureVariantAssigner(string assignerName,  Type appContextType, out ContextualFeatureVariantAssignerEvaluator assigner)
         {
             if (appContextType == null)
             {
                 throw new ArgumentNullException(nameof(appContextType));
             }
 
-            ContextualFeatureVariantAssignerEvaluator assigner = _contextualFeatureVariantAssignerCache.GetOrAdd(
+            assigner = _contextualFeatureVariantAssignerCache.GetOrAdd(
                 $"{assignerName}{Environment.NewLine}{appContextType.FullName}",
                 (_) => {
 
@@ -438,7 +442,7 @@ namespace Microsoft.FeatureManagement
                 }
             );
 
-            return assigner;
+            return assigner != null;
         }
     }
 }

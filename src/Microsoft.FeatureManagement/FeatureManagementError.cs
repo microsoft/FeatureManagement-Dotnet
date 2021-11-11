@@ -19,6 +19,11 @@ namespace Microsoft.FeatureManagement
         AmbiguousFeatureFilter,
 
         /// <summary>
+        /// A feature filter being used in feature evaluation is invalid.
+        /// </summary>
+        InvalidFeatureFilter,
+
+        /// <summary>
         /// A feature variant assigner that was listed for variant assignment was not found.
         /// </summary>
         MissingFeatureVariantAssigner,
