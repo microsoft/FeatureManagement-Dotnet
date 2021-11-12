@@ -98,7 +98,7 @@ namespace Microsoft.FeatureManagement.Targeting
 
             if (targetingSettings == null)
             {
-                paramName = nameof(FeatureFilterConfiguration.Parameters);
+                paramName = nameof(targetingSettings);
 
                 reason = RequiredParameter;
 

@@ -53,12 +53,16 @@ namespace Microsoft.FeatureManagement
 
             if (featureDefinition == null)
             {
-                throw new ArgumentNullException(nameof(variantAssignmentContext.FeatureDefinition));
+                throw new ArgumentException(
+                    $"{nameof(variantAssignmentContext)}.{nameof(variantAssignmentContext.FeatureDefinition)} cannot be null.",
+                    nameof(variantAssignmentContext));
             }
 
             if (featureDefinition.Variants == null)
             {
-                throw new ArgumentNullException(nameof(featureDefinition.Variants));
+                throw new ArgumentException(
+                    $"{nameof(variantAssignmentContext)}.{nameof(variantAssignmentContext.FeatureDefinition)}.{nameof(featureDefinition.Variants)} cannot be null.",
+                    nameof(variantAssignmentContext));
             }
 
             FeatureVariant variant = null;
