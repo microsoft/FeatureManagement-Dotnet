@@ -27,6 +27,8 @@ namespace Tests.FeatureManagement
         private const string OffFeature = "OffFeature";
         private const string ConditionalFeature = "ConditionalFeature";
         private const string ContextualFeature = "ContextualFeature";
+        private const string WithSuffixFeature = "WithSuffixFeature";
+        private const string WithoutSuffixFeature = "WithoutSuffixFeature";
 
         [Fact]
         public async Task ReadsConfiguration()
@@ -38,7 +40,8 @@ namespace Tests.FeatureManagement
             services
                 .AddSingleton(config)
                 .AddFeatureManagement()
-                .AddFeatureFilter<TestFilter>();
+                .AddFeatureFilter<TestFilter>()
+                .AddFeatureVariantAssigner<TestAssigner>();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
@@ -68,6 +71,94 @@ namespace Tests.FeatureManagement
             };
 
             await featureManager.IsEnabledAsync(ConditionalFeature, CancellationToken.None);
+
+            Assert.True(called);
+
+            IFeatureVariantManager variantManager = serviceProvider.GetRequiredService<IFeatureVariantManager>();
+
+            IEnumerable<IFeatureVariantAssignerMetadata> featureVariantAssigners = serviceProvider.GetRequiredService<IEnumerable<IFeatureVariantAssignerMetadata>>();
+
+            TestAssigner testAssigner = (TestAssigner)featureVariantAssigners.First(f => f is TestAssigner);
+
+            called = false;
+
+            testAssigner.Callback = (evaluationContext) =>
+            {
+                called = true;
+
+                Assert.Equal(2, evaluationContext.FeatureDefinition.Variants.Count());
+
+                Assert.Equal(Features.VariantFeature, evaluationContext.FeatureDefinition.Name);
+
+                FeatureVariant defaultVariant = evaluationContext.FeatureDefinition.Variants.First(v => v.Default);
+
+                FeatureVariant otherVariant = evaluationContext.FeatureDefinition.Variants.First(v => !v.Default);
+
+                //
+                // default variant
+                Assert.Equal("V1", defaultVariant.Name);
+
+                Assert.Equal("Ref1", defaultVariant.ConfigurationReference);
+
+                // other variant
+                Assert.Equal("V2", otherVariant.Name);
+
+                Assert.Equal("Ref2", otherVariant.ConfigurationReference);
+
+                Assert.Equal("V1", otherVariant.AssignmentParameters["P1"]);
+
+                return otherVariant;
+            };
+
+            string val = await variantManager.GetVariantAsync<string>(Features.VariantFeature, CancellationToken.None);
+
+            Assert.True(called);
+
+            Assert.Equal("def", val);
+        }
+
+        [Fact]
+        public async Task AllowsSuffix()
+        {
+            /*
+             * Verifies a filter named ___Filter can be referenced with "___" or "___Filter"
+             */
+
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>()
+                .AddFeatureVariantAssigner<TestAssigner>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            bool called = false;
+
+            testFeatureFilter.Callback = (evaluationContext) =>
+            {
+                called = true;
+
+                return true;
+            };
+
+            await featureManager.IsEnabledAsync(WithSuffixFeature, CancellationToken.None);
+
+            Assert.True(called);
+
+            called = false;
+
+            await featureManager.IsEnabledAsync(WithoutSuffixFeature, CancellationToken.None);
 
             Assert.True(called);
         }
@@ -154,7 +245,7 @@ namespace Tests.FeatureManagement
 
             //
             // Enable 1/2 features
-            testFeatureFilter.Callback = ctx => ctx.FeatureName == Enum.GetName(typeof(Features), Features.ConditionalFeature);
+            testFeatureFilter.Callback = ctx => ctx.FeatureName == Features.ConditionalFeature;
 
             gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
@@ -266,7 +357,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            string targetingTestFeature = Enum.GetName(typeof(Features), Features.TargetingTestFeature);
+            string targetingTestFeature = Features.TargetingTestFeature;
 
             //
             // Targeted by user id
@@ -307,6 +398,151 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task VariantTargeting()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureVariantAssigner<ContextualTargetingFeatureVariantAssigner>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureVariantManager variantManager = serviceProvider.GetRequiredService<IFeatureVariantManager>();
+
+            //
+            // Targeted
+            Assert.Equal("def", await variantManager.GetVariantAsync<string, ITargetingContext>(
+                Features.ContextualVariantTargetingFeature,
+                new TargetingContext
+                {
+                    UserId = "Jeff"
+                },
+                CancellationToken.None));
+
+            //
+            // Not targeted
+            Assert.Equal("abc", await variantManager.GetVariantAsync<string, ITargetingContext>(
+                Features.ContextualVariantTargetingFeature,
+                new TargetingContext
+                {
+                    UserId = "Patty"
+                },
+                CancellationToken.None));
+        }
+
+        [Fact]
+        public async Task AccumulatesAudience()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureVariantAssigner<ContextualTargetingFeatureVariantAssigner>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureVariantManager variantManager = serviceProvider.GetRequiredService<IFeatureVariantManager>();
+
+            IFeatureDefinitionProvider featureProvider = serviceProvider.GetRequiredService<IFeatureDefinitionProvider>();
+
+            var occurences = new Dictionary<string, int>();
+
+            int totalAssignments = 3000;
+
+            //
+            // Test default rollout percentage accumulation
+            for (int i = 0; i < totalAssignments; i++)
+            {
+                string result = await variantManager.GetVariantAsync<string, ITargetingContext>(
+                    "AccumulatedTargetingFeature",
+                    new TargetingContext
+                    {
+                        UserId = RandomHelper.GetRandomString(32)
+                    },
+                    CancellationToken.None);
+
+                if (!occurences.ContainsKey(result))
+                {
+                    occurences.Add(result, 1);
+                }
+                else
+                {
+                    occurences[result]++;
+                }
+            }
+
+            foreach (KeyValuePair<string, int> occurence in occurences)
+            {
+                double expectedPercentage = double.Parse(occurence.Key);
+
+                double tolerance = expectedPercentage * .25;
+
+                double percentage = 100 * (double)occurence.Value / totalAssignments;
+
+                Assert.True(percentage > expectedPercentage - tolerance);
+
+                Assert.True(percentage < expectedPercentage + tolerance);
+            }
+
+            occurences.Clear();
+
+            //
+            // Test Group rollout accumulation
+            for (int i = 0; i < totalAssignments; i++)
+            {
+                string result = await variantManager.GetVariantAsync<string, ITargetingContext>(
+                    "AccumulatedGroupsTargetingFeature",
+                    new TargetingContext
+                    {
+                        UserId = RandomHelper.GetRandomString(32),
+                        Groups = new string[] { "r", }
+                    },
+                    CancellationToken.None);
+
+                if (!occurences.ContainsKey(result))
+                {
+                    occurences.Add(result, 1);
+                }
+                else
+                {
+                    occurences[result]++;
+                }
+            }
+
+            foreach (KeyValuePair<string, int> occurence in occurences)
+            {
+                double expectedPercentage = double.Parse(occurence.Key);
+
+                double tolerance = expectedPercentage * .25;
+
+                double percentage = 100 * (double)occurence.Value / totalAssignments;
+
+                Assert.True(percentage > expectedPercentage - tolerance);
+
+                Assert.True(percentage < expectedPercentage + tolerance);
+            }
+        }
+
+        [Fact]
         public async Task TargetingAccessor()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
@@ -332,7 +568,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            string beta = Enum.GetName(typeof(Features), Features.TargetingTestFeature);
+            string beta = Features.TargetingTestFeature;
 
             //
             // Targeted by user id
@@ -391,6 +627,58 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task UsesContextVariants()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureVariantAssigner<ContextualTestAssigner>();
+
+            ServiceProvider provider = serviceCollection.BuildServiceProvider();
+
+            ContextualTestAssigner contextualAssigner = (ContextualTestAssigner)provider
+                .GetRequiredService<IEnumerable<IFeatureVariantAssignerMetadata>>().First(f => f is ContextualTestAssigner);
+
+            contextualAssigner.Callback = (ctx, accountContext) =>
+            {
+                foreach (FeatureVariant variant in ctx.FeatureDefinition.Variants)
+                {
+                    var allowedAccounts = new List<string>();
+
+                    variant.AssignmentParameters.Bind("AllowedAccounts", allowedAccounts);
+
+                    if (allowedAccounts.Contains(accountContext.AccountId))
+                    {
+                        return variant;
+                    }
+                }
+
+                return ctx.FeatureDefinition.Variants.FirstOrDefault(v => v.Default);
+            };
+
+            IFeatureVariantManager variantManager = provider.GetRequiredService<IFeatureVariantManager>();
+
+            AppContext context = new AppContext();
+
+            context.AccountId = "NotEnabledAccount";
+
+            Assert.Equal("abc", await variantManager.GetVariantAsync<string, IAccountContext>(
+                Features.ContextualVariantFeature,
+                context,
+                CancellationToken.None));
+
+            context.AccountId = "abc";
+
+            Assert.Equal("def", await variantManager.GetVariantAsync<string, IAccountContext>(
+                Features.ContextualVariantFeature,
+                context,
+                CancellationToken.None));
+        }
+
+        [Fact]
         public void LimitsFeatureFilterImplementations()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
@@ -409,6 +697,28 @@ namespace Tests.FeatureManagement
                 new ServiceCollection().AddSingleton(config)
                     .AddFeatureManagement()
                     .AddFeatureFilter<InvalidFeatureFilter2>();
+            });
+        }
+
+        [Fact]
+        public void LimitsFeatureVariantAssignerImplementations()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var serviceCollection = new ServiceCollection();
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                new ServiceCollection().AddSingleton(config)
+                    .AddFeatureManagement()
+                    .AddFeatureVariantAssigner<InvalidFeatureVariantAssigner>();
+            });
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                new ServiceCollection().AddSingleton(config)
+                    .AddFeatureManagement()
+                    .AddFeatureVariantAssigner<InvalidFeatureVariantAssigner2>();
             });
         }
 
@@ -455,8 +765,8 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(
-                async () => await featureManager.IsEnabledAsync(ConditionalFeature, CancellationToken.None));
+            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () =>
+                await featureManager.IsEnabledAsync(ConditionalFeature, CancellationToken.None));
 
             Assert.Equal(FeatureManagementError.MissingFeatureFilter, e.Error);
         }
@@ -509,6 +819,7 @@ namespace Tests.FeatureManagement
             var services = new ServiceCollection();
 
             services.AddSingleton<IFeatureDefinitionProvider>(new InMemoryFeatureDefinitionProvider(new FeatureDefinition[] { testFeature }))
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
                     .AddFeatureManagement()
                     .AddFeatureFilter<TestFilter>();
 

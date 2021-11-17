@@ -29,7 +29,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         public TargetingFilter(IOptions<TargetingEvaluationOptions> options, ITargetingContextAccessor contextAccessor, ILoggerFactory loggerFactory)
         {
             _contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
-            _contextualFilter = new ContextualTargetingFilter(options, loggerFactory);
+            _contextualFilter = new ContextualTargetingFilter(options);
             _logger = loggerFactory?.CreateLogger<TargetingFilter>() ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 

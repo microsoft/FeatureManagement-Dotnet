@@ -1,4 +1,10 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.FeatureManagement
+@inject IFeatureVariantManager variantManager;
+@{
+    DiscountBannerOptions opts = await variantManager.GetVariantAsync<DiscountBannerOptions>("DiscountBanner", Context.RequestAborted);
+}
+
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
@@ -15,6 +21,14 @@
               asp-fallback-test-class="sr-only" asp-fallback-test-property="position" asp-fallback-test-value="absolute" />
         <link rel="stylesheet" href="~/css/site.min.css" asp-append-version="true" />
     </environment>
+    <style type="text/css">
+        .notification-banner {
+            text-align: center;
+            color: @opts.Color;
+            font-size: @(opts.Size)px;
+            background: @(opts.Background)
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar navbar-inverse navbar-fixed-top">
@@ -42,7 +56,9 @@
     </nav>
 
     <partial name="_CookieConsentPartial" />
-
+    <div class="notification-banner">
+        New Sale, 50% Off !
+    </div>
     <div class="container body-content">
         @RenderBody()
     </div>

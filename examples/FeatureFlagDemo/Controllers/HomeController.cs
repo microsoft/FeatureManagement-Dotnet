@@ -31,9 +31,9 @@ namespace FeatureFlagDemo.Controllers
         {
             ViewData["Message"] = "Your application description page.";
 
-            if (await _featureManager.IsEnabledAsync(nameof(MyFeatureFlags.CustomViewData), cancellationToken))
+            if (await _featureManager.IsEnabledAsync(MyFeatureFlags.CustomViewData, cancellationToken))
             {
-                ViewData["Message"] = $"This is FANCY CONTENT you can see only if '{nameof(MyFeatureFlags.CustomViewData)}' is enabled.";
+                ViewData["Message"] = $"This is FANCY CONTENT you can see only if '{MyFeatureFlags.CustomViewData}' is enabled.";
             };
 
             return View();

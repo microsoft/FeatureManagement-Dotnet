@@ -46,6 +46,11 @@ namespace Microsoft.FeatureManagement
 
         public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext evaluationContext, object context, CancellationToken cancellationToken)
         {
+            if (evaluationContext == null)
+            {
+                throw new ArgumentNullException(nameof(evaluationContext));
+            }
+
             if (_evaluateFunc == null)
             {
                 return Task.FromResult(false);
@@ -56,6 +61,16 @@ namespace Microsoft.FeatureManagement
 
         public static bool IsContextualFilter(IFeatureFilterMetadata filter, Type appContextType)
         {
+            if (filter == null)
+            {
+                throw new ArgumentNullException(nameof(filter));
+            }
+
+            if (appContextType == null)
+            {
+                throw new ArgumentNullException(nameof(appContextType));
+            }
+
             return GetContextualFilterInterface(filter, appContextType) != null;
         }
 
