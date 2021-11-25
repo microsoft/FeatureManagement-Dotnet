@@ -18,6 +18,7 @@ namespace Microsoft.FeatureManagement
     sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable
     {
         private const string FeatureFiltersSectionName = "EnabledFor";
+        private static readonly string[] SectionSeparator = new string[] { ConfigurationPath.KeyDelimiter };
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
@@ -83,8 +84,39 @@ namespace Microsoft.FeatureManagement
 
         private FeatureDefinition ReadFeatureDefinition(string featureName)
         {
-            IConfigurationSection configuration = GetFeatureDefinitionSections()
-                                                    .FirstOrDefault(section => section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase));
+            IConfigurationSection configuration;
+
+            if (!featureName.Contains(ConfigurationPath.KeyDelimiter))
+            {
+                configuration = GetFeatureDefinitionSections()
+                    .FirstOrDefault(section => section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                //
+                // Feature names with configuration path delimiters require traversing children sections for resolution
+                IEnumerable<string> sectionNames = featureName.Split(SectionSeparator, StringSplitOptions.None);
+
+                IEnumerable<IConfigurationSection> sections;
+
+                IConfigurationSection section = null;
+
+                foreach (string sectionName in sectionNames)
+                {
+                    sections = section == null ?
+                        GetFeatureDefinitionSections() :
+                        section.GetChildren();
+
+                    section = sections.FirstOrDefault(section => section.Key.Equals(sectionName, StringComparison.OrdinalIgnoreCase));
+
+                    if (section == null)
+                    {
+                        break;
+                    }
+                }
+
+                configuration = section;
+            }
 
             if (configuration == null)
             {
