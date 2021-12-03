@@ -46,7 +46,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (result)
             {
-                result = (RandomGenerator.NextDouble() * 100) <= settings.Value;
+                result = (RandomGenerator.NextDouble() * 100) < settings.Value;
             }
 
             return Task.FromResult(result);
