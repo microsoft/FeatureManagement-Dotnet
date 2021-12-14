@@ -1,5 +1,5 @@
 ﻿@using Microsoft.FeatureManagement
-@inject IFeatureVariantManager variantManager;
+@inject IDynamicFeatureManager variantManager;
 @{
     DiscountBannerOptions opts = await variantManager.GetVariantAsync<DiscountBannerOptions>("DiscountBanner", Context.RequestAborted);
 }

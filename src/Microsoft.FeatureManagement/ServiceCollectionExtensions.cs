@@ -32,7 +32,7 @@ namespace Microsoft.FeatureManagement
 
             services.TryAddSingleton<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 
-            services.TryAddSingleton<IFeatureVariantManager>(sp => sp.GetRequiredService<FeatureManager>());
+            services.TryAddSingleton<IDynamicFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 
             services.TryAddSingleton<ISessionManager, EmptySessionManager>();
 

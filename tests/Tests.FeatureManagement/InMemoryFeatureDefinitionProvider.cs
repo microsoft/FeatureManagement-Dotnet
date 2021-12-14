@@ -13,26 +13,45 @@ namespace Tests.FeatureManagement
 {
     class InMemoryFeatureDefinitionProvider : IFeatureDefinitionProvider
     {
-        private IEnumerable<FeatureDefinition> _definitions;
+        private IEnumerable<FeatureFlagDefinition> _featureFlagDefinitions;
+        private IEnumerable<DynamicFeatureDefinition> _dynamicFeatureDefinitions;
 
-        public InMemoryFeatureDefinitionProvider(IEnumerable<FeatureDefinition> featureDefinitions)
+        public InMemoryFeatureDefinitionProvider(
+            IEnumerable<FeatureFlagDefinition> featureFlagDefinitions,
+            IEnumerable<DynamicFeatureDefinition> dynamicFeatureDefinitions)
         {
-            _definitions = featureDefinitions ?? throw new ArgumentNullException(nameof(featureDefinitions));
+            _featureFlagDefinitions = featureFlagDefinitions ?? throw new ArgumentNullException(nameof(featureFlagDefinitions));
+            _dynamicFeatureDefinitions = dynamicFeatureDefinitions ?? throw new ArgumentNullException(nameof(dynamicFeatureDefinitions));
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<FeatureFlagDefinition> GetAllFeatureFlagDefinitionsAsync([EnumeratorCancellation] CancellationToken cancellationToken)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            foreach (FeatureDefinition definition in _definitions)
+            foreach (FeatureFlagDefinition definition in _featureFlagDefinitions)
             {
                 yield return definition;
             }
         }
 
-        public Task<FeatureDefinition> GetFeatureDefinitionAsync(string featureName, CancellationToken cancellationToken)
+        public Task<FeatureFlagDefinition> GetFeatureFlagDefinitionAsync(string featureName, CancellationToken cancellationToken)
         {
-            return Task.FromResult(_definitions.FirstOrDefault(definitions => definitions.Name.Equals(featureName, StringComparison.OrdinalIgnoreCase)));
+            return Task.FromResult(_featureFlagDefinitions.FirstOrDefault(definitions => definitions.Name.Equals(featureName, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        public Task<DynamicFeatureDefinition> GetDynamicFeatureDefinitionAsync(string featureName, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(_dynamicFeatureDefinitions.FirstOrDefault(definitions => definitions.Name.Equals(featureName, StringComparison.OrdinalIgnoreCase)));
+        }
+
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        public async IAsyncEnumerable<DynamicFeatureDefinition> GetAllDynamicFeatureDefinitionsAsync(CancellationToken cancellationToken = default)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+        {
+            foreach (DynamicFeatureDefinition definition in _dynamicFeatureDefinitions)
+            {
+                yield return definition;
+            }
         }
     }
 }

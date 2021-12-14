@@ -9,8 +9,8 @@ namespace Microsoft.FeatureManagement
     public class FeatureVariantAssignmentContext
     {
         /// <summary>
-        /// The definition of the feature in need of an assigned variant
+        /// The definition of the dynamic feature in need of an assigned variant
         /// </summary>
-        public FeatureDefinition FeatureDefinition { get; set; }
+        public DynamicFeatureDefinition FeatureDefinition { get; set; }
     }
 }

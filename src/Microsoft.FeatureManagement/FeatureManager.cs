@@ -6,7 +6,6 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -17,7 +16,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Used to evaluate whether a feature is enabled or disabled.
     /// </summary>
-    class FeatureManager : IFeatureManager, IFeatureVariantManager
+    class FeatureManager : IFeatureManager, IDynamicFeatureManager
     {
         private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
@@ -63,9 +62,17 @@ namespace Microsoft.FeatureManagement
             return IsEnabledAsync(feature, appContext, true, cancellationToken);
         }
 
-        public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<string> GetFeatureFlagNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            await foreach (FeatureDefinition featureDefintion in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync(cancellationToken).ConfigureAwait(false))
+            await foreach (FeatureFlagDefinition featureDefintion in _featureDefinitionProvider.GetAllFeatureFlagDefinitionsAsync(cancellationToken).ConfigureAwait(false))
+            {
+                yield return featureDefintion.Name;
+            }
+        }
+
+        public async IAsyncEnumerable<string> GetDynamicFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            await foreach (DynamicFeatureDefinition featureDefintion in _featureDefinitionProvider.GetAllDynamicFeatureDefinitionsAsync(cancellationToken).ConfigureAwait(false))
             {
                 yield return featureDefintion.Name;
             }
@@ -90,8 +97,8 @@ namespace Microsoft.FeatureManagement
 
             FeatureVariant variant = null;
 
-            FeatureDefinition featureDefinition = await _featureDefinitionProvider
-                .GetFeatureDefinitionAsync(feature, cancellationToken)
+            DynamicFeatureDefinition featureDefinition = await _featureDefinitionProvider
+                .GetDynamicFeatureDefinitionAsync(feature, cancellationToken)
                 .ConfigureAwait(false);
 
             if (featureDefinition == null)
@@ -206,7 +213,7 @@ namespace Microsoft.FeatureManagement
 
             bool enabled = false;
 
-            FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature, cancellationToken).ConfigureAwait(false);
+            FeatureFlagDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureFlagDefinitionAsync(feature, cancellationToken).ConfigureAwait(false);
 
             if (featureDefinition != null)
             {
