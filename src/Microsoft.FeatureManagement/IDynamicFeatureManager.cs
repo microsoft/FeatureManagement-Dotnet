@@ -23,20 +23,20 @@ namespace Microsoft.FeatureManagement
         /// Retrieves a typed representation of the feature variant that should be used for a given dynamic feature.
         /// </summary>
         /// <typeparam name="T">The type that the feature variant's configuration should be bound to.</typeparam>
-        /// <param name="feature">The name of the dynamic feature.</param>
+        /// <param name="dynamicFeature">The name of the dynamic feature.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>A typed representation of the feature variant that should be used for a given dynamic feature.</returns>
-        ValueTask<T> GetVariantAsync<T>(string feature, CancellationToken cancellationToken);
+        ValueTask<T> GetVariantAsync<T>(string dynamicFeature, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Retrieves a typed representation of the feature variant that should be used for a given dynamic feature.
         /// </summary>
         /// <typeparam name="T">The type that the feature variant's configuration should be bound to.</typeparam>
         /// <typeparam name="TContext">The type of the context being provided to the dynamic feature manager for use during the process of choosing which variant to use.</typeparam>
-        /// <param name="feature">The name of the dynamic feature.</param>
+        /// <param name="dynamicFeature">The name of the dynamic feature.</param>
         /// <param name="context">A context providing information that can be used to evaluate which variant should be used for the dynamic feature.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>A typed representation of the feature variant's configuration that should be used for a given feature.</returns>
-        ValueTask<T> GetVariantAsync<T, TContext>(string feature, TContext context, CancellationToken cancellationToken);
+        ValueTask<T> GetVariantAsync<T, TContext>(string dynamicFeature, TContext context, CancellationToken cancellationToken = default);
     }
 }

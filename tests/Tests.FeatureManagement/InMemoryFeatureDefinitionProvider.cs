@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
 {
-    class InMemoryFeatureDefinitionProvider : IFeatureDefinitionProvider
+    class InMemoryFeatureDefinitionProvider : IFeatureFlagDefinitionProvider, IDynamicFeatureDefinitionProvider
     {
         private IEnumerable<FeatureFlagDefinition> _featureFlagDefinitions;
         private IEnumerable<DynamicFeatureDefinition> _dynamicFeatureDefinitions;

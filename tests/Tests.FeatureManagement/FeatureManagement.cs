@@ -508,7 +508,7 @@ namespace Tests.FeatureManagement
 
             IDynamicFeatureManager variantManager = serviceProvider.GetRequiredService<IDynamicFeatureManager>();
 
-            IFeatureDefinitionProvider featureProvider = serviceProvider.GetRequiredService<IFeatureDefinitionProvider>();
+            IFeatureFlagDefinitionProvider featureProvider = serviceProvider.GetRequiredService<IFeatureFlagDefinitionProvider>();
 
             var occurences = new Dictionary<string, int>();
 
@@ -915,16 +915,18 @@ namespace Tests.FeatureManagement
 
             var services = new ServiceCollection();
 
-            services.AddSingleton<IFeatureDefinitionProvider>(
-                new InMemoryFeatureDefinitionProvider(
-                    new FeatureFlagDefinition[]
-                    {
-                        testFeature
-                    },
-                    new DynamicFeatureDefinition[]
-                    {
-                        dynamicFeature
-                    }))
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureFlagDefinition[]
+                {
+                    testFeature
+                },
+                new DynamicFeatureDefinition[]
+                {
+                    dynamicFeature
+                });
+
+            services.AddSingleton<IFeatureFlagDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IDynamicFeatureDefinitionProvider>(definitionProvider)
                     .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
                     .AddFeatureManagement()
                     .AddFeatureFilter<TestFilter>()

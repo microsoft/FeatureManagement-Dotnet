@@ -19,6 +19,6 @@ namespace Microsoft.FeatureManagement
         /// <param name="variant">The chosen variant of the dynamic feature.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>Typed options for a given dynamic feature definition and chosen variant.</returns>
-        ValueTask<T> GetOptionsAsync<T>(DynamicFeatureDefinition featureDefinition, FeatureVariant variant, CancellationToken cancellationToken);
+        ValueTask<T> GetOptionsAsync<T>(DynamicFeatureDefinition featureDefinition, FeatureVariant variant, CancellationToken cancellationToken = default);
     }
 }

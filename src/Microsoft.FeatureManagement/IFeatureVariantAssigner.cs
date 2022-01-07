@@ -17,6 +17,6 @@ namespace Microsoft.FeatureManagement
         /// <param name="variantAssignmentContext">A variant assignment context that contains information needed to assign a variant for a dynamic feature.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>The variant that should be assigned for a given dynamic feature.</returns>
-        ValueTask<FeatureVariant> AssignVariantAsync(FeatureVariantAssignmentContext variantAssignmentContext, CancellationToken cancellationToken);
+        ValueTask<FeatureVariant> AssignVariantAsync(FeatureVariantAssignmentContext variantAssignmentContext, CancellationToken cancellationToken = default);
     }
 }

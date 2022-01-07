@@ -16,39 +16,29 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Used to evaluate whether a feature is enabled or disabled.
     /// </summary>
-    class FeatureManager : IFeatureManager, IDynamicFeatureManager
+    class FeatureManager : IFeatureManager
     {
-        private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
+        private readonly IFeatureFlagDefinitionProvider _featureDefinitionProvider;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
-        private readonly IEnumerable<IFeatureVariantAssignerMetadata> _variantAssigners;
-        private readonly IFeatureVariantOptionsResolver _variantOptionsResolver;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
         private readonly ILogger _logger;
         private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
-        private readonly ConcurrentDictionary<string, IFeatureVariantAssignerMetadata> _assignerMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
-        private readonly ConcurrentDictionary<string, ContextualFeatureVariantAssignerEvaluator> _contextualFeatureVariantAssignerCache;
         private readonly FeatureManagementOptions _options;
 
         public FeatureManager(
-            IFeatureDefinitionProvider featureDefinitionProvider,
+            IFeatureFlagDefinitionProvider featureDefinitionProvider,
             IEnumerable<IFeatureFilterMetadata> featureFilters,
-            IEnumerable<IFeatureVariantAssignerMetadata> variantAssigner,
-            IFeatureVariantOptionsResolver variantOptionsResolver,
             IEnumerable<ISessionManager> sessionManagers,
             ILoggerFactory loggerFactory,
             IOptions<FeatureManagementOptions> options)
         {
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
-            _variantAssigners = variantAssigner ?? throw new ArgumentNullException(nameof(variantAssigner));
-            _variantOptionsResolver = variantOptionsResolver ?? throw new ArgumentNullException(nameof(variantOptionsResolver));
             _featureDefinitionProvider = featureDefinitionProvider ?? throw new ArgumentNullException(nameof(featureDefinitionProvider));
             _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
             _logger = loggerFactory.CreateLogger<FeatureManager>();
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>(StringComparer.OrdinalIgnoreCase);
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>(StringComparer.OrdinalIgnoreCase);
-            _assignerMetadataCache = new ConcurrentDictionary<string, IFeatureVariantAssignerMetadata>(StringComparer.OrdinalIgnoreCase);
-            _contextualFeatureVariantAssignerCache = new ConcurrentDictionary<string, ContextualFeatureVariantAssignerEvaluator>(StringComparer.OrdinalIgnoreCase);
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         }
 
@@ -68,135 +58,6 @@ namespace Microsoft.FeatureManagement
             {
                 yield return featureDefintion.Name;
             }
-        }
-
-        public async IAsyncEnumerable<string> GetDynamicFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
-        {
-            await foreach (DynamicFeatureDefinition featureDefintion in _featureDefinitionProvider.GetAllDynamicFeatureDefinitionsAsync(cancellationToken).ConfigureAwait(false))
-            {
-                yield return featureDefintion.Name;
-            }
-        }
-
-        public ValueTask<T> GetVariantAsync<T, TContext>(string feature, TContext appContext, CancellationToken cancellationToken)
-        {
-            return GetVariantAsync<T, TContext>(feature, appContext, true, cancellationToken);
-        }
-
-        public ValueTask<T> GetVariantAsync<T>(string feature, CancellationToken cancellationToken)
-        {
-            return GetVariantAsync<T, object>(feature, null, false, cancellationToken);
-        }
-
-        private async ValueTask<T> GetVariantAsync<T, TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
-        {
-            if (feature == null)
-            {
-                throw new ArgumentNullException(nameof(feature));
-            }
-
-            FeatureVariant variant = null;
-
-            DynamicFeatureDefinition featureDefinition = await _featureDefinitionProvider
-                .GetDynamicFeatureDefinitionAsync(feature, cancellationToken)
-                .ConfigureAwait(false);
-
-            if (featureDefinition == null)
-            {
-                throw new FeatureManagementException(
-                    FeatureManagementError.MissingFeature,
-                    $"The feature declaration for the dynamic feature '{feature}' was not found.");
-            }
-
-            if (string.IsNullOrEmpty(featureDefinition.Assigner))
-            {
-                throw new FeatureManagementException(
-                    FeatureManagementError.MissingFeatureVariantAssigner,
-                    $"Missing feature variant assigner name for the feature {feature}");
-            }
-
-            if (featureDefinition.Variants == null)
-            {
-                throw new FeatureManagementException(
-                    FeatureManagementError.MissingFeatureVariant,
-                    $"No variants are registered for the feature {feature}");
-            }
-
-            FeatureVariant defaultVariant = null;
-
-            foreach (FeatureVariant v in featureDefinition.Variants)
-            {
-                if (v.Default)
-                {
-                    if (defaultVariant != null)
-                    {
-                        throw new FeatureManagementException(
-                            FeatureManagementError.AmbiguousDefaultFeatureVariant,
-                            $"Multiple default variants are registered for the feature '{feature}'.");
-                    }
-
-                    defaultVariant = v;
-                }
-
-                if (v.ConfigurationReference == null)
-                {
-                    throw new FeatureManagementException(
-                        FeatureManagementError.MissingConfigurationReference,
-                        $"The variant '{variant.Name}' for the feature '{feature}' does not have a configuration reference.");
-                }
-            }
-
-            if (defaultVariant == null)
-            {
-                throw new FeatureManagementException(
-                    FeatureManagementError.MissingDefaultFeatureVariant,
-                    $"A default variant cannot be found for the feature '{feature}'.");
-            }
-
-            IFeatureVariantAssignerMetadata assigner = GetFeatureVariantAssignerMetadata(featureDefinition.Assigner);
-
-            if (assigner == null)
-            {
-                throw new FeatureManagementException(
-                       FeatureManagementError.MissingFeatureVariantAssigner,
-                       $"The feature variant assigner '{featureDefinition.Assigner}' specified for feature '{feature}' was not found.");
-            }
-
-            var context = new FeatureVariantAssignmentContext()
-            {
-                FeatureDefinition = featureDefinition
-            };
-
-            //
-            // IFeatureVariantAssigner
-            if (assigner is IFeatureVariantAssigner featureVariantAssigner)
-            {
-                variant = await featureVariantAssigner.AssignVariantAsync(context, cancellationToken).ConfigureAwait(false);
-            }
-            //
-            // IContextualFeatureVariantAssigner
-            else if (useAppContext &&
-                     TryGetContextualFeatureVariantAssigner(featureDefinition.Assigner, typeof(TContext), out ContextualFeatureVariantAssignerEvaluator contextualAssigner))
-            {
-                variant = await contextualAssigner.AssignVariantAsync(context, appContext, cancellationToken).ConfigureAwait(false);
-            }
-            //
-            // The assigner doesn't implement a feature variant assigner interface capable of performing the evaluation
-            else
-            {
-                throw new FeatureManagementException(
-                    FeatureManagementError.InvalidFeatureVariantAssigner,
-                    useAppContext ?
-                        $"The feature variant assigner '{featureDefinition.Assigner}' specified for the feature '{feature}' is not capable of evaluating the requested feature with the provided context." :
-                        $"The feature variant assigner '{featureDefinition.Assigner}' specified for the feature '{feature}' is not capable of evaluating the requested feature.");
-            }
-
-            if (variant == null)
-            {
-                variant = defaultVariant;
-            }
-
-            return await _variantOptionsResolver.GetOptionsAsync<T>(featureDefinition, variant, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
@@ -343,40 +204,6 @@ namespace Microsoft.FeatureManagement
             return filter;
         }
 
-        private IFeatureVariantAssignerMetadata GetFeatureVariantAssignerMetadata(string assignerName)
-        {
-            const string assignerSuffix = "assigner";
-
-            IFeatureVariantAssignerMetadata assigner = _assignerMetadataCache.GetOrAdd(
-                assignerName,
-                (_) => {
-
-                    IEnumerable<IFeatureVariantAssignerMetadata> matchingAssigners = _variantAssigners.Where(a =>
-                    {
-                        Type assignerType = a.GetType();
-
-                        string name = ((AssignerAliasAttribute)Attribute.GetCustomAttribute(assignerType, typeof(AssignerAliasAttribute)))?.Alias;
-
-                        if (name == null)
-                        {
-                            name = assignerType.Name;
-                        }
-
-                        return IsMatchingMetadataName(name, assignerName, assignerSuffix);
-                    });
-
-                    if (matchingAssigners.Count() > 1)
-                    {
-                        throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureVariantAssigner, $"Multiple feature variant assigners match the configured assigner named '{assignerName}'.");
-                    }
-
-                    return matchingAssigners.FirstOrDefault();
-                }
-            );
-
-            return assigner;
-        }
-
         private static bool IsMatchingMetadataName(string metadataName, string desiredName, string suffix)
         {
             //
@@ -428,28 +255,6 @@ namespace Microsoft.FeatureManagement
             );
 
             return filter != null;
-        }
-
-        private bool TryGetContextualFeatureVariantAssigner(string assignerName,  Type appContextType, out ContextualFeatureVariantAssignerEvaluator assigner)
-        {
-            if (appContextType == null)
-            {
-                throw new ArgumentNullException(nameof(appContextType));
-            }
-
-            assigner = _contextualFeatureVariantAssignerCache.GetOrAdd(
-                $"{assignerName}{Environment.NewLine}{appContextType.FullName}",
-                (_) => {
-
-                    IFeatureVariantAssignerMetadata metadata = GetFeatureVariantAssignerMetadata(assignerName);
-
-                    return ContextualFeatureVariantAssignerEvaluator.IsContextualVariantAssigner(metadata, appContextType) ?
-                        new ContextualFeatureVariantAssignerEvaluator(metadata, appContextType) :
-                        null;
-                }
-            );
-
-            return assigner != null;
         }
     }
 }

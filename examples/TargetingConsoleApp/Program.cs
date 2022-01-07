@@ -41,7 +41,7 @@ namespace Consoto.Banking.HelpDesk
             using (ServiceProvider serviceProvider = services.BuildServiceProvider())
             {
                 IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
-                IDynamicFeatureManager variantManager = serviceProvider.GetRequiredService<IDynamicFeatureManager>();
+                IDynamicFeatureManager dynamicFeatureManager = serviceProvider.GetRequiredService<IDynamicFeatureManager>();
 
                 //
                 // We'll simulate a task to run on behalf of each known user
@@ -77,7 +77,7 @@ namespace Consoto.Banking.HelpDesk
 
                     //
                     // Retrieve feature variant using targeting
-                    CartOptions cartOptions = await variantManager
+                    CartOptions cartOptions = await dynamicFeatureManager
                         .GetVariantAsync<CartOptions, TargetingContext>(
                             DynamicFeatureName,
                             targetingContext,

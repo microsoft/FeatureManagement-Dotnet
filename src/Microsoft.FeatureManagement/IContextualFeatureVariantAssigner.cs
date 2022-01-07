@@ -19,6 +19,6 @@ namespace Microsoft.FeatureManagement
         /// <param name="appContext">A context defined by the application that is passed in to the feature management system to provide contextual information for assigning a variant of a dynamic feature.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>The variant that should be assigned for a given dynamic feature.</returns>
-        ValueTask<FeatureVariant> AssignVariantAsync(FeatureVariantAssignmentContext variantAssignmentContext, TContext appContext, CancellationToken cancellationToken);
+        ValueTask<FeatureVariant> AssignVariantAsync(FeatureVariantAssignmentContext variantAssignmentContext, TContext appContext, CancellationToken cancellationToken = default);
     }
 }

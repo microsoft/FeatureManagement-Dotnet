@@ -22,18 +22,18 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// Checks whether a given feature flag is enabled.
         /// </summary>
-        /// <param name="feature">The name of the feature flag to check.</param>
+        /// <param name="featureFlag">The name of the feature flag to check.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>True if the feature flag is enabled, otherwise false.</returns>
-        Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken = default);
+        Task<bool> IsEnabledAsync(string featureFlag, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Checks whether a given feature flag is enabled.
         /// </summary>
-        /// <param name="feature">The name of the feature flag to check.</param>
+        /// <param name="featureFlag">The name of the feature flag to check.</param>
         /// <param name="context">A context providing information that can be used to evaluate whether a feature flag should be on or off.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>True if the feature flag is enabled, otherwise false.</returns>
-        Task<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken = default);
+        Task<bool> IsEnabledAsync<TContext>(string featureFlag, TContext context, CancellationToken cancellationToken = default);
     }
 }
