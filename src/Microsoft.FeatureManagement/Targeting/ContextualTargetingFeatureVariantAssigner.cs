@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.FeatureManagement
+namespace Microsoft.FeatureManagement.Assigners
 {
     /// <summary>
     /// A feature variant assigner that can be used to assign a variant based on targeted audiences.
@@ -49,7 +49,7 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(targetingContext));
             }
 
-            FeatureDefinition featureDefinition = variantAssignmentContext.FeatureDefinition;
+            DynamicFeatureDefinition featureDefinition = variantAssignmentContext.FeatureDefinition;
 
             if (featureDefinition == null)
             {

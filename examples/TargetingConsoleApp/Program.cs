@@ -5,6 +5,7 @@ using Consoto.Banking.AccountService.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FeatureManagement;
+using Microsoft.FeatureManagement.Assigners;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
@@ -40,7 +41,7 @@ namespace Consoto.Banking.HelpDesk
             using (ServiceProvider serviceProvider = services.BuildServiceProvider())
             {
                 IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
-                IFeatureVariantManager variantManager = serviceProvider.GetRequiredService<IFeatureVariantManager>();
+                IDynamicFeatureManager dynamicFeatureManager = serviceProvider.GetRequiredService<IDynamicFeatureManager>();
 
                 //
                 // We'll simulate a task to run on behalf of each known user
@@ -76,7 +77,7 @@ namespace Consoto.Banking.HelpDesk
 
                     //
                     // Retrieve feature variant using targeting
-                    CartOptions cartOptions = await variantManager
+                    CartOptions cartOptions = await dynamicFeatureManager
                         .GetVariantAsync<CartOptions, TargetingContext>(
                             DynamicFeatureName,
                             targetingContext,

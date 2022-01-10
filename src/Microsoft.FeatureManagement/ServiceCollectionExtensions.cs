@@ -24,21 +24,21 @@ namespace Microsoft.FeatureManagement
 
             //
             // Add required services
-            services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
+            services.TryAddSingleton<IFeatureFlagDefinitionProvider, ConfigurationFeatureFlagDefinitionProvider>();
+
+            services.TryAddSingleton<IDynamicFeatureDefinitionProvider, ConfigurationDynamicFeatureDefinitionProvider>();
 
             services.TryAddSingleton<IFeatureVariantOptionsResolver, ConfigurationFeatureVariantOptionsResolver>();
 
-            services.AddSingleton<FeatureManager>();
+            services.TryAddSingleton<IFeatureManager, FeatureManager>();
 
-            services.TryAddSingleton<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
-
-            services.TryAddSingleton<IFeatureVariantManager>(sp => sp.GetRequiredService<FeatureManager>());
+            services.TryAddSingleton<IDynamicFeatureManager, DynamicFeatureManager>();
 
             services.TryAddSingleton<ISessionManager, EmptySessionManager>();
 
-            services.AddScoped<FeatureManagerSnapshot>();
+            services.TryAddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
 
-            services.TryAddScoped<IFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
+            services.TryAddScoped<IDynamicFeatureManagerSnapshot, DynamicFeatureManagerSnapshot>();
 
             return new FeatureManagementBuilder(services);
         }
@@ -56,7 +56,9 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            services.AddSingleton<IFeatureDefinitionProvider>(new ConfigurationFeatureDefinitionProvider(configuration));
+            services.AddSingleton<IFeatureFlagDefinitionProvider>(new ConfigurationFeatureFlagDefinitionProvider(configuration));
+
+            services.AddSingleton<IDynamicFeatureDefinitionProvider>(new ConfigurationDynamicFeatureDefinitionProvider(configuration));
 
             return services.AddFeatureManagement();
         }

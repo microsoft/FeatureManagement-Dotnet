@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FeatureManagement;
+using Microsoft.FeatureManagement.Assigners;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
@@ -74,7 +75,7 @@ namespace Tests.FeatureManagement
 
             Assert.True(called);
 
-            IFeatureVariantManager variantManager = serviceProvider.GetRequiredService<IFeatureVariantManager>();
+            IDynamicFeatureManager variantManager = serviceProvider.GetRequiredService<IDynamicFeatureManager>();
 
             IEnumerable<IFeatureVariantAssignerMetadata> featureVariantAssigners = serviceProvider.GetRequiredService<IEnumerable<IFeatureVariantAssignerMetadata>>();
 
@@ -115,6 +116,51 @@ namespace Tests.FeatureManagement
             Assert.True(called);
 
             Assert.Equal("def", val);
+        }
+
+        [Fact]
+        public async Task ReadsV1Configuration()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.v1.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>()
+                .AddFeatureVariantAssigner<TestAssigner>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync(OnFeature, CancellationToken.None));
+
+            Assert.False(await featureManager.IsEnabledAsync(OffFeature, CancellationToken.None));
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            //
+            // Sync filter
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            bool called = false;
+
+            testFeatureFilter.Callback = (evaluationContext) =>
+            {
+                called = true;
+
+                Assert.Equal("V1", evaluationContext.Parameters["P1"]);
+
+                Assert.Equal(ConditionalFeature, evaluationContext.FeatureName);
+
+                return true;
+            };
+
+            await featureManager.IsEnabledAsync(ConditionalFeature, CancellationToken.None);
+
+            Assert.True(called);
         }
 
         [Fact]
@@ -417,7 +463,7 @@ namespace Tests.FeatureManagement
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
-            IFeatureVariantManager variantManager = serviceProvider.GetRequiredService<IFeatureVariantManager>();
+            IDynamicFeatureManager variantManager = serviceProvider.GetRequiredService<IDynamicFeatureManager>();
 
             //
             // Targeted
@@ -460,9 +506,9 @@ namespace Tests.FeatureManagement
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
-            IFeatureVariantManager variantManager = serviceProvider.GetRequiredService<IFeatureVariantManager>();
+            IDynamicFeatureManager variantManager = serviceProvider.GetRequiredService<IDynamicFeatureManager>();
 
-            IFeatureDefinitionProvider featureProvider = serviceProvider.GetRequiredService<IFeatureDefinitionProvider>();
+            IFeatureFlagDefinitionProvider featureProvider = serviceProvider.GetRequiredService<IFeatureFlagDefinitionProvider>();
 
             var occurences = new Dictionary<string, int>();
 
@@ -659,7 +705,7 @@ namespace Tests.FeatureManagement
                 return ctx.FeatureDefinition.Variants.FirstOrDefault(v => v.Default);
             };
 
-            IFeatureVariantManager variantManager = provider.GetRequiredService<IFeatureVariantManager>();
+            IDynamicFeatureManager variantManager = provider.GetRequiredService<IDynamicFeatureManager>();
 
             AppContext context = new AppContext();
 
@@ -737,16 +783,29 @@ namespace Tests.FeatureManagement
             {
                 IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
 
-                bool hasItems = false;
+                bool hasFeatureFlags = false;
 
-                await foreach (string feature in featureManager.GetFeatureNamesAsync(CancellationToken.None))
+                await foreach (string feature in featureManager.GetFeatureFlagNamesAsync(CancellationToken.None))
                 {
-                    hasItems = true;
+                    hasFeatureFlags = true;
 
                     break;
                 }
 
-                Assert.True(hasItems);
+                Assert.True(hasFeatureFlags);
+
+                IDynamicFeatureManager dynamicFeatureManager = provider.GetRequiredService<IDynamicFeatureManager>();
+
+                bool hasDynamicFeatures = false;
+
+                await foreach (string feature in dynamicFeatureManager.GetDynamicFeatureNamesAsync(CancellationToken.None))
+                {
+                    hasDynamicFeatures = true;
+
+                    break;
+                }
+
+                Assert.True(hasDynamicFeatures);
             }
         }
 
@@ -800,7 +859,11 @@ namespace Tests.FeatureManagement
         [Fact]
         public async Task CustomFeatureDefinitionProvider()
         {
-            FeatureDefinition testFeature = new FeatureDefinition
+            const string DynamicFeature = "DynamicFeature";
+
+            //
+            // Feature flag
+            FeatureFlagDefinition testFeature = new FeatureFlagDefinition
             {
                 Name = ConditionalFeature,
                 EnabledFor = new List<FeatureFilterConfiguration>()
@@ -816,12 +879,58 @@ namespace Tests.FeatureManagement
                 }
             };
 
+            //
+            // Dynamic feature
+            DynamicFeatureDefinition dynamicFeature = new DynamicFeatureDefinition
+            {
+                Name = DynamicFeature,
+                Assigner = "Test",
+                Variants = new List<FeatureVariant>()
+                {
+                    new FeatureVariant
+                    {
+                        Name = "V1",
+                        AssignmentParameters = new ConfigurationBuilder().AddInMemoryCollection(
+                            new Dictionary<string, string>()
+                            {
+                                { "P1", "V1" }
+                            })
+                            .Build(),
+                        ConfigurationReference = "Ref1",
+                        Default = true
+                    },
+                    new FeatureVariant
+                    {
+                        Name = "V2",
+                        AssignmentParameters = new ConfigurationBuilder().AddInMemoryCollection(
+                            new Dictionary<string, string>()
+                            {
+                                { "P2", "V2" }
+                            })
+                            .Build(),
+                        ConfigurationReference = "Ref2"
+                    }
+                }
+            };
+
             var services = new ServiceCollection();
 
-            services.AddSingleton<IFeatureDefinitionProvider>(new InMemoryFeatureDefinitionProvider(new FeatureDefinition[] { testFeature }))
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureFlagDefinition[]
+                {
+                    testFeature
+                },
+                new DynamicFeatureDefinition[]
+                {
+                    dynamicFeature
+                });
+
+            services.AddSingleton<IFeatureFlagDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IDynamicFeatureDefinitionProvider>(definitionProvider)
                     .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
                     .AddFeatureManagement()
-                    .AddFeatureFilter<TestFilter>();
+                    .AddFeatureFilter<TestFilter>()
+                    .AddFeatureVariantAssigner<TestAssigner>();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
@@ -847,6 +956,43 @@ namespace Tests.FeatureManagement
             };
 
             await featureManager.IsEnabledAsync(ConditionalFeature, CancellationToken.None);
+
+            Assert.True(called);
+
+            IDynamicFeatureManager dynamicFeatureManager = serviceProvider.GetRequiredService<IDynamicFeatureManager>();
+
+            IEnumerable<IFeatureVariantAssignerMetadata> featureAssigners = serviceProvider.GetRequiredService<IEnumerable<IFeatureVariantAssignerMetadata>>();
+
+            //
+            // Sync filter
+            TestAssigner testFeatureVariantAssigner = (TestAssigner)featureAssigners.First(f => f is TestAssigner);
+
+            called = false;
+
+            testFeatureVariantAssigner.Callback = (assignmentContext) =>
+            {
+                called = true;
+
+                Assert.True(assignmentContext.FeatureDefinition.Variants.Count() == 2);
+
+                FeatureVariant v1 = assignmentContext.FeatureDefinition.Variants.First(v => v.Name == "V1");
+
+                Assert.True(v1.Default);
+
+                Assert.Equal("V1", v1.AssignmentParameters["P1"]);
+
+                Assert.Equal("Ref1", v1.ConfigurationReference);
+
+                FeatureVariant v2 = assignmentContext.FeatureDefinition.Variants.First(v => v.Name == "V2");
+
+                Assert.False(v2.Default);
+
+                Assert.Equal("Ref2", v2.ConfigurationReference);
+
+                return v1;
+            };
+
+            await dynamicFeatureManager.GetVariantAsync<string>(DynamicFeature, CancellationToken.None);
 
             Assert.True(called);
         }

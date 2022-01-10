@@ -20,7 +20,7 @@ namespace Microsoft.FeatureManagement
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
-        public ValueTask<T> GetOptionsAsync<T>(FeatureDefinition featureDefinition, FeatureVariant variant, CancellationToken cancellationToken)
+        public ValueTask<T> GetOptionsAsync<T>(DynamicFeatureDefinition featureDefinition, FeatureVariant variant, CancellationToken cancellationToken)
         {
             if (variant == null)
             {

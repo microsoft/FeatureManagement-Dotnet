@@ -16,28 +16,28 @@ namespace Microsoft.FeatureManagement
     {
         private readonly IFeatureManager _featureManager;
         private readonly IDictionary<string, bool> _flagCache = new Dictionary<string, bool>();
-        private IEnumerable<string> _featureNames;
+        private IEnumerable<string> _featureFlagNames;
 
         public FeatureManagerSnapshot(IFeatureManager featureManager)
         {
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
         }
 
-        public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation]CancellationToken cancellationToken)
+        public async IAsyncEnumerable<string> GetFeatureFlagNamesAsync([EnumeratorCancellation]CancellationToken cancellationToken)
         {
-            if (_featureNames == null)
+            if (_featureFlagNames == null)
             {
                 var featureNames = new List<string>();
 
-                await foreach (string featureName in _featureManager.GetFeatureNamesAsync(cancellationToken).ConfigureAwait(false))
+                await foreach (string featureName in _featureManager.GetFeatureFlagNamesAsync(cancellationToken).ConfigureAwait(false))
                 {
                     featureNames.Add(featureName);
                 }
 
-                _featureNames = featureNames;
+                _featureFlagNames = featureNames;
             }
 
-            foreach (string featureName in _featureNames)
+            foreach (string featureName in _featureFlagNames)
             {
                 yield return featureName;
             }

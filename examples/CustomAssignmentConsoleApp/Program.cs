@@ -35,9 +35,9 @@ namespace Consoto.Banking.HelpDesk
             // Get the feature manager from application services
             using (ServiceProvider serviceProvider = services.BuildServiceProvider())
             {
-                IFeatureVariantManager variantManager = serviceProvider.GetRequiredService<IFeatureVariantManager>();
+                IDynamicFeatureManager dynamicFeatureManager = serviceProvider.GetRequiredService<IDynamicFeatureManager>();
 
-                DailyDiscountOptions discountOptions = await variantManager
+                DailyDiscountOptions discountOptions = await dynamicFeatureManager
                     .GetVariantAsync<DailyDiscountOptions>("DailyDiscount", CancellationToken.None);
 
                 //

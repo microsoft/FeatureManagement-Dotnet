@@ -7,19 +7,14 @@ using System.Linq;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// The definition of a feature.
+    /// The definition of a dynamic feature.
     /// </summary>
-    public class FeatureDefinition
+    public class DynamicFeatureDefinition
     {
         /// <summary>
-        /// The name of the feature.
+        /// The name of the dynamic feature.
         /// </summary>
         public string Name { get; set; }
-
-        /// <summary>
-        /// The feature filters that the feature can be enabled for.
-        /// </summary>
-        public IEnumerable<FeatureFilterConfiguration> EnabledFor { get; set; } = Enumerable.Empty<FeatureFilterConfiguration>();
 
         /// <summary>
         /// The assigner used to pick the variant that should be used when a variant is requested
@@ -27,7 +22,7 @@ namespace Microsoft.FeatureManagement
         public string Assigner { get; set; }
 
         /// <summary>
-        /// The feature variants listed for this feature.
+        /// The feature variants listed for this dynamic feature.
         /// </summary>
         public IEnumerable<FeatureVariant> Variants { get; set; } = Enumerable.Empty<FeatureVariant>();
     }

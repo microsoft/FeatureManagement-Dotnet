@@ -15,7 +15,7 @@ namespace Consoto.Banking.AccountService
     {
         public ValueTask<FeatureVariant> AssignVariantAsync(FeatureVariantAssignmentContext variantAssignmentContext, CancellationToken _)
         {
-            FeatureDefinition featureDefinition = variantAssignmentContext.FeatureDefinition;
+            DynamicFeatureDefinition featureDefinition = variantAssignmentContext.FeatureDefinition;
 
             FeatureVariant chosenVariant = null;
 
