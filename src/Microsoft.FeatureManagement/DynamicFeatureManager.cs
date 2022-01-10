@@ -182,7 +182,10 @@ namespace Microsoft.FeatureManagement
                             name = assignerType.Name;
                         }
 
-                        return IsMatchingMetadataName(name, assignerName, assignerSuffix);
+                        return NameHelper.IsMatchingReference(
+                            reference: assignerName,
+                            metadataName: name,
+                            suffix: assignerSuffix);
                     });
 
                     if (matchingAssigners.Count() > 1)
@@ -195,37 +198,6 @@ namespace Microsoft.FeatureManagement
             );
 
             return assigner;
-        }
-
-        private static bool IsMatchingMetadataName(string metadataName, string desiredName, string suffix)
-        {
-            //
-            // Feature filters can be referenced with or without the 'filter' suffix
-            // E.g. A feature can reference a filter named 'CustomFilter' as 'Custom' or 'CustomFilter'
-            if (!desiredName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase) &&
-                metadataName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-            {
-                metadataName = metadataName.Substring(0, metadataName.Length - suffix.Length);
-            }
-
-            //
-            // Feature filters can have namespaces in their alias
-            // If a feature is configured to use a filter without a namespace such as 'MyFilter', then it can match 'MyOrg.MyProduct.MyFilter' or simply 'MyFilter'
-            // If a feature is configured to use a filter with a namespace such as 'MyOrg.MyProduct.MyFilter' then it can only match 'MyOrg.MyProduct.MyFilter' 
-            if (desiredName.Contains('.'))
-            {
-                //
-                // The configured filter name is namespaced. It must be an exact match.
-                return string.Equals(metadataName, desiredName, StringComparison.OrdinalIgnoreCase);
-            }
-            else
-            {
-                //
-                // We take the simple name of a filter, E.g. 'MyFilter' for 'MyOrg.MyProduct.MyFilter'
-                string simpleName = metadataName.Contains('.') ? metadataName.Split('.').Last() : metadataName;
-
-                return string.Equals(simpleName, desiredName, StringComparison.OrdinalIgnoreCase);
-            }
         }
 
         private bool TryGetContextualFeatureVariantAssigner(string assignerName,  Type appContextType, out ContextualFeatureVariantAssignerEvaluator assigner)
