@@ -24,12 +24,12 @@ Here are some of the benefits of using this library:
 * [Feature Flags](./README.md#Feature-Flags)
   * [Feature Flag Declaration](./README.md#Feature-Flag-Declaration)
   * [Feature Filters](./README.md#Feature-Filters)
-  * [ASP.NET Core Integration](./README.md#ASP.NET-Core-Integration)
+  * [ASP.NET Core Integration](./README.md#ASPNET-Core-Integration)
   * [Targeting](./README.md#Targeting)
 * [Dynamic Features](./README.md#Dynamic-Features)
   * [Dynamic Feature Declaration](./README.md#Dynamic-Feature-Declaration)
   * [Feature Variant Assigners](./README.md#Feature-Variant-Assigners)
-  * [Targeting Assigner](./README.md#Microsoft.Targeting-Assigner)
+  * [Targeting Assigner](./README.md#MicrosoftTargeting-Assigner)
 * [Caching](./README.md#Caching)
 * [Custom Feature Providers](./README.md#Custom-Feature-Providers)
 
@@ -666,14 +666,14 @@ An example of a dynamic feature named "ShoppingCart" is shown below.
 
 In the example above we see the declaration of a dynamic feature in a json configuration file. The dynamic feature is defined in the `FeatureManagement:DynamicFeatures` section of configuration. The name of this dynamic feature is `ShoppingCart`. A dynamic feature must declare a feature variant assigner that should be used to select a variant when requested. In this case the built-in `Targeting` feature variant assigner is used. The dynamic feature has two different variants that are available to the application. One variant is named `Big` and the other is named `Small`. Each variant contains a configuration reference denoted by the `ConfigurationReference` property. The configuration reference is a pointer to a section of application configuration that contains the options that should be used for that variant. The variant also contains assignment parameters denoted by the `AssignmentParameters` property. The assignment parameters are used by the assigner associated with the dynamic feature. The assigner reads the assignment parameters at run time when a variant of the dynamic feature is requested to choose which variant should be returned. 
 
-An application that is configured with this `ShoppingCart` dynamic feature may request the value of a variant of the feature at runtime through the use of `IDynamicFeatureManager.GetVariantAsync`. The dynamic feature uses targeting for [variant assignment](./README.md#Feature-Variant-Assignment) so each of the variants' assignment parameters specify a target audience that should receive the variant. For a walkthrough of how the targeting assigner would choose a variant in this scenario reference the [Microsoft.Targeting Assigner](./README.md#Microsoft.Targeting-Assigner) section. When the feature manager chooses one of the variants it resolves the value of the variant by resolving the configuration reference declared in the variant. The example above includes the configuration that is referenced by the `ConfigurationReference` of each variant.
+An application that is configured with this `ShoppingCart` dynamic feature may request the value of a variant of the feature at runtime through the use of `IDynamicFeatureManager.GetVariantAsync`. The dynamic feature uses targeting for [variant assignment](./README.md#Feature-Variant-Assignment) so each of the variants' assignment parameters specify a target audience that should receive the variant. For a walkthrough of how the targeting assigner would choose a variant in this scenario reference the [Microsoft.Targeting Assigner](./README.md#MicrosoftTargeting-Assigner) section. When the feature manager chooses one of the variants it resolves the value of the variant by resolving the configuration reference declared in the variant. The example above includes the configuration that is referenced by the `ConfigurationReference` of each variant.
 
 ### Feature Variant Assigners
 A feature variant assigner is a component that uses contextual information within an application to decide which feature variant should be chosen when a variant of a dynamic feature is requested.
 
 ### Feature Variant Assignment
 
-When requesting the value of a dynamic feature the feature manager needs to determine which variant of the feature should be used. The act of choosing which variant should be used is called assignment. A built-in method of assignment is provided that allows the variants of a dynamic features to be assigned to segments of an application's audience. This is the same [targeting](./README.md#Microsoft.Targeting-Assigner) strategy introduced by the targeting feature filter.
+When requesting the value of a dynamic feature the feature manager needs to determine which variant of the feature should be used. The act of choosing which variant should be used is called assignment. A built-in method of assignment is provided that allows the variants of a dynamic features to be assigned to segments of an application's audience. This is the same [targeting](./README.md#MicrosoftTargeting-Assigner) strategy introduced by the targeting feature filter.
 
 To perform assignment the feature manager uses components known as feature variant assigners. Feature variant assigners have the job of choosing which of the variants of a dynamic feature should be used when the value of a dynamic feature is requested. Each variant of a dynamic feature declares assignment parameters so that when an assigner is invoked the assigner can tell under which conditions each variant should be selected. It is possible that an assigner is unable to choose between the list of available variants based off of their configured assignment parameters. In this case the feature manager chooses the **default variant**. The default variant is a variant that is marked explicitly as default. It is required to have a default variant when configuring a dynamic feature in order to handle the possibility that an assigner is not able to select a variant of a dynamic feature.
 
