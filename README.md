@@ -8,9 +8,9 @@ Here are some of the benefits of using this library:
 * Low barrier-to-entry
   * Built on `IConfiguration`
   * Supports JSON file feature flag setup
-* Feature Flag lifetime management
+* Feature flag lifetime management
   * Configuration values can change in real-time, feature flags can be consistent across the entire request
-* Simple to Complex Scenarios Covered
+* Simple to complex scenarios covered
   * Toggle on/off features through declarative configuration file
   * Use different variants of a feature in different circumstances
 * API extensions for ASP.NET Core and MVC framework
@@ -20,26 +20,25 @@ Here are some of the benefits of using this library:
 
 **API Reference**: https://go.microsoft.com/fwlink/?linkid=2091700
 
-### Feature Flags
+## Index
+* [Feature Flags](./README.md#Feature-Flags)
+  * [Feature Flag Declaration](./README.md#Feature-Flag-Declaration)
+  * [Feature Filters](./README.md#Feature-Filters)
+  * [ASP.NET Core Integration](./README.md#ASP.NET-Core-Integration)
+  * [Targeting](./README.md#Targeting)
+* [Dynamic Features](./README.md#Dynamic-Features)
+  * [Dynamic Feature Declaration](./README.md#Dynamic-Feature-Declaration)
+  * [Feature Variant Assigners](./README.md#Feature-Variant-Assigners)
+  * [Targeting Assigner](./README.md#Microsoft.Targeting-Assigner)
+* [Caching](./README.md#Caching)
+* [Custom Feature Providers](./README.md#Custom-Feature-Providers)
+
+## Feature Flags
 Feature flags can either be on or off. They are composed of two parts, a name and a list of feature-filters that are used to turn the feature on.
 
-### Feature Filters
-Feature filters define a scenario for when a feature flag should be enabled. When a feature flag is evaluated for whether it is on or off, its list of feature-filters are traversed until one of the filters decides the feature flag should be enabled. At this point the feature flag is considered enabled and traversal through the feature filters stops. If no feature filter indicates that the feature flag should be enabled, then it will be considered disabled.
+### Feature Flag Configuration
 
-As an example, a Microsoft Edge browser feature filter could be designed. This feature filter would activate any features it is attached to as long as an HTTP request is coming from Microsoft Edge.
-
-### Dynamic Features
-Dynamic features can have values who's type range from object, to string, to integer and so on. Additionally, dynamic features can have an unlimited amount of values. A developer is free to choose what type should be returned when the value of a dynamic feature is requested. They are also free to choose how many options, known as variants, are available to select from.
-
-### Feature Variants
-Feature variants are the different versions of a feature that could be returned when the value of a dynamic feature is requested. Beyond the value of the feature, a feature variant contains information describing under what circumstances it should be returned over other available variants.
-
-### Feature Variant Assigners
-A feature variant assigner is a component that uses contextual information within an application to decide which feature variant should be chosen when a variant of a dynamic feature is requested.
-
-## Registration
-
-The .NET Core configuration system is used to determine the state of feature flags. The foundation of this system is `IConfiguration`. Any provider for IConfiguration can be used as the feature state provider for the feature flag library. This enables scenarios ranging from appsettings.json to Azure App Configuration and more.
+The .NET Core configuration system is used to determine the state of features. The foundation of this system is `IConfiguration`. Any provider for IConfiguration can be used as the feature state provider for the feature management library. This enables scenarios ranging from appsettings.json to Azure App Configuration and more.
 
 ### Feature Flag Declaration
 
@@ -73,7 +72,7 @@ The feature management library supports appsettings.json as a feature flag sourc
 }
 ```
 
-The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided two different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration so it only has the _Name_ property. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a parameter's property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
+The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided two different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration so it only has the _Name_ property. `FeatureU` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a parameter's property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
 
 ### On/Off Declaration
  
@@ -124,7 +123,7 @@ The basic form of feature management is checking if a feature is enabled and the
 …
 IFeatureManager featureManager;
 …
-if (await featureManager.IsEnabledAsync(nameof(MyFeatureFlags.FeatureU)))
+if (await featureManager.IsEnabledAsync(MyFeatureFlags.FeatureU))
 {
     // Do something
 }
@@ -145,6 +144,10 @@ public class HomeController : Controller
     }
 }
 ```
+
+## ASP.NET Core Integration
+
+The feature management library provides functionality in ASP.NET Core and MVC to enable common feature flag scenarios in web applications. These capabilities are available by referencing the [Microsoft.FeatureManagement.AspNetCore](https://www.nuget.org/packages/Microsoft.FeatureManagement.AspNetCore/) NuGet package.
 
 ### Controllers and Actions
 MVC controller and actions can require that a given feature flag, or one of any list of feature flags, be enabled in order to execute. This can be done by using a `FeatureGateAttribute`, which can be found in the `Microsoft.FeatureManagement.Mvc` namespace. 
@@ -185,14 +188,23 @@ public interface IDisabledFeaturesHandler
 In MVC views `<feature>` tags can be used to conditionally render content based on whether a feature is enabled or not.
 
 ``` HTML+Razor
-<feature name=@nameof(MyFeatureFlags.FeatureX)>
+<feature name="@MyFeatureFlags.FeatureX">
   <p>This can only be seen if 'FeatureX' is enabled.</p>
 </feature>
 ```
 
 The `<feature>` tag requires a tag helper to work. This can be done by adding the feature management tag helper to the _ViewImports.cshtml_ file.
+
 ``` HTML+Razor
 @addTagHelper *, Microsoft.FeatureManagement.AspNetCore
+```
+
+The feature tag can also be used to show content if a feature is disabled. This is done by using the `negate` attribute.
+
+``` HTML+Razor
+<feature name="@MyFeatureFlags.FeatureX" negate="true">
+  <p>This can only be seen if 'FeatureX' is disabled.</p>
+</feature>
 ```
 
 ### MVC Filters
@@ -203,7 +215,7 @@ The feature management pipeline supports async MVC Action filters, which impleme
 ``` C#
 services.AddMvc(o => 
 {
-    o.Filters.AddForFeature<SomeMvcFilter>(nameof(MyFeatureFlags.FeatureV));
+    o.Filters.AddForFeature<SomeMvcFilter>(MyFeatureFlags.FeatureV);
 });
 ```
 
@@ -214,7 +226,7 @@ The code above adds an MVC filter named `SomeMvcFilter`. This filter is only tri
 The feature management library can be used to add application branches and middleware that execute conditionally based on feature flag state.
 
 ``` C#
-app.UseMiddlewareForFeature<ThirdPartyMiddleware>(nameof(MyFeatureFlags.FeatureU));
+app.UseMiddlewareForFeature<ThirdPartyMiddleware>(MyFeatureFlags.FeatureU);
 ```
 
 With the above call, the application adds a middleware component that only appears in the request pipeline if the feature flag "FeatureU" is enabled. If the feature flag is enabled/disabled during runtime, the middleware pipeline can be changed dynamically.
@@ -228,7 +240,13 @@ app.UseForFeature(featureName, appBuilder =>
 });
 ```
 
-## Implementing a Feature Filter
+## Feature Filters
+
+Feature filters define a scenario for when a feature flag should be enabled. When a feature flag is evaluated for whether it is on or off, its list of feature-filters are traversed until one of the filters decides the feature flag should be enabled. At this point the feature flag is considered enabled and traversal through the feature filters stops. If no feature filter indicates that the feature flag should be enabled, then it will be considered disabled.
+
+As an example, a Microsoft Edge browser feature filter could be designed. This feature filter would activate any features it is attached to as long as an HTTP request is coming from Microsoft Edge.
+
+### Implementing a Feature Filter
 
 Creating a feature filter provides a way to enable feature flags based on criteria that you define. To implement a feature filter, the `IFeatureFilter` interface must be implemented. `IFeatureFilter` has a single method named `EvaluateAsync`. When a feature flag specifies that it can be enabled for a feature filter, the `EvaluateAsync` method is called. If `EvaluateAsync` returns `true` it means the feature flag should be enabled.
 
@@ -519,40 +537,14 @@ services.Configure<TargetingEvaluationOptions>(options =>
 });
 ```
 
-## Caching
-
-Feature state is provided by the IConfiguration system. Any caching and dynamic updating is expected to be handled by configuration providers. The feature manager asks IConfiguration for the latest value of a feature's state whenever a feature is checked to be enabled.
-
-### Snapshot
-There are scenarios which require the state of a feature to remain consistent during the lifetime of a request. The values returned from the standard `IFeatureManager` may change if the `IConfiguration` source which it is pulling from is updated during the request. This can be prevented by using `IFeatureManagerSnapshot`. `IFeatureManagerSnapshot` can be retrieved in the same manner as `IFeatureManager`. `IFeatureManagerSnapshot` implements the interface of `IFeatureManager`, but it caches the first evaluated state of a feature during a request and will return the same state of a feature during its lifetime. Symmetric functionality is available for dynamic features through the use of `IDynamicFeatureManagerSnapshot`.
-
-## Custom Feature Providers
-
-Implementing a custom feature provider enable developers to pull feature flags from sources such as a database or a feature management service. The included feature provider that is used by default pulls feature flags from .NET Core's configuration system. This allows for features to be defined in an [appsettings.json](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-3.1#jcp) file or in configuration providers like [Azure App Configuration](https://docs.microsoft.com/en-us/azure/azure-app-configuration/quickstart-feature-flag-aspnet-core?tabs=core2x). This behavior can be substituted to provide complete control of where feature definitions are read from.
-
-To customize the loading of feature definitions, one must implement the `IFeatureFlagDefinitionProvider` interface.
-
-``` C#
-public interface IFeatureFlagDefinitionProvider
-{
-        Task<FeatureFlagDefinition> GetFeatureFlagDefinitionAsync(string featureName, CancellationToken cancellationToken = default);
-
-        IAsyncEnumerable<FeatureFlagDefinition> GetAllFeatureFlagDefinitionsAsync(CancellationToken cancellationToken = default);
-}
-```
-
-To use an implementation of `IFeatureDefinitionProvider` it must be added into the service collection before adding feature management. The following example adds an implementation of `IFeatureDefinitionProvider` named `InMemoryFeatureDefinitionProvider`.
-
-``` C#
-services.AddSingleton<IFeatureDefinitionProvider, InMemoryFeatureDefinitionProvider>()
-        .AddFeatureManagement()
-```
-
-It is also possible to provide custom dynamic feature definitions. This is done by implementing the `IDynamicFeatureDefinitionProvider` interface and registering it as mentioned above.
-
 ## Dynamic Features
 
-When new features are being added to an application there may come a time when a feature has multiple different proposed design options. The different options for the design of a feature can be referred to as variants of the feature, and the feature itself can be referred to as a dynamic feature. A dynamic feature is a feature that can have different values (variants) extending beyond a simple on/off flag. A common pattern when rolling out dynamic features is to surface the different variants of a feature to different segments of a user base and to see how each variant is perceived. The most well received variant could be the one that gets rolled out to the entire user base, or if necessary the feature could be scrapped. There could be other reasons to expose different variants of a feature, for example using a different version every day of the week. The goal of this method is to establish a model that can help solve these common patterns that occur when rolling out features that can have different variants.
+When new features are being added to an application there may come a time when a feature has multiple different proposed design options. A common pattern when this happens is to do some form of A/B testing. That is, provide a different version of the feature to different segments of the user base, and judge off user interaction which is better. The dynamic feature functionality contained in this library aims to proivde a simplistic, standardized method for developers to perform this form of A/B testing.
+
+
+ In the scenario above, the different proposals for the design of a feature are referred to as variants of the feature. The feature itself is referred to as a dynamic feature. The variants of a dynamic feature can have types ranging from object, to string, to integer and so on. There is no limit to the amount of variants a dynamic feature may have. A developer is free to choose what type should be returned when a variant of a dynamic feature is requested. They are also free to choose how many variants are available to select from.
+
+Each variant of a dynamic feature is associated with a different configuration of the feature. Additionally, each variant of a dynamic feature contains information describing under what circumstances the variant should be used.
 
 ### Consumption
 
@@ -576,7 +568,7 @@ The following steps are performed during the retrieval of a dynamic feature's va
 2. Assign one of the registered variants to be used.
 3. Resolve typed value based off of the assigned variant.
 
-The dynamic feature manager is made available by using the `AddFeatureManagement` call detailed in the [service registration](./README.md#Service-Registration) section. Make sure to add any required feature variant assigners referenced by dynamic features within the application by using `AddFeatureVariantAssigner`.
+The dynamic feature manager is made available by using the `AddFeatureManagement` call. Make sure to add any required feature variant assigners referenced by dynamic features within the application by using `AddFeatureVariantAssigner`.
 
 ``` C#
 using Microsoft.FeatureManagement;
@@ -604,13 +596,13 @@ model.BackgroundUrl = featureVariantManager.GetVariantAsync<string>("HomeBackgro
 return View(model);
 ```
 
-### Configuring a Dynamic Feature
+### Dynamic Feature Declaration
 
 Dynamic features can be configured in a configuration file similarly to feature flags. Instead of being defined in the `FeatureManagement:FeatureFlags` section, they are defined in the `FeatureManagement:DynamicFeatures` section. Additionally, dynamic features have the following properties.
 
 * Assigner: The assigner that should be used to select which variant should be used any time this feature is accessed.
 * Variants: The different variants of the dynamic feature.
-  * Default: Whether the variant should be used if no variant could be explicitly assigned.
+  * Default: Whether the variant should be used if no variant could be explicitly assigned. One and only one default variant is required.
   * Configuration Reference: A reference to the configuration of the variant to be used as typed options in the application.
   * Assignment Parameters: The parameters used in the assignment process to determine if this variant should be used.
 
@@ -675,6 +667,9 @@ An example of a dynamic feature named "ShoppingCart" is shown below.
 In the example above we see the declaration of a dynamic feature in a json configuration file. The dynamic feature is defined in the `FeatureManagement:DynamicFeatures` section of configuration. The name of this dynamic feature is `ShoppingCart`. A dynamic feature must declare a feature variant assigner that should be used to select a variant when requested. In this case the built-in `Targeting` feature variant assigner is used. The dynamic feature has two different variants that are available to the application. One variant is named `Big` and the other is named `Small`. Each variant contains a configuration reference denoted by the `ConfigurationReference` property. The configuration reference is a pointer to a section of application configuration that contains the options that should be used for that variant. The variant also contains assignment parameters denoted by the `AssignmentParameters` property. The assignment parameters are used by the assigner associated with the dynamic feature. The assigner reads the assignment parameters at run time when a variant of the dynamic feature is requested to choose which variant should be returned. 
 
 An application that is configured with this `ShoppingCart` dynamic feature may request the value of a variant of the feature at runtime through the use of `IDynamicFeatureManager.GetVariantAsync`. The dynamic feature uses targeting for [variant assignment](./README.md#Feature-Variant-Assignment) so each of the variants' assignment parameters specify a target audience that should receive the variant. For a walkthrough of how the targeting assigner would choose a variant in this scenario reference the [Microsoft.Targeting Assigner](./README.md#Microsoft.Targeting-Assigner) section. When the feature manager chooses one of the variants it resolves the value of the variant by resolving the configuration reference declared in the variant. The example above includes the configuration that is referenced by the `ConfigurationReference` of each variant.
+
+### Feature Variant Assigners
+A feature variant assigner is a component that uses contextual information within an application to decide which feature variant should be chosen when a variant of a dynamic feature is requested.
 
 ### Feature Variant Assignment
 
@@ -774,9 +769,9 @@ services.AddFeatureManagement();
         .AddFeatureVariantAssigner<TargetingFeatureVariantAssigner>();
 ```
 
-### Variant Value Resolution
+### Variant Resolution
 
-When a variant of a dynamic feature has been chosen, the feature management system needs to resolve the value associated with that variant. A feature variant can reference configuration values through the `ConfigurationReference` property of their configuration to be used as the value of the feature. In the "[Configuring a Dynamic Feature](./README.md#Configuring-a-Dynamic-Feature)" section we see a dynamic feature named "ShoppingCart". The first variant of the feature, named "Big", has a configuration reference to the `ShoppingCart:Big` configuration section. The referenced section is shown below.
+When a variant of a dynamic feature has been chosen, the feature management system needs to resolve the configuration reference associated with that variant. A feature variant references configuration through its `ConfigurationReference` property. In the "[Configuring a Dynamic Feature](./README.md#Configuring-a-Dynamic-Feature)" section we see a dynamic feature named "ShoppingCart". The first variant of the feature, named "Big", has a configuration reference to the `ShoppingCart:Big` configuration section. The referenced section is shown below.
 
 ``` Javascript
     "ShoppingCart": {
@@ -787,7 +782,38 @@ When a variant of a dynamic feature has been chosen, the feature management syst
     }
 ```
 
-The feature management system resolves the configuration reference and binds the resolved configuration section to the type specfied when a dynamic feature's value is requested. This is performed by an implementation of the  `IFeatureVariantOptionsResolver`. By providing a custom implementation of `IFeatureVariantOptionsResolver`, a developer can resolve configuration references from sources other than configuration.
+The feature management system resolves the configuration reference and binds the resolved configuration section to the type specfied when a variant of a dynamic feature is requested. This is performed by an implementation of the  `IFeatureVariantOptionsResolver`. By providing a custom implementation of `IFeatureVariantOptionsResolver`, a developer can resolve configuration references from sources other than configuration.
+
+## Caching
+
+Feature state is provided by the IConfiguration system. Any caching and dynamic updating is expected to be handled by configuration providers. The feature manager asks IConfiguration for the latest value of a feature's state whenever a feature is checked to be enabled.
+
+### Snapshot
+There are scenarios which require the state of a feature to remain consistent during the lifetime of a request. The values returned from the standard `IFeatureManager` may change if the `IConfiguration` source which it is pulling from is updated during the request. This can be prevented by using `IFeatureManagerSnapshot`. `IFeatureManagerSnapshot` can be retrieved in the same manner as `IFeatureManager`. `IFeatureManagerSnapshot` implements the interface of `IFeatureManager`, but it caches the first evaluated state of a feature during a request and will return the same state of a feature during its lifetime. Symmetric functionality is available for dynamic features through the use of `IDynamicFeatureManagerSnapshot`.
+
+## Custom Feature Providers
+
+Implementing a custom feature provider enable developers to pull feature flags from sources such as a database or a feature management service. The included feature provider that is used by default pulls feature flags from .NET Core's configuration system. This allows for features to be defined in an [appsettings.json](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-3.1#jcp) file or in configuration providers like [Azure App Configuration](https://docs.microsoft.com/en-us/azure/azure-app-configuration/quickstart-feature-flag-aspnet-core?tabs=core2x). This behavior can be substituted to provide complete control of where feature definitions are read from.
+
+To customize the loading of feature definitions, one must implement the `IFeatureFlagDefinitionProvider` interface.
+
+``` C#
+public interface IFeatureFlagDefinitionProvider
+{
+    Task<FeatureFlagDefinition> GetFeatureFlagDefinitionAsync(string featureName, CancellationToken cancellationToken = default);
+
+    IAsyncEnumerable<FeatureFlagDefinition> GetAllFeatureFlagDefinitionsAsync(CancellationToken cancellationToken = default);
+}
+```
+
+To use an implementation of `IFeatureFlagDefinitionProvider` it must be added into the service collection before adding feature management. The following example adds an implementation of `IFeatureFlagDefinitionProvider` named `InMemoryFeatureDefinitionProvider`.
+
+``` C#
+services.AddSingleton<IFeatureFlagDefinitionProvider, InMemoryFeatureDefinitionProvider>()
+        .AddFeatureManagement()
+```
+
+It is also possible to provide custom dynamic feature definitions. This is done by implementing the `IDynamicFeatureDefinitionProvider` interface and registering it as mentioned above.
 
 # Contributing
 
