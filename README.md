@@ -527,7 +527,7 @@ Dynamic features can be configured in a configuration file similarly to feature 
 
 * Assigner: The assigner that should be used to select which variant should be used any time this feature is accessed.
 * Variants: The different variants of the dynamic feature.
-  * Default: The name of the variant.
+  * Name: The name of the variant.
   * Default: Whether the variant should be used if no variant could be explicitly assigned. One and only one default variant is required.
   * ConfigurationReference: A reference to the configuration of the variant to be used as typed options in the application.
   * AssignmentParameters: The parameters used in the assignment process to determine if this variant should be used.
