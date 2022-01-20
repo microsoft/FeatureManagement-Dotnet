@@ -124,7 +124,7 @@ The basic form of feature management is checking if a feature is enabled and the
 …
 IFeatureManager featureManager;
 …
-if (await featureManager.IsEnabledAsync(MyFeatureFlags.FeatureU))
+if (await featureManager.IsEnabledAsync("FeatureU"))
 {
     // Do something
 }
@@ -154,7 +154,7 @@ The feature management library provides functionality in ASP.NET Core and MVC to
 MVC controller and actions can require that a given feature flag, or one of any list of feature flags, be enabled in order to execute. This can be done by using a `FeatureGateAttribute`, which can be found in the `Microsoft.FeatureManagement.Mvc` namespace. 
 
 ``` C#
-[FeatureGate(MyFeatureFlags.FeatureX)]
+[FeatureGate("FeatureX")]
 public class HomeController : Controller
 {
     …
@@ -164,7 +164,7 @@ public class HomeController : Controller
 The `HomeController` above is gated by "FeatureX". "FeatureX" must be enabled before any action the `HomeController` contains can be executed. 
 
 ``` C#
-[FeatureGate(MyFeatureFlags.FeatureY)]
+[FeatureGate("FeatureY")]
 public IActionResult Index()
 {
     return View();
@@ -189,7 +189,7 @@ public interface IDisabledFeaturesHandler
 In MVC views `<feature>` tags can be used to conditionally render content based on whether a feature is enabled or not.
 
 ``` HTML+Razor
-<feature name="@MyFeatureFlags.FeatureX">
+<feature name="FeatureX">
   <p>This can only be seen if 'FeatureX' is enabled.</p>
 </feature>
 ```
@@ -203,7 +203,7 @@ The `<feature>` tag requires a tag helper to work. This can be done by adding th
 The feature tag can also be used to show content if a feature is disabled. This is done by using the `negate` attribute.
 
 ``` HTML+Razor
-<feature name="@MyFeatureFlags.FeatureX" negate="true">
+<feature name="FeatureX" negate="true">
   <p>This can only be seen if 'FeatureX' is disabled.</p>
 </feature>
 ```
@@ -216,7 +216,7 @@ The feature management pipeline supports async MVC Action filters, which impleme
 ``` C#
 services.AddMvc(o => 
 {
-    o.Filters.AddForFeature<SomeMvcFilter>(MyFeatureFlags.FeatureV);
+    o.Filters.AddForFeature<SomeMvcFilter>("FeatureV");
 });
 ```
 
@@ -227,7 +227,7 @@ The code above adds an MVC filter named `SomeMvcFilter`. This filter is only tri
 The feature management library can be used to add application branches and middleware that execute conditionally based on feature flag state.
 
 ``` C#
-app.UseMiddlewareForFeature<ThirdPartyMiddleware>(MyFeatureFlags.FeatureU);
+app.UseMiddlewareForFeature<ThirdPartyMiddleware>("FeatureU");
 ```
 
 With the above call, the application adds a middleware component that only appears in the request pipeline if the feature flag "FeatureU" is enabled. If the feature flag is enabled/disabled during runtime, the middleware pipeline can be changed dynamically.
