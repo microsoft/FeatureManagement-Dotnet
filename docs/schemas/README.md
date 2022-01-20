@@ -8,9 +8,9 @@ The [1.0.0 schema](./FeatureManagement.v1.0.0.json) is supported by Microsoft.Fe
 
 * Allows feature flags to be defined.
 
-# 3.0.0
+# 2.0.0
 
-The [3.0.0 schema](./FeatureManagement.v3.0.0.json) is supported by Microsoft.FeatureManagement version 3.x.
+The [2.0.0 schema](./FeatureManagement.v2.0.0.json) is supported by Microsoft.FeatureManagement version 3.x.
 
 * Allows dynamic features to be defined.
 * Uses a more explicit path to define feature flags.

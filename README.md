@@ -25,11 +25,12 @@ Here are some of the benefits of using this library:
   * [Feature Flag Declaration](./README.md#Feature-Flag-Declaration)
   * [Feature Filters](./README.md#Feature-Filters)
   * [ASP.NET Core Integration](./README.md#ASPNET-Core-Integration)
-  * [Targeting](./README.md#Targeting)
+  * [Targeting Feature Filter](./README.md#MicrosoftTargeting)
 * [Dynamic Features](./README.md#Dynamic-Features)
   * [Dynamic Feature Declaration](./README.md#Dynamic-Feature-Declaration)
   * [Feature Variant Assigners](./README.md#Feature-Variant-Assigners)
-  * [Targeting Assigner](./README.md#MicrosoftTargeting-Assigner)
+  * [Targeting Feature Variant Assigner](./README.md#MicrosoftTargeting-Feature-Variant-Assigner)
+* [Targeting](./README.md#Targeting)
 * [Caching](./README.md#Caching)
 * [Custom Feature Providers](./README.md#Custom-Feature-Providers)
 
@@ -42,7 +43,7 @@ The .NET Core configuration system is used to determine the state of features. T
 
 ### Feature Flag Declaration
 
-The feature management library supports appsettings.json as a feature flag source since it is a provider for .NET Core's IConfiguration system. Below we have an example of the format used to set up feature flags in a json file. The example below uses the v3 configuration schema which is supported in Microsoft.FeatureManagement version 3. For previous schemas see the configuration [schema details](./docs/schemas/README.md).
+The feature management library supports appsettings.json as a feature flag source since it is a provider for .NET Core's IConfiguration system. Below we have an example of the format used to set up feature flags in a json file. The example below uses the 2.0.0 configuration schema which is supported in Microsoft.FeatureManagement version 3. For previous schema versions see the configuration [schema details](./docs/schemas/README.md).
 
 ``` JavaScript
 {
@@ -461,82 +462,6 @@ This filter provides the capability to enable a feature flag for a target audien
 
 All of the built-in feature filter alias' are in the 'Microsoft' feature filter namespace. This is to prevent conflicts with other feature filters that may share the same simple alias. The segments of a feature filter namespace are split by the '.' character. A feature filter can be referenced by its fully qualified alias such as 'Microsoft.Percentage' or by the last segment which in the case of 'Microsoft.Percentage' is 'Percentage'.
 
-## Targeting
-
-Targeting is a feature management strategy that enables developers to progressively roll out new features to their user base. The strategy is built on the concept of targeting a set of users known as the target _audience_. An audience is made up of specific users, groups, and a designated percentage of the entire user base. The groups that are included in the audience can be broken down further into percentages of their total members.
-
-The following steps demonstrate an example of a progressive rollout for a new 'Beta' feature:
-
-1. Individual users Jeff and Alicia are granted access to the Beta
-2. Another user, Mark, asks to opt-in and is included.
-3. Twenty percent of a group known as "Ring1" users are included in the Beta.
-5. The number of "Ring1" users included in the beta is bumped up to 100 percent.
-5. Five percent of the user base is included in the beta.
-6. The rollout percentage is bumped up to 100 percent and the feature is completely rolled out.
-
-This strategy for rolling out a feature is built in to the library through the included [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter.
-
-## Targeting in a Web Application
-
-An example web application that uses the targeting feature filter is available in the [FeatureFlagDemo](./examples/FeatureFlagDemo) example project.
-
-To begin using the `TargetingFilter` in an application it must be added to the application's service collection just as any other feature filter. Unlike other built in filters, the `TargetingFilter` relies on another service to be added to the application's service collection. That service is an `ITargetingContextAccessor`.
-
-The implementation type used for the `ITargetingContextAccessor` service must be implemented by the application that is using the targeting filter. Here is an example setting up feature management in a web application to use the `TargetingFilter` with an implementation of `ITargetingContextAccessor` called `HttpContextTargetingContextAccessor`.
-
-``` C#
-services.AddSingleton<ITargetingContextAccessor, HttpContextTargetingContextAccessor>();
-
-services.AddFeatureManagement();
-        .AddFeatureFilter<TargetingFilter>();
-
-```
-
-### ITargetingContextAccessor
-
-To use the `TargetingFilter` in a web application an implementation of `ITargetingContextAccessor` is required. This is because when a targeting evaluation is being performed information such as what user is currently being evaluated is needed. This information is known as the targeting context. Different web applications may extract this information from different places. Some common examples of where an application may pull the targeting context are the request's HTTP context or a database.
-
-An example that extracts targeting context information from the application's HTTP context is included in the [FeatureFlagDemo](./examples/FeatureFlagDemo/HttpContextTargetingContextAccessor.cs) example project. This method relies on the use of `IHttpContextAccessor` which is discussed [here](./README.md#Using-HttpContext).
-
-## Targeting in a Console Application
-
-The targeting filter relies on a targeting context to evaluate whether a feature should be turned on. This targeting context contains information such as what user is currently being evaluated, and what groups the user in. In console applications there is typically no ambient context available to flow this information in to the targeting filter, thus it must be passed directly when `FeatureManager.IsEnabledAsync` is called. This is supported through the use of the `ContextualTargetingFilter`. Applications that need to float the targeting context into the feature manager should use this instead of the `TargetingFilter.`
-
-``` C#
-services.AddFeatureManagement()
-        .AddFeatureFilter<ContextualTargetingFilter>();
-```
-
-Since `ContextualTargetingFilter` is an [`IContextualTargetingFilter<ITargetingContext>`](./README.md#Contextual-Feature-Filters), an implementation of `ITargetingContext` must be passed in to `IFeatureManager.IsEnabledAsync` for it to be able to evaluate and turn a feature on.
-
-``` C#
-IFeatureManager fm;
-…
-// userId and groups defined somewhere earlier in application
-TargetingContext targetingContext = new TargetingContext
-{
-   UserId = userId,
-   Groups = groups;
-}
-
-await fm.IsEnabledAsync(featureName, targetingContext);
-```
-
-The `ContextualTargetingFilter` still uses the feature filter alias [Microsoft.Targeting](./README.md#MicrosoftTargeting), so the configuration for this filter is consistent with what is mentioned in that section.
-
-An example that uses the `ContextualTargetingFilter` in a console application is available in the [TargetingConsoleApp](./examples/TargetingConsoleApp) example project.
-
-## Targeting Evaluation Options
-
-Options are available to customize how targeting evaluation is performed across all features. These options can be configured when setting up feature management.
-
-``` C#
-services.Configure<TargetingEvaluationOptions>(options =>
-{
-    options.IgnoreCase = true;
-});
-```
-
 ## Dynamic Features
 
 When new features are being added to an application there may come a time when a feature has multiple different proposed design options. A common pattern when this happens is to do some form of A/B testing. That is, provide a different version of the feature to different segments of the user base, and judge off user interaction which is better. The dynamic feature functionality contained in this library aims to proivde a simplistic, standardized method for developers to perform this form of A/B testing.
@@ -602,9 +527,10 @@ Dynamic features can be configured in a configuration file similarly to feature 
 
 * Assigner: The assigner that should be used to select which variant should be used any time this feature is accessed.
 * Variants: The different variants of the dynamic feature.
+  * Default: The name of the variant.
   * Default: Whether the variant should be used if no variant could be explicitly assigned. One and only one default variant is required.
-  * Configuration Reference: A reference to the configuration of the variant to be used as typed options in the application.
-  * Assignment Parameters: The parameters used in the assignment process to determine if this variant should be used.
+  * ConfigurationReference: A reference to the configuration of the variant to be used as typed options in the application.
+  * AssignmentParameters: The parameters used in the assignment process to determine if this variant should be used.
 
 An example of a dynamic feature named "ShoppingCart" is shown below.
 
@@ -666,14 +592,14 @@ An example of a dynamic feature named "ShoppingCart" is shown below.
 
 In the example above we see the declaration of a dynamic feature in a json configuration file. The dynamic feature is defined in the `FeatureManagement:DynamicFeatures` section of configuration. The name of this dynamic feature is `ShoppingCart`. A dynamic feature must declare a feature variant assigner that should be used to select a variant when requested. In this case the built-in `Targeting` feature variant assigner is used. The dynamic feature has two different variants that are available to the application. One variant is named `Big` and the other is named `Small`. Each variant contains a configuration reference denoted by the `ConfigurationReference` property. The configuration reference is a pointer to a section of application configuration that contains the options that should be used for that variant. The variant also contains assignment parameters denoted by the `AssignmentParameters` property. The assignment parameters are used by the assigner associated with the dynamic feature. The assigner reads the assignment parameters at run time when a variant of the dynamic feature is requested to choose which variant should be returned. 
 
-An application that is configured with this `ShoppingCart` dynamic feature may request the value of a variant of the feature at runtime through the use of `IDynamicFeatureManager.GetVariantAsync`. The dynamic feature uses targeting for [variant assignment](./README.md#Feature-Variant-Assignment) so each of the variants' assignment parameters specify a target audience that should receive the variant. For a walkthrough of how the targeting assigner would choose a variant in this scenario reference the [Microsoft.Targeting Assigner](./README.md#MicrosoftTargeting-Assigner) section. When the feature manager chooses one of the variants it resolves the value of the variant by resolving the configuration reference declared in the variant. The example above includes the configuration that is referenced by the `ConfigurationReference` of each variant.
+An application that is configured with this `ShoppingCart` dynamic feature may request the value of a variant of the feature at runtime through the use of `IDynamicFeatureManager.GetVariantAsync`. The dynamic feature uses targeting for [variant assignment](./README.md#Feature-Variant-Assignment) so each of the variants' assignment parameters specify a target audience that should receive the variant. For a walkthrough of how the targeting assigner would choose a variant in this scenario reference the [Microsoft.Targeting Assigner](./README.md#MicrosoftTargeting-Feature-Variant-Assigner) section. When the feature manager chooses one of the variants it resolves the value of the variant by resolving the configuration reference declared in the variant. The example above includes the configuration that is referenced by the `ConfigurationReference` of each variant.
 
 ### Feature Variant Assigners
 A feature variant assigner is a component that uses contextual information within an application to decide which feature variant should be chosen when a variant of a dynamic feature is requested.
 
 ### Feature Variant Assignment
 
-When requesting the value of a dynamic feature the feature manager needs to determine which variant of the feature should be used. The act of choosing which variant should be used is called assignment. A built-in method of assignment is provided that allows the variants of a dynamic features to be assigned to segments of an application's audience. This is the same [targeting](./README.md#MicrosoftTargeting-Assigner) strategy introduced by the targeting feature filter.
+When requesting the value of a dynamic feature the feature manager needs to determine which variant of the feature should be used. The act of choosing which variant should be used is called assignment. A built-in method of assignment is provided that allows the variants of a dynamic features to be assigned to segments of an application's audience. This is the same [targeting](./README.md#MicrosoftTargeting-Feature-Variant-Assigner) strategy introduced by the targeting feature filter.
 
 To perform assignment the feature manager uses components known as feature variant assigners. Feature variant assigners have the job of choosing which of the variants of a dynamic feature should be used when the value of a dynamic feature is requested. Each variant of a dynamic feature declares assignment parameters so that when an assigner is invoked the assigner can tell under which conditions each variant should be selected. It is possible that an assigner is unable to choose between the list of available variants based off of their configured assignment parameters. In this case the feature manager chooses the **default variant**. The default variant is a variant that is marked explicitly as default. It is required to have a default variant when configuring a dynamic feature in order to handle the possibility that an assigner is not able to select a variant of a dynamic feature.
 
@@ -702,7 +628,7 @@ An example implementation can be found in [this example](./examples/CustomAssign
 
 There is a built-in feature variant assigner that uses targeting that comes with the `Microsoft.FeatureManagement` package. This assigner is not added automatically, but it can be referenced and registered as soon as the package is registered.
 
-#### Microsoft.Targeting Assigner
+#### Microsoft.Targeting Feature Variant Assigner
 
 This feature variant assigner provides the capability to assign the variants of a dynamic feature to targeted audiences. An in-depth explanation of targeting is explained in the [targeting](./README.md#Targeting) section.
 
@@ -783,6 +709,86 @@ When a variant of a dynamic feature has been chosen, the feature management syst
 ```
 
 The feature management system resolves the configuration reference and binds the resolved configuration section to the type specfied when a variant of a dynamic feature is requested. This is performed by an implementation of the  `IFeatureVariantOptionsResolver`. By providing a custom implementation of `IFeatureVariantOptionsResolver`, a developer can resolve configuration references from sources other than configuration.
+
+## Targeting
+
+Targeting is a feature management strategy that enables developers to progressively roll out new features to their user base. The strategy is built on the concept of targeting a set of users known as the target _audience_. An audience is made up of specific users, groups, and a designated percentage of the entire user base. The groups that are included in the audience can be broken down further into percentages of their total members.
+
+The following steps demonstrate an example of a progressive rollout for a new 'Beta' feature:
+
+1. Individual users Jeff and Alicia are granted access to the Beta
+2. Another user, Mark, asks to opt-in and is included.
+3. Twenty percent of a group known as "Ring1" users are included in the Beta.
+5. The number of "Ring1" users included in the beta is bumped up to 100 percent.
+5. Five percent of the user base is included in the beta.
+6. The rollout percentage is bumped up to 100 percent and the feature is completely rolled out.
+
+This strategy for rolling out a feature is built in to the library through the included [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter.
+
+## Targeting in a Web Application
+
+An example web application that uses the targeting feature filter is available in the [FeatureFlagDemo](./examples/FeatureFlagDemo) example project.
+
+To begin using the `TargetingFilter` in an application it must be added to the application's service collection just as any other feature filter. Unlike other built in filters, the `TargetingFilter` relies on another service to be added to the application's service collection. That service is an `ITargetingContextAccessor`.
+
+The implementation type used for the `ITargetingContextAccessor` service must be implemented by the application that is using the targeting filter. Here is an example setting up feature management in a web application to use the `TargetingFilter` with an implementation of `ITargetingContextAccessor` called `HttpContextTargetingContextAccessor`.
+
+``` C#
+services.AddSingleton<ITargetingContextAccessor, HttpContextTargetingContextAccessor>();
+
+services.AddFeatureManagement();
+        .AddFeatureFilter<TargetingFilter>();
+
+```
+
+### ITargetingContextAccessor
+
+To use the `TargetingFilter` in a web application an implementation of `ITargetingContextAccessor` is required. This is because when a targeting evaluation is being performed information such as what user is currently being evaluated is needed. This information is known as the targeting context. Different web applications may extract this information from different places. Some common examples of where an application may pull the targeting context are the request's HTTP context or a database.
+
+An example that extracts targeting context information from the application's HTTP context is included in the [FeatureFlagDemo](./examples/FeatureFlagDemo/HttpContextTargetingContextAccessor.cs) example project. This method relies on the use of `IHttpContextAccessor` which is discussed [here](./README.md#Using-HttpContext).
+
+## Targeting in a Console Application
+
+The targeting filter relies on a targeting context to evaluate whether a feature should be turned on. This targeting context contains information such as what user is currently being evaluated, and what groups the user in. In console applications there is typically no ambient context available to flow this information in to the targeting filter, thus it must be passed directly when `FeatureManager.IsEnabledAsync` is called. This is supported through the use of the `ContextualTargetingFilter`. Applications that need to float the targeting context into the feature manager should use this instead of the `TargetingFilter.`
+
+``` C#
+services.AddFeatureManagement()
+        .AddFeatureFilter<ContextualTargetingFilter>();
+```
+
+Since `ContextualTargetingFilter` is an [`IContextualTargetingFilter<ITargetingContext>`](./README.md#Contextual-Feature-Filters), an implementation of `ITargetingContext` must be passed in to `IFeatureManager.IsEnabledAsync` for it to be able to evaluate and turn a feature on.
+
+``` C#
+IFeatureManager fm;
+…
+// userId and groups defined somewhere earlier in application
+TargetingContext targetingContext = new TargetingContext
+{
+   UserId = userId,
+   Groups = groups;
+}
+
+await fm.IsEnabledAsync(featureName, targetingContext);
+```
+
+The `ContextualTargetingFilter` still uses the feature filter alias [Microsoft.Targeting](./README.md#MicrosoftTargeting), so the configuration for this filter is consistent with what is mentioned in that section.
+
+An example that uses the `ContextualTargetingFilter` in a console application is available in the [TargetingConsoleApp](./examples/TargetingConsoleApp) example project.
+
+## Targeting Evaluation Options
+
+Options are available to customize how targeting evaluation is performed across all features. These options can be configured when setting up feature management.
+
+``` C#
+services.Configure<TargetingEvaluationOptions>(options =>
+{
+    options.IgnoreCase = true;
+});
+```
+
+### Targeting in Dynamic Features
+
+The concept of targeting can be extended to dynamic features. Instead of targeting an audience to see a feature as enabled, the variants of a dynamic feature can be configured to target different audiences. For an in depth view of how this can be done see the [targeting feature variant assigner](./README.md#MicrosoftTargeting-Feature-Variant-Assigner) section.
 
 ## Caching
 

@@ -1,6 +1,6 @@
 { 
     "$schema":"http://json-schema.org/draft-07/schema#", 
-    "$id":"http://azconfig.io/schemas/FeatureManagement-DotNet/v3.0.0/FeatureManagement.json", 
+    "$id":"http://azconfig.io/schemas/FeatureManagement-DotNet/v2.0.0/FeatureManagement.json", 
     "title":"Decalaration of features in the Microsoft.FeatureManagement library.",
     "definitions": { 
         "FeatureFlag": { 
