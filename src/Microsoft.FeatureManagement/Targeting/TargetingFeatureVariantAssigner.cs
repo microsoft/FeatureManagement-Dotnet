@@ -22,7 +22,7 @@ namespace Microsoft.FeatureManagement.Assigners
         private readonly ILogger _logger;
 
         /// <summary>
-        /// Creates a feature variant assigner that uses targeting to assign which of a feature's registered variants should be used.
+        /// Creates a feature variant assigner that uses targeting to assign which of a dynamic feature's registered variants should be used.
         /// </summary>
         /// <param name="options">The options controlling how targeting is performed.</param>
         /// <param name="contextAccessor">An accessor for the targeting context required to perform a targeting evaluation.</param>
@@ -37,7 +37,7 @@ namespace Microsoft.FeatureManagement.Assigners
         }
 
         /// <summary>
-        /// Assigns one of the variants configured for a feature based off the provided targeting context.
+        /// Assigns one of the variants configured for a dynamic feature based off the provided targeting context.
         /// </summary>
         /// <param name="variantAssignmentContext">Contextual information available for use during the assignment process.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>

@@ -66,7 +66,7 @@ namespace Tests.FeatureManagement
 
                 Assert.Equal("V1", evaluationContext.Parameters["P1"]);
 
-                Assert.Equal(ConditionalFeature, evaluationContext.FeatureName);
+                Assert.Equal(ConditionalFeature, evaluationContext.FeatureFlagName);
 
                 return true;
             };
@@ -153,7 +153,7 @@ namespace Tests.FeatureManagement
 
                 Assert.Equal("V1", evaluationContext.Parameters["P1"]);
 
-                Assert.Equal(ConditionalFeature, evaluationContext.FeatureName);
+                Assert.Equal(ConditionalFeature, evaluationContext.FeatureFlagName);
 
                 return true;
             };
@@ -291,7 +291,7 @@ namespace Tests.FeatureManagement
 
             //
             // Enable 1/2 features
-            testFeatureFilter.Callback = ctx => ctx.FeatureName == Features.ConditionalFeature;
+            testFeatureFilter.Callback = ctx => ctx.FeatureFlagName == Features.ConditionalFeature;
 
             gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
@@ -950,7 +950,7 @@ namespace Tests.FeatureManagement
 
                 Assert.Equal("V1", evaluationContext.Parameters["P1"]);
 
-                Assert.Equal(ConditionalFeature, evaluationContext.FeatureName);
+                Assert.Equal(ConditionalFeature, evaluationContext.FeatureFlagName);
 
                 return true;
             };

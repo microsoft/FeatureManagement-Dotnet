@@ -261,12 +261,12 @@ Some feature filters require parameters to decide whether a feature flag should 
 public class FeatureFilterEvaluationContext
 {
     /// <summary>
-    /// The name of the feature being evaluated.
+    /// The name of the feature flag being evaluated.
     /// </summary>
-    public string FeatureName { get; set; }
+    public string FeaturFlagName { get; set; }
 
     /// <summary>
-    /// The settings provided for the feature filter to use when evaluating whether the feature should be enabled.
+    /// The settings provided for the feature filter to use when evaluating whether the feature flag should be enabled.
     /// </summary>
     public IConfiguration Parameters { get; set; }
 }
@@ -345,7 +345,7 @@ public void ConfigureServices(IServiceCollection services)
 
 ## Providing a Context For Feature Evaluation
 
-In console applications there is no ambient context such as `HttpContext` that feature filters can acquire and utilize to check if a feature should be on or off. In this case, applications need to provide an object representing a context into the feature management system for use by feature filters. This is done by using `IFeatureManager.IsEnabledAsync<TContext>(string featureName, TContext appContext)`. The appContext object that is provided to the feature manager can be used by feature filters to evaluate the state of a feature flag.
+In console applications there is no ambient context such as `HttpContext` that feature filters can acquire and utilize to check if a feature should be on or off. In this case, applications need to provide an object representing a context into the feature management system for use by feature filters. This is done by using `IFeatureManager.IsEnabledAsync<TContext>(string featureFlagName, TContext appContext)`. The appContext object that is provided to the feature manager can be used by feature filters to evaluate the state of a feature flag.
 
 ``` C#
 MyAppContext context = new MyAppContext
@@ -806,7 +806,7 @@ To customize the loading of feature definitions, one must implement the `IFeatur
 ``` C#
 public interface IFeatureFlagDefinitionProvider
 {
-    Task<FeatureFlagDefinition> GetFeatureFlagDefinitionAsync(string featureName, CancellationToken cancellationToken = default);
+    Task<FeatureFlagDefinition> GetFeatureFlagDefinitionAsync(string featureflagName, CancellationToken cancellationToken = default);
 
     IAsyncEnumerable<FeatureFlagDefinition> GetAllFeatureFlagDefinitionsAsync(CancellationToken cancellationToken = default);
 }

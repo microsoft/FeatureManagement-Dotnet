@@ -11,90 +11,90 @@ using System.Threading.Tasks;
 namespace Microsoft.FeatureManagement.Mvc
 {
     /// <summary>
-    /// An attribute that can be placed on MVC actions to require all or any of a set of features to be enabled. If none of the feature are enabled the registered <see cref="IDisabledFeaturesHandler"/> will be invoked.
+    /// An attribute that can be placed on MVC actions to require all or any of a set of feature flags to be enabled. If none of the feature flags are enabled, the registered <see cref="IDisabledFeaturesHandler"/> will be invoked.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = true)]
     public class FeatureGateAttribute : ActionFilterAttribute
     {
         /// <summary>
-        /// Creates an attribute that will gate actions unless all the provided feature(s) are enabled.
+        /// Creates an attribute that will gate actions unless all the provided feature flag(s) are enabled.
         /// </summary>
-        /// <param name="features">The names of the features that the attribute will represent.</param>
-        public FeatureGateAttribute(params string[] features)
-            : this(RequirementType.All, features)
+        /// <param name="featureFlags">The names of the feature flags that the attribute will represent.</param>
+        public FeatureGateAttribute(params string[] featureFlags)
+            : this(RequirementType.All, featureFlags)
         {
         }
 
         /// <summary>
-        /// Creates an attribute that can be used to gate actions. The gate can be configured to require all or any of the provided feature(s) to pass.
+        /// Creates an attribute that can be used to gate actions. The gate can be configured to require all or any of the provided feature flag(s) to pass.
         /// </summary>
-        /// <param name="requirementType">Specifies whether all or any of the provided features should be enabled in order to pass.</param>
-        /// <param name="features">The names of the features that the attribute will represent.</param>
-        public FeatureGateAttribute(RequirementType requirementType, params string[] features)
+        /// <param name="requirementType">Specifies whether all or any of the provided feature flags should be enabled in order to pass.</param>
+        /// <param name="featureFlags">The names of the feature flags that the attribute will represent.</param>
+        public FeatureGateAttribute(RequirementType requirementType, params string[] featureFlags)
         {
-            if (features == null || features.Length == 0)
+            if (featureFlags == null || featureFlags.Length == 0)
             {
-                throw new ArgumentNullException(nameof(features));
+                throw new ArgumentNullException(nameof(featureFlags));
             }
 
-            Features = features;
+            FeatureFlags = featureFlags;
 
             RequirementType = requirementType;
         }
 
         /// <summary>
-        /// Creates an attribute that will gate actions unless all the provided feature(s) are enabled.
+        /// Creates an attribute that will gate actions unless all the provided feature flag(s) are enabled.
         /// </summary>
-        /// <param name="features">A set of enums representing the features that the attribute will represent.</param>
+        /// <param name="features">A set of enums representing the feature flags that the attribute will represent.</param>
         public FeatureGateAttribute(params object[] features)
             : this(RequirementType.All, features)
         {
         }
 
         /// <summary>
-        /// Creates an attribute that can be used to gate actions. The gate can be configured to require all or any of the provided feature(s) to pass.
+        /// Creates an attribute that can be used to gate actions. The gate can be configured to require all or any of the provided feature flag(s) to pass.
         /// </summary>
-        /// <param name="requirementType">Specifies whether all or any of the provided features should be enabled in order to pass.</param>
-        /// <param name="features">A set of enums representing the features that the attribute will represent.</param>
-        public FeatureGateAttribute(RequirementType requirementType, params object[] features)
+        /// <param name="requirementType">Specifies whether all or any of the provided feature flags should be enabled in order to pass.</param>
+        /// <param name="featureFlags">A set of enums representing the feature flags that the attribute will represent.</param>
+        public FeatureGateAttribute(RequirementType requirementType, params object[] featureFlags)
         {
-            if (features == null || features.Length == 0)
+            if (featureFlags == null || featureFlags.Length == 0)
             {
-                throw new ArgumentNullException(nameof(features));
+                throw new ArgumentNullException(nameof(featureFlags));
             }
 
             var fs = new List<string>();
 
-            foreach (object feature in features)
+            foreach (object feature in featureFlags)
             {
                 var type = feature.GetType();
 
                 if (!type.IsEnum)
                 {
                     // invalid
-                    throw new ArgumentException("The provided features must be enums.", nameof(features));
+                    throw new ArgumentException("The provided feature flags must be enums.", nameof(featureFlags));
                 }
 
                 fs.Add(Enum.GetName(feature.GetType(), feature));
             }
 
-            Features = fs;
+            FeatureFlags = fs;
 
             RequirementType = requirementType;
         }
 
         /// <summary>
-        /// The name of the features that the feature attribute will activate for.
+        /// The name of the feature flags that the feature gate attribute will activate for.
         /// </summary>
-        public IEnumerable<string> Features { get; }
+        public IEnumerable<string> FeatureFlags { get; }
 
         /// <summary>
-        /// Controls whether any or all features in <see cref="Features"/> should be enabled to pass.
+        /// Controls whether any or all feature flags in <see cref="FeatureFlags"/> should be enabled to pass.
         /// </summary>
         public RequirementType RequirementType { get; }
 
         /// <summary>
-        /// Performs controller action pre-procesing to ensure that at least one of the specified features are enabled.
+        /// Performs controller action pre-procesing to ensure that at least one of the specified feature flags are enabled.
         /// </summary>
         /// <param name="context">The context of the MVC action.</param>
         /// <param name="next">The action delegate.</param>
@@ -104,10 +104,10 @@ namespace Microsoft.FeatureManagement.Mvc
             IFeatureManagerSnapshot fm = context.HttpContext.RequestServices.GetRequiredService<IFeatureManagerSnapshot>();
 
             //
-            // Enabled state is determined by either 'any' or 'all' features being enabled.
+            // Enabled state is determined by either 'any' or 'all' feature flags being enabled.
             bool enabled = RequirementType == RequirementType.All ?
-                             await Features.All(async feature => await fm.IsEnabledAsync(feature, context.HttpContext.RequestAborted).ConfigureAwait(false)).ConfigureAwait(false) :
-                             await Features.Any(async feature => await fm.IsEnabledAsync(feature, context.HttpContext.RequestAborted).ConfigureAwait(false)).ConfigureAwait(false);
+                             await FeatureFlags.All(async feature => await fm.IsEnabledAsync(feature, context.HttpContext.RequestAborted).ConfigureAwait(false)).ConfigureAwait(false) :
+                             await FeatureFlags.Any(async feature => await fm.IsEnabledAsync(feature, context.HttpContext.RequestAborted).ConfigureAwait(false)).ConfigureAwait(false);
 
             if (enabled)
             {
@@ -117,7 +117,7 @@ namespace Microsoft.FeatureManagement.Mvc
             {
                 IDisabledFeaturesHandler disabledFeaturesHandler = context.HttpContext.RequestServices.GetService<IDisabledFeaturesHandler>() ?? new NotFoundDisabledFeaturesHandler();
 
-                await disabledFeaturesHandler.HandleDisabledFeatures(Features, context).ConfigureAwait(false);
+                await disabledFeaturesHandler.HandleDisabledFeatures(FeatureFlags, context).ConfigureAwait(false);
             }
         }
     }

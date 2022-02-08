@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Microsoft.FeatureManagement.FeatureFilters
 {
     /// <summary>
-    /// A feature filter that can be used to activate features for targeted audiences.
+    /// A feature filter that can be used to activate feature flags for targeted audiences.
     /// </summary>
     [FilterAlias(Alias)]
     public class TargetingFilter : IFeatureFilter
@@ -34,12 +34,12 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Performs a targeting evaluation using the current <see cref="TargetingContext"/> to determine if a feature should be enabled.
+        /// Performs a targeting evaluation using the current <see cref="TargetingContext"/> to determine if a feature flag should be enabled.
         /// </summary>
         /// <param name="context">The feature evaluation context.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="context"/> is null.</exception>
-        /// <returns>True if the feature is enabled, false otherwise.</returns>
+        /// <returns>True if the feature flag is enabled, false otherwise.</returns>
         public async Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken)
         {
             if (context == null)
