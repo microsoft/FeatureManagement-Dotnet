@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.FeatureManagement;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Consoto.Banking.AccountService.FeatureManagement
@@ -17,7 +18,7 @@ namespace Consoto.Banking.AccountService.FeatureManagement
     [FilterAlias("AccountId")]
     class AccountIdFilter : IContextualFeatureFilter<IAccountContext>
     {
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext featureEvaluationContext, IAccountContext accountContext)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext featureEvaluationContext, IAccountContext accountContext, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(accountContext?.AccountId))
             {

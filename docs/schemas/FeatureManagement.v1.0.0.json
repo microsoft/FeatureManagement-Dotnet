@@ -1,0 +1,75 @@
+{ 
+    "$schema":"http://json-schema.org/draft-07/schema#", 
+    "$id":"http://azconfig.io/schemas/FeatureManagement-DotNet/v1.0.0/FeatureManagement.json", 
+    "title":"Decalaration of features in the Microsoft.FeatureManagement library.", 
+    "definitions": { 
+        "FeatureFlag": { 
+            "type":"object", 
+            "properties": { 
+                "EnabledFor": { 
+                    "type":"array", 
+                    "items": { 
+                        "type":"object", 
+                        "required":[ 
+                            "Name" 
+                        ], 
+                        "properties": { 
+                            "Name": { 
+                                "type":"string" 
+                            }, 
+                            "Parameters": { 
+                                "type":"object", 
+                                "patternProperties": { 
+                                    "^.*$": { 
+                                        "anyOf":[ 
+                                            { 
+                                                "type":"string" 
+                                            }, 
+                                            { 
+                                                "type":"null" 
+                                            }, 
+                                            { 
+                                                "type":"object" 
+                                            }, 
+                                            { 
+                                                "type":"number" 
+                                            }, 
+                                            { 
+                                                "type":"array" 
+                                            }, 
+                                            { 
+                                                "type":"boolean" 
+                                            } 
+                                        ] 
+                                    } 
+                                }, 
+                                "additionalProperties":false 
+                            } 
+                        } 
+                    } 
+                } 
+            } 
+        } 
+    }, 
+    "type":"object", 
+    "required":[ 
+    ], 
+    "properties": { 
+        "FeatureManagement": { 
+            "type":"object", 
+            "patternProperties": { 
+                "^.*$": { 
+                    "anyOf":[ 
+                        { 
+                            "$ref":"#/definitions/FeatureFlag" 
+                        }, 
+                        { 
+                            "type":"boolean" 
+                        } 
+                    ] 
+                } 
+            }, 
+            "additionalProperties":false 
+        } 
+    } 
+} 

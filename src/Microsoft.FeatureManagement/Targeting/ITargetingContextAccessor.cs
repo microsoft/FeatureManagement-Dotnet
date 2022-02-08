@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
@@ -13,7 +14,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <summary>
         /// Retrieves the current targeting context.
         /// </summary>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>The current targeting context.</returns>
-        ValueTask<TargetingContext> GetContextAsync();
+        ValueTask<TargetingContext> GetContextAsync(CancellationToken cancellationToken = default);
     }
 }

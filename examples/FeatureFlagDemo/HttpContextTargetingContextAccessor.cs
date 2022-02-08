@@ -6,6 +6,7 @@ using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace FeatureFlagDemo
@@ -23,7 +24,7 @@ namespace FeatureFlagDemo
             _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
         }
 
-        public ValueTask<TargetingContext> GetContextAsync()
+        public ValueTask<TargetingContext> GetContextAsync(CancellationToken cancellationToken)
         {
             HttpContext httpContext = _httpContextAccessor.HttpContext;
 

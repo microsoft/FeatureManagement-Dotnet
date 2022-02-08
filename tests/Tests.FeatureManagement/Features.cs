@@ -3,12 +3,15 @@
 //
 namespace Tests.FeatureManagement
 {
-    enum Features
+    static class Features
     {
-        TargetingTestFeature,
-        OnTestFeature,
-        OffTestFeature,
-        ConditionalFeature,
-        ConditionalFeature2
+        public const string TargetingTestFeature = "TargetingTestFeature";
+        public const string OnTestFeature = "OnTestFeature";
+        public const string OffTestFeature = "OffTestFeature";
+        public const string ConditionalFeature = "ConditionalFeature";
+        public const string ConditionalFeature2 = "ConditionalFeature2";
+        public const string VariantFeature = "VariantFeature";
+        public const string ContextualVariantFeature = "ContextualVariantFeature";
+        public const string ContextualVariantTargetingFeature = "ContextualVariantTargetingFeature";
     }
 }

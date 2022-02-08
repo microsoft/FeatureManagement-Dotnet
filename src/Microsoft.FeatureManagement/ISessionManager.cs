@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
@@ -15,13 +16,15 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="featureName">The name of the feature.</param>
         /// <param name="enabled">The state of the feature.</param>
-        Task SetAsync(string featureName, bool enabled);
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        Task SetAsync(string featureName, bool enabled, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Queries the session manager for the session's feature state, if any, for the given feature.
         /// </summary>
         /// <param name="featureName">The name of the feature.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>The state of the feature if it is present in the session, otherwise null.</returns>
-        Task<bool?> GetAsync(string featureName);
+        Task<bool?> GetAsync(string featureName, CancellationToken cancellationToken = default);
     }
 }

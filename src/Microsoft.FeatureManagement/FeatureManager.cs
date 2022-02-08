@@ -7,6 +7,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
@@ -16,7 +18,7 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     class FeatureManager : IFeatureManager
     {
-        private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
+        private readonly IFeatureFlagDefinitionProvider _featureDefinitionProvider;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
         private readonly ILogger _logger;
@@ -25,44 +27,44 @@ namespace Microsoft.FeatureManagement
         private readonly FeatureManagementOptions _options;
 
         public FeatureManager(
-            IFeatureDefinitionProvider featureDefinitionProvider,
+            IFeatureFlagDefinitionProvider featureDefinitionProvider,
             IEnumerable<IFeatureFilterMetadata> featureFilters,
             IEnumerable<ISessionManager> sessionManagers,
             ILoggerFactory loggerFactory,
             IOptions<FeatureManagementOptions> options)
         {
-            _featureDefinitionProvider = featureDefinitionProvider;
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
+            _featureDefinitionProvider = featureDefinitionProvider ?? throw new ArgumentNullException(nameof(featureDefinitionProvider));
             _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
             _logger = loggerFactory.CreateLogger<FeatureManager>();
-            _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
-            _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
+            _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>(StringComparer.OrdinalIgnoreCase);
+            _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>(StringComparer.OrdinalIgnoreCase);
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         }
 
-        public Task<bool> IsEnabledAsync(string feature)
+        public Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
         {
-            return IsEnabledAsync<object>(feature, null, false);
+            return IsEnabledAsync<object>(feature, null, false, cancellationToken);
         }
 
-        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
+        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, CancellationToken cancellationToken)
         {
-            return IsEnabledAsync(feature, appContext, true);
+            return IsEnabledAsync(feature, appContext, true, cancellationToken);
         }
 
-        public async IAsyncEnumerable<string> GetFeatureNamesAsync()
+        public async IAsyncEnumerable<string> GetFeatureFlagNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            await foreach (FeatureDefinition featureDefintion in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
+            await foreach (FeatureFlagDefinition featureDefintion in _featureDefinitionProvider.GetAllFeatureFlagDefinitionsAsync(cancellationToken).ConfigureAwait(false))
             {
                 yield return featureDefintion.Name;
             }
         }
 
-        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext)
+        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                bool? readSessionResult = await sessionManager.GetAsync(feature).ConfigureAwait(false);
+                bool? readSessionResult = await sessionManager.GetAsync(feature, cancellationToken).ConfigureAwait(false);
 
                 if (readSessionResult.HasValue)
                 {
@@ -72,7 +74,7 @@ namespace Microsoft.FeatureManagement
 
             bool enabled = false;
 
-            FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
+            FeatureFlagDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureFlagDefinitionAsync(feature, cancellationToken).ConfigureAwait(false);
 
             if (featureDefinition != null)
             {
@@ -92,6 +94,13 @@ namespace Microsoft.FeatureManagement
 
                     foreach (FeatureFilterConfiguration featureFilterConfiguration in featureDefinition.EnabledFor)
                     {
+                        if (string.IsNullOrEmpty(featureFilterConfiguration.Name))
+                        {
+                            throw new FeatureManagementException(
+                                FeatureManagementError.MissingFeatureFilter,
+                                $"Missing feature filter name for the feature {feature}");
+                        }
+
                         IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
 
                         if (filter == null)
@@ -112,31 +121,42 @@ namespace Microsoft.FeatureManagement
 
                         var context = new FeatureFilterEvaluationContext()
                         {
-                            FeatureName = feature,
-                            Parameters = featureFilterConfiguration.Parameters 
+                            FeatureName = featureDefinition.Name,
+                            Parameters = featureFilterConfiguration.Parameters
                         };
 
                         //
-                        // IContextualFeatureFilter
-                        if (useAppContext)
+                        // IFeatureFilter
+                        if (filter is IFeatureFilter featureFilter)
                         {
-                            ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
-
-                            if (contextualFilter != null && await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false))
+                            if (await featureFilter.EvaluateAsync(context, cancellationToken).ConfigureAwait(false))
                             {
                                 enabled = true;
 
                                 break;
                             }
                         }
-
                         //
-                        // IFeatureFilter
-                        if (filter is IFeatureFilter featureFilter && await featureFilter.EvaluateAsync(context).ConfigureAwait(false))
+                        // IContextualFeatureFilter
+                        else if (useAppContext &&
+                                 TryGetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext), out ContextualFeatureFilterEvaluator contextualFilter))
                         {
-                            enabled = true;
+                            if (await contextualFilter.EvaluateAsync(context, appContext, cancellationToken).ConfigureAwait(false))
+                            {
+                                enabled = true;
 
-                            break;
+                                break;
+                            }
+                        }
+                        //
+                        // The filter doesn't implement a feature filter interface capable of performing the evaluation
+                        else
+                        {
+                            throw new FeatureManagementException(
+                                FeatureManagementError.InvalidFeatureFilter,
+                                useAppContext ?
+                                    $"The feature filter '{featureFilterConfiguration.Name}' specified for the feature '{feature}' is not capable of evaluating the requested feature with the provided context." :
+                                    $"The feature filter '{featureFilterConfiguration.Name}' specified for the feature '{feature}' is not capable of evaluating the requested feature.");
                         }
                     }
                 }
@@ -157,7 +177,7 @@ namespace Microsoft.FeatureManagement
 
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                await sessionManager.SetAsync(feature, enabled).ConfigureAwait(false);
+                await sessionManager.SetAsync(feature, enabled, cancellationToken).ConfigureAwait(false);
             }
 
             return enabled;
@@ -173,33 +193,19 @@ namespace Microsoft.FeatureManagement
 
                     IEnumerable<IFeatureFilterMetadata> matchingFilters = _featureFilters.Where(f =>
                     {
-                        Type t = f.GetType();
+                        Type filterType = f.GetType();
 
-                        string name = ((FilterAliasAttribute)Attribute.GetCustomAttribute(t, typeof(FilterAliasAttribute)))?.Alias;
+                        string name = ((FilterAliasAttribute)Attribute.GetCustomAttribute(filterType, typeof(FilterAliasAttribute)))?.Alias;
 
                         if (name == null)
                         {
-                            name = t.Name.EndsWith(filterSuffix, StringComparison.OrdinalIgnoreCase) ? t.Name.Substring(0, t.Name.Length - filterSuffix.Length) : t.Name;
+                            name = filterType.Name;
                         }
 
-                        //
-                        // Feature filters can have namespaces in their alias
-                        // If a feature is configured to use a filter without a namespace such as 'MyFilter', then it can match 'MyOrg.MyProduct.MyFilter' or simply 'MyFilter'
-                        // If a feature is configured to use a filter with a namespace such as 'MyOrg.MyProduct.MyFilter' then it can only match 'MyOrg.MyProduct.MyFilter' 
-                        if (filterName.Contains('.'))
-                        {
-                            //
-                            // The configured filter name is namespaced. It must be an exact match.
-                            return string.Equals(name, filterName, StringComparison.OrdinalIgnoreCase);
-                        }
-                        else
-                        {
-                            //
-                            // We take the simple name of a filter, E.g. 'MyFilter' for 'MyOrg.MyProduct.MyFilter'
-                            string simpleName = name.Contains('.') ? name.Split('.').Last() : name;
-
-                            return string.Equals(simpleName, filterName, StringComparison.OrdinalIgnoreCase);
-                        }
+                        return NameHelper.IsMatchingReference(
+                            reference: filterName,
+                            metadataName: name,
+                            suffix: filterSuffix);
                     });
 
                     if (matchingFilters.Count() > 1)
@@ -214,14 +220,14 @@ namespace Microsoft.FeatureManagement
             return filter;
         }
 
-        private ContextualFeatureFilterEvaluator GetContextualFeatureFilter(string filterName, Type appContextType)
+        private bool TryGetContextualFeatureFilter(string filterName, Type appContextType, out ContextualFeatureFilterEvaluator filter)
         {
             if (appContextType == null)
             {
                 throw new ArgumentNullException(nameof(appContextType));
             }
 
-            ContextualFeatureFilterEvaluator filter = _contextualFeatureFilterCache.GetOrAdd(
+            filter = _contextualFeatureFilterCache.GetOrAdd(
                 $"{filterName}{Environment.NewLine}{appContextType.FullName}",
                 (_) => {
 
@@ -233,7 +239,7 @@ namespace Microsoft.FeatureManagement
                 }
             );
 
-            return filter;
+            return filter != null;
         }
     }
 }
