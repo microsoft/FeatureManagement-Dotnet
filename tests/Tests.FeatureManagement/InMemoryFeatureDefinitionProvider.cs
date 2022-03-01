@@ -45,7 +45,7 @@ namespace Tests.FeatureManagement
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        public async IAsyncEnumerable<DynamicFeatureDefinition> GetAllDynamicFeatureDefinitionsAsync(CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<DynamicFeatureDefinition> GetAllDynamicFeatureDefinitionsAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             foreach (DynamicFeatureDefinition definition in _dynamicFeatureDefinitions)

@@ -10,11 +10,11 @@ namespace Tests.FeatureManagement
 {
     class TestFilter : IFeatureFilter
     {
-        public Func<FeatureFilterEvaluationContext, bool> Callback { get; set; }
+        public Func<FeatureFilterEvaluationContext, Task<bool>> Callback { get; set; }
 
         public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken)
         {
-            return Task.FromResult(Callback?.Invoke(context) ?? false);
+            return Callback?.Invoke(context) ?? Task.FromResult(false);
         }
     }
 }

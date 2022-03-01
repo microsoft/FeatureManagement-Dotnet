@@ -48,9 +48,9 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            Assert.True(await featureManager.IsEnabledAsync(OnFeature, CancellationToken.None));
+            Assert.True(await featureManager.IsEnabledAsync(OnFeature));
 
-            Assert.False(await featureManager.IsEnabledAsync(OffFeature, CancellationToken.None));
+            Assert.False(await featureManager.IsEnabledAsync(OffFeature));
 
             IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
 
@@ -68,10 +68,10 @@ namespace Tests.FeatureManagement
 
                 Assert.Equal(ConditionalFeature, evaluationContext.FeatureName);
 
-                return true;
+                return Task.FromResult(true);
             };
 
-            await featureManager.IsEnabledAsync(ConditionalFeature, CancellationToken.None);
+            await featureManager.IsEnabledAsync(ConditionalFeature);
 
             Assert.True(called);
 
@@ -155,7 +155,7 @@ namespace Tests.FeatureManagement
 
                 Assert.Equal(ConditionalFeature, evaluationContext.FeatureName);
 
-                return true;
+                return Task.FromResult(true);
             };
 
             await featureManager.IsEnabledAsync(ConditionalFeature, CancellationToken.None);
@@ -195,7 +195,7 @@ namespace Tests.FeatureManagement
             {
                 called = true;
 
-                return true;
+                return Task.FromResult(true);
             };
 
             await featureManager.IsEnabledAsync(WithSuffixFeature, CancellationToken.None);
@@ -244,14 +244,14 @@ namespace Tests.FeatureManagement
 
             TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
 
-            testFeatureFilter.Callback = _ => true;
+            testFeatureFilter.Callback = _ => Task.FromResult(true);
 
             HttpResponseMessage res = await testServer.CreateClient().GetAsync("");
 
             Assert.True(res.Headers.Contains(nameof(MvcFilter)));
             Assert.True(res.Headers.Contains(nameof(RouterMiddleware)));
 
-            testFeatureFilter.Callback = _ => false;
+            testFeatureFilter.Callback = _ => Task.FromResult(false);
 
             res = await testServer.CreateClient().GetAsync("");
 
@@ -281,7 +281,7 @@ namespace Tests.FeatureManagement
 
             //
             // Enable all features
-            testFeatureFilter.Callback = ctx => true;
+            testFeatureFilter.Callback = ctx => Task.FromResult(true);
 
             HttpResponseMessage gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             HttpResponseMessage gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
@@ -291,7 +291,7 @@ namespace Tests.FeatureManagement
 
             //
             // Enable 1/2 features
-            testFeatureFilter.Callback = ctx => ctx.FeatureName == Features.ConditionalFeature;
+            testFeatureFilter.Callback = ctx => Task.FromResult(ctx.FeatureName == Features.ConditionalFeature);
 
             gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
@@ -301,7 +301,7 @@ namespace Tests.FeatureManagement
 
             //
             // Enable no
-            testFeatureFilter.Callback = ctx => false;
+            testFeatureFilter.Callback = ctx => Task.FromResult(false);
 
             gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
@@ -342,10 +342,10 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
 
-            Assert.True(await featureManager.IsEnabledAsync(feature1, CancellationToken.None));
-            Assert.False(await featureManager.IsEnabledAsync(feature2, CancellationToken.None));
-            Assert.True(await featureManager.IsEnabledAsync(feature3, CancellationToken.None));
-            Assert.False(await featureManager.IsEnabledAsync(feature4, CancellationToken.None));
+            Assert.True(await featureManager.IsEnabledAsync(feature1));
+            Assert.False(await featureManager.IsEnabledAsync(feature2));
+            Assert.True(await featureManager.IsEnabledAsync(feature3));
+            Assert.False(await featureManager.IsEnabledAsync(feature4));
         }
 
         [Fact]
@@ -372,7 +372,7 @@ namespace Tests.FeatureManagement
 
             for (int i = 0; i < 10; i++)
             {
-                if (await featureManager.IsEnabledAsync(feature1, CancellationToken.None))
+                if (await featureManager.IsEnabledAsync(feature1))
                 {
                     enabledCount++;
                 }
@@ -410,21 +410,21 @@ namespace Tests.FeatureManagement
             Assert.True(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
             {
                 UserId = "Jeff"
-            }, CancellationToken.None));
+            }));
 
             //
             // Not targeted by user id, but targeted by default rollout
             Assert.True(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
             {
                 UserId = "Anne"
-            }, CancellationToken.None));
+            }));
 
             //
             // Not targeted by user id or default rollout
             Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
             {
                 UserId = "Patty"
-            }, CancellationToken.None));
+            }));
 
             //
             // Targeted by group rollout
@@ -432,7 +432,7 @@ namespace Tests.FeatureManagement
             {
                 UserId = "Patty",
                 Groups = new List<string>() { "Ring1" }
-            }, CancellationToken.None));
+            }));
 
             //
             // Not targeted by user id, default rollout or group rollout
@@ -440,7 +440,7 @@ namespace Tests.FeatureManagement
             {
                 UserId = "Isaac",
                 Groups = new List<string>() { "Ring1" }
-            }, CancellationToken.None));
+            }));
         }
 
         [Fact]
@@ -623,7 +623,7 @@ namespace Tests.FeatureManagement
                 UserId = "Jeff"
             };
 
-            Assert.True(await featureManager.IsEnabledAsync(beta, CancellationToken.None));
+            Assert.True(await featureManager.IsEnabledAsync(beta));
 
             //
             // Not targeted by user id or default rollout
@@ -632,7 +632,7 @@ namespace Tests.FeatureManagement
                 UserId = "Patty"
             };
 
-            Assert.False(await featureManager.IsEnabledAsync(beta, CancellationToken.None));
+            Assert.False(await featureManager.IsEnabledAsync(beta));
         }
 
         [Fact]
@@ -665,11 +665,11 @@ namespace Tests.FeatureManagement
 
             context.AccountId = "NotEnabledAccount";
 
-            Assert.False(await featureManager.IsEnabledAsync(ContextualFeature, context, CancellationToken.None));
+            Assert.False(await featureManager.IsEnabledAsync(ContextualFeature, context));
 
             context.AccountId = "abc";
 
-            Assert.True(await featureManager.IsEnabledAsync(ContextualFeature, context, CancellationToken.None));
+            Assert.True(await featureManager.IsEnabledAsync(ContextualFeature, context));
         }
 
         [Fact]
@@ -851,9 +851,34 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            var isEnabled = await featureManager.IsEnabledAsync(ConditionalFeature, CancellationToken.None);
+            var isEnabled = await featureManager.IsEnabledAsync(ConditionalFeature);
 
             Assert.False(isEnabled);
+        }
+
+        [Fact]
+        public async Task ThrowsForMissingFeatures()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatures = false;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            FeatureManagementException fme = await Assert.ThrowsAsync<FeatureManagementException>(() =>
+                featureManager.IsEnabledAsync("NonExistentFeature"));
         }
 
         [Fact]
@@ -952,10 +977,10 @@ namespace Tests.FeatureManagement
 
                 Assert.Equal(ConditionalFeature, evaluationContext.FeatureName);
 
-                return true;
+                return Task.FromResult(true);
             };
 
-            await featureManager.IsEnabledAsync(ConditionalFeature, CancellationToken.None);
+            await featureManager.IsEnabledAsync(ConditionalFeature);
 
             Assert.True(called);
 
@@ -995,6 +1020,58 @@ namespace Tests.FeatureManagement
             await dynamicFeatureManager.GetVariantAsync<string>(DynamicFeature, CancellationToken.None);
 
             Assert.True(called);
+        }
+
+        [Fact]
+        public async Task ThreadsafeSnapshot()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManagerSnapshot>();
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            //
+            // Sync filter
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            bool called = false;
+
+            testFeatureFilter.Callback = async (evaluationContext) =>
+            {
+                called = true;
+
+                await Task.Delay(10);
+
+                return new Random().Next(0, 100) > 50;
+            };
+
+            var tasks = new List<Task<bool>>();
+
+            for (int i = 0; i < 1000; i++)
+            {
+                tasks.Add(featureManager.IsEnabledAsync(ConditionalFeature));
+            }
+
+            Assert.True(called);
+
+            await Task.WhenAll(tasks);
+
+            bool result = tasks.First().Result;
+
+            foreach (Task<bool> t in tasks)
+            {
+                Assert.Equal(result, t.Result);
+            }
         }
 
         private static void DisableEndpointRouting(MvcOptions options)

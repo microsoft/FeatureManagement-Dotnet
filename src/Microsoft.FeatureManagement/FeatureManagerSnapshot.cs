@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -15,7 +16,7 @@ namespace Microsoft.FeatureManagement
     class FeatureManagerSnapshot : IFeatureManagerSnapshot
     {
         private readonly IFeatureManager _featureManager;
-        private readonly IDictionary<string, bool> _flagCache = new Dictionary<string, bool>();
+        private readonly ConcurrentDictionary<string, Task<bool>> _flagCache = new ConcurrentDictionary<string, Task<bool>>();
         private IEnumerable<string> _featureFlagNames;
 
         public FeatureManagerSnapshot(IFeatureManager featureManager)
@@ -43,36 +44,18 @@ namespace Microsoft.FeatureManagement
             }
         }
 
-        public async Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
+        public Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
         {
-            //
-            // First, check local cache
-            if (_flagCache.ContainsKey(feature))
-            {
-                return _flagCache[feature];
-            }
-
-            bool enabled = await _featureManager.IsEnabledAsync(feature, cancellationToken).ConfigureAwait(false);
-
-            _flagCache[feature] = enabled;
-
-            return enabled;
+            return _flagCache.GetOrAdd(
+                feature,
+                (key) => _featureManager.IsEnabledAsync(key, cancellationToken));
         }
 
-        public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
+        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
         {
-            //
-            // First, check local cache
-            if (_flagCache.ContainsKey(feature))
-            {
-                return _flagCache[feature];
-            }
-
-            bool enabled = await _featureManager.IsEnabledAsync(feature, context, cancellationToken).ConfigureAwait(false);
-
-            _flagCache[feature] = enabled;
-
-            return enabled;
+            return _flagCache.GetOrAdd(
+                feature,
+                (key) => _featureManager.IsEnabledAsync(key, context, cancellationToken));
         }
     }
 }

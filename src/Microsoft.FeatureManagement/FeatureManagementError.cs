@@ -19,6 +19,11 @@ namespace Microsoft.FeatureManagement
         AmbiguousFeatureFilter,
 
         /// <summary>
+        /// A feature that was requested for evaluation was not found.
+        /// </summary>
+        MissingFeature,
+
+        /// <summary>
         /// A feature filter being used in feature evaluation is invalid.
         /// </summary>
         InvalidFeatureFilter,
@@ -42,11 +47,6 @@ namespace Microsoft.FeatureManagement
         /// A feature variant assigner being used in feature evaluation is invalid.
         /// </summary>
         InvalidFeatureVariantAssigner,
-
-        /// <summary>
-        /// A feature that was requested for evaluation was not found.
-        /// </summary>
-        MissingFeature,
 
         /// <summary>
         /// A dynamic feature does not have any feature variants registered.
