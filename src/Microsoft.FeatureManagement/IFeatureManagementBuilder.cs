@@ -16,7 +16,7 @@ namespace Microsoft.FeatureManagement
         IServiceCollection Services { get; }
 
         /// <summary>
-        /// Adds a given feature filter to the list of feature filters that will be available to enable features during runtime.
+        /// Adds a given feature filter to the list of feature filters that will be available to enable feature flags during runtime.
         /// Possible feature filter metadata types include <see cref="IFeatureFilter"/> and <see cref="IContextualFeatureFilter{TContext}"/>
         /// Only one feature filter interface can be implemented by a single type.
         /// </summary>
@@ -25,7 +25,7 @@ namespace Microsoft.FeatureManagement
         IFeatureManagementBuilder AddFeatureFilter<T>() where T : IFeatureFilterMetadata;
 
         /// <summary>
-        /// Adds an <see cref="ISessionManager"/> to be used for storing feature state in a session.
+        /// Adds an <see cref="ISessionManager"/> to be used for storing feature flag state in a session.
         /// </summary>
         /// <typeparam name="T">An implementation of <see cref="ISessionManager"/></typeparam>
         /// <returns>The feature management builder.</returns>

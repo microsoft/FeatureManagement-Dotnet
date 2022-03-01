@@ -121,7 +121,7 @@ namespace Microsoft.FeatureManagement
 
                         var context = new FeatureFilterEvaluationContext()
                         {
-                            FeatureName = featureDefinition.Name,
+                            FeatureFlagName = featureDefinition.Name,
                             Parameters = featureFilterConfiguration.Parameters
                         };
 

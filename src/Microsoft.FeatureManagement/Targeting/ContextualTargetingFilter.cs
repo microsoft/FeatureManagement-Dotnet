@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Microsoft.FeatureManagement.FeatureFilters
 {
     /// <summary>
-    /// A feature filter that can be used to activate features for targeted audiences.
+    /// A feature filter that can be used to activate feature flags for targeted audiences.
     /// </summary>
     [FilterAlias(Alias)]
     public class ContextualTargetingFilter : IContextualFeatureFilter<ITargetingContext>
@@ -29,13 +29,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Performs a targeting evaluation using the provided <see cref="TargetingContext"/> to determine if a feature should be enabled.
+        /// Performs a targeting evaluation using the provided <see cref="TargetingContext"/> to determine if a feature flag should be enabled.
         /// </summary>
         /// <param name="context">The feature evaluation context.</param>
         /// <param name="targetingContext">The targeting context to use during targeting evaluation.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <exception cref="ArgumentNullException">Thrown if either <paramref name="context"/> or <paramref name="targetingContext"/> is null.</exception>
-        /// <returns>True if the feature is enabled, false otherwise.</returns>
+        /// <returns>True if the feature flag is enabled, false otherwise.</returns>
         public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, ITargetingContext targetingContext, CancellationToken cancellationToken)
         {
             if (context == null)
@@ -50,7 +50,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             TargetingFilterSettings settings = context.Parameters.Get<TargetingFilterSettings>() ?? new TargetingFilterSettings();
 
-            return Task.FromResult(TargetingEvaluator.IsTargeted(settings, targetingContext, _options.IgnoreCase, context.FeatureName));
+            return Task.FromResult(TargetingEvaluator.IsTargeted(settings, targetingContext, _options.IgnoreCase, context.FeatureFlagName));
         }
     }
 }
