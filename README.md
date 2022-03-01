@@ -801,7 +801,7 @@ There are scenarios which require the state of a feature to remain consistent du
 
 Implementing a custom feature provider enable developers to pull feature flags from sources such as a database or a feature management service. The included feature provider that is used by default pulls feature flags from .NET Core's configuration system. This allows for features to be defined in an [appsettings.json](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-3.1#jcp) file or in configuration providers like [Azure App Configuration](https://docs.microsoft.com/en-us/azure/azure-app-configuration/quickstart-feature-flag-aspnet-core?tabs=core2x). This behavior can be substituted to provide complete control of where feature definitions are read from.
 
-To customize the loading of feature definitions, one must implement the `IFeatureFlagDefinitionProvider` interface.
+To customize the loading of feature flag definitions, one must implement the `IFeatureFlagDefinitionProvider` interface.
 
 ``` C#
 public interface IFeatureFlagDefinitionProvider
