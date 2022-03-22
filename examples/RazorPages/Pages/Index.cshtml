@@ -1,0 +1,22 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<head>
+    <style>
+        .code {
+          font-family: Consolas, Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace, serif;
+        }
+    </style>
+</head>
+
+<h1>
+    Razor Page Example
+</h1>
+<p>
+    This page uses the <span class="code">'PageGateAttribute'</span> to conditionally display this web page.
+    Since you are seeing this, that means the 'Home' feature is enabled.
+    If the 'Home' feature is disabled then the browser will display an HTTP 404 (Not Found) error page.
+</p>

@@ -85,7 +85,7 @@ namespace Tests.FeatureManagement
 
                     services.AddMvcCore(o =>
                     {
-                        DisableEndpointRouting(o);
+                        o.EnableEndpointRouting = false;
                         o.Filters.AddForFeature<MvcFilter>(ConditionalFeature);
                     });
                 })
@@ -133,7 +133,7 @@ namespace Tests.FeatureManagement
                         .AddFeatureManagement()
                         .AddFeatureFilter<TestFilter>();
 
-                    services.AddMvcCore(o => DisableEndpointRouting(o));
+                    services.AddMvcCore(o => o.EnableEndpointRouting = false);
                 })
             .Configure(app => app.UseMvc()));
 
@@ -167,6 +167,65 @@ namespace Tests.FeatureManagement
 
             gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
+
+            Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, gateAnyResponse.StatusCode);
+        }
+        
+        [Fact]
+        public async Task GatesRazorPageFeatures()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            TestServer testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
+            {
+                services
+                    .AddSingleton(config)
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<TestFilter>();
+
+                services.AddRazorPages().AddApplicationPart(typeof(FeatureManagement).Assembly);
+            })
+            .Configure(app => 
+            {
+                app.UseRouting();
+
+                app.UseEndpoints(o =>
+                {
+                    o.MapRazorPages();
+                });
+            }));
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = testServer.Host.Services.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            //
+            // Enable all features
+            testFeatureFilter.Callback = ctx => Task.FromResult(true);
+
+            HttpResponseMessage gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestSome");
+            HttpResponseMessage gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
+
+            Assert.Equal(HttpStatusCode.OK, gateAllResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
+
+            //
+            // Enable 1/2 features
+            testFeatureFilter.Callback = ctx => Task.FromResult(ctx.FeatureName == Enum.GetName(typeof(Features), Features.ConditionalFeature));
+
+            gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
+            gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
+
+            Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
+
+            //
+            // Enable no
+            testFeatureFilter.Callback = ctx => Task.FromResult(false);
+
+            gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
+            gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
 
             Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, gateAnyResponse.StatusCode);
@@ -613,15 +672,6 @@ namespace Tests.FeatureManagement
             {
                 Assert.Equal(result, t.Result);
             }
-        }
-
-        private static void DisableEndpointRouting(MvcOptions options)
-        {
-#if NET5_0 || NETCOREAPP3_1
-            //
-            // Endpoint routing is disabled by default in .NET Core 2.1 since it didn't exist.
-            options.EnableEndpointRouting = false;
-#endif
         }
     }
 }
