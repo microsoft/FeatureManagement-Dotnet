@@ -204,7 +204,7 @@ namespace Tests.FeatureManagement
             // Enable all features
             testFeatureFilter.Callback = ctx => Task.FromResult(true);
 
-            HttpResponseMessage gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestSome");
+            HttpResponseMessage gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
             HttpResponseMessage gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
 
             Assert.Equal(HttpStatusCode.OK, gateAllResponse.StatusCode);

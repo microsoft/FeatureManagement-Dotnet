@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc.RazorPages;
 
 namespace Tests.FeatureManagement.Pages
 {
-    [PageFeatureGate(Features.ConditionalFeature, Features.ConditionalFeature2)]
-    public class RazorTestSomeModel : PageModel
+    [PageFeatureGate(RequirementType.Any, Features.ConditionalFeature, Features.ConditionalFeature2)]
+    public class RazorTestAnyModel : PageModel
     {
         public IActionResult OnGet()
         {
