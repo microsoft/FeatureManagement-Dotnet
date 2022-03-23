@@ -2,12 +2,11 @@
 // Licensed under the MIT license.
 //
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Logging;
-using Microsoft.FeatureManagement.Mvc.RazorPages;
+using Microsoft.FeatureManagement.Mvc;
 
 namespace RazorPages.Pages
 {
-    [PageFeatureGate("Home")]
+    [FeatureGate("Home")]
     public class IndexModel : PageModel
     {
         public void OnGet()
