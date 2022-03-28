@@ -128,7 +128,7 @@ namespace Microsoft.FeatureManagement.Mvc
         /// <param name="context">The <see cref="PageHandlerExecutingContext"/>.</param>
         /// <param name="next">The <see cref="PageHandlerExecutionDelegate"/>. Invoked to execute the next page filter or the handler method itself.</param>
         /// <returns>A <see cref="Task"/> that on completion indicates the filter has executed.</returns>
-        public virtual async Task OnPageHandlerExecutionAsync(PageHandlerExecutingContext context, PageHandlerExecutionDelegate next)
+        public async Task OnPageHandlerExecutionAsync(PageHandlerExecutingContext context, PageHandlerExecutionDelegate next)
         {
             IFeatureManagerSnapshot fm = context.HttpContext.RequestServices.GetRequiredService<IFeatureManagerSnapshot>();
 
@@ -153,6 +153,6 @@ namespace Microsoft.FeatureManagement.Mvc
         /// </summary>
         /// <param name="context">The <see cref="PageHandlerSelectedContext"/>.</param>
         /// <returns>A <see cref="Task"/> that on completion indicates the filter has executed.</returns>
-        public virtual Task OnPageHandlerSelectionAsync(PageHandlerSelectedContext context) => Task.CompletedTask;
+        public Task OnPageHandlerSelectionAsync(PageHandlerSelectedContext context) => Task.CompletedTask;
     }
 }
