@@ -13,7 +13,7 @@ namespace Tests.FeatureManagement.Pages
     {
         public IActionResult OnGet()
         {
-            return StatusCode(200);
+            return new OkResult();
         }
     }
 }
