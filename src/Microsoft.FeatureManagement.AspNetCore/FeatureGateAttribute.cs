@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -14,7 +15,7 @@ namespace Microsoft.FeatureManagement.Mvc
     /// An attribute that can be placed on MVC actions to require all or any of a set of features to be enabled. If none of the feature are enabled the registered <see cref="IDisabledFeaturesHandler"/> will be invoked.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = true)]
-    public class FeatureGateAttribute : ActionFilterAttribute
+    public class FeatureGateAttribute : ActionFilterAttribute, IAsyncPageFilter
     {
         /// <summary>
         /// Creates an attribute that will gate actions unless all the provided feature(s) are enabled.
@@ -120,5 +121,38 @@ namespace Microsoft.FeatureManagement.Mvc
                 await disabledFeaturesHandler.HandleDisabledFeatures(Features, context).ConfigureAwait(false);
             }
         }
+
+        /// <summary>
+        /// Called asynchronously before the handler method is invoked, after model binding is complete.
+        /// </summary>
+        /// <param name="context">The <see cref="PageHandlerExecutingContext"/>.</param>
+        /// <param name="next">The <see cref="PageHandlerExecutionDelegate"/>. Invoked to execute the next page filter or the handler method itself.</param>
+        /// <returns>A <see cref="Task"/> that on completion indicates the filter has executed.</returns>
+        public async Task OnPageHandlerExecutionAsync(PageHandlerExecutingContext context, PageHandlerExecutionDelegate next)
+        {
+            IFeatureManagerSnapshot fm = context.HttpContext.RequestServices.GetRequiredService<IFeatureManagerSnapshot>();
+
+            //
+            // Enabled state is determined by either 'any' or 'all' features being enabled.
+            bool enabled = RequirementType == RequirementType.All ?
+                             await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false)) :
+                             await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
+
+            if (enabled)
+            {
+                await next.Invoke().ConfigureAwait(false);
+            }
+            else
+            {
+                context.Result = new NotFoundResult();
+            }
+        }
+
+        /// <summary>
+        /// Called asynchronously after the handler method has been selected, but before model binding occurs.
+        /// </summary>
+        /// <param name="context">The <see cref="PageHandlerSelectedContext"/>.</param>
+        /// <returns>A <see cref="Task"/> that on completion indicates the filter has executed.</returns>
+        public Task OnPageHandlerSelectionAsync(PageHandlerSelectedContext context) => Task.CompletedTask;
     }
 }

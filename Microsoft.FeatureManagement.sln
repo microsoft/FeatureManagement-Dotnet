@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29011.400
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31825.309
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FeatureFlagDemo", "examples\FeatureFlagDemo\FeatureFlagDemo.csproj", "{E58A64A6-BE10-4D7A-AAB8-C3E2925CB32F}"
 EndProject
@@ -18,6 +18,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp", "examples\ConsoleApp\ConsoleApp.csproj", "{E50FB931-7A42-440E-AC47-B8DFE5E15394}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TargetingConsoleApp", "examples\TargetingConsoleApp\TargetingConsoleApp.csproj", "{6558C21E-CF20-4278-AA08-EB9D1DF29D66}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RazorPages", "examples\RazorPages\RazorPages.csproj", "{BA29A1BB-81D5-4EB1-AF37-6ECF64AF27E2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,6 +51,10 @@ Global
 		{6558C21E-CF20-4278-AA08-EB9D1DF29D66}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6558C21E-CF20-4278-AA08-EB9D1DF29D66}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6558C21E-CF20-4278-AA08-EB9D1DF29D66}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA29A1BB-81D5-4EB1-AF37-6ECF64AF27E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA29A1BB-81D5-4EB1-AF37-6ECF64AF27E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA29A1BB-81D5-4EB1-AF37-6ECF64AF27E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA29A1BB-81D5-4EB1-AF37-6ECF64AF27E2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -58,6 +64,7 @@ Global
 		{FDBB27BA-C5BA-48A7-BA9B-63159943EA9F} = {8ED6FFEE-4037-49A2-9709-BC519C104A90}
 		{E50FB931-7A42-440E-AC47-B8DFE5E15394} = {FB5C34DF-695C-4DF9-8AED-B3EA2516EA72}
 		{6558C21E-CF20-4278-AA08-EB9D1DF29D66} = {FB5C34DF-695C-4DF9-8AED-B3EA2516EA72}
+		{BA29A1BB-81D5-4EB1-AF37-6ECF64AF27E2} = {FB5C34DF-695C-4DF9-8AED-B3EA2516EA72}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {84DA6C54-F140-4518-A1B4-E4CF42117FBD}
