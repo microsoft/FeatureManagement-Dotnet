@@ -85,7 +85,7 @@ namespace Tests.FeatureManagement
 
                     services.AddMvcCore(o =>
                     {
-                        o.EnableEndpointRouting = false;
+                        DisableEndpointRouting(o);
                         o.Filters.AddForFeature<MvcFilter>(ConditionalFeature);
                     });
                 })
@@ -133,7 +133,7 @@ namespace Tests.FeatureManagement
                         .AddFeatureManagement()
                         .AddFeatureFilter<TestFilter>();
 
-                    services.AddMvcCore(o => o.EnableEndpointRouting = false);
+                    services.AddMvcCore(o => DisableEndpointRouting(o));
                 })
             .Configure(app => app.UseMvc()));
 
@@ -184,16 +184,11 @@ namespace Tests.FeatureManagement
                     .AddFeatureManagement()
                     .AddFeatureFilter<TestFilter>();
 
-                services.AddRazorPages().AddApplicationPart(typeof(FeatureManagement).Assembly);
+                services.AddMvc(o => DisableEndpointRouting(o));
             })
             .Configure(app => 
             {
-                app.UseRouting();
-
-                app.UseEndpoints(o =>
-                {
-                    o.MapRazorPages();
-                });
+                app.UseMvc();
             }));
 
             IEnumerable<IFeatureFilterMetadata> featureFilters = testServer.Host.Services.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
@@ -672,6 +667,15 @@ namespace Tests.FeatureManagement
             {
                 Assert.Equal(result, t.Result);
             }
+        }
+
+        private static void DisableEndpointRouting(MvcOptions options)
+        {
+#if NET5_0 || NETCOREAPP3_1
+            //
+            // Endpoint routing is disabled by default in .NET Core 2.1 since it didn't exist.
+            options.EnableEndpointRouting = false;
+#endif
         }
     }
 }
