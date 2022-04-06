@@ -18,7 +18,7 @@ namespace Microsoft.FeatureManagement.Mvc
     public class FeatureGateAttribute : ActionFilterAttribute, IAsyncPageFilter
     {
         /// <summary>
-        /// Creates an attribute that will require all the provided feature(s) to be enabled.
+        /// Creates an attribute that will gate actions or pages unless all the provided feature(s) are enabled.
         /// </summary>
         /// <param name="features">The names of the features that the attribute will represent.</param>
         public FeatureGateAttribute(params string[] features)
