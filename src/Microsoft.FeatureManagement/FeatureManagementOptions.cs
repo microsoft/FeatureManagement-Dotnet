@@ -21,5 +21,11 @@ namespace Microsoft.FeatureManagement
         /// The default value is true.
         /// </summary>
         public bool IgnoreMissingFeatures { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to allow for the same alias name to be used for a <see cref="IFeatureFilter" /> and a
+        /// <see cref="IContextualFeatureFilter{TContext}" />. Default is false.
+        /// </summary>
+        public bool AllowDuplicateContextualAlias { get; set; }
     }
 }

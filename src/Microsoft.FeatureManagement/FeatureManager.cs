@@ -16,12 +16,12 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     class FeatureManager : IFeatureManager
     {
+        private delegate Task<bool> FilterEvaluator(FeatureFilterEvaluationContext context, object appContext);
         private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
         private readonly ILogger _logger;
-        private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
-        private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
+        private readonly ConcurrentDictionary<ValueTuple<string, Type>, FilterEvaluator> _evaluatorCache;
         private readonly FeatureManagementOptions _options;
 
         public FeatureManager(
@@ -35,8 +35,7 @@ namespace Microsoft.FeatureManagement
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
             _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
             _logger = loggerFactory.CreateLogger<FeatureManager>();
-            _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
-            _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
+            _evaluatorCache = new ConcurrentDictionary<ValueTuple<string, Type>, FilterEvaluator>();
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         }
 
@@ -56,6 +55,47 @@ namespace Microsoft.FeatureManagement
             {
                 yield return featureDefintion.Name;
             }
+        }
+
+        private static bool IsFilterNameMatch(Type filterType, string filterName)
+        {
+            const string filterSuffix = "filter";
+            string name = ((FilterAliasAttribute)Attribute.GetCustomAttribute(filterType, typeof(FilterAliasAttribute)))?.Alias;
+            if (name == null)
+            {
+                name = filterType.Name.EndsWith(filterSuffix, StringComparison.OrdinalIgnoreCase)
+                    ? filterType.Name.Substring(0, filterType.Name.Length - filterSuffix.Length) : filterType.Name;
+            }
+
+            //
+            // Feature filters can have namespaces in their alias
+            // If a feature is configured to use a filter without a namespace such as 'MyFilter', then it can match 'MyOrg.MyProduct.MyFilter' or simply 'MyFilter'
+            // If a feature is configured to use a filter with a namespace such as 'MyOrg.MyProduct.MyFilter' then it can only match 'MyOrg.MyProduct.MyFilter' 
+            if (filterName.Contains('.'))
+            {
+                //
+                // The configured filter name is namespaced. It must be an exact match.
+                return string.Equals(name, filterName, StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                //
+                // We take the simple name of a filter, E.g. 'MyFilter' for 'MyOrg.MyProduct.MyFilter'
+                int dotIndex = name.LastIndexOf('.');
+                string simpleName = dotIndex != -1 ? name.Substring(dotIndex + 1) : name;
+                return string.Equals(simpleName, filterName, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        private static ContextualFeatureFilterEvaluator GetContextualFeatureFilter(IFeatureFilterMetadata metadata, Type appContextType)
+        {
+            if (appContextType == null)
+            {
+                throw new ArgumentNullException(nameof(appContextType));
+            }
+
+            return ContextualFeatureFilterEvaluator.IsContextualFilter(metadata, appContextType)
+                ? new ContextualFeatureFilterEvaluator(metadata, appContextType) : null;
         }
 
         private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext)
@@ -92,7 +132,8 @@ namespace Microsoft.FeatureManagement
 
                     foreach (FeatureFilterConfiguration featureFilterConfiguration in featureDefinition.EnabledFor)
                     {
-                        IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
+                        FilterEvaluator filter = GetFeatureFilterEvaluator(
+                            featureFilterConfiguration.Name, useAppContext ? typeof(TContext) : null);
 
                         if (filter == null)
                         {
@@ -116,26 +157,9 @@ namespace Microsoft.FeatureManagement
                             Parameters = featureFilterConfiguration.Parameters 
                         };
 
-                        //
-                        // IContextualFeatureFilter
-                        if (useAppContext)
+                        enabled = await filter.Invoke(context, appContext).ConfigureAwait(false);
+                        if (enabled)
                         {
-                            ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
-
-                            if (contextualFilter != null && await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false))
-                            {
-                                enabled = true;
-
-                                break;
-                            }
-                        }
-
-                        //
-                        // IFeatureFilter
-                        if (filter is IFeatureFilter featureFilter && await featureFilter.EvaluateAsync(context).ConfigureAwait(false))
-                        {
-                            enabled = true;
-
                             break;
                         }
                     }
@@ -163,77 +187,106 @@ namespace Microsoft.FeatureManagement
             return enabled;
         }
 
-        private IFeatureFilterMetadata GetFeatureFilterMetadata(string filterName)
+        private FilterEvaluator GetFeatureFilterEvaluator(
+            string filterName, Type appContextType)
         {
-            const string filterSuffix = "filter";
-
-            IFeatureFilterMetadata filter = _filterMetadataCache.GetOrAdd(
-                filterName,
-                (_) => {
-
-                    IEnumerable<IFeatureFilterMetadata> matchingFilters = _featureFilters.Where(f =>
+            //
+            // We will support having multiple filters with the same alias if they all implement different
+            // IFeatureFilterMetadata interfaces. More explicitly, for a given filter alias, you can have:
+            // 0 or 1 IFeatureFilter implementations
+            // 0 or N IContextualFeatureFilter<T> implementations, so long as <T> is assignable to only 1
+            // discovered contextual filter (so no IContextFeatureFilter<T> and IContextFeatureFilter<interface of T>).
+            return _evaluatorCache.GetOrAdd((filterName, appContextType), key =>
+            {
+                static void ThrowAmbiguousFeatureFilter(string filterName, Type appContextType = null)
+                {
+                    if (appContextType is null)
                     {
-                        Type t = f.GetType();
-
-                        string name = ((FilterAliasAttribute)Attribute.GetCustomAttribute(t, typeof(FilterAliasAttribute)))?.Alias;
-
-                        if (name == null)
-                        {
-                            name = t.Name.EndsWith(filterSuffix, StringComparison.OrdinalIgnoreCase) ? t.Name.Substring(0, t.Name.Length - filterSuffix.Length) : t.Name;
-                        }
-
-                        //
-                        // Feature filters can have namespaces in their alias
-                        // If a feature is configured to use a filter without a namespace such as 'MyFilter', then it can match 'MyOrg.MyProduct.MyFilter' or simply 'MyFilter'
-                        // If a feature is configured to use a filter with a namespace such as 'MyOrg.MyProduct.MyFilter' then it can only match 'MyOrg.MyProduct.MyFilter' 
-                        if (filterName.Contains('.'))
-                        {
-                            //
-                            // The configured filter name is namespaced. It must be an exact match.
-                            return string.Equals(name, filterName, StringComparison.OrdinalIgnoreCase);
-                        }
-                        else
-                        {
-                            //
-                            // We take the simple name of a filter, E.g. 'MyFilter' for 'MyOrg.MyProduct.MyFilter'
-                            string simpleName = name.Contains('.') ? name.Split('.').Last() : name;
-
-                            return string.Equals(simpleName, filterName, StringComparison.OrdinalIgnoreCase);
-                        }
-                    });
-
-                    if (matchingFilters.Count() > 1)
-                    {
-                        throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureFilter, $"Multiple feature filters match the configured filter named '{filterName}'.");
+                        throw new FeatureManagementException(
+                            FeatureManagementError.AmbiguousFeatureFilter,
+                            $"Multiple feature filters match the configured filter named '{filterName}'.");
                     }
 
-                    return matchingFilters.FirstOrDefault();
+                    throw new FeatureManagementException(
+                        FeatureManagementError.AmbiguousFeatureFilter,
+                        $"Multiple contextual feature filters match the configured filter named '{filterName}'"
+                        + $" and app context '{appContextType}'.");
                 }
-            );
 
-            return filter;
-        }
+                (string filterName, Type appContextType) = key;
+                bool foundOneMatch = false;
+                IFeatureFilter filter = null;
+                ContextualFeatureFilterEvaluator contextualEvaluator = null;
+                foreach (IFeatureFilterMetadata metadata in _featureFilters)
+                {
+                    Type t = metadata.GetType();
+                    if (!IsFilterNameMatch(t, filterName))
+                    {
+                        continue;
+                    }
 
-        private ContextualFeatureFilterEvaluator GetContextualFeatureFilter(string filterName, Type appContextType)
-        {
-            if (appContextType == null)
-            {
-                throw new ArgumentNullException(nameof(appContextType));
-            }
+                    if (!_options.AllowDuplicateContextualAlias && foundOneMatch)
+                    {
+                        // Retain existing behavior of throwing when two aliases match, regardless of if the
+                        // contextual evaluation is applicable.
+                        ThrowAmbiguousFeatureFilter(filterName);
+                    }
 
-            ContextualFeatureFilterEvaluator filter = _contextualFeatureFilterCache.GetOrAdd(
-                $"{filterName}{Environment.NewLine}{appContextType.FullName}",
-                (_) => {
+                    foundOneMatch = true;
+                    if (metadata is IFeatureFilter f)
+                    {
+                        if (filter is object)
+                        {
+                            // More than 1 matching IFeatureFilter.
+                            ThrowAmbiguousFeatureFilter(filterName);
+                        }
 
-                    IFeatureFilterMetadata metadata = GetFeatureFilterMetadata(filterName);
+                        _logger.LogDebug("Filter {FilterType} matched {FilterName} as IFeatureFilter.", t, filterName);
+                        filter = f;
+                        continue;
+                    }
 
-                    return ContextualFeatureFilterEvaluator.IsContextualFilter(metadata, appContextType) ?
-                        new ContextualFeatureFilterEvaluator(metadata, appContextType) :
-                        null;
+                    if (appContextType is object)
+                    {
+                        ContextualFeatureFilterEvaluator evaluator = GetContextualFeatureFilter(
+                            metadata, appContextType);
+                        if (contextualEvaluator is null)
+                        {
+                            _logger.LogDebug(
+                                "Filter {FilterType} matched {FilterName} as IContextualFeatureFilter.", t, filterName);
+                            contextualEvaluator = evaluator;
+                        }
+                        else if (evaluator is object)
+                        {
+                            // More than 1 matching IContextualFeatureFilter
+                            ThrowAmbiguousFeatureFilter(filterName, appContextType);
+                        }
+
+                        continue;
+                    }
+
+                    _logger.LogTrace("Filter {FilterType} matched {FilterName} but not app context.", t, filterName);
                 }
-            );
 
-            return filter;
+                if (contextualEvaluator is object)
+                {
+                    // Only present when appContextType is not null.
+                    return (context, appContext) => contextualEvaluator.EvaluateAsync(context, appContext);
+                }
+                else if (filter is object)
+                {
+                    // When appContextType is null or there was no matching contextual filter.
+                    return (context, appContext) => filter.EvaluateAsync(context);
+                }
+                else if (foundOneMatch)
+                {
+                    // This block means we found an incompatible contextual evaluator. To retain the existing
+                    // behavior, we need to return a constant false evaluation here.
+                    return (context, appContext) => Task.FromResult(false);
+                }
+
+                return null;
+            });
         }
     }
 }
