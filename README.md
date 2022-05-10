@@ -516,7 +516,7 @@ One possible example of when variants may be used is in a web application when t
 ``` C#
 //
 // Modify view based off multiple possible variants
-model.BackgroundUrl = featureVariantManager.GetVariantAsync<string>("HomeBackground", cancellationToken);
+model.BackgroundUrl = dynamicFeatureManager.GetVariantAsync<string>("HomeBackground", cancellationToken);
 
 return View(model);
 ```
@@ -549,7 +549,7 @@ An example of a dynamic feature named "ShoppingCart" is shown below.
                         "AssignmentParameters": {
                             "Audience": {
                                 "Users": [
-                                    "Alec",
+                                    "Alec"
                                 ],
                                 "Groups": [
                                 ]
@@ -599,13 +599,13 @@ A feature variant assigner is a component that uses contextual information withi
 
 ### Feature Variant Assignment
 
-When requesting the value of a dynamic feature the feature manager needs to determine which variant of the feature should be used. The act of choosing which variant should be used is called assignment. A built-in method of assignment is provided that allows the variants of a dynamic features to be assigned to segments of an application's audience. This is the same [targeting](./README.md#MicrosoftTargeting-Feature-Variant-Assigner) strategy introduced by the targeting feature filter.
+When requesting the value of a dynamic feature, the feature manager needs to determine which variant to use. The act of choosing which of the variants to be used is called "assignment." A built-in method of assignment allows the variants of a dynamic feature to be assigned to segments of an application's audience. This is the same [targeting](./README.md#MicrosoftTargeting-Feature-Variant-Assigner) strategy used by the targeting feature filter.
 
-To perform assignment the feature manager uses components known as feature variant assigners. Feature variant assigners have the job of choosing which of the variants of a dynamic feature should be used when the value of a dynamic feature is requested. Each variant of a dynamic feature declares assignment parameters so that when an assigner is invoked the assigner can tell under which conditions each variant should be selected. It is possible that an assigner is unable to choose between the list of available variants based off of their configured assignment parameters. In this case the feature manager chooses the **default variant**. The default variant is a variant that is marked explicitly as default. It is required to have a default variant when configuring a dynamic feature in order to handle the possibility that an assigner is not able to select a variant of a dynamic feature.
+To perform assignments, the feature manager uses components known as feature variant assigners. Feature variant assigners choose which of the variants of a dynamic feature should be assigned when a dynamic feature is requested. Each variant of a dynamic feature defines assignment parameters so that when an assigner is invoked, the assigner can tell under which conditions each variant should be selected. It is possible that an assigner is unable to choose between the list of available variants based on the configured assignment parameters. In this case, the feature manager chooses the **default variant**. The default variant is a variant that is marked explicitly as the default. It is required to have a default variant when configuring a dynamic feature in order to handle the possibility that an assigner is not able to select a variant of a dynamic feature.
 
 ### Custom Assignment
 
-There may come a time when custom criteria is needed to decide which variant of a feature should be assigned when a feature is referenced. This is made possible by an extensibility model that allows the act of assignment to be overriden. Every feature registered in the feature management system that uses feature variants specifies what assigner should be used to choose a variant.
+There may come a time when custom criteria is needed to decide which variant of a feature should be assigned when a feature is referenced. This is made possible by an extensibility model that allows the act of assignment to be overridden. Every feature registered in the feature management system that uses feature variants specifies what assigner should be used to choose a variant.
 
 
 ``` C#
@@ -626,13 +626,13 @@ An example implementation can be found in [this example](./examples/CustomAssign
 
 ### Built-In Feature Variant Assigners
 
-There is a built-in feature variant assigner that uses targeting that comes with the `Microsoft.FeatureManagement` package. This assigner is not added automatically, but it can be referenced and registered as soon as the package is registered.
+There is a built-in feature variant assigner that uses targeting. It comes with the `Microsoft.FeatureManagement` package. This assigner is not added automatically, but it can be referenced and registered as soon as the package is registered.
 
 #### Microsoft.Targeting Feature Variant Assigner
 
 This feature variant assigner provides the capability to assign the variants of a dynamic feature to targeted audiences. An in-depth explanation of targeting is explained in the [targeting](./README.md#Targeting) section.
 
-The assignment parameters used by the targeting feature variant assigner include an audience object which describes users, groups, and a default percentage of the user base that should receive the associated variant. Each group object that is listed in the target audience must also specify what percentage of the group's members should have receive the variant. If a user is specified in the users section directly, or if the user is in the included percentage of any of the group rollouts, or if the user falls into the default rollout percentage then that user will receive the associated variant.
+The assignment parameters used by the targeting feature variant assigner include an audience object which describes the user base that should receive the associated variant. The audience is made of users, groups, and a percentage of the entire user base. Each group object that is listed in the target audience is required to specify what percentage of the group's members should have receive the variant. If a user is specified in the users section directly, or if the user is in the included percentage of any of the group rollouts, or if the user falls into the default rollout percentage then that user will receive the associated variant.
 
 ``` JavaScript
 "ShoppingCart": {
@@ -645,7 +645,7 @@ The assignment parameters used by the targeting feature variant assigner include
             "AssignmentParameters": {
                 "Audience": {
                     "Users": [
-                        "Alec",
+                        "Alec"
                     ],
                     "Groups": [
                         {
@@ -682,7 +682,7 @@ The assignment parameters used by the targeting feature variant assigner include
 }
 ```
 
-Based on the configured audiences for the variants included in this feature, if the application is executing under the context of a user named `Alec` then the value of the `Big` variant will be returned. If the application is executing under the context of a user named `Susan` then the value of the `Small` variant will be returned. If a user match does not occur, then group matches are evaluated. If the application is executing under the context of a user in the group `Ring0` then the `Big` variant will be returned. If the user's group is `Ring1` instead, then the user has  a 50% chance between being assigned to `Big` or `Small`. If there is not user match nor group match then the default rollout percentage is used. In this case, 80% of unmatched users will get the `Small` variant leaving the other 20% to get the `Big` variant since it is marked as the `Default`.
+Based on the configured audiences for the variants included in this feature, if the application is executed under the context of a user named `Alec` then the value of the `Big` variant will be returned. If the application is executing under the context of a user named `Susan` then the value of the `Small` variant will be returned. If a user match does not occur, then group matches are evaluated. If the application is executed under the context of a user in the group `Ring0` then the `Big` variant will be returned. If the user's group is `Ring1` instead, then the user has a 50% chance of being assigned to `Small`. If there is no user match nor group match, then the default rollout percentage is used. In this case, 80% of unmatched users will get the `Small` variant, leaving the other 20% to get the `Big` variant since it is marked as the `Default`.
 
 Example usage of this assigner can be found in the [FeatureFlagDemo example](./examples/FeatureFlagDemo/Startup.cs#L63).
 
@@ -697,7 +697,7 @@ services.AddFeatureManagement();
 
 ### Variant Resolution
 
-When a variant of a dynamic feature has been chosen, the feature management system needs to resolve the configuration reference associated with that variant. A feature variant references configuration through its `ConfigurationReference` property. In the "[Configuring a Dynamic Feature](./README.md#Configuring-a-Dynamic-Feature)" section we see a dynamic feature named "ShoppingCart". The first variant of the feature, named "Big", has a configuration reference to the `ShoppingCart:Big` configuration section. The referenced section is shown below.
+When a variant of a dynamic feature has been chosen, the feature management system resolves the configuration reference associated with that variant. The resolution is done through the `ConfigurationReference` property. In the "[Configuring a Dynamic Feature](./README.md#Configuring-a-Dynamic-Feature)" section we see a dynamic feature named `ShoppingCart`. The first variant of the feature, is named "Big", and is being referenced in the feature variant as `ShoppingCart:Big` in the configuration reference. The referenced section is shown below.
 
 ``` Javascript
     "ShoppingCart": {
@@ -708,7 +708,7 @@ When a variant of a dynamic feature has been chosen, the feature management syst
     }
 ```
 
-The feature management system resolves the configuration reference and binds the resolved configuration section to the type specfied when a variant of a dynamic feature is requested. This is performed by an implementation of the  `IFeatureVariantOptionsResolver`. By providing a custom implementation of `IFeatureVariantOptionsResolver`, a developer can resolve configuration references from sources other than configuration.
+The feature management system resolves the configuration reference and binds the resolved configuration section to the type specified when a variant of a dynamic feature is requested. This is performed by an implementation of the  `IFeatureVariantOptionsResolver`. By providing a custom implementation of `IFeatureVariantOptionsResolver`, a developer can resolve configuration references from sources other than configuration.
 
 ## Targeting
 
