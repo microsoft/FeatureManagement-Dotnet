@@ -30,5 +30,7 @@ namespace Microsoft.FeatureManagement
         /// <typeparam name="T">An implementation of <see cref="ISessionManager"/></typeparam>
         /// <returns>The feature management builder.</returns>
         IFeatureManagementBuilder AddSessionManager<T>() where T : ISessionManager;
+
+        IFeatureManagementBuilder AddImpressionsListener<T>() where T : IFeatureImpressionsListener;
     }
 }

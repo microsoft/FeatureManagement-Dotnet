@@ -23,13 +23,15 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
         private readonly FeatureManagementOptions _options;
+        private readonly IEnumerable<IFeatureImpressionsListener> _impressionListeners;
 
         public FeatureManager(
             IFeatureDefinitionProvider featureDefinitionProvider,
             IEnumerable<IFeatureFilterMetadata> featureFilters,
             IEnumerable<ISessionManager> sessionManagers,
             ILoggerFactory loggerFactory,
-            IOptions<FeatureManagementOptions> options)
+            IOptions<FeatureManagementOptions> options,
+            IEnumerable<IFeatureImpressionsListener> impressionsListeners)
         {
             _featureDefinitionProvider = featureDefinitionProvider;
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
@@ -38,6 +40,7 @@ namespace Microsoft.FeatureManagement
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+            _impressionListeners = impressionsListeners ?? throw new ArgumentNullException(nameof(impressionsListeners));
         }
 
         public Task<bool> IsEnabledAsync(string feature)
@@ -66,6 +69,7 @@ namespace Microsoft.FeatureManagement
 
                 if (readSessionResult.HasValue)
                 {
+                    sendImpression(feature, readSessionResult.Value);
                     return readSessionResult.Value;
                 }
             }
@@ -160,7 +164,17 @@ namespace Microsoft.FeatureManagement
                 await sessionManager.SetAsync(feature, enabled).ConfigureAwait(false);
             }
 
+            sendImpression(feature, enabled);
+
             return enabled;
+        }
+
+        private void sendImpression(string feature, bool enabled)
+        {
+            foreach (IFeatureImpressionsListener impressionsListener in _impressionListeners)
+            {
+                impressionsListener.HandleImpression(feature, enabled);
+            }
         }
 
         private IFeatureFilterMetadata GetFeatureFilterMetadata(string filterName)

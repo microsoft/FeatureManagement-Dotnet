@@ -43,6 +43,13 @@ namespace Microsoft.FeatureManagement
             return this;
         }
 
+        public IFeatureManagementBuilder AddImpressionsListener<T>() where T : IFeatureImpressionsListener
+        {
+            Services.AddSingleton(typeof(IFeatureImpressionsListener), typeof(T));
+
+            return this;
+        }
+
         public IFeatureManagementBuilder AddSessionManager<T>() where T : ISessionManager
         {
             Services.AddSingleton(typeof(ISessionManager), typeof(T));
