@@ -415,8 +415,7 @@ namespace Tests.FeatureManagement
 
             serviceCollection.AddSingleton(config)
                 .AddFeatureManagement()
-                .AddFeatureFilter<ContextualTestFilter>()
-                .AddFeatureFilter<TestFilter>();
+                .AddFeatureFilter<ContextualTestFilter>();
 
             ServiceProvider provider = serviceCollection.BuildServiceProvider();
 
