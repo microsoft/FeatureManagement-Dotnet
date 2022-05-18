@@ -4,7 +4,7 @@
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// Marker interface for feature filters used to evaluate the state of a feature
+    /// Marker interface for feature filters used to evaluate the state of a feature flag.
     /// </summary>
     public interface IFeatureFilterMetadata
     {

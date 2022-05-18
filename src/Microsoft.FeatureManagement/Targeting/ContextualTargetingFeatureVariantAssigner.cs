@@ -31,7 +31,7 @@ namespace Microsoft.FeatureManagement.Assigners
         }
 
         /// <summary>
-        /// Assigns one of the variants configured for a feature based off the provided targeting context.
+        /// Assigns one of the variants configured for a dynamic feature based off the provided targeting context.
         /// </summary>
         /// <param name="variantAssignmentContext">Contextual information available for use during the assignment process.</param>
         /// <param name="targetingContext">The targeting context used to determine which variant should be assigned.</param>
