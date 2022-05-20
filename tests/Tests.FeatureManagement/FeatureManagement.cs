@@ -669,6 +669,27 @@ namespace Tests.FeatureManagement
             }
         }
 
+        [Fact]
+        public async Task DefaultFeatureDefinition()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings-with-default.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            var featureDefinitionProvider = serviceProvider.GetRequiredService<IFeatureDefinitionProvider>();
+
+            var definition = await featureDefinitionProvider.GetFeatureDefinitionAsync(nameof(Features.OffTestFeature));
+            
+            Assert.Collection(definition.EnabledFor, configuration => configuration.Name.Equals("Test"));
+        }
+
         private static void DisableEndpointRouting(MvcOptions options)
         {
 #if NET5_0 || NETCOREAPP3_1

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using System;
@@ -9,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.FeatureManagement.Comparers;
 
 namespace Microsoft.FeatureManagement
 {
@@ -18,6 +20,7 @@ namespace Microsoft.FeatureManagement
     sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable
     {
         private const string FeatureFiltersSectionName = "EnabledFor";
+        private const string DefaultDefinitionSectionName = "Default";
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
@@ -56,6 +59,11 @@ namespace Microsoft.FeatureManagement
             // Query by feature name
             FeatureDefinition definition = _definitions.GetOrAdd(featureName, (name) => ReadFeatureDefinition(name));
 
+            FeatureDefinition defaultDefinition =
+                _definitions.GetOrAdd(DefaultDefinitionSectionName, (name) => ReadFeatureDefinition(name));
+
+            definition = MergeDefinitions(definition, defaultDefinition);
+
             return Task.FromResult(definition);
         }
 
@@ -77,14 +85,14 @@ namespace Microsoft.FeatureManagement
             {
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                yield return  _definitions.GetOrAdd(featureSection.Key, (_) => ReadFeatureDefinition(featureSection));
+                yield return _definitions.GetOrAdd(featureSection.Key, (_) => ReadFeatureDefinition(featureSection));
             }
         }
 
         private FeatureDefinition ReadFeatureDefinition(string featureName)
         {
             IConfigurationSection configuration = GetFeatureDefinitionSections()
-                                                    .FirstOrDefault(section => section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(section => section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase));
 
             if (configuration == null)
             {
@@ -149,14 +157,16 @@ namespace Microsoft.FeatureManagement
             }
             else
             {
-                IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(FeatureFiltersSectionName).GetChildren();
+                IEnumerable<IConfigurationSection> filterSections =
+                    configurationSection.GetSection(FeatureFiltersSectionName).GetChildren();
 
                 foreach (IConfigurationSection section in filterSections)
                 {
                     //
                     // Arrays in json such as "myKey": [ "some", "values" ]
                     // Are accessed through the configuration system by using the array index as the property name, e.g. "myKey": { "0": "some", "1": "values" }
-                    if (int.TryParse(section.Key, out int i) && !string.IsNullOrEmpty(section[nameof(FeatureFilterConfiguration.Name)]))
+                    if (int.TryParse(section.Key, out int i) &&
+                        !string.IsNullOrEmpty(section[nameof(FeatureFilterConfiguration.Name)]))
                     {
                         enabledFor.Add(new FeatureFilterConfiguration()
                         {
@@ -178,7 +188,8 @@ namespace Microsoft.FeatureManagement
         {
             const string FeatureManagementSectionName = "FeatureManagement";
 
-            if (_configuration.GetChildren().Any(s => s.Key.Equals(FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase)))
+            if (_configuration.GetChildren().Any(s =>
+                    s.Key.Equals(FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase)))
             {
                 //
                 // Look for feature definitions under the "FeatureManagement" section
@@ -188,6 +199,27 @@ namespace Microsoft.FeatureManagement
             {
                 return _configuration.GetChildren();
             }
+        }
+
+        private FeatureDefinition MergeDefinitions(FeatureDefinition targetDefinition,
+            FeatureDefinition otherDefinition)
+        {
+            if (targetDefinition is null)
+            {
+                return null;
+            }
+
+            if (otherDefinition is null)
+            {
+                return targetDefinition;
+            }
+            
+            return new FeatureDefinition
+            {
+                Name = targetDefinition.Name,
+                EnabledFor = targetDefinition.EnabledFor.Union(otherDefinition.EnabledFor,
+                    new CompareByNameFeatureFilterConfigurationComparer())
+            };
         }
     }
 }
