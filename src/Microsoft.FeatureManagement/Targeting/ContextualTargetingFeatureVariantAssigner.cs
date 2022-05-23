@@ -16,7 +16,7 @@ namespace Microsoft.FeatureManagement.Assigners
     /// A feature variant assigner that can be used to assign a variant based on targeted audiences.
     /// </summary>
     [AssignerAlias(Alias)]
-    public class ContextualTargetingFeatureVariantAssigner : IContextualFeatureVariantAssigner<ITargetingContext>
+    public class ContextualTargetingFeatureVariantAssigner : IContextualFeatureVariantAssigner<ITargetingContext>, IFilterParametersBinder
     {
         private const string Alias = "Microsoft.Targeting";
         private readonly TargetingEvaluationOptions _options;
@@ -65,17 +65,11 @@ namespace Microsoft.FeatureManagement.Assigners
                     nameof(variantAssignmentContext));
             }
 
-            var lookup = new Dictionary<FeatureVariant, TargetingFilterSettings>();
-
             //
             // Check users
             foreach (FeatureVariant v in featureDefinition.Variants)
             {
-                TargetingFilterSettings targetingSettings = v.AssignmentParameters.Get<TargetingFilterSettings>();
-
-                //
-                // Put in lookup table to avoid repeatedly creating targeting settings
-                lookup[v] = targetingSettings;
+                TargetingFilterSettings targetingSettings = (TargetingFilterSettings)variantAssignmentContext.AssignmentSettings[v];
 
                 if (targetingSettings == null &&
                     v.Default)
@@ -110,7 +104,7 @@ namespace Microsoft.FeatureManagement.Assigners
             // Check Groups
             foreach (FeatureVariant v in featureDefinition.Variants)
             {
-                TargetingFilterSettings targetingSettings = lookup[v];
+                TargetingFilterSettings targetingSettings = (TargetingFilterSettings)variantAssignmentContext.AssignmentSettings[v];
 
                 if (targetingSettings == null ||
                     targetingSettings.Audience.Groups == null)
@@ -118,11 +112,9 @@ namespace Microsoft.FeatureManagement.Assigners
                     continue;
                 }
 
-                AccumulateGroups(targetingSettings.Audience.Groups, cumulativeGroups);
-
                 if (TargetingEvaluator.IsTargeted(
                     targetingContext,
-                    targetingSettings.Audience.Groups,
+                    AccumulateGroups(targetingSettings.Audience.Groups, cumulativeGroups),
                     _options.IgnoreCase,
                     featureDefinition.Name))
                 {
@@ -136,18 +128,16 @@ namespace Microsoft.FeatureManagement.Assigners
             // Check default rollout percentage
             foreach (FeatureVariant v in featureDefinition.Variants)
             {
-                TargetingFilterSettings targetingSettings = lookup[v];
+                TargetingFilterSettings targetingSettings = (TargetingFilterSettings)variantAssignmentContext.AssignmentSettings[v];
 
                 if (targetingSettings == null)
                 {
                     continue;
                 }
 
-                AccumulateDefaultRollout(targetingSettings.Audience, ref cumulativePercentage);
-
                 if (TargetingEvaluator.IsTargeted(
                     targetingContext,
-                    targetingSettings.Audience.DefaultRolloutPercentage,
+                    AccumulateDefaultRollout(targetingSettings.Audience, ref cumulativePercentage),
                     _options.IgnoreCase,
                     featureDefinition.Name))
                 {
@@ -159,12 +149,25 @@ namespace Microsoft.FeatureManagement.Assigners
         }
 
         /// <summary>
-        /// Accumulates percentages for groups of an audience.
+        /// Binds configuration representing assignment parameters to <see cref="TargetingFilterSettings"/>.
+        /// </summary>
+        /// <param name="assignmentParameters">The configuration representing assignment parameters that should be bound to <see cref="TargetingFilterSettings"/>.</param>
+        /// <returns><see cref="TargetingFilterSettings"/> that can later be used in targeting assigment.</returns>
+        public object BindParameters(IConfiguration assignmentParameters)
+        {
+            return assignmentParameters.Get<TargetingFilterSettings>();
+        }
+
+        /// <summary>
+        /// Accumulates percentages for groups.
         /// </summary>
         /// <param name="groups">The groups that will have their percentages updated based on currently accumulated percentages</param>
         /// <param name="cumulativeGroups">The current cumulative rollout percentage for each group</param>
-        private static void AccumulateGroups(IEnumerable<GroupRollout> groups, Dictionary<string, double> cumulativeGroups)
+        /// <returns>The group rollouts that have accumulated percentages.</returns>
+        private static IEnumerable<GroupRollout> AccumulateGroups(IEnumerable<GroupRollout> groups, Dictionary<string, double> cumulativeGroups)
         {
+            var cumulated = new List<GroupRollout>();
+
             foreach (GroupRollout gr in groups)
             {
                 double percentage = gr.RolloutPercentage;
@@ -176,20 +179,28 @@ namespace Microsoft.FeatureManagement.Assigners
 
                 cumulativeGroups[gr.Name] = percentage;
 
-                gr.RolloutPercentage = percentage;
+                cumulated.Add(
+                    new GroupRollout
+                    {
+                        Name = gr.Name,
+                        RolloutPercentage = percentage
+                    });
             }
+
+            return cumulated;
         }
 
         /// <summary>
         /// Accumulates percentages for the  default rollout of an audience.
         /// </summary>
-        /// <param name="audience">The audience that will have its percentages updated based on currently accumulated percentages</param>
+        /// <param name="audience">The audience that will have its percentages accumulated into the cumulativeDefaultPercentage</param>
         /// <param name="cumulativeDefaultPercentage">The current cumulative default rollout percentage</param>
-        private static void AccumulateDefaultRollout(Audience audience, ref double cumulativeDefaultPercentage)
+        /// <returns>The cumulative percentage.</returns>
+        private static double AccumulateDefaultRollout(Audience audience, ref double cumulativeDefaultPercentage)
         {
             cumulativeDefaultPercentage = cumulativeDefaultPercentage + audience.DefaultRolloutPercentage;
 
-            audience.DefaultRolloutPercentage = cumulativeDefaultPercentage;
+            return cumulativeDefaultPercentage;
         }
     }
 }

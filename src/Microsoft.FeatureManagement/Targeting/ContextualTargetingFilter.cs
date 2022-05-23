@@ -14,7 +14,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
     /// A feature filter that can be used to activate feature flags for targeted audiences.
     /// </summary>
     [FilterAlias(Alias)]
-    public class ContextualTargetingFilter : IContextualFeatureFilter<ITargetingContext>
+    public class ContextualTargetingFilter : IContextualFeatureFilter<ITargetingContext>, IFilterParametersBinder
     {
         private const string Alias = "Microsoft.Targeting";
         private readonly TargetingEvaluationOptions _options;
@@ -26,6 +26,16 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         public ContextualTargetingFilter(IOptions<TargetingEvaluationOptions> options)
         {
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+        }
+
+        /// <summary>
+        /// Binds configuration representing filter parameters to <see cref="TargetingFilterSettings"/>.
+        /// </summary>
+        /// <param name="filterParameters">The configuration representing filter parameters that should be bound to <see cref="TargetingFilterSettings"/>.</param>
+        /// <returns><see cref="TargetingFilterSettings"/> that can later be used in targeting.</returns>
+        public object BindParameters(IConfiguration filterParameters)
+        {
+            return filterParameters.Get<TargetingFilterSettings>() ?? new TargetingFilterSettings();
         }
 
         /// <summary>
@@ -48,9 +58,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 throw new ArgumentNullException(nameof(targetingContext));
             }
 
-            TargetingFilterSettings settings = context.Parameters.Get<TargetingFilterSettings>() ?? new TargetingFilterSettings();
-
-            return Task.FromResult(TargetingEvaluator.IsTargeted(targetingContext, settings, _options.IgnoreCase, context.FeatureFlagName));
+            return Task.FromResult(TargetingEvaluator.IsTargeted(targetingContext, (TargetingFilterSettings)context.Settings, _options.IgnoreCase, context.FeatureFlagName));
         }
     }
 }

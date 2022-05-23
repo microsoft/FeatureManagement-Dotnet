@@ -4,6 +4,9 @@
     <TargetFrameworks>netcoreapp2.1;netcoreapp3.1;net6.0</TargetFrameworks>
     <IsPackable>false</IsPackable>
     <LangVersion>8.0</LangVersion>
+	<DelaySign>false</DelaySign>
+	<SignAssembly>true</SignAssembly>
+	<AssemblyOriginatorKeyFile>..\..\build\Microsoft.FeatureManagement.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>

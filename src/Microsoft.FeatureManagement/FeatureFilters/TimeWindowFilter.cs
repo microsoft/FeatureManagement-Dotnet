@@ -13,7 +13,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
     /// A feature filter that can be used to activate a feature flag based on a time window.
     /// </summary>
     [FilterAlias(Alias)]
-    public class TimeWindowFilter : IFeatureFilter
+    public class TimeWindowFilter : IFeatureFilter, IFilterParametersBinder
     {
         private const string Alias = "Microsoft.TimeWindow";
         private readonly ILogger _logger;
@@ -28,6 +28,16 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
+        /// Binds configuration representing filter parameters to <see cref="TimeWindowFilterSettings"/>.
+        /// </summary>
+        /// <param name="filterParameters">The configuration representing filter parameters that should be bound to <see cref="TimeWindowFilterSettings"/>.</param>
+        /// <returns><see cref="TimeWindowFilterSettings"/> that can later be used in feature evaluation.</returns>
+        public object BindParameters(IConfiguration filterParameters)
+        {
+            return filterParameters.Get<TimeWindowFilterSettings>() ?? new TimeWindowFilterSettings();
+        }
+
+        /// <summary>
         /// Evaluates whether a feature flag is enabled based on a configurable time window.
         /// </summary>
         /// <param name="context">The feature evaluation context.</param>
@@ -35,7 +45,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <returns>True if the feature flag is enabled, false otherwise.</returns>
         public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken)
         {
-            TimeWindowFilterSettings settings = context.Parameters.Get<TimeWindowFilterSettings>() ?? new TimeWindowFilterSettings();
+            TimeWindowFilterSettings settings = (TimeWindowFilterSettings)context.Settings;
 
             DateTimeOffset now = DateTimeOffset.UtcNow;
 

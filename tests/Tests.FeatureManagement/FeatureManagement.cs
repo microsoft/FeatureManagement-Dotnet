@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Assigners;
@@ -1079,6 +1080,182 @@ namespace Tests.FeatureManagement
             };
 
             await dynamicFeatureManager.GetVariantAsync<string>(DynamicFeature, CancellationToken.None);
+
+            Assert.True(called);
+        }
+
+        [Fact]
+        public async Task BindsFeatureFlagSettings()
+        {
+            FeatureFilterConfiguration testFilterConfiguration = new FeatureFilterConfiguration
+            {
+                Name = "Test",
+                Parameters = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()
+                {
+                    { "P1", "V1" },
+                }).Build()
+            };
+
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureFlagDefinition[]
+                {
+                    new FeatureFlagDefinition
+                    {
+                        Name = ConditionalFeature,
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            testFilterConfiguration
+                        }
+                    }
+                },
+                new DynamicFeatureDefinition[0]);
+
+            services.AddSingleton<IFeatureFlagDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            //
+            // Sync filter
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            bool binderCalled = false;
+
+            bool called = false;
+
+            testFeatureFilter.ParametersBinderCallback = (parameters) =>
+            {
+                binderCalled = true;
+
+                return parameters;
+            };
+
+            testFeatureFilter.Callback = (evaluationContext) =>
+            {
+                called = true;
+
+                return Task.FromResult(true);
+            };
+
+            await featureManager.IsEnabledAsync(ConditionalFeature);
+
+            Assert.True(binderCalled);
+
+            Assert.True(called);
+
+            binderCalled = false;
+
+            called = false;
+
+            await featureManager.IsEnabledAsync(ConditionalFeature);
+
+            Assert.False(binderCalled);
+
+            Assert.True(called);
+
+            //
+            // Cache break.
+            testFilterConfiguration.Parameters = new ConfigurationWrapper(testFilterConfiguration.Parameters);
+
+            binderCalled = false;
+
+            called = false;
+
+            await featureManager.IsEnabledAsync(ConditionalFeature);
+
+            Assert.True(binderCalled);
+
+            Assert.True(called);
+        }
+
+        [Fact]
+        public async Task BindsDynamicFeatureSettings()
+        {
+            var settings = new KeyValuePair<string, string>[]
+            {
+                new KeyValuePair<string, string>($"FeatureManagement:DynamicFeatures:{Features.VariantFeature}:Assigner", "Test" ),
+                new KeyValuePair<string, string>($"FeatureManagement:DynamicFeatures:{Features.VariantFeature}:Variants:0:Default", "true" ),
+                new KeyValuePair<string, string>($"FeatureManagement:DynamicFeatures:{Features.VariantFeature}:Variants:0:Name", "variant1" ),
+                new KeyValuePair<string, string>($"FeatureManagement:DynamicFeatures:{Features.VariantFeature}:Variants:0:ConfigurationReference", "Ref1" ),
+                new KeyValuePair<string, string>($"FeatureManagement:DynamicFeatures:{Features.VariantFeature}:Variants:0:AssignmentParameters:Audience:Users:0", "Jeff" )
+            };
+
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .Add(new MemoryConfigurationSource
+                {
+                    InitialData = settings
+                })
+                .Build();
+
+            var services = new ServiceCollection();
+
+            services.AddSingleton<IConfiguration>(configuration)
+                    .AddFeatureManagement()
+                    .AddFeatureVariantAssigner<TestAssigner>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IDynamicFeatureManager dynamicFeatureManager = serviceProvider.GetRequiredService<IDynamicFeatureManager>();
+
+            IEnumerable<IFeatureVariantAssignerMetadata> variantAssigners = serviceProvider.GetRequiredService<IEnumerable<IFeatureVariantAssignerMetadata>>();
+
+            //
+            // Sync filter
+            TestAssigner testAssigner = (TestAssigner)variantAssigners.First(f => f is TestAssigner);
+
+            bool binderCalled = false;
+
+            bool called = false;
+
+            testAssigner.ParametersBinderCallback = (parameters) =>
+            {
+                binderCalled = true;
+
+                return parameters;
+            };
+
+            testAssigner.Callback = (evaluationContext) =>
+            {
+                called = true;
+
+                return null;
+            };
+
+            await dynamicFeatureManager.GetVariantAsync<string>(Features.VariantFeature);
+
+            Assert.True(binderCalled);
+
+            Assert.True(called);
+
+            binderCalled = false;
+
+            called = false;
+
+            await dynamicFeatureManager.GetVariantAsync<string>(Features.VariantFeature);
+
+            Assert.False(binderCalled);
+
+            Assert.True(called);
+
+            //
+            // Reload triggers configuration feature definition provider cache break.
+            configuration.Reload();
+
+            binderCalled = false;
+
+            called = false;
+
+            await dynamicFeatureManager.GetVariantAsync<string>(Features.VariantFeature);
+
+            Assert.True(binderCalled);
 
             Assert.True(called);
         }

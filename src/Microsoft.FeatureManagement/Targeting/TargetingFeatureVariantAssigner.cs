@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.FeatureFilters;
@@ -14,7 +15,7 @@ namespace Microsoft.FeatureManagement.Assigners
     /// A feature variant assigner that can be used to assign a variant based on targeted audiences.
     /// </summary>
     [AssignerAlias(Alias)]
-    public class TargetingFeatureVariantAssigner : IFeatureVariantAssigner
+    public class TargetingFeatureVariantAssigner : IFeatureVariantAssigner, IFilterParametersBinder
     {
         private const string Alias = "Microsoft.Targeting";
         private readonly ITargetingContextAccessor _contextAccessor;
@@ -63,6 +64,16 @@ namespace Microsoft.FeatureManagement.Assigners
             }
 
             return await _contextualResolver.AssignVariantAsync(variantAssignmentContext, targetingContext, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Binds configuration representing assignment parameters to <see cref="TargetingFilterSettings"/>.
+        /// </summary>
+        /// <param name="assignmentParameters">The configuration representing assignment parameters that should be bound to <see cref="TargetingFilterSettings"/>.</param>
+        /// <returns><see cref="TargetingFilterSettings"/> that can later be used in targeting assigment.</returns>
+        public object BindParameters(IConfiguration assignmentParameters)
+        {
+            return assignmentParameters.Get<TargetingFilterSettings>();
         }
     }
 }

@@ -8,19 +8,31 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
     /// Used to retrieve variants for dynamic features.
     /// </summary>
-    class DynamicFeatureManager : IDynamicFeatureManager
+    class DynamicFeatureManager : IDynamicFeatureManager, IDisposable
     {
+        private readonly TimeSpan SettingsCachePeriod = TimeSpan.FromSeconds(5);
         private readonly IDynamicFeatureDefinitionProvider _featureDefinitionProvider;
         private readonly IEnumerable<IFeatureVariantAssignerMetadata> _variantAssigners;
         private readonly IFeatureVariantOptionsResolver _variantOptionsResolver;
         private readonly ConcurrentDictionary<string, IFeatureVariantAssignerMetadata> _assignerMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureVariantAssignerEvaluator> _contextualFeatureVariantAssignerCache;
+        private readonly IMemoryCache _cache;
+
+        private class ConfigurationCacheItem
+        {
+            public IConfiguration AssignmentParameters { get; set; }
+
+            public object Settings { get; set; }
+        }
 
         public DynamicFeatureManager(
             IDynamicFeatureDefinitionProvider featureDefinitionProvider,
@@ -32,6 +44,13 @@ namespace Microsoft.FeatureManagement
             _featureDefinitionProvider = featureDefinitionProvider ?? throw new ArgumentNullException(nameof(featureDefinitionProvider));
             _assignerMetadataCache = new ConcurrentDictionary<string, IFeatureVariantAssignerMetadata>(StringComparer.OrdinalIgnoreCase);
             _contextualFeatureVariantAssignerCache = new ConcurrentDictionary<string, ContextualFeatureVariantAssignerEvaluator>(StringComparer.OrdinalIgnoreCase);
+
+            _cache = new MemoryCache(
+                Options.Create(
+                    new MemoryCacheOptions
+                    {
+                        ExpirationScanFrequency = SettingsCachePeriod
+                    }));
         }
 
         public async IAsyncEnumerable<string> GetDynamicFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
@@ -60,6 +79,11 @@ namespace Microsoft.FeatureManagement
             }
 
             return GetVariantAsync<T, object>(feature, null, false, cancellationToken);
+        }
+
+        public void Dispose()
+        {
+            _cache.Dispose();
         }
 
         private async ValueTask<T> GetVariantAsync<T, TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
@@ -116,7 +140,7 @@ namespace Microsoft.FeatureManagement
                 {
                     throw new FeatureManagementException(
                         FeatureManagementError.MissingConfigurationReference,
-                        $"The variant '{variant.Name}' for the feature '{feature}' does not have a configuration reference.");
+                        $"The variant '{v.Name}' for the feature '{feature}' does not have a configuration reference.");
                 }
             }
 
@@ -145,6 +169,8 @@ namespace Microsoft.FeatureManagement
             // IFeatureVariantAssigner
             if (assigner is IFeatureVariantAssigner featureVariantAssigner)
             {
+                BindSettings(assigner, context);
+
                 variant = await featureVariantAssigner.AssignVariantAsync(context, cancellationToken).ConfigureAwait(false);
             }
             //
@@ -152,6 +178,8 @@ namespace Microsoft.FeatureManagement
             else if (useAppContext &&
                      TryGetContextualFeatureVariantAssigner(featureDefinition.Assigner, typeof(TContext), out ContextualFeatureVariantAssignerEvaluator contextualAssigner))
             {
+                BindSettings(assigner, context);
+
                 variant = await contextualAssigner.AssignVariantAsync(context, appContext, cancellationToken).ConfigureAwait(false);
             }
             //
@@ -208,6 +236,53 @@ namespace Microsoft.FeatureManagement
             );
 
             return assigner;
+        }
+
+        private void BindSettings(IFeatureVariantAssignerMetadata filter, FeatureVariantAssignmentContext context)
+        {
+            IFilterParametersBinder binder = filter as IFilterParametersBinder;
+
+            if (binder == null)
+            {
+                return;
+            }
+
+            context.AssignmentSettings = new Dictionary<FeatureVariant, object>();
+
+            foreach (FeatureVariant variant in context.FeatureDefinition.Variants)
+            {
+                string cacheKey = $"{context.FeatureDefinition.Name}\n{variant.Name}";
+
+                object settings;
+
+                //
+                // Check if settings already bound from configuration
+                ConfigurationCacheItem cacheItem = (ConfigurationCacheItem)_cache.Get(cacheKey);
+
+                if (cacheItem == null ||
+                    cacheItem.AssignmentParameters != variant.AssignmentParameters)
+                {
+                    settings = binder.BindParameters(variant.AssignmentParameters);
+
+                    _cache.Set(
+                        cacheKey,
+                        new ConfigurationCacheItem
+                        {
+                            Settings = settings,
+                            AssignmentParameters = variant.AssignmentParameters
+                        },
+                        new MemoryCacheEntryOptions
+                        {
+                            AbsoluteExpirationRelativeToNow = SettingsCachePeriod
+                        });
+                }
+                else
+                {
+                    settings = cacheItem.Settings;
+                }
+
+                context.AssignmentSettings[variant] = settings;
+            }
         }
 
         private bool TryGetContextualFeatureVariantAssigner(string assignerName,  Type appContextType, out ContextualFeatureVariantAssignerEvaluator assigner)
