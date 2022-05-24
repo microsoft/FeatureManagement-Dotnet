@@ -65,8 +65,6 @@ namespace Microsoft.FeatureManagement.Assigners
                     nameof(variantAssignmentContext));
             }
 
-            FeatureVariant variant = null;
-
             var lookup = new Dictionary<FeatureVariant, TargetingFilterSettings>();
 
             //
@@ -120,7 +118,7 @@ namespace Microsoft.FeatureManagement.Assigners
                     continue;
                 }
 
-                AccumulateGroups(targetingSettings.Audience, cumulativeGroups);
+                AccumulateGroups(targetingSettings.Audience.Groups, cumulativeGroups);
 
                 if (TargetingEvaluator.IsTargeted(
                     targetingContext,
@@ -163,11 +161,11 @@ namespace Microsoft.FeatureManagement.Assigners
         /// <summary>
         /// Accumulates percentages for groups of an audience.
         /// </summary>
-        /// <param name="audience">The audience that will have its percentages updated based on currently accumulated percentages</param>
+        /// <param name="groups">The groups that will have their percentages updated based on currently accumulated percentages</param>
         /// <param name="cumulativeGroups">The current cumulative rollout percentage for each group</param>
-        private static void AccumulateGroups(Audience audience, Dictionary<string, double> cumulativeGroups)
+        private static void AccumulateGroups(IEnumerable<GroupRollout> groups, Dictionary<string, double> cumulativeGroups)
         {
-            foreach (GroupRollout gr in audience.Groups)
+            foreach (GroupRollout gr in groups)
             {
                 double percentage = gr.RolloutPercentage;
 

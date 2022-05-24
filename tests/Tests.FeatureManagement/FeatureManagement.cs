@@ -538,7 +538,11 @@ namespace Tests.FeatureManagement
                 Features.PrecedenceTestingFeature,
                 new TargetingContext
                 {
-                    UserId = "Jeff"
+                    UserId = "Jeff",
+                    Groups = new string[]
+                    {
+                        "Ring0"
+                    }
                 },
                 CancellationToken.None));
         }
