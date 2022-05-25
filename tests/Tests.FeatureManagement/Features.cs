@@ -13,5 +13,6 @@ namespace Tests.FeatureManagement
         public const string VariantFeature = "VariantFeature";
         public const string ContextualVariantFeature = "ContextualVariantFeature";
         public const string ContextualVariantTargetingFeature = "ContextualVariantTargetingFeature";
+        public const string PrecedenceTestingFeature = "PrecedenceTestingFeature";
     }
 }

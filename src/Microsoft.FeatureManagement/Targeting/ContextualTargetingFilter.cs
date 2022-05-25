@@ -50,7 +50,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             TargetingFilterSettings settings = context.Parameters.Get<TargetingFilterSettings>() ?? new TargetingFilterSettings();
 
-            return Task.FromResult(TargetingEvaluator.IsTargeted(settings, targetingContext, _options.IgnoreCase, context.FeatureFlagName));
+            return Task.FromResult(TargetingEvaluator.IsTargeted(targetingContext, settings, _options.IgnoreCase, context.FeatureFlagName));
         }
     }
 }

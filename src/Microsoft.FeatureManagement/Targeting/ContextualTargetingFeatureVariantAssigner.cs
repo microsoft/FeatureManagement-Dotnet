@@ -65,26 +65,24 @@ namespace Microsoft.FeatureManagement.Assigners
                     nameof(variantAssignmentContext));
             }
 
-            FeatureVariant variant = null;
+            var lookup = new Dictionary<FeatureVariant, TargetingFilterSettings>();
 
-            double cumulativePercentage = 0;
-
-            var cumulativeGroups = new Dictionary<string, double>(
-                _options.IgnoreCase ? StringComparer.OrdinalIgnoreCase :
-                                      StringComparer.Ordinal);
-
+            //
+            // Check users
             foreach (FeatureVariant v in featureDefinition.Variants)
             {
                 TargetingFilterSettings targetingSettings = v.AssignmentParameters.Get<TargetingFilterSettings>();
 
-                if (targetingSettings == null)
+                //
+                // Put in lookup table to avoid repeatedly creating targeting settings
+                lookup[v] = targetingSettings;
+
+                if (targetingSettings == null &&
+                    v.Default)
                 {
-                    if (v.Default)
-                    {
-                        //
-                        // Valid to omit audience for default variant
-                        continue;
-                    }
+                    //
+                    // Valid to omit audience for default variant
+                    continue;
                 }
 
                 if (!TargetingEvaluator.TryValidateSettings(targetingSettings, out string paramName, out string reason))
@@ -92,44 +90,103 @@ namespace Microsoft.FeatureManagement.Assigners
                     throw new ArgumentException(reason, paramName);
                 }
 
-                AccumulateAudience(targetingSettings.Audience, cumulativeGroups, ref cumulativePercentage);
-
-                if (TargetingEvaluator.IsTargeted(targetingSettings, targetingContext, _options.IgnoreCase, featureDefinition.Name))
+                //
+                // Check if the user is being targeted directly
+                if (targetingSettings.Audience.Users != null &&
+                    TargetingEvaluator.IsTargeted(
+                        targetingContext,
+                        targetingSettings.Audience.Users,
+                        _options.IgnoreCase))
                 {
-                    variant = v;
-
-                    break;
+                    return new ValueTask<FeatureVariant>(v);
                 }
             }
 
-            return new ValueTask<FeatureVariant>(variant);
+            var cumulativeGroups = new Dictionary<string, double>(
+                _options.IgnoreCase ? StringComparer.OrdinalIgnoreCase :
+                                      StringComparer.Ordinal);
+
+            //
+            // Check Groups
+            foreach (FeatureVariant v in featureDefinition.Variants)
+            {
+                TargetingFilterSettings targetingSettings = lookup[v];
+
+                if (targetingSettings == null ||
+                    targetingSettings.Audience.Groups == null)
+                {
+                    continue;
+                }
+
+                AccumulateGroups(targetingSettings.Audience.Groups, cumulativeGroups);
+
+                if (TargetingEvaluator.IsTargeted(
+                    targetingContext,
+                    targetingSettings.Audience.Groups,
+                    _options.IgnoreCase,
+                    featureDefinition.Name))
+                {
+                    return new ValueTask<FeatureVariant>(v);
+                }
+            }
+
+            double cumulativePercentage = 0;
+
+            //
+            // Check default rollout percentage
+            foreach (FeatureVariant v in featureDefinition.Variants)
+            {
+                TargetingFilterSettings targetingSettings = lookup[v];
+
+                if (targetingSettings == null)
+                {
+                    continue;
+                }
+
+                AccumulateDefaultRollout(targetingSettings.Audience, ref cumulativePercentage);
+
+                if (TargetingEvaluator.IsTargeted(
+                    targetingContext,
+                    targetingSettings.Audience.DefaultRolloutPercentage,
+                    _options.IgnoreCase,
+                    featureDefinition.Name))
+                {
+                    return new ValueTask<FeatureVariant>(v);
+                }
+            }
+
+            return new ValueTask<FeatureVariant>((FeatureVariant)null);
         }
 
         /// <summary>
-        /// Accumulates percentages for groups and the default rollout for an audience.
+        /// Accumulates percentages for groups of an audience.
+        /// </summary>
+        /// <param name="groups">The groups that will have their percentages updated based on currently accumulated percentages</param>
+        /// <param name="cumulativeGroups">The current cumulative rollout percentage for each group</param>
+        private static void AccumulateGroups(IEnumerable<GroupRollout> groups, Dictionary<string, double> cumulativeGroups)
+        {
+            foreach (GroupRollout gr in groups)
+            {
+                double percentage = gr.RolloutPercentage;
+
+                if (cumulativeGroups.TryGetValue(gr.Name, out double p))
+                {
+                    percentage += p;
+                }
+
+                cumulativeGroups[gr.Name] = percentage;
+
+                gr.RolloutPercentage = percentage;
+            }
+        }
+
+        /// <summary>
+        /// Accumulates percentages for the  default rollout of an audience.
         /// </summary>
         /// <param name="audience">The audience that will have its percentages updated based on currently accumulated percentages</param>
         /// <param name="cumulativeDefaultPercentage">The current cumulative default rollout percentage</param>
-        /// <param name="cumulativeGroups">The current cumulative rollout percentage for each group</param>
-        private static void AccumulateAudience(Audience audience, Dictionary<string, double> cumulativeGroups, ref double cumulativeDefaultPercentage)
+        private static void AccumulateDefaultRollout(Audience audience, ref double cumulativeDefaultPercentage)
         {
-            if (audience.Groups != null)
-            {
-                foreach (GroupRollout gr in audience.Groups)
-                {
-                    double percentage = gr.RolloutPercentage;
-
-                    if (cumulativeGroups.TryGetValue(gr.Name, out double p))
-                    {
-                        percentage += p;
-                    }
-
-                    cumulativeGroups[gr.Name] = percentage;
-
-                    gr.RolloutPercentage = percentage;
-                }
-            }
-
             cumulativeDefaultPercentage = cumulativeDefaultPercentage + audience.DefaultRolloutPercentage;
 
             audience.DefaultRolloutPercentage = cumulativeDefaultPercentage;

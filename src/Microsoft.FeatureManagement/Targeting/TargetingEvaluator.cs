@@ -17,7 +17,10 @@ namespace Microsoft.FeatureManagement.Targeting
                 StringComparison.OrdinalIgnoreCase :
                 StringComparison.Ordinal;
 
-        public static bool IsTargeted(TargetingFilterSettings settings, ITargetingContext targetingContext, bool ignoreCase, string hint)
+        /// <summary>
+        /// Checks if a provided targeting context should be targeted given targeting settings.
+        /// </summary>
+        public static bool IsTargeted(ITargetingContext targetingContext, TargetingFilterSettings settings, bool ignoreCase, string hint)
         {
             if (settings == null)
             {
@@ -36,29 +39,95 @@ namespace Microsoft.FeatureManagement.Targeting
 
             //
             // Check if the user is being targeted directly
-            if (targetingContext.UserId != null &&
-                settings.Audience.Users != null &&
-                settings.Audience.Users.Any(user => targetingContext.UserId.Equals(user, GetComparisonType(ignoreCase))))
+            if (settings.Audience.Users != null &&
+                IsTargeted(
+                    targetingContext,
+                    settings.Audience.Users,
+                    ignoreCase))
             {
                 return true;
+            }
+
+            //
+            // Check if the user is in a group that is being targeted
+            if (settings.Audience.Groups != null &&
+                IsTargeted(
+                    targetingContext,
+                    settings.Audience.Groups,
+                    ignoreCase,
+                    hint))
+            {
+                return true;
+            }
+
+            //
+            // Check if the user is being targeted by a default rollout percentage
+            return IsTargeted(
+                targetingContext,
+                settings.Audience.DefaultRolloutPercentage,
+                ignoreCase,
+                hint);
+        }
+
+        /// <summary>
+        /// Determines if a targeting context is targeted by presence in a list of users
+        /// </summary>
+        public static bool IsTargeted(
+            ITargetingContext targetingContext,
+            IEnumerable<string> users,
+            bool ignoreCase)
+        {
+            if (targetingContext == null)
+            {
+                throw new ArgumentNullException(nameof(targetingContext));
+            }
+
+            if (users == null)
+            {
+                throw new ArgumentNullException(nameof(users));
+            }
+
+            if (targetingContext.UserId != null &&
+                users.Any(user => targetingContext.UserId.Equals(user, GetComparisonType(ignoreCase))))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Determine if a targeting context is targeted by presence in a group
+        /// </summary>
+        public static bool IsTargeted(
+            ITargetingContext targetingContext,
+            IEnumerable<GroupRollout> groups,
+            bool ignoreCase,
+            string hint)
+        {
+            if (targetingContext == null)
+            {
+                throw new ArgumentNullException(nameof(targetingContext));
+            }
+
+            if (groups == null)
+            {
+                throw new ArgumentNullException(nameof(groups));
             }
 
             string userId = ignoreCase ?
                 targetingContext.UserId.ToLower() :
                 targetingContext.UserId;
 
-            //
-            // Check if the user is in a group that is being targeted
-            if (targetingContext.Groups != null &&
-                settings.Audience.Groups != null)
+            if (targetingContext.Groups != null)
             {
-                IEnumerable<string> groups = ignoreCase ?
+                IEnumerable<string> normalizedGroups = ignoreCase ?
                     targetingContext.Groups.Select(g => g.ToLower()) :
                     targetingContext.Groups;
 
-                foreach (string group in groups)
+                foreach (string group in normalizedGroups)
                 {
-                    GroupRollout groupRollout = settings.Audience.Groups.FirstOrDefault(g => g.Name.Equals(group, GetComparisonType(ignoreCase)));
+                    GroupRollout groupRollout = groups.FirstOrDefault(g => g.Name.Equals(group, GetComparisonType(ignoreCase)));
 
                     if (groupRollout != null)
                     {
@@ -72,11 +141,30 @@ namespace Microsoft.FeatureManagement.Targeting
                 }
             }
 
-            //
-            // Check if the user is being targeted by a default rollout percentage
+            return false;
+        }
+
+        /// <summary>
+        /// Determines if a targeting context is targeted by presence in a default rollout percentage.
+        /// </summary>
+        public static bool IsTargeted(
+            ITargetingContext targetingContext,
+            double defaultRolloutPercentage,
+            bool ignoreCase,
+            string hint)
+        {
+            if (targetingContext == null)
+            {
+                throw new ArgumentNullException(nameof(targetingContext));
+            }
+
+            string userId = ignoreCase ?
+                targetingContext.UserId.ToLower() :
+                targetingContext.UserId;
+
             string defaultContextId = $"{userId}\n{hint}";
 
-            return IsTargeted(defaultContextId, settings.Audience.DefaultRolloutPercentage);
+            return IsTargeted(defaultContextId, defaultRolloutPercentage);
         }
 
         /// <summary>

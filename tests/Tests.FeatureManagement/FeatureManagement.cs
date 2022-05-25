@@ -487,6 +487,67 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task TargetingAssignmentPrecedence()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureVariantAssigner<ContextualTargetingFeatureVariantAssigner>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IDynamicFeatureManager variantManager = serviceProvider.GetRequiredService<IDynamicFeatureManager>();
+
+            //
+            // Assigned variant by default rollout due to no higher precedence match
+            Assert.Equal("def", await variantManager.GetVariantAsync<string, ITargetingContext>(
+                Features.PrecedenceTestingFeature,
+                new TargetingContext
+                {
+                    UserId = "Patty"
+                },
+                CancellationToken.None));
+
+            //
+            // Assigned variant by group due to higher precedence than default rollout
+            Assert.Equal("ghi", await variantManager.GetVariantAsync<string, ITargetingContext>(
+                Features.PrecedenceTestingFeature,
+                new TargetingContext
+                {
+                    UserId = "Patty",
+                    Groups = new string[]
+                    {
+                        "Ring0"
+                    }
+                },
+                CancellationToken.None));
+
+            //
+            // Assigned variant by user name to higher precedence than default rollout, and group match
+            Assert.Equal("jkl", await variantManager.GetVariantAsync<string, ITargetingContext>(
+                Features.PrecedenceTestingFeature,
+                new TargetingContext
+                {
+                    UserId = "Jeff",
+                    Groups = new string[]
+                    {
+                        "Ring0"
+                    }
+                },
+                CancellationToken.None));
+        }
+
+        [Fact]
         public async Task AccumulatesAudience()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
