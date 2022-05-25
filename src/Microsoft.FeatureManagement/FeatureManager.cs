@@ -44,11 +44,21 @@ namespace Microsoft.FeatureManagement
 
         public Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
         {
+            if (string.IsNullOrEmpty(feature))
+            {
+                throw new ArgumentNullException(nameof(feature));
+            }
+
             return IsEnabledAsync<object>(feature, null, false, cancellationToken);
         }
 
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, CancellationToken cancellationToken)
         {
+            if (string.IsNullOrEmpty(feature))
+            {
+                throw new ArgumentNullException(nameof(feature));
+            }
+
             return IsEnabledAsync(feature, appContext, true, cancellationToken);
         }
 

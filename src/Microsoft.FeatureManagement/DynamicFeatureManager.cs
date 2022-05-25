@@ -44,11 +44,21 @@ namespace Microsoft.FeatureManagement
 
         public ValueTask<T> GetVariantAsync<T, TContext>(string feature, TContext appContext, CancellationToken cancellationToken)
         {
+            if (string.IsNullOrEmpty(feature))
+            {
+                throw new ArgumentNullException(nameof(feature));
+            }
+
             return GetVariantAsync<T, TContext>(feature, appContext, true, cancellationToken);
         }
 
         public ValueTask<T> GetVariantAsync<T>(string feature, CancellationToken cancellationToken)
         {
+            if (string.IsNullOrEmpty(feature))
+            {
+                throw new ArgumentNullException(nameof(feature));
+            }
+
             return GetVariantAsync<T, object>(feature, null, false, cancellationToken);
         }
 
