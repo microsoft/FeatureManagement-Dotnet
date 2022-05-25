@@ -115,6 +115,11 @@ namespace Microsoft.FeatureManagement.Targeting
                 throw new ArgumentNullException(nameof(groups));
             }
 
+            if (string.IsNullOrEmpty(hint))
+            {
+                throw new ArgumentNullException(nameof(hint));
+            }
+
             string userId = ignoreCase ?
                 targetingContext.UserId.ToLower() :
                 targetingContext.UserId;
@@ -156,6 +161,11 @@ namespace Microsoft.FeatureManagement.Targeting
             if (targetingContext == null)
             {
                 throw new ArgumentNullException(nameof(targetingContext));
+            }
+
+            if (string.IsNullOrEmpty(hint))
+            {
+                throw new ArgumentNullException(nameof(hint));
             }
 
             string userId = ignoreCase ?
