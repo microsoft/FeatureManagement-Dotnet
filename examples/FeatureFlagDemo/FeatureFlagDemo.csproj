@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.AppConfiguration.AspNetCore" Version="3.0.1" />
+    <PackageReference Include="Microsoft.Azure.AppConfiguration.AspNetCore" Version="5.1.0-preview" />
   </ItemGroup>
 
   <ItemGroup>

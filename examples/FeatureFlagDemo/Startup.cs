@@ -63,6 +63,8 @@ namespace FeatureFlagDemo
                     .AddFeatureVariantAssigner<TargetingFeatureVariantAssigner>()
                     .UseDisabledFeaturesHandler(new FeatureNotEnabledDisabledHandler());
 
+            services.AddAzureAppConfiguration();
+
             services.AddMvc(o =>
             {
                 o.Filters.AddForFeature<ThirdPartyActionFilter>(nameof(MyFeatureFlags.EnhancedPipeline));
