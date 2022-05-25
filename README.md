@@ -20,10 +20,19 @@ Here are some of the benefits of using this library:
 
 **API Reference**: https://go.microsoft.com/fwlink/?linkid=2091700
 
+### Packages
+
+| Namespace                              | Package                                                                                                                              |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Microsoft.FeatureManagement            | ![Nuget](https://img.shields.io/nuget/v/Microsoft.FeatureManagement?label=Nuget%20Microsoft.FeatureManagement)                       |
+| Microsoft.FeatureManagement.AspNetCore | ![Nuget](https://img.shields.io/nuget/v/Microsoft.FeatureManagement.AspNetCore?label=Nuget%20Microsoft.FeatureManagement.AspNetCore) |
+
 ### Feature Flags
+
 Feature flags are composed of two parts, a name and a list of feature-filters that are used to turn the feature on.
 
 ### Feature Filters
+
 Feature filters define a scenario for when a feature should be enabled. When a feature is evaluated for whether it is on or off, its list of feature-filters are traversed until one of the filters decides the feature should be enabled. At this point the feature is considered enabled and traversal through the feature filters stops. If no feature filter indicates that the feature should be enabled, then it will be considered disabled.
 
 As an example, a Microsoft Edge browser feature filter could be designed. This feature filter would activate any features it is attached to as long as an HTTP request is coming from Microsoft Edge.
@@ -593,3 +602,4 @@ provided by the bot. You will only need to do this once across all repos using o
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
 contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+
