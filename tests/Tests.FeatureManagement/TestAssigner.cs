@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
 {
-    class TestAssigner : IFeatureVariantAssigner, IFilterParametersBinder
+    class TestAssigner : IFeatureVariantAssigner, IAssignmentParametersBinder
     {
         public Func<FeatureVariantAssignmentContext, FeatureVariant> Callback { get; set; }
 

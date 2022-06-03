@@ -16,7 +16,7 @@ namespace Microsoft.FeatureManagement.Assigners
     /// A feature variant assigner that can be used to assign a variant based on targeted audiences.
     /// </summary>
     [AssignerAlias(Alias)]
-    public class ContextualTargetingFeatureVariantAssigner : IContextualFeatureVariantAssigner<ITargetingContext>, IFilterParametersBinder
+    public class ContextualTargetingFeatureVariantAssigner : IContextualFeatureVariantAssigner<ITargetingContext>, IAssignmentParametersBinder
     {
         private const string Alias = "Microsoft.Targeting";
         private readonly TargetingEvaluationOptions _options;

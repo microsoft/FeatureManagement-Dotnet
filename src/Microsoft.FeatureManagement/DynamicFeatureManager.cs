@@ -240,7 +240,7 @@ namespace Microsoft.FeatureManagement
 
         private void BindSettings(IFeatureVariantAssignerMetadata filter, FeatureVariantAssignmentContext context)
         {
-            IFilterParametersBinder binder = filter as IFilterParametersBinder;
+            IAssignmentParametersBinder binder = filter as IAssignmentParametersBinder;
 
             if (binder == null)
             {
