@@ -222,6 +222,23 @@ services.AddMvc(o =>
 
 The code above adds an MVC filter named `SomeMvcFilter`. This filter is only triggered within the MVC pipeline if the feature flag it specifies, "FeatureV", is enabled.
 
+### Razor Pages
+MVC Razor pages can require that a given feature, or one of any list of features, be enabled in order to execute. This can be done by using a `FeatureGateAttribute`, which can be found in the `Microsoft.FeatureManagement.Mvc` namespace. 
+
+``` C#
+[FeatureGate(MyFeatureFlags.FeatureU)]
+public class IndexModel : PageModel
+{
+    public void OnGet()
+    {
+    }
+}
+```
+
+The code above sets up a Razor page to require the "FeatureU" to be enabled. If the feature is not enabled, the page will generate an HTTP 404 (NotFound) result.
+
+When used on Razor pages, the `FeatureGateAttribute` must be placed on the page handler type. It cannot be placed on individual handler methods.
+
 ### Application building
 
 The feature management library can be used to add application branches and middleware that execute conditionally based on feature flag state.
