@@ -8,7 +8,7 @@ environment:
 restore:
   commands:
     - !!defaultcommand
-      name: 'Install .NET Core 6'
+      name: 'Install .NET'
       command: 'build/CallPowerShell.cmd'
       arguments: 'build/install-dotnet.ps1 -RestoreOnly'
     - !!defaultcommand
