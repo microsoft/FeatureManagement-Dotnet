@@ -1,0 +1,1 @@
+PowerShell %~dp0..\%*

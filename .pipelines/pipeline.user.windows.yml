@@ -8,15 +8,20 @@ environment:
 restore:
   commands:
     - !!defaultcommand
+      name: 'Install .NET'
+      command: 'build/CallPowerShell.cmd'
+      arguments: 'build/install-dotnet.ps1 -RestoreOnly'
+    - !!defaultcommand
       name: 'Restore'
-      command: 'build.cmd'
-      arguments: '-RestoreOnly'
+      command: 'build/CallPowerShell.cmd'
+      arguments: 'build.ps1 -RestoreOnly'
 
 build:
   commands:
     - !!buildcommand
       name: 'Dotnet Build'
-      command: 'build.cmd'
+      command: 'build/CallPowerShell.cmd'
+      arguments: 'build.ps1'
       logs:
         - from: 'buildlogs'
           to: 'Build Logs'
@@ -32,7 +37,8 @@ package:
   commands:
     - !!buildcommand
       name: 'Dotnet Pack'
-      command: 'pack.cmd'
+      command: 'build/CallPowerShell.cmd'
+      arguments: 'pack.ps1'
       logs:
         - from: 'buildlogs'
           to: 'Build Logs'
@@ -48,7 +54,8 @@ test:
   commands:
     - !!testcommand
       name: 'Dotnet Test'
-      command: 'test.cmd'
+      command: 'build/CallPowerShell.cmd'
+      arguments: 'test.ps1'
       fail_on_stderr: false
       testresults:
         - title: 'Unit Tests'
