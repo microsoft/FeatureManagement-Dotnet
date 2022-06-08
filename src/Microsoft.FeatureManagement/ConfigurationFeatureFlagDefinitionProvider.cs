@@ -187,6 +187,18 @@ namespace Microsoft.FeatureManagement
             IConfigurationSection featureFlagsSection = featureManagementChildren.FirstOrDefault(s => s.Key == FeatureFlagDefinitionsSectionName);
 
             //
+            // Check for mixed schema to avoid confusing scenario where feature flags defined in separate sources with different schemas don't mix.
+            if (featureFlagsSection != null &&
+                featureManagementChildren.Any(section =>
+                    !section.Key.Equals(FeatureFlagDefinitionsSectionName) &&
+                    !section.Key.Equals(ConfigurationDynamicFeatureDefinitionProvider.DynamicFeatureDefinitionsSectionName)))
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.InvalidConfiguration,
+                    "Detected feature flags defined using different feature management schemas.");
+            }
+
+            //
             // Support backward compatability where feature flag definitions were directly under the feature management section
             return featureFlagsSection == null ?
                 featureManagementChildren :
