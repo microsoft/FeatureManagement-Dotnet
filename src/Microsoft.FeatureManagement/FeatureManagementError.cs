@@ -61,6 +61,11 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// A dynamic feature does not have a default feature variant configured.
         /// </summary>
-        MissingDefaultFeatureVariant
+        MissingDefaultFeatureVariant,
+
+        /// <summary>
+        /// A configuration error is present in the feature management system.
+        /// </summary>
+        InvalidConfiguration
     }
 }

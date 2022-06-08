@@ -19,8 +19,8 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     sealed class ConfigurationDynamicFeatureDefinitionProvider : IDynamicFeatureDefinitionProvider, IDisposable
     {
+        public const string DynamicFeatureDefinitionsSectionName = "DynamicFeatures";
         private const string FeatureManagementSectionName = "FeatureManagement";
-        private const string DynamicFeatureDefinitionsSectionName= "DynamicFeatures";
         private const string FeatureVariantsSectionName = "Variants";
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, DynamicFeatureDefinition> _dynamicFeatureDefinitions;
