@@ -4,8 +4,8 @@
   <!-- Official Version -->
   <PropertyGroup>
     <MajorVersion>2</MajorVersion>
-    <MinorVersion>4</MinorVersion>
-    <PatchVersion>0</PatchVersion>
+    <MinorVersion>5</MinorVersion>
+    <PatchVersion>1</PatchVersion>
   </PropertyGroup>
 
   <Import Project="..\..\build\Versioning.props" />
@@ -33,11 +33,12 @@
     <ProjectReference Include="..\Microsoft.FeatureManagement\Microsoft.FeatureManagement.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'" >
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.RazorPages" Version="2.1.11" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.TagHelpers" Version="2.1.3" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'" >
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
