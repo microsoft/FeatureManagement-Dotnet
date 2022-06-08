@@ -20,6 +20,12 @@ Here are some of the benefits of using this library:
 
 **API Reference**: https://go.microsoft.com/fwlink/?linkid=2091700
 
+## Content Version
+
+The content of this README relates to version 3 of the Microsoft.FeatureManagement library.
+
+The README for version 2 can be found [here](https://github.com/microsoft/FeatureManagement-Dotnet/tree/release/v2#aspnet-core-feature-flags).
+
 ## Index
 * [Feature Flags](./README.md#Feature-Flags)
   * [Feature Flag Declaration](./README.md#Feature-Flag-Declaration)
