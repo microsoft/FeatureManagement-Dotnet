@@ -309,60 +309,6 @@ namespace Tests.FeatureManagement
             Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, gateAnyResponse.StatusCode);
         }
-        
-        [Fact]
-        public async Task GatesRazorPageFeatures()
-        {
-            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-
-            TestServer testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
-            {
-                services
-                    .AddSingleton(config)
-                    .AddFeatureManagement()
-                    .AddFeatureFilter<TestFilter>();
-
-                services.AddMvc(o => DisableEndpointRouting(o));
-            })
-            .Configure(app => 
-            {
-                app.UseMvc();
-            }));
-
-            IEnumerable<IFeatureFilterMetadata> featureFilters = testServer.Host.Services.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
-
-            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
-
-            //
-            // Enable all features
-            testFeatureFilter.Callback = ctx => Task.FromResult(true);
-
-            HttpResponseMessage gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
-            HttpResponseMessage gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
-
-            Assert.Equal(HttpStatusCode.OK, gateAllResponse.StatusCode);
-            Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
-
-            //
-            // Enable 1/2 features
-            testFeatureFilter.Callback = ctx => Task.FromResult(ctx.FeatureFlagName == Features.ConditionalFeature);
-
-            gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
-            gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
-
-            Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
-            Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
-
-            //
-            // Enable no
-            testFeatureFilter.Callback = ctx => Task.FromResult(false);
-
-            gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
-            gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
-
-            Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
-            Assert.Equal(HttpStatusCode.NotFound, gateAnyResponse.StatusCode);
-        }
 
         [Fact]
         public async Task TimeWindow()

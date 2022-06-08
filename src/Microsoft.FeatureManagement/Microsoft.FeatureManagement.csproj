@@ -4,8 +4,8 @@
   <!-- Official Version -->
   <PropertyGroup>
     <MajorVersion>2</MajorVersion>
-    <MinorVersion>5</MinorVersion>
-    <PatchVersion>1</PatchVersion>
+    <MinorVersion>4</MinorVersion>
+    <PatchVersion>0</PatchVersion>
   </PropertyGroup>
 
   <Import Project="..\..\build\Versioning.props" />
