@@ -3,14 +3,12 @@
 //
 namespace FeatureFlagDemo
 {
-    //
-    // Define feature flags in an enum
-    public enum MyFeatureFlags
+    static class MyFeatureFlags
     {
-        Home,
-        Beta,
-        CustomViewData,
-        ContentEnhancement,
-        EnhancedPipeline
+        public const string Home = "Home";
+        public const string Beta = "Beta";
+        public const string CustomViewData = "CustomViewData";
+        public const string ContentEnhancement = "ContentEnhancement";
+        public const string EnhancedPipeline = "EnhancedPipeline";
     }
 }

@@ -9,7 +9,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
     public class TargetingFilterSettings
     {
         /// <summary>
-        /// The audience that a feature configured to use the <see cref="TargetingFilter"/> should be enabled for.
+        /// The audience that a feature flag configured to use the <see cref="TargetingFilter"/> should be enabled for.
         /// </summary>
         public Audience Audience { get; set; }
     }

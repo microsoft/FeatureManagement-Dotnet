@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.FeatureManagement.Utils;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
@@ -27,11 +28,12 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Performs a percentage based evaluation to determine whether a feature is enabled.
+        /// Performs a percentage based evaluation to determine whether a feature flag is enabled.
         /// </summary>
         /// <param name="context">The feature evaluation context.</param>
-        /// <returns>True if the feature is enabled, false otherwise.</returns>
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>True if the feature flag is enabled, false otherwise.</returns>
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken)
         {
             PercentageFilterSettings settings = context.Parameters.Get<PercentageFilterSettings>() ?? new PercentageFilterSettings();
 
@@ -39,7 +41,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (settings.Value < 0)
             {
-                _logger.LogWarning($"The '{Alias}' feature filter does not have a valid '{nameof(settings.Value)}' value for feature '{context.FeatureName}'");
+                _logger.LogWarning($"The '{Alias}' feature filter does not have a valid '{nameof(settings.Value)}' value for the feature flag '{context.FeatureFlagName}'");
 
                 result = false;
             }

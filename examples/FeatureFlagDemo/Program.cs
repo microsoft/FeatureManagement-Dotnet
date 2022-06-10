@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using System;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -12,6 +13,10 @@ namespace FeatureFlagDemo
     {
         public static void Main(string[] args)
         {
+            //
+            // Opt-in to use new schema with features received from Azure App Configuration
+            Environment.SetEnvironmentVariable("AZURE_APP_CONFIGURATION_FEATURE_MANAGEMENT_SCHEMA_VERSION", "2");
+
             CreateWebHostBuilder(args).Build().Run();
         }
 
