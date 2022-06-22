@@ -30,6 +30,8 @@ namespace Tests.FeatureManagement
         private const string ContextualFeature = "ContextualFeature";
         private const string WithSuffixFeature = "WithSuffixFeature";
         private const string WithoutSuffixFeature = "WithoutSuffixFeature";
+        private const string AnyFilterFeature = "AnyFilterFeature";
+        private const string AllFiltersFeature = "AllFiltersFeature";
 
         [Fact]
         public async Task ReadsConfiguration()
@@ -207,6 +209,48 @@ namespace Tests.FeatureManagement
             await featureManager.IsEnabledAsync(WithoutSuffixFeature, CancellationToken.None);
 
             Assert.True(called);
+        }
+
+        [Fact]
+        public async Task UsesRequirementType()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>()
+                .AddFeatureFilter<Test2Filter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter && !(f is Test2Filter));
+
+            Test2Filter testFeatureFilter2 = (Test2Filter)featureFilters.First(f => f is Test2Filter);
+
+            testFeatureFilter.Callback = testFeatureFilter2.Callback = (evaluationContext) => Task.FromResult(false);
+
+            Assert.False(await featureManager.IsEnabledAsync(AnyFilterFeature, CancellationToken.None));
+
+            Assert.False(await featureManager.IsEnabledAsync(AllFiltersFeature, CancellationToken.None));
+
+            testFeatureFilter.Callback = testFeatureFilter2.Callback = (evaluationContext) => Task.FromResult(true);
+
+            Assert.True(await featureManager.IsEnabledAsync(AnyFilterFeature, CancellationToken.None));
+
+            Assert.True(await featureManager.IsEnabledAsync(AllFiltersFeature, CancellationToken.None));
+
+            testFeatureFilter2.Callback = (evaluationContext) => Task.FromResult(false);
+
+            Assert.True(await featureManager.IsEnabledAsync(AnyFilterFeature, CancellationToken.None));
+
+            Assert.False(await featureManager.IsEnabledAsync(AllFiltersFeature, CancellationToken.None));
         }
 
         [Fact]

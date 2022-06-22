@@ -22,6 +22,7 @@ namespace Microsoft.FeatureManagement
         private const string FeatureManagementSectionName = "FeatureManagement";
         private const string FeatureFlagDefinitionsSectionName = "FeatureFlags";
         private const string FeatureFiltersSectionName = "EnabledFor";
+        private const string RequirementTypeKeyword = "RequirementType";
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, FeatureFlagDefinition> _featureFlagDefinitions;
         private IDisposable _changeSubscription;
@@ -125,6 +126,8 @@ namespace Microsoft.FeatureManagement
 
             Debug.Assert(configurationSection != null);
 
+            RequirementType requirementType = RequirementType.Any;
+            
             var enabledFor = new List<FeatureFilterConfiguration>();
 
             string val = configurationSection.Value; // configuration[$"{featureName}"];
@@ -149,6 +152,20 @@ namespace Microsoft.FeatureManagement
             }
             else
             {
+                string rawRequirementType = configurationSection[RequirementTypeKeyword];
+
+                if (!string.IsNullOrEmpty(rawRequirementType))
+                {
+                    if (!Enum.TryParse(rawRequirementType, true, out RequirementType r))
+                    {
+                        throw new FeatureManagementException(
+                            FeatureManagementError.InvalidConfiguration,
+                            $"Invalid requirement type value for feature {configurationSection.Key}.");
+                    }
+
+                    requirementType = r;
+                }
+
                 IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(FeatureFiltersSectionName).GetChildren();
 
                 foreach (IConfigurationSection section in filterSections)
@@ -171,6 +188,7 @@ namespace Microsoft.FeatureManagement
             {
                 Name = configurationSection.Key,
                 EnabledFor = enabledFor,
+                RequirementType = requirementType
             };
         }
 

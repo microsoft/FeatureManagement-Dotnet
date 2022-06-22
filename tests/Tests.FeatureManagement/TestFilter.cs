@@ -17,4 +17,10 @@ namespace Tests.FeatureManagement
             return Callback?.Invoke(context) ?? Task.FromResult(false);
         }
     }
+
+    //
+    // Offers the same functionality as TestFilter, but allows a feature used in tests to reference two different filters
+    class Test2Filter : TestFilter
+    {
+    }
 }

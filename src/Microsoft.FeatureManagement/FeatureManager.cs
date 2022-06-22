@@ -82,7 +82,7 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            bool enabled = false;
+            bool flagEnabled = false;
 
             FeatureFlagDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureFlagDefinitionAsync(feature, cancellationToken).ConfigureAwait(false);
 
@@ -94,7 +94,7 @@ namespace Microsoft.FeatureManagement
 
                 if (featureDefinition.EnabledFor.Any(featureFilter => string.Equals(featureFilter.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase)))
                 {
-                    enabled = true;
+                    flagEnabled = true;
                 }
                 else
                 {
@@ -104,6 +104,8 @@ namespace Microsoft.FeatureManagement
 
                     foreach (FeatureFilterConfiguration featureFilterConfiguration in featureDefinition.EnabledFor)
                     {
+                        bool filterEnabled = false;
+
                         if (string.IsNullOrEmpty(featureFilterConfiguration.Name))
                         {
                             throw new FeatureManagementException(
@@ -125,48 +127,61 @@ namespace Microsoft.FeatureManagement
                             {
                                 _logger.LogWarning(errorMessage);
                             }
-
-                            continue;
                         }
-
-                        var context = new FeatureFilterEvaluationContext()
-                        {
-                            FeatureFlagName = featureDefinition.Name,
-                            Parameters = featureFilterConfiguration.Parameters
-                        };
-
-                        //
-                        // IFeatureFilter
-                        if (filter is IFeatureFilter featureFilter)
-                        {
-                            if (await featureFilter.EvaluateAsync(context, cancellationToken).ConfigureAwait(false))
-                            {
-                                enabled = true;
-
-                                break;
-                            }
-                        }
-                        //
-                        // IContextualFeatureFilter
-                        else if (useAppContext &&
-                                 TryGetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext), out ContextualFeatureFilterEvaluator contextualFilter))
-                        {
-                            if (await contextualFilter.EvaluateAsync(context, appContext, cancellationToken).ConfigureAwait(false))
-                            {
-                                enabled = true;
-
-                                break;
-                            }
-                        }
-                        //
-                        // The filter doesn't implement a feature filter interface capable of performing the evaluation
                         else
                         {
-                            throw new FeatureManagementException(
-                                FeatureManagementError.InvalidFeatureFilter,
-                                useAppContext ?
-                                    $"The feature filter '{featureFilterConfiguration.Name}' specified for the feature '{feature}' is not capable of evaluating the requested feature with the provided context." :
-                                    $"The feature filter '{featureFilterConfiguration.Name}' specified for the feature '{feature}' is not capable of evaluating the requested feature.");
+                            var context = new FeatureFilterEvaluationContext()
+                            {
+                                FeatureFlagName = featureDefinition.Name,
+                                Parameters = featureFilterConfiguration.Parameters
+                            };
+
+                            //
+                            // IFeatureFilter
+                            if (filter is IFeatureFilter featureFilter)
+                            {
+                                filterEnabled = await featureFilter.EvaluateAsync(context, cancellationToken).ConfigureAwait(false);
+                            }
+                            //
+                            // IContextualFeatureFilter
+                            else if (useAppContext &&
+                                TryGetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext), out ContextualFeatureFilterEvaluator contextualFilter))
+                            {
+                                filterEnabled = await contextualFilter.EvaluateAsync(context, appContext, cancellationToken).ConfigureAwait(false);
+                            }
+                            //
+                            // The filter doesn't implement a feature filter interface capable of performing the evaluation
+                            else
+                            {
+                                throw new FeatureManagementException(
+                                    FeatureManagementError.InvalidFeatureFilter,
+                                    useAppContext ?
+                                        $"The feature filter '{featureFilterConfiguration.Name}' specified for the feature '{feature}' is not capable of evaluating the requested feature with the provided context." :
+                                        $"The feature filter '{featureFilterConfiguration.Name}' specified for the feature '{feature}' is not capable of evaluating the requested feature.");
+                            }
+                        }
+
+                        if (featureDefinition.RequirementType == RequirementType.Any)
+                        {
+                            if (filterEnabled)
+                            {
+                                flagEnabled = true;
+
+                                break;
+                            }
+                        }
+                        else /* require all filters */
+                        {
+                            if (!filterEnabled)
+                            {
+                                flagEnabled = false;
+                                
+                                break;
+                            }
+
+                            //
+                            // True unless short-circuited as false
+                            flagEnabled = true;
                         }
                     }
                 }
@@ -187,10 +202,10 @@ namespace Microsoft.FeatureManagement
 
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                await sessionManager.SetAsync(feature, enabled, cancellationToken).ConfigureAwait(false);
+                await sessionManager.SetAsync(feature, flagEnabled, cancellationToken).ConfigureAwait(false);
             }
 
-            return enabled;
+            return flagEnabled;
         }
 
         private IFeatureFilterMetadata GetFeatureFilterMetadata(string filterName)
