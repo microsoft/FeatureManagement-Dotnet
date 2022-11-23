@@ -313,7 +313,7 @@ namespace Tests.FeatureManagement
             Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, gateAnyResponse.StatusCode);
         }
-        
+
         [Fact]
         public async Task GatesRazorPageFeatures()
         {
@@ -328,7 +328,7 @@ namespace Tests.FeatureManagement
 
                 services.AddMvc(o => DisableEndpointRouting(o));
             })
-            .Configure(app => 
+            .Configure(app =>
             {
                 app.UseMvc();
             }));

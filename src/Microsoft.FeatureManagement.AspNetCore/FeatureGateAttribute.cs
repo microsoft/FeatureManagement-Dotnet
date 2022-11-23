@@ -108,7 +108,8 @@ namespace Microsoft.FeatureManagement.Mvc
             // Enabled state is determined by either 'any', 'all', or 'not' feature flags being enabled.
             bool enabled = false;
 
-            switch(RequirementType) {
+            switch (RequirementType)
+            {
                 case RequirementType.All:
                     enabled = await FeatureFlags.All(async feature => await fm.IsEnabledAsync(feature, context.HttpContext.RequestAborted).ConfigureAwait(false)).ConfigureAwait(false);
                     break;
@@ -146,7 +147,8 @@ namespace Microsoft.FeatureManagement.Mvc
             // Enabled state is determined by either 'any', 'all', or 'not' feature flags being enabled.
             bool enabled = false;
 
-            switch(RequirementType) {
+            switch (RequirementType)
+            {
                 case RequirementType.All:
                     enabled = await FeatureFlags.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
                     break;
