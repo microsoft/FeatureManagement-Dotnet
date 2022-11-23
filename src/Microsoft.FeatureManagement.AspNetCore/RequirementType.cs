@@ -15,6 +15,10 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The enabled state will be attained if all features in the set are enabled.
         /// </summary>
-        All
+        All,
+        /// <summary>
+        /// The enabled state will be attained if the feature is disabled.
+        /// </summary>
+        Not
     }
 }

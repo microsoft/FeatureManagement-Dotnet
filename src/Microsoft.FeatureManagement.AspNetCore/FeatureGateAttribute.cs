@@ -105,10 +105,20 @@ namespace Microsoft.FeatureManagement.Mvc
             IFeatureManagerSnapshot fm = context.HttpContext.RequestServices.GetRequiredService<IFeatureManagerSnapshot>();
 
             //
-            // Enabled state is determined by either 'any' or 'all' feature flags being enabled.
-            bool enabled = RequirementType == RequirementType.All ?
-                             await FeatureFlags.All(async feature => await fm.IsEnabledAsync(feature, context.HttpContext.RequestAborted).ConfigureAwait(false)).ConfigureAwait(false) :
-                             await FeatureFlags.Any(async feature => await fm.IsEnabledAsync(feature, context.HttpContext.RequestAborted).ConfigureAwait(false)).ConfigureAwait(false);
+            // Enabled state is determined by either 'any', 'all', or 'not' feature flags being enabled.
+            bool enabled = false;
+
+            switch(RequirementType) {
+                case RequirementType.All:
+                    enabled = await FeatureFlags.All(async feature => await fm.IsEnabledAsync(feature, context.HttpContext.RequestAborted).ConfigureAwait(false)).ConfigureAwait(false);
+                    break;
+                case RequirementType.Not:
+                    enabled = !(await FeatureFlags.Any(async feature => await fm.IsEnabledAsync(feature, context.HttpContext.RequestAborted).ConfigureAwait(false)).ConfigureAwait(false));
+                    break;
+                default:
+                    enabled = await FeatureFlags.Any(async feature => await fm.IsEnabledAsync(feature, context.HttpContext.RequestAborted).ConfigureAwait(false)).ConfigureAwait(false);
+                    break;
+            }
 
             if (enabled)
             {
@@ -133,10 +143,20 @@ namespace Microsoft.FeatureManagement.Mvc
             IFeatureManagerSnapshot fm = context.HttpContext.RequestServices.GetRequiredService<IFeatureManagerSnapshot>();
 
             //
-            // Enabled state is determined by either 'any' or 'all' features being enabled.
-            bool enabled = RequirementType == RequirementType.All ?
-                             await FeatureFlags.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false)) :
-                             await FeatureFlags.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
+            // Enabled state is determined by either 'any', 'all', or 'not' feature flags being enabled.
+            bool enabled = false;
+
+            switch(RequirementType) {
+                case RequirementType.All:
+                    enabled = await FeatureFlags.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
+                    break;
+                case RequirementType.Not:
+                    enabled = !(await FeatureFlags.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false)));
+                    break;
+                default:
+                    enabled = await FeatureFlags.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
+                    break;
+            }
 
             if (enabled)
             {

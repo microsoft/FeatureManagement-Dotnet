@@ -55,9 +55,17 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
             {
                 IEnumerable<string> names = Name.Split(',').Select(n => n.Trim());
 
-                enabled = Requirement == RequirementType.All ?
-                    await names.All(async n => await _featureManager.IsEnabledAsync(n, CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false) :
-                    await names.Any(async n => await _featureManager.IsEnabledAsync(n, CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
+                switch(Requirement) {
+                    case RequirementType.All:
+                        enabled = await names.All(async n => await _featureManager.IsEnabledAsync(n, CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
+                        break;
+                    case RequirementType.Not:
+                        enabled = !(await names.Any(async n => await _featureManager.IsEnabledAsync(n, CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false));
+                        break;
+                    default:
+                        await names.Any(async n => await _featureManager.IsEnabledAsync(n, CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
+                        break;
+                }
             }
 
             if (Negate)
