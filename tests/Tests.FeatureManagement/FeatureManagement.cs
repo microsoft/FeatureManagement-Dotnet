@@ -285,9 +285,13 @@ namespace Tests.FeatureManagement
 
             HttpResponseMessage gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             HttpResponseMessage gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
+            HttpResponseMessage gateNotOffResponse = await testServer.CreateClient().GetAsync("gateNotOff");
+            HttpResponseMessage gateNotOnResponse = await testServer.CreateClient().GetAsync("gateNotOn");
 
             Assert.Equal(HttpStatusCode.OK, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, gateNotOffResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, gateNotOnResponse.StatusCode);
 
             //
             // Enable 1/2 features
@@ -309,7 +313,7 @@ namespace Tests.FeatureManagement
             Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, gateAnyResponse.StatusCode);
         }
-        
+
         [Fact]
         public async Task GatesRazorPageFeatures()
         {
@@ -324,7 +328,7 @@ namespace Tests.FeatureManagement
 
                 services.AddMvc(o => DisableEndpointRouting(o));
             })
-            .Configure(app => 
+            .Configure(app =>
             {
                 app.UseMvc();
             }));
@@ -339,9 +343,13 @@ namespace Tests.FeatureManagement
 
             HttpResponseMessage gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
             HttpResponseMessage gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
+            HttpResponseMessage gateNotOffResponse = await testServer.CreateClient().GetAsync("RazorTestNotOff");
+            HttpResponseMessage gateNotOnResponse = await testServer.CreateClient().GetAsync("RazorTestNotOn");
 
             Assert.Equal(HttpStatusCode.OK, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, gateNotOffResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, gateNotOnResponse.StatusCode);
 
             //
             // Enable 1/2 features

@@ -31,5 +31,21 @@ namespace Tests.FeatureManagement
         {
             return Ok();
         }
+
+        [Route("/gateNotOff")]
+        [HttpGet]
+        [FeatureGate(RequirementType.Not, Features.OffTestFeature)]
+        public IActionResult GateNotOff()
+        {
+            return Ok();
+        }
+
+        [Route("/gateNotOn")]
+        [HttpGet]
+        [FeatureGate(RequirementType.Not, Features.OnTestFeature)]
+        public IActionResult GateNotOn()
+        {
+            return Ok();
+        }
     }
 }
