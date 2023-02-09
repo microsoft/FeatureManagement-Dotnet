@@ -1,15 +1,9 @@
-#################################################################################
-#   Onebranch Pipelines - Buddy MSBuild (CDPXMigrated)                          #
-# This pipeline was created by EasyStart from a sample located at:              #
-#   https://aka.ms/obpipelines/easystart/samples                                #
-# Documentation:  https://aka.ms/obpipelines                                    #
-# Yaml Schema:    https://aka.ms/obpipelines/yaml/schema                        #
-# Retail Tasks:   https://aka.ms/obpipelines/tasks                              #
-# Support:        https://aka.ms/onebranchsup                                   #
-#################################################################################
 
 pr:
 - main
+
+trigger:
+- none
 
 parameters: # parameters are shown up in ADO UI in a build queue time
 - name: 'debug'
@@ -23,9 +17,12 @@ variables:
 jobs:
 - job: main
   pool:
+    type: windows
+    isCustom: true
+    name: Azure Pipelines
     vmImage: 'windows-latest'
   
-  variables: # More settings at https://aka.ms/obpipelines/yaml/jobs
+  variables:
     Codeql.Enabled: true
 
   steps:
@@ -41,6 +38,8 @@ jobs:
         script: $(Build.SourcesDirectory)\build\CallPowerShell.cmd build.ps1 -RestoreOnly
         workingDirectory: '$(Build.SourcesDirectory)'
 
+    - task: CodeQL3000Init@0
+      displayName: 'Initialize CodeQL'
 
     - task: CmdLine@2
       displayName: 'Dotnet Build'
@@ -75,11 +74,11 @@ jobs:
         workingDirectory: '$(Build.SourcesDirectory)'
 
 
-    # - task: CopyFiles@2
-    #   inputs:
-    #     SourceFolder: '$(Build.SourcesDirectory)\TestResults'
-    #     Contents: '**\*.trx'
-    #     TargetFolder: '$(Build.SourcesDirectory)\out\outputs\test\_post_command__run_log_alerts_schedular_tests\_testresults'
+    - task: CopyFiles@2
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)\tests'
+        Contents: '**/*.trx'
+        TargetFolder: '$(Build.SourcesDirectory)\out\outputs\test\_post_command__run_log_alerts_schedular_tests\_testresults'
 
     - task: PublishTestResults@2
       displayName: 'Unit Tests'
@@ -89,3 +88,20 @@ jobs:
         searchFolder: ''
         failTaskOnFailedTests: False
         testRunTitle: Unit Tests
+
+    - task: ComponentGovernanceComponentDetection@0
+      displayName: "Component Detection"
+      inputs:
+        scanType: 'Register'
+        verbosity: 'Verbose'
+        alertWarningLevel: 'High'
+
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Artifacts'
+      inputs:
+        targetPath: '$(Build.SourcesDirectory)\out\outputs'
+        artifact: 'drop'
+        publishLocation: 'pipeline'
+
+    - task: CodeQL3000Finalize@0
+      displayName: 'Finalize CodeQL'
