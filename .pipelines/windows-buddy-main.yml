@@ -26,6 +26,19 @@ jobs:
     Codeql.Enabled: true
 
   steps:
+    - task: AntiMalware@4
+      inputs:
+        InputType: 'Basic'
+        ScanType: 'CustomScan'
+        FileDirPath: '$(Build.StagingDirectory)'
+        TreatSignatureUpdateFailureAs: 'Warning'
+        SignatureFreshness: 'UpToDate'
+        TreatStaleSignatureAs: 'Error'
+    
+    - task: CredScan@3
+    
+    - task: nuget-security-analysis@0
+
     - task: CmdLine@2
       displayName: 'Install .NET'
       inputs:
@@ -96,12 +109,19 @@ jobs:
         verbosity: 'Verbose'
         alertWarningLevel: 'High'
 
+    - task: BinSkim@4
+      inputs:
+        InputType: 'Basic'
+        Function: 'analyze'
+        TargetPattern: 'guardianGlob'
+        AnalyzeTargetGlob: '$(Build.SourcesDirectory)\**.dll;$(Build.SourcesDirectory)\**.exe;'
+    
     - task: PublishPipelineArtifact@1
       displayName: 'Publish Artifacts'
       inputs:
         targetPath: '$(Build.SourcesDirectory)\out\outputs'
         artifact: 'drop'
         publishLocation: 'pipeline'
-
+    
     - task: CodeQL3000Finalize@0
       displayName: 'Finalize CodeQL'
