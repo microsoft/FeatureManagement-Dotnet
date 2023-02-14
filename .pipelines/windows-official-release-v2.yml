@@ -1,6 +1,6 @@
 
 trigger:
-- none
+- release/v2
 
 pr:
 - none
@@ -48,7 +48,6 @@ jobs:
     - task: CodeQL3000Init@0
       displayName: 'Initialize CodeQL'
 
-
     - task: CmdLine@2
       displayName: 'Dotnet Build'
       inputs:
@@ -75,15 +74,7 @@ jobs:
           **/*
         TargetFolder: '$(Build.SourcesDirectory)\out\outputs\package\Build Logs'
 
-    #- task: onebranch.pipeline.signing@1
-    #  displayName: 'Signing'
-    #  inputs:
-    #    command: 'sign'
-    #    signing_environment: 'azure-ado'
-    #    signing_profile: 'external_distribution '
-    #    files_to_sign: '*/bin/Release/**/*'
-    #    search_root: '$(Build.SourcesDirectory)\src'
-              
+    # Sign '*/bin/Release/**/*'  
 
     - task: CopyFiles@2
       inputs:
@@ -105,17 +96,7 @@ jobs:
           **/*
         TargetFolder: '$(Build.SourcesDirectory)\out\outputs\package\Build Logs'
 
-
-
-    #- task: onebranch.pipeline.signing@1
-    #  displayName: 'Signing'
-    #  inputs:
-    #    command: 'sign'
-    #    signing_environment: 'azure-ado'
-    #    signing_profile: 'external_distribution '
-    #    files_to_sign: '*/bin/PackageOutput/**/*.nupkg'
-    #    search_root: '$(Build.SourcesDirectory)\src'
-              
+    # Sign '*/bin/PackageOutput/**/*.nupkg'        
 
     - task: CopyFiles@2
       inputs:
