@@ -11,9 +11,6 @@ parameters: # parameters are shown up in ADO UI in a build queue time
   type: boolean
   default: false
 
-variables:
-  Codeql.Enabled: true
-
 jobs:
 - job: main
   pool:
@@ -86,7 +83,7 @@ jobs:
         testResultsFormat: 'vstest'
         testResultsFiles: '**/*.trx'
         searchFolder: ''
-        failTaskOnFailedTests: False
+        failTaskOnFailedTests: True
         testRunTitle: Unit Tests
 
     - task: ComponentGovernanceComponentDetection@0
