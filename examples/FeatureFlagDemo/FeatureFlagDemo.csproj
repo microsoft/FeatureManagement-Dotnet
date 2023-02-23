@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.AppConfiguration.AspNetCore" Version="5.1.0-preview" />
+    <PackageReference Include="Microsoft.Azure.AppConfiguration.AspNetCore" Version="3.0.1" />
   </ItemGroup>
 
   <ItemGroup>

@@ -24,21 +24,13 @@ namespace Microsoft.FeatureManagement
 
             //
             // Add required services
-            services.TryAddSingleton<IFeatureFlagDefinitionProvider, ConfigurationFeatureFlagDefinitionProvider>();
+            services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
 
-            services.TryAddSingleton<IDynamicFeatureDefinitionProvider, ConfigurationDynamicFeatureDefinitionProvider>();
+            services.AddSingleton<IFeatureManager, FeatureManager>();
 
-            services.TryAddSingleton<IFeatureVariantOptionsResolver, ConfigurationFeatureVariantOptionsResolver>();
+            services.AddSingleton<ISessionManager, EmptySessionManager>();
 
-            services.TryAddSingleton<IFeatureManager, FeatureManager>();
-
-            services.TryAddSingleton<IDynamicFeatureManager, DynamicFeatureManager>();
-
-            services.TryAddSingleton<ISessionManager, EmptySessionManager>();
-
-            services.TryAddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
-
-            services.TryAddScoped<IDynamicFeatureManagerSnapshot, DynamicFeatureManagerSnapshot>();
+            services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
 
             return new FeatureManagementBuilder(services);
         }
@@ -56,9 +48,7 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            services.AddSingleton<IFeatureFlagDefinitionProvider>(new ConfigurationFeatureFlagDefinitionProvider(configuration));
-
-            services.AddSingleton<IDynamicFeatureDefinitionProvider>(new ConfigurationDynamicFeatureDefinitionProvider(configuration));
+            services.AddSingleton<IFeatureDefinitionProvider>(new ConfigurationFeatureDefinitionProvider(configuration));
 
             return services.AddFeatureManagement();
         }
