@@ -6,31 +6,27 @@ using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// A feature definition provider that pulls feature flag definitions from the .NET Core <see cref="IConfiguration"/> system.
+    /// A feature definition provider that pulls feature definitions from the .NET Core <see cref="IConfiguration"/> system.
     /// </summary>
-    sealed class ConfigurationFeatureFlagDefinitionProvider : IFeatureFlagDefinitionProvider, IDisposable
+    sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable
     {
-        private const string FeatureManagementSectionName = "FeatureManagement";
-        private const string FeatureFlagDefinitionsSectionName = "FeatureFlags";
         private const string FeatureFiltersSectionName = "EnabledFor";
         private readonly IConfiguration _configuration;
-        private readonly ConcurrentDictionary<string, FeatureFlagDefinition> _featureFlagDefinitions;
+        private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
 
-        public ConfigurationFeatureFlagDefinitionProvider(IConfiguration configuration)
+        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _featureFlagDefinitions = new ConcurrentDictionary<string, FeatureFlagDefinition>();
+            _definitions = new ConcurrentDictionary<string, FeatureDefinition>();
 
             _changeSubscription = ChangeToken.OnChange(
                 () => _configuration.GetReloadToken(),
@@ -44,18 +40,21 @@ namespace Microsoft.FeatureManagement
             _changeSubscription = null;
         }
 
-        public Task<FeatureFlagDefinition> GetFeatureFlagDefinitionAsync(string featureName, CancellationToken cancellationToken)
+        public Task<FeatureDefinition> GetFeatureDefinitionAsync(string featureName)
         {
             if (featureName == null)
             {
                 throw new ArgumentNullException(nameof(featureName));
             }
 
-            EnsureFresh();
+            if (Interlocked.Exchange(ref _stale, 0) != 0)
+            {
+                _definitions.Clear();
+            }
 
             //
             // Query by feature name
-            FeatureFlagDefinition definition = _featureFlagDefinitions.GetOrAdd(featureName, (name) => ReadFeatureFlagDefinition(name));
+            FeatureDefinition definition = _definitions.GetOrAdd(featureName, (name) => ReadFeatureDefinition(name));
 
             return Task.FromResult(definition);
         }
@@ -64,24 +63,27 @@ namespace Microsoft.FeatureManagement
         // The async key word is necessary for creating IAsyncEnumerable.
         // The need to disable this warning occurs when implementaing async stream synchronously. 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        public async IAsyncEnumerable<FeatureFlagDefinition> GetAllFeatureFlagDefinitionsAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998
         {
-            EnsureFresh();
+            if (Interlocked.Exchange(ref _stale, 0) != 0)
+            {
+                _definitions.Clear();
+            }
 
             //
             // Iterate over all features registered in the system at initial invocation time
-            foreach (IConfigurationSection featureSection in GetFeatureFlagDefinitionSections())
+            foreach (IConfigurationSection featureSection in GetFeatureDefinitionSections())
             {
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                yield return  _featureFlagDefinitions.GetOrAdd(featureSection.Key, (_) => ReadFeatureFlagDefinition(featureSection));
+                yield return  _definitions.GetOrAdd(featureSection.Key, (_) => ReadFeatureDefinition(featureSection));
             }
         }
 
-        private FeatureFlagDefinition ReadFeatureFlagDefinition(string featureName)
+        private FeatureDefinition ReadFeatureDefinition(string featureName)
         {
-            IConfigurationSection configuration = GetFeatureFlagDefinitionSections()
+            IConfigurationSection configuration = GetFeatureDefinitionSections()
                                                     .FirstOrDefault(section => section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase));
 
             if (configuration == null)
@@ -89,10 +91,10 @@ namespace Microsoft.FeatureManagement
                 return null;
             }
 
-            return ReadFeatureFlagDefinition(configuration);
+            return ReadFeatureDefinition(configuration);
         }
 
-        private FeatureFlagDefinition ReadFeatureFlagDefinition(IConfigurationSection configurationSection)
+        private FeatureDefinition ReadFeatureDefinition(IConfigurationSection configurationSection)
         {
             /*
               
@@ -122,8 +124,6 @@ namespace Microsoft.FeatureManagement
             }
 
             */
-
-            Debug.Assert(configurationSection != null);
 
             var enabledFor = new List<FeatureFilterConfiguration>();
 
@@ -156,9 +156,9 @@ namespace Microsoft.FeatureManagement
                     //
                     // Arrays in json such as "myKey": [ "some", "values" ]
                     // Are accessed through the configuration system by using the array index as the property name, e.g. "myKey": { "0": "some", "1": "values" }
-                    if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[nameof(FeatureFilterConfiguration.Name)]))
+                    if (int.TryParse(section.Key, out int i) && !string.IsNullOrEmpty(section[nameof(FeatureFilterConfiguration.Name)]))
                     {
-                        enabledFor.Add(new FeatureFilterConfiguration
+                        enabledFor.Add(new FeatureFilterConfiguration()
                         {
                             Name = section[nameof(FeatureFilterConfiguration.Name)],
                             Parameters = section.GetSection(nameof(FeatureFilterConfiguration.Parameters))
@@ -167,49 +167,26 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            return new FeatureFlagDefinition()
+            return new FeatureDefinition()
             {
                 Name = configurationSection.Key,
-                EnabledFor = enabledFor,
+                EnabledFor = enabledFor
             };
         }
 
-        private IEnumerable<IConfigurationSection> GetFeatureFlagDefinitionSections()
+        private IEnumerable<IConfigurationSection> GetFeatureDefinitionSections()
         {
-            //
-            // Look for feature definitions under the "FeatureManagement" section
-            IConfiguration featureManagementSection = _configuration.GetChildren().Any(s => s.Key.Equals(FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase)) ?
-                _configuration.GetSection(FeatureManagementSectionName) :
-                _configuration;
+            const string FeatureManagementSectionName = "FeatureManagement";
 
-            IEnumerable<IConfigurationSection> featureManagementChildren = featureManagementSection.GetChildren();
-
-            IConfigurationSection featureFlagsSection = featureManagementChildren.FirstOrDefault(s => s.Key == FeatureFlagDefinitionsSectionName);
-
-            //
-            // Check for mixed schema to avoid confusing scenario where feature flags defined in separate sources with different schemas don't mix.
-            if (featureFlagsSection != null &&
-                featureManagementChildren.Any(section =>
-                    !section.Key.Equals(FeatureFlagDefinitionsSectionName) &&
-                    !section.Key.Equals(ConfigurationDynamicFeatureDefinitionProvider.DynamicFeatureDefinitionsSectionName)))
+            if (_configuration.GetChildren().Any(s => s.Key.Equals(FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase)))
             {
-                throw new FeatureManagementException(
-                    FeatureManagementError.InvalidConfiguration,
-                    "Detected feature flags defined using different feature management schemas.");
+                //
+                // Look for feature definitions under the "FeatureManagement" section
+                return _configuration.GetSection(FeatureManagementSectionName).GetChildren();
             }
-
-            //
-            // Support backward compatability where feature flag definitions were directly under the feature management section
-            return featureFlagsSection == null ?
-                featureManagementChildren :
-                featureFlagsSection.GetChildren();
-        }
-
-        private void EnsureFresh()
-        {
-            if (Interlocked.Exchange(ref _stale, 0) != 0)
+            else
             {
-                _featureFlagDefinitions.Clear();
+                return _configuration.GetChildren();
             }
         }
     }

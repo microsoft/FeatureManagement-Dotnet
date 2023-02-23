@@ -4,8 +4,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
@@ -17,45 +15,45 @@ namespace Microsoft.FeatureManagement
     {
         private readonly IFeatureManager _featureManager;
         private readonly ConcurrentDictionary<string, Task<bool>> _flagCache = new ConcurrentDictionary<string, Task<bool>>();
-        private IEnumerable<string> _featureFlagNames;
+        private IEnumerable<string> _featureNames;
 
         public FeatureManagerSnapshot(IFeatureManager featureManager)
         {
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
         }
 
-        public async IAsyncEnumerable<string> GetFeatureFlagNamesAsync([EnumeratorCancellation]CancellationToken cancellationToken)
+        public async IAsyncEnumerable<string> GetFeatureNamesAsync()
         {
-            if (_featureFlagNames == null)
+            if (_featureNames == null)
             {
                 var featureNames = new List<string>();
 
-                await foreach (string featureName in _featureManager.GetFeatureFlagNamesAsync(cancellationToken).ConfigureAwait(false))
+                await foreach (string featureName in _featureManager.GetFeatureNamesAsync().ConfigureAwait(false))
                 {
                     featureNames.Add(featureName);
                 }
 
-                _featureFlagNames = featureNames;
+                _featureNames = featureNames;
             }
 
-            foreach (string featureName in _featureFlagNames)
+            foreach (string featureName in _featureNames)
             {
                 yield return featureName;
             }
         }
 
-        public Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
+        public Task<bool> IsEnabledAsync(string feature)
         {
             return _flagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key, cancellationToken));
+                (key) => _featureManager.IsEnabledAsync(key));
         }
 
-        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
+        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
         {
             return _flagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key, context, cancellationToken));
+                (key) => _featureManager.IsEnabledAsync(key, context));
         }
     }
 }

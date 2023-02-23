@@ -29,14 +29,12 @@ if ((Test-Path -Path $LogDirectory) -ne $true) {
     New-Item -ItemType Directory -Path $LogDirectory | Write-Verbose
 }
 
-$dotnet = & "$PSScriptRoot/build/resolve-dotnet.ps1"
-
 foreach ($project in $targetProjects)
 {
     $projectPath = "$PSScriptRoot\src\$project\$project.csproj"
     $outputPath = "$PSScriptRoot\src\$project\$PublishRelativePath"
 
-    & $dotnet pack -c $BuildConfig -o "$outputPath" "$projectPath" --no-build | Tee-Object -FilePath "$LogDirectory\build.log"
+    dotnet pack -c $BuildConfig -o "$outputPath" "$projectPath" --no-build | Tee-Object -FilePath "$LogDirectory\build.log"
 }
 
 exit $LASTEXITCODE
