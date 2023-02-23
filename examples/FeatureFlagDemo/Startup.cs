@@ -13,7 +13,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.FeatureManagement;
-using Microsoft.FeatureManagement.Assigners;
 using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace FeatureFlagDemo
@@ -60,10 +59,7 @@ namespace FeatureFlagDemo
                     .AddFeatureFilter<TimeWindowFilter>()
                     .AddFeatureFilter<PercentageFilter>()
                     .AddFeatureFilter<TargetingFilter>()
-                    .AddFeatureVariantAssigner<TargetingFeatureVariantAssigner>()
                     .UseDisabledFeaturesHandler(new FeatureNotEnabledDisabledHandler());
-
-            services.AddAzureAppConfiguration();
 
             services.AddMvc(o =>
             {

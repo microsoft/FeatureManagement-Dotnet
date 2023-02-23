@@ -2,7 +2,6 @@
 // Licensed under the MIT license.
 //
 using Microsoft.FeatureManagement.FeatureFilters;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
@@ -11,7 +10,7 @@ namespace Tests.FeatureManagement
     {
         public TargetingContext Current { get; set; }
 
-        public ValueTask<TargetingContext> GetContextAsync(CancellationToken cancellationToken)
+        public ValueTask<TargetingContext> GetContextAsync()
         {
             return new ValueTask<TargetingContext>(Current);
         }

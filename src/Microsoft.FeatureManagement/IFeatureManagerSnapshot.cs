@@ -4,7 +4,7 @@
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// Provides a snapshot of feature flag state to ensure consistency across a given request.
+    /// Provides a snapshot of feature state to ensure consistency across a given request.
     /// </summary>
     public interface IFeatureManagerSnapshot : IFeatureManager
     {

@@ -4,13 +4,12 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
 {
     /// <summary>
-    /// A feature filter that can be used to activate feature flags for targeted audiences.
+    /// A feature filter that can be used to activate features for targeted audiences.
     /// </summary>
     [FilterAlias(Alias)]
     public class TargetingFilter : IFeatureFilter
@@ -29,18 +28,17 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         public TargetingFilter(IOptions<TargetingEvaluationOptions> options, ITargetingContextAccessor contextAccessor, ILoggerFactory loggerFactory)
         {
             _contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
-            _contextualFilter = new ContextualTargetingFilter(options);
+            _contextualFilter = new ContextualTargetingFilter(options, loggerFactory);
             _logger = loggerFactory?.CreateLogger<TargetingFilter>() ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
         /// <summary>
-        /// Performs a targeting evaluation using the current <see cref="TargetingContext"/> to determine if a feature flag should be enabled.
+        /// Performs a targeting evaluation using the current <see cref="TargetingContext"/> to determine if a feature should be enabled.
         /// </summary>
         /// <param name="context">The feature evaluation context.</param>
-        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="context"/> is null.</exception>
-        /// <returns>True if the feature flag is enabled, false otherwise.</returns>
-        public async Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken)
+        /// <returns>True if the feature is enabled, false otherwise.</returns>
+        public async Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
             if (context == null)
             {
@@ -49,7 +47,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             //
             // Acquire targeting context via accessor
-            TargetingContext targetingContext = await _contextAccessor.GetContextAsync(cancellationToken).ConfigureAwait(false);
+            TargetingContext targetingContext = await _contextAccessor.GetContextAsync().ConfigureAwait(false);
 
             //
             // Ensure targeting can be performed
@@ -62,7 +60,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             //
             // Utilize contextual filter for targeting evaluation
-            return await _contextualFilter.EvaluateAsync(context, targetingContext, cancellationToken).ConfigureAwait(false);
+            return await _contextualFilter.EvaluateAsync(context, targetingContext).ConfigureAwait(false);
         }
     }
 }

@@ -57,7 +57,7 @@ namespace Microsoft.FeatureManagement
                 {
                     IFeatureManager fm = context.RequestServices.GetRequiredService<IFeatureManagerSnapshot>();
 
-                    if (await fm.IsEnabledAsync(featureName, context.RequestAborted).ConfigureAwait(false))
+                    if (await fm.IsEnabledAsync(featureName).ConfigureAwait(false))
                     {
                         await branch(context).ConfigureAwait(false);
                     }

@@ -21,51 +21,6 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// A feature that was requested for evaluation was not found.
         /// </summary>
-        MissingFeature,
-
-        /// <summary>
-        /// A feature filter being used in feature evaluation is invalid.
-        /// </summary>
-        InvalidFeatureFilter,
-
-        /// <summary>
-        /// A feature variant assigner that was listed for variant assignment was not found.
-        /// </summary>
-        MissingFeatureVariantAssigner,
-
-        /// <summary>
-        /// The feature variant assigner configured for the feature being evaluated is an ambiguous reference to multiple registered feature variant assigners.
-        /// </summary>
-        AmbiguousFeatureVariantAssigner,
-
-        /// <summary>
-        /// An assigned feature variant does not have a valid configuration reference.
-        /// </summary>
-        MissingConfigurationReference,
-
-        /// <summary>
-        /// A feature variant assigner being used in feature evaluation is invalid.
-        /// </summary>
-        InvalidFeatureVariantAssigner,
-
-        /// <summary>
-        /// A dynamic feature does not have any feature variants registered.
-        /// </summary>
-        MissingFeatureVariant,
-
-        /// <summary>
-        /// A dynamic feature has multiple default feature variants configured.
-        /// </summary>
-        AmbiguousDefaultFeatureVariant,
-
-        /// <summary>
-        /// A dynamic feature does not have a default feature variant configured.
-        /// </summary>
-        MissingDefaultFeatureVariant,
-
-        /// <summary>
-        /// A configuration error is present in the feature management system.
-        /// </summary>
-        InvalidConfiguration
+        MissingFeature
     }
 }
