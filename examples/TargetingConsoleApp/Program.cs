@@ -5,12 +5,10 @@ using Consoto.Banking.AccountService.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FeatureManagement;
-using Microsoft.FeatureManagement.Assigners;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Consoto.Banking.HelpDesk
@@ -31,8 +29,7 @@ namespace Consoto.Banking.HelpDesk
 
             services.AddSingleton(configuration)
                     .AddFeatureManagement()
-                    .AddFeatureFilter<ContextualTargetingFilter>()
-                    .AddFeatureVariantAssigner<ContextualTargetingFeatureVariantAssigner>();
+                    .AddFeatureFilter<ContextualTargetingFilter>();
 
             IUserRepository userRepository = new InMemoryUserRepository();
 
@@ -41,7 +38,6 @@ namespace Consoto.Banking.HelpDesk
             using (ServiceProvider serviceProvider = services.BuildServiceProvider())
             {
                 IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
-                IDynamicFeatureManager dynamicFeatureManager = serviceProvider.GetRequiredService<IDynamicFeatureManager>();
 
                 //
                 // We'll simulate a task to run on behalf of each known user
@@ -52,8 +48,7 @@ namespace Consoto.Banking.HelpDesk
                 // Mimic work items in a task-driven console application
                 foreach (string userId in userIds)
                 {
-                    const string FeatureFlagName = "Beta";
-                    const string DynamicFeatureName = "ShoppingCart";
+                    const string FeatureName = "Beta";
 
                     //
                     // Get user
@@ -67,27 +62,11 @@ namespace Consoto.Banking.HelpDesk
                         Groups = user.Groups
                     };
 
-                    //
-                    // Evaluate feature flag using targeting
-                    bool enabled = await featureManager
-                        .IsEnabledAsync<TargetingContext>(
-                            FeatureFlagName, 
-                            targetingContext,
-                            CancellationToken.None);
-
-                    //
-                    // Retrieve feature variant using targeting
-                    CartOptions cartOptions = await dynamicFeatureManager
-                        .GetVariantAsync<CartOptions, TargetingContext>(
-                            DynamicFeatureName,
-                            targetingContext,
-                            CancellationToken.None);
+                    bool enabled = await featureManager.IsEnabledAsync(FeatureName, targetingContext);
 
                     //
                     // Output results
-                    Console.WriteLine($"The {FeatureFlagName} feature is {(enabled ? "enabled" : "disabled")} for the user '{userId}'.");
-
-                    Console.WriteLine($"User {user.Id} has a {cartOptions.Color} cart with a size of {cartOptions.Size} pixels.");
+                    Console.WriteLine($"The {FeatureName} feature is {(enabled ? "enabled" : "disabled")} for the user '{userId}'.");
                 }
             }
         }

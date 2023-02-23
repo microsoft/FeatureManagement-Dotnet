@@ -26,17 +26,15 @@ if ((Test-Path -Path $LogDirectory) -ne $true) {
     New-Item -ItemType Directory -Path $LogDirectory | Write-Verbose
 }
 
-$dotnet = & "$PSScriptRoot/build/resolve-dotnet.ps1"
-
 if ($RestoreOnly)
 {
     # Restore
-    & $dotnet restore "$Solution"
+    dotnet restore "$Solution"
 }
 else
 {
     # Build
-    & $dotnet build -c $BuildConfig "$Solution" | Tee-Object -FilePath "$LogDirectory\build.log"
+    dotnet build -c $BuildConfig "$Solution" | Tee-Object -FilePath "$LogDirectory\build.log"
 }
 
 exit $LASTEXITCODE

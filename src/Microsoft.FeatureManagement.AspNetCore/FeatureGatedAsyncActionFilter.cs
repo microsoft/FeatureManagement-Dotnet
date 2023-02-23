@@ -9,28 +9,28 @@ using System.Threading.Tasks;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// A place holder MVC filter that is used to dynamically activate a filter based on whether a feature flag is enabled.
+    /// A place holder MVC filter that is used to dynamically activate a filter based on whether a feature is enabled.
     /// </summary>
     /// <typeparam name="T">The filter that will be used instead of this placeholder.</typeparam>
     class FeatureGatedAsyncActionFilter<T> : IAsyncActionFilter where T : IAsyncActionFilter
     {
-        public FeatureGatedAsyncActionFilter(string featureFlagName)
+        public FeatureGatedAsyncActionFilter(string featureName)
         {
-            if (string.IsNullOrEmpty(featureFlagName))
+            if (string.IsNullOrEmpty(featureName))
             {
-                throw new ArgumentNullException(nameof(featureFlagName));
+                throw new ArgumentNullException(nameof(featureName));
             }
 
-            FeatureFlagName = featureFlagName;
+            FeatureName = featureName;
         }
 
-        public string FeatureFlagName { get; }
+        public string FeatureName { get; }
 
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
             IFeatureManager featureManager = context.HttpContext.RequestServices.GetRequiredService<IFeatureManagerSnapshot>();
 
-            if (await featureManager.IsEnabledAsync(FeatureFlagName, context.HttpContext.RequestAborted).ConfigureAwait(false))
+            if (await featureManager.IsEnabledAsync(FeatureName).ConfigureAwait(false))
             {
                 IServiceProvider serviceProvider = context.HttpContext.RequestServices.GetRequiredService<IServiceProvider>();
 
