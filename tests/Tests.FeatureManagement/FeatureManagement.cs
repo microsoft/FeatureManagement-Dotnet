@@ -671,7 +671,7 @@ namespace Tests.FeatureManagement
 
         private static void DisableEndpointRouting(MvcOptions options)
         {
-#if NET5_0 || NETCOREAPP3_1
+#if  NET6_0 || NET5_0 || NETCOREAPP3_1
             //
             // Endpoint routing is disabled by default in .NET Core 2.1 since it didn't exist.
             options.EnableEndpointRouting = false;
