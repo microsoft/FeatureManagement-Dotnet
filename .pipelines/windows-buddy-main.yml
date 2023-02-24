@@ -1,0 +1,124 @@
+
+pr:
+- main
+
+trigger:
+- none
+
+parameters: # parameters are shown up in ADO UI in a build queue time
+- name: 'debug'
+  displayName: 'Enable debug output'
+  type: boolean
+  default: false
+
+jobs:
+- job: main
+  pool:
+    type: windows
+    isCustom: true
+    name: Azure Pipelines
+    vmImage: 'windows-latest'
+  
+  variables:
+    Codeql.Enabled: true
+
+  steps:
+    - task: AntiMalware@4
+      inputs:
+        InputType: 'Basic'
+        ScanType: 'CustomScan'
+        FileDirPath: '$(Build.StagingDirectory)'
+        TreatSignatureUpdateFailureAs: 'Warning'
+        SignatureFreshness: 'UpToDate'
+        TreatStaleSignatureAs: 'Error'
+    
+    - task: CredScan@3
+    
+    - task: nuget-security-analysis@0
+
+    - task: CmdLine@2
+      displayName: 'Install .NET'
+      inputs:
+        script: build\CallPowerShell.cmd build/install-dotnet.ps1 -RestoreOnly
+        workingDirectory: '$(Build.SourcesDirectory)'
+
+    - task: CmdLine@2
+      displayName: 'Restore'
+      inputs:
+        script: $(Build.SourcesDirectory)\build\CallPowerShell.cmd build.ps1 -RestoreOnly
+        workingDirectory: '$(Build.SourcesDirectory)'
+
+    - task: CodeQL3000Init@0
+      displayName: 'Initialize CodeQL'
+
+    - task: CmdLine@2
+      displayName: 'Dotnet Build'
+      inputs:
+        script: $(Build.SourcesDirectory)\build\CallPowerShell.cmd build.ps1
+        workingDirectory: '$(Build.SourcesDirectory)'
+
+    - task: CopyFiles@2
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)\buildlogs'
+        Contents: |
+          **/*
+        TargetFolder: '$(Build.SourcesDirectory)\out\outputs\build\Build Logs'
+
+    - task: CmdLine@2
+      displayName: 'Dotnet Pack'
+      inputs:
+        script: $(Build.SourcesDirectory)\build\CallPowerShell.cmd pack.ps1
+        workingDirectory: '$(Build.SourcesDirectory)'
+
+    - task: CopyFiles@2
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)\buildlogs'
+        Contents: |
+          **/*
+        TargetFolder: '$(Build.SourcesDirectory)\out\outputs\package\Build Logs'
+
+    - task: CmdLine@2
+      displayName: 'Dotnet Test'
+      inputs:
+        script: '$(Build.SourcesDirectory)\build/CallPowerShell.cmd test.ps1|| exit /b 0'
+        workingDirectory: '$(Build.SourcesDirectory)'
+
+
+    - task: CopyFiles@2
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)\tests'
+        Contents: '**/*.trx'
+        TargetFolder: '$(Build.SourcesDirectory)\out\outputs\test\_post_command__run_log_alerts_schedular_tests\_testresults'
+
+    - task: PublishTestResults@2
+      displayName: 'Unit Tests'
+      inputs:
+        testResultsFormat: 'vstest'
+        testResultsFiles: '**/*.trx'
+        searchFolder: ''
+        failTaskOnFailedTests: True
+        testRunTitle: Unit Tests
+
+    - task: ComponentGovernanceComponentDetection@0
+      displayName: "Component Detection"
+      inputs:
+        scanType: 'Register'
+        verbosity: 'Verbose'
+        alertWarningLevel: 'High'
+
+    - task: BinSkim@4
+      inputs:
+        InputType: 'Basic'
+        Function: 'analyze'
+        TargetPattern: 'guardianGlob'
+        AnalyzeTargetGlob: '$(Build.SourcesDirectory)\**.dll;$(Build.SourcesDirectory)\**.exe;'
+    
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Artifacts'
+      inputs:
+        targetPath: '$(Build.SourcesDirectory)\out\outputs'
+        artifact: 'drop'
+        publishLocation: 'pipeline'
+    
+    - task: CodeQL3000Finalize@0
+      displayName: 'Finalize CodeQL'
