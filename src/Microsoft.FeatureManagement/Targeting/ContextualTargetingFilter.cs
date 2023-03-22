@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -59,6 +60,27 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             if (!TryValidateSettings(settings, out string paramName, out string message))
             {
                 throw new ArgumentException(message, paramName);
+            }
+
+            if (settings.Audience.Exclusion != null)
+            {
+                //
+                // Check if the user is in the exclusion directly
+                if (targetingContext.UserId != null &&
+                    settings.Audience.Exclusion.Users != null &&
+                    settings.Audience.Exclusion.Users.Any(user => targetingContext.UserId.Equals(user, ComparisonType)))
+                {
+                    return Task.FromResult(false);
+                }
+
+                //
+                // Check if the user is in a group within exclusion
+                if (targetingContext.Groups != null &&
+                    settings.Audience.Exclusion.Groups != null &&
+                    settings.Audience.Exclusion.Groups.Any(group => targetingContext.Groups.Any(targetingGroup => targetingGroup.Equals(group, ComparisonType))))
+                {
+                    return Task.FromResult(false);
+                }
             }
 
             //
