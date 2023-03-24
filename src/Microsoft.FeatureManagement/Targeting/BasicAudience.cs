@@ -9,7 +9,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
     /// A basic audience definition describing a set of users and groups.
     /// </summary>
     public class BasicAudience
-	{
+    {
         /// <summary>
         /// Includes users in the audience by name.
         /// </summary>
@@ -19,5 +19,5 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// Includes users in the audience by group name.
         /// </summary>
         public List<string> Groups { get; set; }
-	}
+    }
 }
