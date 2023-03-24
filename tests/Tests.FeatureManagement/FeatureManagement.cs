@@ -669,6 +669,99 @@ namespace Tests.FeatureManagement
             }
         }
 
+        [Fact]
+        public async Task TargetingExclusion()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualTargetingFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            string targetingTestFeature = Enum.GetName(typeof(Features), Features.TargetingTestFeatureWithExclusion);
+
+            //
+            // Targeted by user id
+            Assert.True(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Alicia"
+            }));
+
+            //
+            // Not targeted by user id, but targeted by default rollout
+            Assert.True(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Anne"
+            }));
+
+            //
+            // Not targeted by user id or default rollout
+            Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Patty"
+            }));
+
+            //
+            // Targeted by group rollout
+            Assert.True(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Patty",
+                Groups = new List<string>() { "Ring1" }
+            }));
+
+            //
+            // Not targeted by user id, default rollout or group rollout
+            Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Isaac",
+                Groups = new List<string>() { "Ring1" }
+            }));
+
+            //
+            // Excluded by user id
+            Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Jeff"
+            }));
+
+            //
+            // Excluded by group
+            Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Patty",
+                Groups = new List<string>() { "Ring0" }
+            }));
+
+            //
+            // Included and Excluded by group
+            Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Patty",
+                Groups = new List<string>() { "Ring0", "Ring1" }
+            }));
+
+            //
+            // Included user but Excluded by group
+            Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Alicia",
+                Groups = new List<string>() { "Ring2" }
+            }));
+        }
+
         private static void DisableEndpointRouting(MvcOptions options)
         {
 #if  NET6_0 || NET5_0 || NETCOREAPP3_1
