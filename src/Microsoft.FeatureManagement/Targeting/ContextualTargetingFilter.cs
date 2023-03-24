@@ -35,6 +35,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         private StringComparison ComparisonType => _options.IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        private StringComparer ComparerType => _options.IgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
         /// <summary>
         /// Performs a targeting evaluation using the provided <see cref="TargetingContext"/> to determine if a feature should be enabled.
@@ -77,7 +78,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 // Check if the user is in a group within exclusion
                 if (targetingContext.Groups != null &&
                     settings.Audience.Exclusion.Groups != null &&
-                    settings.Audience.Exclusion.Groups.Any(group => targetingContext.Groups.Any(targetingGroup => targetingGroup.Equals(group, ComparisonType))))
+                    settings.Audience.Exclusion.Groups.Any(group => targetingContext.Groups.Contains(group, ComparerType)))
                 {
                     return Task.FromResult(false);
                 }
