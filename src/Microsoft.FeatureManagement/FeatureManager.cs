@@ -77,21 +77,37 @@ namespace Microsoft.FeatureManagement
             if (featureDefinition != null)
             {
                 //
-                // Check if feature is always on
-                // If it is, result is true, goto: cache
-
-                if (featureDefinition.EnabledFor.Any(featureFilter => string.Equals(featureFilter.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase)))
+                // Default to true for requirement type All
+                if (featureDefinition.RequirementType == RequirementType.All)
                 {
                     enabled = true;
+                }
+
+                //
+                // Treat an empty list of enabled filters as a disabled feature
+                if (featureDefinition.EnabledFor == null || featureDefinition.EnabledFor.Count() == 0)
+                {
+                    enabled = false;
                 }
                 else
                 {
                     //
-                    // For all enabling filters listed in the feature's state calculate if they return true
-                    // If any executed filters return true, return true
-
+                    // For all enabling filters listed in the feature's state, evaluate them according to requirement type
                     foreach (FeatureFilterConfiguration featureFilterConfiguration in featureDefinition.EnabledFor)
                     {
+                        //
+                        // If the requirement type is Any, we end on a true. Requirement type All will end on a false
+                        bool targetEvaluation = featureDefinition.RequirementType == RequirementType.Any;
+
+                        //
+                        // If the filter is AlwaysOn and we're targeting true, return true
+                        if (string.Equals(featureFilterConfiguration.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase) && targetEvaluation)
+                        {
+                            enabled = true;
+
+                            break;
+                        }
+
                         IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
 
                         if (filter == null)
@@ -113,7 +129,7 @@ namespace Microsoft.FeatureManagement
                         var context = new FeatureFilterEvaluationContext()
                         {
                             FeatureName = feature,
-                            Parameters = featureFilterConfiguration.Parameters 
+                            Parameters = featureFilterConfiguration.Parameters
                         };
 
                         //
@@ -122,9 +138,9 @@ namespace Microsoft.FeatureManagement
                         {
                             ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
 
-                            if (contextualFilter != null && await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false))
+                            if (contextualFilter != null && await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation)
                             {
-                                enabled = true;
+                                enabled = targetEvaluation;
 
                                 break;
                             }
@@ -132,9 +148,9 @@ namespace Microsoft.FeatureManagement
 
                         //
                         // IFeatureFilter
-                        if (filter is IFeatureFilter featureFilter && await featureFilter.EvaluateAsync(context).ConfigureAwait(false))
+                        if (filter is IFeatureFilter featureFilter && await featureFilter.EvaluateAsync(context).ConfigureAwait(false) == targetEvaluation)
                         {
-                            enabled = true;
+                            enabled = targetEvaluation;
 
                             break;
                         }

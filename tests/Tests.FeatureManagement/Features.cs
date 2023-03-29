@@ -10,6 +10,8 @@ namespace Tests.FeatureManagement
         OnTestFeature,
         OffTestFeature,
         ConditionalFeature,
-        ConditionalFeature2
+        ConditionalFeature2,
+        AnyFilterFeature,
+        AllFilterFeature
     }
 }

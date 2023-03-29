@@ -4,16 +4,16 @@
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// Describes whether any or all features in a given set should be required to be considered enabled.
+    /// Describes whether any or all conditions in a set should be required to be true.
     /// </summary>
     public enum RequirementType
     {
         /// <summary>
-        /// The enabled state will be attained if any feature in the set is enabled.
+        /// The set of conditions will be evaluated as true if any condition in the set is true.
         /// </summary>
         Any,
         /// <summary>
-        /// The enabled state will be attained if all features in the set are enabled.
+        /// The set of conditions will be evaluated as true if all the conditions in the set are true.
         /// </summary>
         All
     }

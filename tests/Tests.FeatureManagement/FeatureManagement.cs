@@ -762,6 +762,67 @@ namespace Tests.FeatureManagement
             }));
         }
 
+        [Fact]
+        public async Task UsesRequirementType()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            string filterOneId = "1";
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            string anyFilterFeature = Enum.GetName(typeof(Features), Features.AnyFilterFeature);
+            string allFilterFeature = Enum.GetName(typeof(Features), Features.AllFilterFeature);
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            //
+            // Set filters to all return true
+            testFeatureFilter.Callback = _ => Task.FromResult(true);
+
+
+            Assert.True(await featureManager.IsEnabledAsync(anyFilterFeature));
+            Assert.True(await featureManager.IsEnabledAsync(allFilterFeature));
+
+            //
+            // Set filters to all return false
+            testFeatureFilter.Callback = ctx => Task.FromResult(false);
+
+            Assert.False(await featureManager.IsEnabledAsync(anyFilterFeature));
+            Assert.False(await featureManager.IsEnabledAsync(allFilterFeature));
+
+            //
+            // Set 1st filter to true and 2nd filter to false
+            testFeatureFilter.Callback = ctx => Task.FromResult(ctx.Parameters["Id"] == filterOneId);
+
+            Assert.True(await featureManager.IsEnabledAsync(anyFilterFeature));
+            Assert.False(await featureManager.IsEnabledAsync(allFilterFeature));
+
+            //
+            // Set 1st filter to false and 2nd filter to true
+            testFeatureFilter.Callback = ctx => Task.FromResult(ctx.Parameters["Id"] != filterOneId);
+
+            Assert.True(await featureManager.IsEnabledAsync(anyFilterFeature));
+            Assert.False(await featureManager.IsEnabledAsync(allFilterFeature));
+        }
+
         private static void DisableEndpointRouting(MvcOptions options)
         {
 #if  NET6_0 || NET5_0 || NETCOREAPP3_1
