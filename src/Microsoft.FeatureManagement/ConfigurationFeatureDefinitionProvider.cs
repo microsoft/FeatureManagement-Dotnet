@@ -162,7 +162,7 @@ namespace Microsoft.FeatureManagement
                 {
                     if (!Enum.TryParse(rawRequirementType, true, out requirementType))
                     {
-                        throw new ArgumentException($"Invalid requirement type '{rawRequirementType}' for feature '{configurationSection.Key}'.");
+                        throw new FeatureManagementException(FeatureManagementError.InvalidConfiguration, $"Invalid requirement type '{rawRequirementType}' for feature '{configurationSection.Key}'.");
                     }
                 }
 

@@ -823,6 +823,37 @@ namespace Tests.FeatureManagement
             Assert.False(await featureManager.IsEnabledAsync(allFilterFeature));
         }
 
+        [Fact]
+        public async Task RequirementTypeAllExceptions()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            string filterOneId = "1";
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            string allFilterFeature = Enum.GetName(typeof(Features), Features.AllFilterFeature);
+
+            await Assert.ThrowsAsync<FeatureManagementException>(async () =>
+            {
+                await featureManager.IsEnabledAsync(allFilterFeature);
+            });
+        }
+
         private static void DisableEndpointRouting(MvcOptions options)
         {
 #if  NET6_0 || NET5_0 || NETCOREAPP3_1
