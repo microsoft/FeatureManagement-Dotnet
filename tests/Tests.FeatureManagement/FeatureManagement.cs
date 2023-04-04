@@ -772,12 +772,6 @@ namespace Tests.FeatureManagement
             var services = new ServiceCollection();
 
             services
-                .Configure<FeatureManagementOptions>(options =>
-                {
-                    options.IgnoreMissingFeatureFilters = true;
-                });
-
-            services
                 .AddSingleton(config)
                 .AddFeatureManagement()
                 .AddFeatureFilter<TestFilter>();

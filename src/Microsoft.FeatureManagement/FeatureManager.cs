@@ -76,6 +76,12 @@ namespace Microsoft.FeatureManagement
 
             if (featureDefinition != null)
             {
+                if (featureDefinition.RequirementType == RequirementType.All && _options.IgnoreMissingFeatureFilters)
+                {
+                    string errorMessage = $"The 'IgnoreMissingFeatureFilters' flag cannot use used in combination with a feature of requirement type 'All'.";
+                    throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
+                }
+
                 //
                 // If the requirement type is Any, we end on a true. Requirement type All will end on a false
                 bool targetEvaluation = featureDefinition.RequirementType == RequirementType.Any;
@@ -85,12 +91,18 @@ namespace Microsoft.FeatureManagement
                 foreach (FeatureFilterConfiguration featureFilterConfiguration in featureDefinition.EnabledFor)
                 {
                     //
-                    // If the filter is AlwaysOn and we're targeting true, return true
-                    if (string.Equals(featureFilterConfiguration.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase) && targetEvaluation)
+                    // Handle AlwaysOn filters
+                    if (string.Equals(featureFilterConfiguration.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase))
                     {
                         enabled = true;
 
-                        break;
+                        if (enabled == targetEvaluation)
+                        {
+                            break;
+                        } else
+                        {
+                            continue;
+                        }
                     }
 
                     IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
@@ -105,14 +117,7 @@ namespace Microsoft.FeatureManagement
                         }
                         else
                         {
-                            if (featureDefinition.RequirementType == RequirementType.All)
-                            {
-                                errorMessage = $"The 'IgnoreMissingFeatureFilters' flag cannot override a missing filter on a feature with requirement type 'All'. {errorMessage}";
-                                throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
-                            } else
-                            {
-                                _logger.LogWarning(errorMessage);
-                            }
+                            _logger.LogWarning(errorMessage);
                         }
 
                         continue;
@@ -134,7 +139,8 @@ namespace Microsoft.FeatureManagement
                     {
                         ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
 
-                        if (contextualFilter != null) {
+                        if (contextualFilter != null) 
+                        {
                             evaluation = await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation;
                         }
                     }
