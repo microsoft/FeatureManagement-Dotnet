@@ -158,12 +158,13 @@ namespace Microsoft.FeatureManagement
             {
                 string rawRequirementType = configurationSection[RequirementTypeKeyword];
 
-                if (!string.IsNullOrEmpty(rawRequirementType))
+                //
+                // If requirement type is specified, parse it and set the requirementType variable
+                if (!string.IsNullOrEmpty(rawRequirementType) && !Enum.TryParse(rawRequirementType, true, out requirementType))
                 {
-                    if (!Enum.TryParse(rawRequirementType, true, out requirementType))
-                    {
-                        throw new FeatureManagementException(FeatureManagementError.InvalidConfiguration, $"Invalid requirement type '{rawRequirementType}' for feature '{configurationSection.Key}'.");
-                    }
+                    throw new FeatureManagementException(
+                        FeatureManagementError.InvalidValue, 
+                        $"Invalid requirement type '{rawRequirementType}' for feature '{configurationSection.Key}'.");
                 }
 
                 IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(FeatureFiltersSectionName).GetChildren();

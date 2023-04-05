@@ -78,8 +78,9 @@ namespace Microsoft.FeatureManagement
             {
                 if (featureDefinition.RequirementType == RequirementType.All && _options.IgnoreMissingFeatureFilters)
                 {
-                    string errorMessage = $"The 'IgnoreMissingFeatureFilters' flag cannot use used in combination with a feature of requirement type 'All'.";
-                    throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
+                    throw new FeatureManagementException(
+                        FeatureManagementError.Conflict, 
+                        $"The 'IgnoreMissingFeatureFilters' flag cannot use used in combination with a feature of requirement type 'All'.");
                 }
 
                 //
@@ -125,10 +126,8 @@ namespace Microsoft.FeatureManagement
                             {
                                 throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
                             }
-                            else
-                            {
-                                _logger.LogWarning(errorMessage);
-                            }
+
+                            _logger.LogWarning(errorMessage);
 
                             continue;
                         }
@@ -162,7 +161,7 @@ namespace Microsoft.FeatureManagement
                             enabled = targetEvaluation;
 
                             break;
-                        };
+                        }
                     }
 
                 }
@@ -177,10 +176,8 @@ namespace Microsoft.FeatureManagement
                 {
                     throw new FeatureManagementException(FeatureManagementError.MissingFeature, errorMessage);
                 }
-                else
-                {
-                    _logger.LogWarning(errorMessage);
-                }
+                
+                _logger.LogWarning(errorMessage);
             }
 
             foreach (ISessionManager sessionManager in _sessionManagers)
