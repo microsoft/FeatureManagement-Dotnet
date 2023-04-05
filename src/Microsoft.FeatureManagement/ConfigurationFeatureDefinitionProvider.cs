@@ -163,7 +163,7 @@ namespace Microsoft.FeatureManagement
                 if (!string.IsNullOrEmpty(rawRequirementType) && !Enum.TryParse(rawRequirementType, true, out requirementType))
                 {
                     throw new FeatureManagementException(
-                        FeatureManagementError.InvalidValue, 
+                        FeatureManagementError.InvalidConfigurationSetting, 
                         $"Invalid requirement type '{rawRequirementType}' for feature '{configurationSection.Key}'.");
                 }
 

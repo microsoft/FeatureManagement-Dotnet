@@ -29,8 +29,8 @@ namespace Microsoft.FeatureManagement
         Conflict,
 
         /// <summary>
-        /// The given value was invalid.
+        /// The given configuration setting was invalid.
         /// </summary>
-        InvalidValue
+        InvalidConfigurationSetting
     }
 }
