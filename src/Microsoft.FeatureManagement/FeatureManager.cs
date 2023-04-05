@@ -70,7 +70,7 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            bool enabled = false;
+            bool enabled;
 
             FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
 
@@ -83,97 +83,94 @@ namespace Microsoft.FeatureManagement
                 }
 
                 //
-                // If the requirement type is Any, we end on a true. Requirement type All will end on a false
-                bool targetEvaluation = featureDefinition.RequirementType == RequirementType.Any;
-
-                //
-                // For all enabling filters listed in the feature's state, evaluate them according to requirement type
-                foreach (FeatureFilterConfiguration featureFilterConfiguration in featureDefinition.EnabledFor)
+                // Treat an empty list of enabled filters as a disabled feature
+                if (featureDefinition.EnabledFor == null || featureDefinition.EnabledFor.Count() == 0)
+                {
+                    enabled = false;
+                }
+                else
                 {
                     //
-                    // Handle AlwaysOn filters
-                    if (string.Equals(featureFilterConfiguration.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase))
-                    {
-                        enabled = true;
-
-                        if (enabled == targetEvaluation)
-                        {
-                            break;
-                        } else
-                        {
-                            continue;
-                        }
-                    }
-
-                    IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
-
-                    if (filter == null)
-                    {
-                        string errorMessage = $"The feature filter '{featureFilterConfiguration.Name}' specified for feature '{feature}' was not found.";
-
-                        if (!_options.IgnoreMissingFeatureFilters)
-                        {
-                            throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
-                        }
-                        else
-                        {
-                            _logger.LogWarning(errorMessage);
-                        }
-
-                        continue;
-                    }
-
-                    var context = new FeatureFilterEvaluationContext()
-                    {
-                        FeatureName = feature,
-                        Parameters = featureFilterConfiguration.Parameters
-                    };
+                    // If the requirement type is all, we default to true. Requirement type All will end on a false
+                    enabled = featureDefinition.RequirementType == RequirementType.All;
 
                     //
-                    // Default the result of this filter evaluation to false
-                    bool evaluation = false;
+                    // We iterate until we hit our target evaluation
+                    bool targetEvaluation = !enabled;
 
                     //
-                    // IContextualFeatureFilter
-                    if (useAppContext)
-                    {
-                        ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
-
-                        if (contextualFilter != null) 
-                        {
-                            evaluation = await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation;
-                        }
-                    }
-
-                    if (!evaluation)
+                    // For all enabling filters listed in the feature's state, evaluate them according to requirement type
+                    foreach (FeatureFilterConfiguration featureFilterConfiguration in featureDefinition.EnabledFor)
                     {
                         //
-                        // IFeatureFilter
-                        if (filter is IFeatureFilter featureFilter)
+                        // Handle AlwaysOn filters
+                        if (string.Equals(featureFilterConfiguration.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase))
                         {
-                            evaluation = await featureFilter.EvaluateAsync(context).ConfigureAwait(false);
+                            if (featureDefinition.RequirementType == RequirementType.Any)
+                            {
+                                enabled = true;
+                                break;
+                            }
+                            
+                            continue;
                         }
+
+                        IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
+
+                        if (filter == null)
+                        {
+                            string errorMessage = $"The feature filter '{featureFilterConfiguration.Name}' specified for feature '{feature}' was not found.";
+
+                            if (!_options.IgnoreMissingFeatureFilters)
+                            {
+                                throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
+                            }
+                            else
+                            {
+                                _logger.LogWarning(errorMessage);
+                            }
+
+                            continue;
+                        }
+
+                        var context = new FeatureFilterEvaluationContext()
+                        {
+                            FeatureName = feature,
+                            Parameters = featureFilterConfiguration.Parameters
+                        };
+
+                        //
+                        // IContextualFeatureFilter
+                        if (useAppContext)
+                        {
+                            ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
+
+                            if (contextualFilter != null && 
+                                await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation)
+                            {
+                                enabled = targetEvaluation;
+
+                                break;
+                            };
+                        }
+
+                        //
+                        // IFeatureFilter
+                        if (filter is IFeatureFilter featureFilter && 
+                            await featureFilter.EvaluateAsync(context).ConfigureAwait(false) == targetEvaluation)
+                        {
+                            enabled = targetEvaluation;
+
+                            break;
+                        };
                     }
 
-                    //
-                    // Set enabled to true if this filter evaluated to true
-                    if (evaluation)
-                    {
-                        enabled = evaluation;
-                    }
-
-                    //
-                    // Check if the loop should stop
-                    if (evaluation == targetEvaluation)
-                    {
-                        enabled = targetEvaluation;
-
-                        break;
-                    }
                 }
             }
             else
             {
+                enabled = false;
+
                 string errorMessage = $"The feature declaration for the feature '{feature}' was not found.";
 
                 if (!_options.IgnoreMissingFeatures)
