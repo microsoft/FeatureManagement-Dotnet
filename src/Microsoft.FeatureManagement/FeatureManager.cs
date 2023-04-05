@@ -85,7 +85,7 @@ namespace Microsoft.FeatureManagement
 
                 //
                 // Treat an empty list of enabled filters as a disabled feature
-                if (featureDefinition.EnabledFor == null || featureDefinition.EnabledFor.Count() == 0)
+                if (featureDefinition.EnabledFor == null || !featureDefinition.EnabledFor.Any())
                 {
                     enabled = false;
                 }
@@ -150,7 +150,7 @@ namespace Microsoft.FeatureManagement
                                 enabled = targetEvaluation;
 
                                 break;
-                            };
+                            }
                         }
 
                         //
@@ -163,7 +163,6 @@ namespace Microsoft.FeatureManagement
                             break;
                         }
                     }
-
                 }
             }
             else

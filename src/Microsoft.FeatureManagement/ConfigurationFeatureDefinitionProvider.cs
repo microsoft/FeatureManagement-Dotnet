@@ -160,7 +160,7 @@ namespace Microsoft.FeatureManagement
 
                 //
                 // If requirement type is specified, parse it and set the requirementType variable
-                if (!string.IsNullOrEmpty(rawRequirementType) && !Enum.TryParse(rawRequirementType, true, out requirementType))
+                if (!string.IsNullOrEmpty(rawRequirementType) && !Enum.TryParse(rawRequirementType, ignoreCase: true, out requirementType))
                 {
                     throw new FeatureManagementException(
                         FeatureManagementError.InvalidConfigurationSetting, 

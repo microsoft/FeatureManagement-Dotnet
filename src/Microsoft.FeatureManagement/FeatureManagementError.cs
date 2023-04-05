@@ -24,7 +24,7 @@ namespace Microsoft.FeatureManagement
         MissingFeature,
 
         /// <summary>
-        /// A configuration had conflicting values.
+        /// There was a conflict in the feature management system.
         /// </summary>
         Conflict,
 
