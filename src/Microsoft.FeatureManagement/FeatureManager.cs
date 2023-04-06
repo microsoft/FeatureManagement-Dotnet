@@ -70,28 +70,52 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            bool enabled = false;
+            bool enabled;
 
             FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
 
             if (featureDefinition != null)
             {
-                //
-                // Check if feature is always on
-                // If it is, result is true, goto: cache
-
-                if (featureDefinition.EnabledFor.Any(featureFilter => string.Equals(featureFilter.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase)))
+                if (featureDefinition.RequirementType == RequirementType.All && _options.IgnoreMissingFeatureFilters)
                 {
-                    enabled = true;
+                    throw new FeatureManagementException(
+                        FeatureManagementError.Conflict, 
+                        $"The 'IgnoreMissingFeatureFilters' flag cannot use used in combination with a feature of requirement type 'All'.");
+                }
+
+                //
+                // Treat an empty list of enabled filters as a disabled feature
+                if (featureDefinition.EnabledFor == null || !featureDefinition.EnabledFor.Any())
+                {
+                    enabled = false;
                 }
                 else
                 {
                     //
-                    // For all enabling filters listed in the feature's state calculate if they return true
-                    // If any executed filters return true, return true
+                    // If the requirement type is all, we default to true. Requirement type All will end on a false
+                    enabled = featureDefinition.RequirementType == RequirementType.All;
 
+                    //
+                    // We iterate until we hit our target evaluation
+                    bool targetEvaluation = !enabled;
+
+                    //
+                    // For all enabling filters listed in the feature's state, evaluate them according to requirement type
                     foreach (FeatureFilterConfiguration featureFilterConfiguration in featureDefinition.EnabledFor)
                     {
+                        //
+                        // Handle AlwaysOn filters
+                        if (string.Equals(featureFilterConfiguration.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (featureDefinition.RequirementType == RequirementType.Any)
+                            {
+                                enabled = true;
+                                break;
+                            }
+                            
+                            continue;
+                        }
+
                         IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
 
                         if (filter == null)
@@ -102,10 +126,8 @@ namespace Microsoft.FeatureManagement
                             {
                                 throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
                             }
-                            else
-                            {
-                                _logger.LogWarning(errorMessage);
-                            }
+
+                            _logger.LogWarning(errorMessage);
 
                             continue;
                         }
@@ -113,7 +135,7 @@ namespace Microsoft.FeatureManagement
                         var context = new FeatureFilterEvaluationContext()
                         {
                             FeatureName = feature,
-                            Parameters = featureFilterConfiguration.Parameters 
+                            Parameters = featureFilterConfiguration.Parameters
                         };
 
                         //
@@ -122,9 +144,10 @@ namespace Microsoft.FeatureManagement
                         {
                             ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
 
-                            if (contextualFilter != null && await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false))
+                            if (contextualFilter != null && 
+                                await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation)
                             {
-                                enabled = true;
+                                enabled = targetEvaluation;
 
                                 break;
                             }
@@ -132,9 +155,10 @@ namespace Microsoft.FeatureManagement
 
                         //
                         // IFeatureFilter
-                        if (filter is IFeatureFilter featureFilter && await featureFilter.EvaluateAsync(context).ConfigureAwait(false))
+                        if (filter is IFeatureFilter featureFilter && 
+                            await featureFilter.EvaluateAsync(context).ConfigureAwait(false) == targetEvaluation)
                         {
-                            enabled = true;
+                            enabled = targetEvaluation;
 
                             break;
                         }
@@ -143,16 +167,16 @@ namespace Microsoft.FeatureManagement
             }
             else
             {
+                enabled = false;
+
                 string errorMessage = $"The feature declaration for the feature '{feature}' was not found.";
 
                 if (!_options.IgnoreMissingFeatures)
                 {
                     throw new FeatureManagementException(FeatureManagementError.MissingFeature, errorMessage);
                 }
-                else
-                {
-                    _logger.LogWarning(errorMessage);
-                }
+                
+                _logger.LogWarning(errorMessage);
             }
 
             foreach (ISessionManager sessionManager in _sessionManagers)
