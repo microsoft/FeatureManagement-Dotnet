@@ -1,0 +1,175 @@
+trigger: none
+
+parameters: # parameters are shown up in ADO UI in a build queue time
+- name: 'debug'
+  displayName: 'Enable debug output'
+  type: boolean
+  default: false
+
+variables:
+  CDP_DEFINITION_BUILD_COUNT: $[counter('', 0)] # needed for onebranch.pipeline.version task
+  system.debug: ${{ parameters.debug }}
+  ENABLE_PRS_DELAYSIGN: 1
+  ROOT: $(Build.SourcesDirectory)
+  REPOROOT: $(Build.SourcesDirectory)
+  OUTPUTROOT: $(REPOROOT)\out
+  CDP_USER_SOURCE_FOLDER_CONTAINER_PATH: $(Build.SourcesDirectory)
+  CDP_DEFINITION_BUILD_COUNT_DAY: $[counter(format('{0:yyyyMMdd}', pipeline.startTime), 1)]
+  CDP_DEFINITION_BUILD_COUNT_MONTH: $[counter(format('{0:yyyyMM}', pipeline.startTime), 1)]
+  CDP_DEFINITION_BUILD_COUNT_YEAR: $[counter(format('{0:yyyy}', pipeline.startTime), 1)]
+  NUGET_XMLDOC_MODE: none
+
+  # Docker image which is used to build the project 
+  WindowsContainerImage: 'onebranch.azurecr.io/windows/ltsc2019/vse2022:latest'
+
+resources:
+  repositories: 
+    - repository: templates
+      type: git
+      name: OneBranch.Pipelines/GovernedTemplates
+      ref: refs/heads/main
+
+extends:
+  template: v2/OneBranch.Official.CrossPlat.yml@templates
+  parameters:
+    cloudvault:
+      enabled: false
+    globalSdl:
+      tsa:
+        enabled: false # onebranch publish all sdl results to TSA. If TSA is disabled all SDL tools will forced into 'break' build mode.
+      # credscan:
+      #   suppressionsFile: $(Build.SourcesDirectory)\.config\CredScanSuppressions.json
+      binskim:
+        break: true # always break the build on binskim issues in addition to TSA upload
+      policheck:
+        break: true # always break the build on policheck issues. You can disable it by setting to 'false'
+      # baseline:
+      #   baselineFile: $(Build.SourcesDirectory)\.gdn\global.gdnbaselines
+      cg:
+        failOnAlert: false
+
+    stages:
+    - stage: build
+      jobs:
+      - job: main
+        pool:
+          type: windows
+        
+        variables:
+          ob_outputDirectory: '$(REPOROOT)\out' # this directory is uploaded to pipeline artifacts, reddog and cloudvault
+          ob_sdl_binskim_break: true
+          ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/master') }}: # conditionally enable symbolsPublishing for master branch only
+            ob_symbolsPublishing_enabled: true
+          # ob_sdl_baseline_baselineFile: $(Build.SourcesDirectory)\.gdn\build.official.gdnbaselines
+          # ob_sdl_codeSignValidation_excludes: -|**\*.js # Example -|**\*.js;-|**\Test*\**
+          ob_artifactBaseName: 'drop'
+          ob_sdl_cg_failOnAlert: false
+
+        steps:
+          - task: CmdLine@2
+            displayName: 'Install .NET'
+            inputs:
+              script: $(Build.SourcesDirectory)\build\CallPowerShell.cmd build/install-dotnet.ps1 -RestoreOnly
+              workingDirectory: '$(Build.SourcesDirectory)'
+
+          - task: CmdLine@2
+            displayName: 'Restore'
+            inputs:
+              script: $(Build.SourcesDirectory)\build\CallPowerShell.cmd build.ps1 -RestoreOnly
+              workingDirectory: '$(Build.SourcesDirectory)'
+
+          - task: onebranch.pipeline.version@1 # generates automatic version
+            displayName: 'Setup BuildNumber'
+            inputs:
+              system: 'BuildRevision'
+              major: '1'
+              minor: '0'
+              name: 'FeatureManagement-Dotnet'
+              # exclude_commit: true
+
+
+
+          - task: CmdLine@2
+            displayName: 'Dotnet Build'
+            inputs:
+              script: $(Build.SourcesDirectory)\build\CallPowerShell.cmd build.ps1
+              workingDirectory: '$(Build.SourcesDirectory)'
+
+          - task: CopyFiles@2
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)\buildlogs'
+              Contents: |
+                **/*
+              TargetFolder: '$(Build.SourcesDirectory)\out\outputs\build\Build Logs'
+
+
+
+          - task: onebranch.pipeline.signing@1
+            displayName: 'Signing'
+            inputs:
+              command: 'sign'
+              signing_environment: 'azure-ado'
+              signing_profile: 'external_distribution '
+              files_to_sign: '*/bin/Release/**/*'
+              search_root: '$(Build.SourcesDirectory)\src'
+              
+
+          - task: CopyFiles@2
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)\src'
+              Contents: |
+                */bin/Release/**/*
+              TargetFolder: '$(Build.SourcesDirectory)\out\outputs\build\Binaries'
+
+          - task: CmdLine@2
+            displayName: 'Dotnet Pack'
+            inputs:
+              script: $(Build.SourcesDirectory)\build\CallPowerShell.cmd pack.ps1
+              workingDirectory: '$(Build.SourcesDirectory)'
+
+          - task: CopyFiles@2
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)\buildlogs'
+              Contents: |
+                **/*
+              TargetFolder: '$(Build.SourcesDirectory)\out\outputs\package\Build Logs'
+
+
+
+          - task: onebranch.pipeline.signing@1
+            displayName: 'Signing'
+            inputs:
+              command: 'sign'
+              signing_environment: 'azure-ado'
+              signing_profile: 'external_distribution '
+              files_to_sign: '*/bin/PackageOutput/**/*.nupkg'
+              search_root: '$(Build.SourcesDirectory)\src'
+              
+
+          - task: CopyFiles@2
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)\src'
+              Contents: |
+                */bin/PackageOutput/**/*.nupkg
+              TargetFolder: '$(Build.SourcesDirectory)\out\outputs\package\Packages'
+
+          - task: CmdLine@2
+            displayName: 'Dotnet Test'
+            inputs:
+             script: '$(Build.SourcesDirectory)\build/CallPowerShell.cmd test.ps1|| exit /b 0'
+             workingDirectory: '$(Build.SourcesDirectory)'
+
+          - task: CopyFiles@2
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)\tests'
+              Contents: '**/*.trx'
+              TargetFolder: '$(Build.SourcesDirectory)\out\outputs\test\_post_command__run_log_alerts_schedular_tests\_testresults'
+
+          - task: PublishTestResults@2
+            displayName: 'Unit Tests'
+            inputs:
+             testResultsFormat: 'vstest'
+             testResultsFiles: '**/*.trx'
+             searchFolder: ''
+             failTaskOnFailedTests: False
+             testRunTitle: Unit Tests
