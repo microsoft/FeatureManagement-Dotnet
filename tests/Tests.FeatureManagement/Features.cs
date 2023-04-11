@@ -6,9 +6,12 @@ namespace Tests.FeatureManagement
     enum Features
     {
         TargetingTestFeature,
+        TargetingTestFeatureWithExclusion,
         OnTestFeature,
         OffTestFeature,
         ConditionalFeature,
-        ConditionalFeature2
+        ConditionalFeature2,
+        AnyFilterFeature,
+        AllFilterFeature
     }
 }

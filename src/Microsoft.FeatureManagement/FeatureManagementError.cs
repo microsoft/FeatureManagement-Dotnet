@@ -21,6 +21,16 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// A feature that was requested for evaluation was not found.
         /// </summary>
-        MissingFeature
+        MissingFeature,
+
+        /// <summary>
+        /// There was a conflict in the feature management system.
+        /// </summary>
+        Conflict,
+
+        /// <summary>
+        /// The given configuration setting was invalid.
+        /// </summary>
+        InvalidConfigurationSetting
     }
 }

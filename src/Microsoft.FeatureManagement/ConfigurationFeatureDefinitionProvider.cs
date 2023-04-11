@@ -18,6 +18,7 @@ namespace Microsoft.FeatureManagement
     sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable
     {
         private const string FeatureFiltersSectionName = "EnabledFor";
+        private const string RequirementTypeKeyword = "RequirementType";
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
@@ -121,9 +122,15 @@ namespace Microsoft.FeatureManagement
             },
             myAlwaysDisabledFeature2: {
               enabledFor: false
-            }
+            },
+            myAllRequiredFilterFeature: {
+                requirementType: "all"
+                enabledFor: [ "myFeatureFilter1", "myFeatureFilter2" ],
+            },
 
             */
+
+            RequirementType requirementType = RequirementType.Any;
 
             var enabledFor = new List<FeatureFilterConfiguration>();
 
@@ -149,6 +156,17 @@ namespace Microsoft.FeatureManagement
             }
             else
             {
+                string rawRequirementType = configurationSection[RequirementTypeKeyword];
+
+                //
+                // If requirement type is specified, parse it and set the requirementType variable
+                if (!string.IsNullOrEmpty(rawRequirementType) && !Enum.TryParse(rawRequirementType, ignoreCase: true, out requirementType))
+                {
+                    throw new FeatureManagementException(
+                        FeatureManagementError.InvalidConfigurationSetting, 
+                        $"Invalid requirement type '{rawRequirementType}' for feature '{configurationSection.Key}'.");
+                }
+
                 IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(FeatureFiltersSectionName).GetChildren();
 
                 foreach (IConfigurationSection section in filterSections)
@@ -170,7 +188,8 @@ namespace Microsoft.FeatureManagement
             return new FeatureDefinition()
             {
                 Name = configurationSection.Key,
-                EnabledFor = enabledFor
+                EnabledFor = enabledFor,
+                RequirementType = requirementType
             };
         }
 

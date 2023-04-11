@@ -669,9 +669,188 @@ namespace Tests.FeatureManagement
             }
         }
 
+        [Fact]
+        public async Task TargetingExclusion()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualTargetingFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            string targetingTestFeature = Enum.GetName(typeof(Features), Features.TargetingTestFeatureWithExclusion);
+
+            //
+            // Targeted by user id
+            Assert.True(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Alicia"
+            }));
+
+            //
+            // Not targeted by user id, but targeted by default rollout
+            Assert.True(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Anne"
+            }));
+
+            //
+            // Not targeted by user id or default rollout
+            Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Patty"
+            }));
+
+            //
+            // Targeted by group rollout
+            Assert.True(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Patty",
+                Groups = new List<string>() { "Ring1" }
+            }));
+
+            //
+            // Not targeted by user id, default rollout or group rollout
+            Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Isaac",
+                Groups = new List<string>() { "Ring1" }
+            }));
+
+            //
+            // Excluded by user id
+            Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Jeff"
+            }));
+
+            //
+            // Excluded by group
+            Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Patty",
+                Groups = new List<string>() { "Ring0" }
+            }));
+
+            //
+            // Included and Excluded by group
+            Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Patty",
+                Groups = new List<string>() { "Ring0", "Ring1" }
+            }));
+
+            //
+            // Included user but Excluded by group
+            Assert.False(await featureManager.IsEnabledAsync(targetingTestFeature, new TargetingContext
+            {
+                UserId = "Alicia",
+                Groups = new List<string>() { "Ring2" }
+            }));
+        }
+
+        [Fact]
+        public async Task UsesRequirementType()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            string filterOneId = "1";
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            string anyFilterFeature = Enum.GetName(typeof(Features), Features.AnyFilterFeature);
+            string allFilterFeature = Enum.GetName(typeof(Features), Features.AllFilterFeature);
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            //
+            // Set filters to all return true
+            testFeatureFilter.Callback = _ => Task.FromResult(true);
+
+
+            Assert.True(await featureManager.IsEnabledAsync(anyFilterFeature));
+            Assert.True(await featureManager.IsEnabledAsync(allFilterFeature));
+
+            //
+            // Set filters to all return false
+            testFeatureFilter.Callback = ctx => Task.FromResult(false);
+
+            Assert.False(await featureManager.IsEnabledAsync(anyFilterFeature));
+            Assert.False(await featureManager.IsEnabledAsync(allFilterFeature));
+
+            //
+            // Set 1st filter to true and 2nd filter to false
+            testFeatureFilter.Callback = ctx => Task.FromResult(ctx.Parameters["Id"] == filterOneId);
+
+            Assert.True(await featureManager.IsEnabledAsync(anyFilterFeature));
+            Assert.False(await featureManager.IsEnabledAsync(allFilterFeature));
+
+            //
+            // Set 1st filter to false and 2nd filter to true
+            testFeatureFilter.Callback = ctx => Task.FromResult(ctx.Parameters["Id"] != filterOneId);
+
+            Assert.True(await featureManager.IsEnabledAsync(anyFilterFeature));
+            Assert.False(await featureManager.IsEnabledAsync(allFilterFeature));
+        }
+
+        [Fact]
+        public async Task RequirementTypeAllExceptions()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            string filterOneId = "1";
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            string allFilterFeature = Enum.GetName(typeof(Features), Features.AllFilterFeature);
+
+            await Assert.ThrowsAsync<FeatureManagementException>(async () =>
+            {
+                await featureManager.IsEnabledAsync(allFilterFeature);
+            });
+        }
+
         private static void DisableEndpointRouting(MvcOptions options)
         {
-#if NET5_0 || NETCOREAPP3_1
+#if  NET6_0 || NET5_0 || NETCOREAPP3_1
             //
             // Endpoint routing is disabled by default in .NET Core 2.1 since it didn't exist.
             options.EnableEndpointRouting = false;

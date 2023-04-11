@@ -4,14 +4,15 @@
   <!-- Official Version -->
   <PropertyGroup>
     <MajorVersion>2</MajorVersion>
-    <MinorVersion>5</MinorVersion>
-    <PatchVersion>1</PatchVersion>
+    <MinorVersion>6</MinorVersion>
+    <PatchVersion>0</PatchVersion>
+    <PreviewVersion>-preview</PreviewVersion>
   </PropertyGroup>
 
   <Import Project="..\..\build\Versioning.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net5.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net5.0;net6.0</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>..\..\build\Microsoft.FeatureManagement.snk</AssemblyOriginatorKeyFile>
