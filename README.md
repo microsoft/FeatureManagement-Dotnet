@@ -26,8 +26,8 @@ Feature flags are composed of two parts, a name and a list of feature-filters th
 ### Feature Filters
 Feature filters define a scenario for when a feature should be enabled. When a feature is evaluated for whether it is on or off, its list of feature-filters are traversed until one of the filters decides the feature should be enabled or disabled. Traversal works in one of two ways:
 
-1. For filters with a `RequirementType` of `Any` (the default): The feature-filters are traversed until one of the filters returns true. If no filter returns true then the feature is disabled.
-2. For filters with a `RequirementType` of `All`: The feature-filters are traversed until one of the filters returns false. If no feature filter returns false and there is at least 1 filter - then the feature is enabled.
+1. For features with a `RequirementType` of `Any` (the default): The feature-filters are traversed until one of the filters decides that the feature should be enabled. If no filter indicates that the feature should be enabled, then it will be considered disabled.
+2. For features with a `RequirementType` of `All`: The feature-filters are traversed until one of the filters decides that the feature should be disabled. If no filter indicates that the feature should be disabled, then it will be considered enabled.
 
 As an example, a Microsoft Edge browser feature filter could be designed. This feature filter would activate any features it is attached to as long as an HTTP request is coming from Microsoft Edge.
 
@@ -92,7 +92,7 @@ The feature management library supports appsettings.json as a feature flag sourc
 }
 ```
 
-The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided four different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration so it only has the _Name_ property. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a parameter's property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured. `FeatureW` specifies a requirement type of `All`, meaning all of it's filters must return true for the feature to be active. In this case, the feature is active between the specified time window and for 50% of users.
+The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided four different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration so it only has the `Name` property. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured. `FeatureW` specifies a `RequirementType` of `All`, meaning all of it's filters must evaluate to true for the feature to be enabled. In this case, the feature is enabled for 50% of users during the specified time window.
 
 ### On/Off Declaration
  
@@ -112,6 +112,14 @@ The following snippet demonstrates an alternative way to define a feature that c
     }
 }
 ```
+
+### RequirementType
+
+The `RequirementType` property of a feature flag is used to determine if the filters should use `Any` or `All` logic when evaluating the state of a feature. If `RequirementType` is not specified, the default value is `Any`.
+
+* `Any` means only 1 filter needs to evaluate to true for the feature to be enabled. 
+* `All` means every filter needs to evaluate to true for the feature to be enabled.
+
 ### Referencing
 
 To make it easier to reference these feature flags in code, we recommend to define feature flag variables like below.
@@ -461,7 +469,7 @@ This filter provides the capability to enable a feature based on a time window. 
 
 #### Microsoft.Targeting
 
-This filter provides the capability to enable a feature for a target audience. An in-depth explanation of targeting is explained in the [targeting](./README.md#Targeting) section below. The filter parameters include an audience object which describes users, groups, excluded users/groups, and a default percentage of the user base that should have access to the feature. Each group object that is listed in the target audience must also specify what percentage of the group's members should have access. If a user is specified in the exclusion object, either directly or in a group, the feature will be disabled. Otherwise, if a user is specified in the users section directly, or if the user is in the included percentage of any of the group rollouts, or if the user falls into the default rollout percentage then that user will have the feature enabled.
+This filter provides the capability to enable a feature for a target audience. An in-depth explanation of targeting is explained in the [targeting](./README.md#Targeting) section below. The filter parameters include an audience object which describes users, groups, excluded users/groups, and a default percentage of the user base that should have access to the feature. Each group object that is listed in the target audience must also specify what percentage of the group's members should have access. If a user is specified in the exclusion section, either directly or if the user is in an excluded group, the feature will be disabled. Otherwise, if a user is specified in the users section directly, or if the user is in the included percentage of any of the group rollouts, or if the user falls into the default rollout percentage then that user will have the feature enabled.
 
 ``` JavaScript
 "EnhancedPipeline": {
@@ -499,13 +507,6 @@ This filter provides the capability to enable a feature for a target audience. A
     ]
 }
 ```
-
-### RequirementType
-
-The `RequirementType` property of a feature flag is used to determine if the filters should use `Any` or `All` logic when evaluating the state of a feature. If `RequirementType` is not specified, the default value is `Any`.
-
-* `Any` means only 1 filter needs to evaluate to true for the feature to be enabled. 
-* `All` means every filter needs to evaluate to true for the feature to be enabled.
 
 ### Feature Filter Alias Namespaces
 
@@ -610,6 +611,8 @@ When defining an Audience, users and groups can be excluded from the audience. T
     }
 }
 ```
+
+In the above example, the feature will be enabled for users named `Jeff` and `Alicia`. It will also be enabled for users in the group named `Ring0`. However, if the user is named `Mark`, the feature will be disabled, regardless if they are in the group `Ring0` or not. Exclusions take priority over the rest of the targeting filter.
 
 ## Caching
 
