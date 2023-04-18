@@ -71,7 +71,7 @@ The feature management library supports appsettings.json as a feature flag sourc
 }
 ```
 
-The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided three different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration so it only has the _Name_ property. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a parameter's property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
+The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided three different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration so it only has the `Name` property. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
 
 ### On/Off Declaration
  
@@ -91,6 +91,39 @@ The following snippet demonstrates an alternative way to define a feature that c
     }
 }
 ```
+
+### RequirementType
+
+The `RequirementType` property of a feature flag is used to determine if the filters should use `Any` or `All` logic when evaluating the state of a feature. If `RequirementType` is not specified, the default value is `Any`.
+
+* `Any` means only 1 filter needs to evaluate to true for the feature to be enabled. 
+* `All` means every filter needs to evaluate to true for the feature to be enabled.
+
+A `RequirementType` of `All` changes the traversal. First, if there are no filters, the feature will be disabled. Then, the feature-filters are traversed until one of the filters decides that the feature should be disabled. If no filter indicates that the feature should be disabled, then it will be considered enabled.
+
+```
+"FeatureW": {
+    "RequirementType": "All",
+    "EnabledFor": [
+        {
+            "Name": "TimeWindow",
+            "Parameters": {
+                "Start": "Mon, 01 May 2023 13:59:59 GMT",
+                "End": "Sat, 01 July 2023 00:00:00 GMT"
+            }
+        },
+        {
+            "Name": "Percentage",
+            "Parameters": {
+                "Value": "50"
+            }
+        }
+    ]
+}
+```
+
+In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning all of it's filters must evaluate to true for the feature to be enabled. In this case, the feature will be enabled for 50% of users during the specified time window.
+
 ### Referencing
 
 To make it easier to reference these feature flags in code, we recommend to define feature flag variables like below.
@@ -440,7 +473,7 @@ This filter provides the capability to enable a feature based on a time window. 
 
 #### Microsoft.Targeting
 
-This filter provides the capability to enable a feature for a target audience. An in-depth explanation of targeting is explained in the [targeting](./README.md#Targeting) section below. The filter parameters include an audience object which describes users, groups, and a default percentage of the user base that should have access to the feature. Each group object that is listed in the target audience must also specify what percentage of the group's members should have access. If a user is specified in the users section directly, or if the user is in the included percentage of any of the group rollouts, or if the user falls into the default rollout percentage then that user will have the feature enabled.
+This filter provides the capability to enable a feature for a target audience. An in-depth explanation of targeting is explained in the [targeting](./README.md#Targeting) section below. The filter parameters include an audience object which describes users, groups, excluded users/groups, and a default percentage of the user base that should have access to the feature. Each group object that is listed in the target audience must also specify what percentage of the group's members should have access. If a user is specified in the exclusion section, either directly or if the user is in an excluded group, the feature will be disabled. Otherwise, if a user is specified in the users section directly, or if the user is in the included percentage of any of the group rollouts, or if the user falls into the default rollout percentage then that user will have the feature enabled.
 
 ``` JavaScript
 "EnhancedPipeline": {
@@ -463,7 +496,15 @@ This filter provides the capability to enable a feature for a target audience. A
                             "RolloutPercentage": 50
                         }
                     ],
-                    "DefaultRolloutPercentage": 20
+                    "DefaultRolloutPercentage": 20,
+                    "Exclusion": {
+                        "Users": [
+                            "Ross"
+                        ],
+                        "Groups": [
+                            "Ring2"
+                        ]
+                    }
                 }
             }
         }
@@ -477,7 +518,7 @@ All of the built-in feature filter alias' are in the 'Microsoft' feature filter 
 
 ## Targeting
 
-Targeting is a feature management strategy that enables developers to progressively roll out new features to their user base. The strategy is built on the concept of targeting a set of users known as the target _audience_. An audience is made up of specific users, groups, and a designated percentage of the entire user base. The groups that are included in the audience can be broken down further into percentages of their total members.
+Targeting is a feature management strategy that enables developers to progressively roll out new features to their user base. The strategy is built on the concept of targeting a set of users known as the target _audience_. An audience is made up of specific users, groups, excluded users/groups, and a designated percentage of the entire user base. The groups that are included in the audience can be broken down further into percentages of their total members.
 
 The following steps demonstrate an example of a progressive rollout for a new 'Beta' feature:
 
@@ -550,6 +591,32 @@ services.Configure<TargetingEvaluationOptions>(options =>
     options.IgnoreCase = true;
 });
 ```
+
+## Targeting Exclusion
+
+When defining an Audience, users and groups can be excluded from the audience. This is useful when a feature is being rolled out to a group of users, but a few users or groups need to be excluded from the rollout. Exclusion is defined by adding a list of users and groups to the `Exclusion` property of the audience.
+```
+"Audience": {
+    "Users": [
+        "Jeff",
+        "Alicia"
+    ],
+    "Groups": [
+        {
+            "Name": "Ring0",
+            "RolloutPercentage": 100
+        }
+    ],
+    "DefaultRolloutPercentage": 0
+    "Exclusion": {
+        "Users": [
+            "Mark"
+        ]
+    }
+}
+```
+
+In the above example, the feature will be enabled for users named `Jeff` and `Alicia`. It will also be enabled for users in the group named `Ring0`. However, if the user is named `Mark`, the feature will be disabled, regardless if they are in the group `Ring0` or not. Exclusions take priority over the rest of the targeting filter.
 
 ## Caching
 
