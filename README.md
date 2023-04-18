@@ -24,10 +24,7 @@ Here are some of the benefits of using this library:
 Feature flags are composed of two parts, a name and a list of feature-filters that are used to turn the feature on.
 
 ### Feature Filters
-Feature filters define a scenario for when a feature should be enabled. When a feature is evaluated for whether it is on or off, its list of feature-filters are traversed until one of the filters decides the feature should be enabled or disabled. Traversal works in one of two ways:
-
-1. For features with a `RequirementType` of `Any` (the default): The feature-filters are traversed until one of the filters decides that the feature should be enabled. If no filter indicates that the feature should be enabled, then it will be considered disabled.
-2. For features with a `RequirementType` of `All`: The feature-filters are traversed until one of the filters decides that the feature should be disabled. If no filter indicates that the feature should be disabled, then it will be considered enabled.
+Feature filters define a scenario for when a feature should be enabled. When a feature is evaluated for whether it is on or off, its list of feature-filters are traversed until one of the filters decides the feature should be enabled. At this point the feature is considered enabled and traversal through the feature filters stops. If no feature filter indicates that the feature should be enabled, then it will be considered disabled.
 
 As an example, a Microsoft Edge browser feature filter could be designed. This feature filter would activate any features it is attached to as long as an HTTP request is coming from Microsoft Edge.
 
@@ -70,29 +67,11 @@ The feature management library supports appsettings.json as a feature flag sourc
                 }
             ]
         }
-        "FeatureW": {
-            "RequirementType": "All",
-            "EnabledFor": [
-                {
-                    "Name": "TimeWindow",
-                    "Parameters": {
-                        "Start": "Wed, 01 May 2019 13:59:59 GMT",
-                        "End": "Mon, 01 July 2019 00:00:00 GMT"
-                    }
-                },
-                {
-                    "Name": "Percentage",
-                    "Parameters": {
-                        "Value": "50"
-                    }
-                }
-            ]
-        }
     }
 }
 ```
 
-The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided four different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration so it only has the `Name` property. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured. `FeatureW` specifies a `RequirementType` of `All`, meaning all of it's filters must evaluate to true for the feature to be enabled. In this case, the feature is enabled for 50% of users during the specified time window.
+The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided three different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration so it only has the `Name` property. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
 
 ### On/Off Declaration
  
@@ -119,6 +98,31 @@ The `RequirementType` property of a feature flag is used to determine if the fil
 
 * `Any` means only 1 filter needs to evaluate to true for the feature to be enabled. 
 * `All` means every filter needs to evaluate to true for the feature to be enabled.
+
+A `RequirementType` of `All` changes the traversal. First, if there are no filters, the feature will be disabled. Then, the feature-filters are traversed until one of the filters decides that the feature should be disabled. If no filter indicates that the feature should be disabled, then it will be considered enabled.
+
+```
+"FeatureW": {
+    "RequirementType": "All",
+    "EnabledFor": [
+        {
+            "Name": "TimeWindow",
+            "Parameters": {
+                "Start": "Mon, 01 May 2023 13:59:59 GMT",
+                "End": "Sat, 01 July 2023 00:00:00 GMT"
+            }
+        },
+        {
+            "Name": "Percentage",
+            "Parameters": {
+                "Value": "50"
+            }
+        }
+    ]
+}
+```
+
+In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning all of it's filters must evaluate to true for the feature to be enabled. In this case, the feature will be enabled for 50% of users during the specified time window.
 
 ### Referencing
 
