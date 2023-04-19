@@ -96,7 +96,7 @@ The following snippet demonstrates an alternative way to define a feature that c
 
 The `RequirementType` property of a feature flag is used to determine if the filters should use `Any` or `All` logic when evaluating the state of a feature. If `RequirementType` is not specified, the default value is `Any`.
 
-* `Any` means only 1 filter needs to evaluate to true for the feature to be enabled. 
+* `Any` means only one filter needs to evaluate to true for the feature to be enabled. 
 * `All` means every filter needs to evaluate to true for the feature to be enabled.
 
 A `RequirementType` of `All` changes the traversal. First, if there are no filters, the feature will be disabled. Then, the feature-filters are traversed until one of the filters decides that the feature should be disabled. If no filter indicates that the feature should be disabled, then it will be considered enabled.
