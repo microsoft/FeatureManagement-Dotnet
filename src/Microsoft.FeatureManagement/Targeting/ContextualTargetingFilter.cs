@@ -17,7 +17,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
     /// A feature filter that can be used to activate features for targeted audiences.
     /// </summary>
     [FilterAlias(Alias)]
-    public class ContextualTargetingFilter : IContextualFeatureFilter<ITargetingContext>
+    public class ContextualTargetingFilter : IContextualFeatureFilter<ITargetingContext>, IFilterParametersBinder
     {
         private const string Alias = "Microsoft.Targeting";
         private readonly TargetingEvaluationOptions _options;
@@ -38,6 +38,16 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         private StringComparer ComparerType => _options.IgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
         /// <summary>
+        /// Binds configuration representing filter parameters to <see cref="TargetingFilterSettings"/>.
+        /// </summary>
+        /// <param name="filterParameters">The configuration representing filter parameters that should be bound to <see cref="TargetingFilterSettings"/>.</param>
+        /// <returns><see cref="TargetingFilterSettings"/> that can later be used in targeting.</returns>
+        public object BindParameters(IConfiguration filterParameters)
+        {
+            return filterParameters.Get<TargetingFilterSettings>() ?? new TargetingFilterSettings();
+        }
+
+        /// <summary>
         /// Performs a targeting evaluation using the provided <see cref="TargetingContext"/> to determine if a feature should be enabled.
         /// </summary>
         /// <param name="context">The feature evaluation context.</param>
@@ -56,7 +66,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 throw new ArgumentNullException(nameof(targetingContext));
             }
 
-            TargetingFilterSettings settings = context.Parameters.Get<TargetingFilterSettings>() ?? new TargetingFilterSettings();
+            TargetingFilterSettings settings = (TargetingFilterSettings)context.Settings;
 
             if (!TryValidateSettings(settings, out string paramName, out string message))
             {

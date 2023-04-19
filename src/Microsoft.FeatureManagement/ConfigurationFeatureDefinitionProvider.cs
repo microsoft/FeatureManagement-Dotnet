@@ -179,7 +179,7 @@ namespace Microsoft.FeatureManagement
                         enabledFor.Add(new FeatureFilterConfiguration()
                         {
                             Name = section[nameof(FeatureFilterConfiguration.Name)],
-                            Parameters = section.GetSection(nameof(FeatureFilterConfiguration.Parameters))
+                            Parameters = new ConfigurationWrapper(section.GetSection(nameof(FeatureFilterConfiguration.Parameters)))
                         });
                     }
                 }

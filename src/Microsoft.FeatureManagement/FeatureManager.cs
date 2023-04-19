@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -14,8 +16,9 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Used to evaluate whether a feature is enabled or disabled.
     /// </summary>
-    class FeatureManager : IFeatureManager
+    class FeatureManager : IFeatureManager, IDisposable
     {
+        private readonly TimeSpan SettingsCachePeriod = TimeSpan.FromSeconds(5);
         private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
@@ -23,6 +26,14 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
         private readonly FeatureManagementOptions _options;
+        private readonly IMemoryCache _cache;
+        
+        private class ConfigurationCacheItem
+        {
+            public IConfiguration Parameters { get; set; }
+
+            public object Settings { get; set; }
+        }
 
         public FeatureManager(
             IFeatureDefinitionProvider featureDefinitionProvider,
@@ -38,6 +49,12 @@ namespace Microsoft.FeatureManagement
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+            _cache = new MemoryCache(
+                Options.Create(
+                    new MemoryCacheOptions
+                    {
+                        ExpirationScanFrequency = SettingsCachePeriod
+                    }));
         }
 
         public Task<bool> IsEnabledAsync(string feature)
@@ -56,6 +73,10 @@ namespace Microsoft.FeatureManagement
             {
                 yield return featureDefintion.Name;
             }
+        }
+        public void Dispose()
+        {
+            _cache.Dispose();
         }
 
         private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext)
@@ -144,7 +165,9 @@ namespace Microsoft.FeatureManagement
                         {
                             ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
 
-                            if (contextualFilter != null && 
+                            BindSettings(filter, context);
+
+                            if (contextualFilter != null &&
                                 await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation)
                             {
                                 enabled = targetEvaluation;
@@ -155,12 +178,15 @@ namespace Microsoft.FeatureManagement
 
                         //
                         // IFeatureFilter
-                        if (filter is IFeatureFilter featureFilter && 
-                            await featureFilter.EvaluateAsync(context).ConfigureAwait(false) == targetEvaluation)
+                        if (filter is IFeatureFilter featureFilter)
                         {
-                            enabled = targetEvaluation;
+                            BindSettings(filter, context);
 
-                            break;
+                            if (await featureFilter.EvaluateAsync(context).ConfigureAwait(false) == targetEvaluation) {
+                                enabled = targetEvaluation;
+
+                                break;
+                            }
                         }
                     }
                 }
@@ -185,6 +211,46 @@ namespace Microsoft.FeatureManagement
             }
 
             return enabled;
+        }
+
+        private void BindSettings(IFeatureFilterMetadata filter, FeatureFilterEvaluationContext context)
+        {
+            IFilterParametersBinder binder = filter as IFilterParametersBinder;
+
+            if (binder == null)
+            {
+                return;
+            }
+
+            object settings;
+
+            //
+            // Check if settings already bound from configuration
+            ConfigurationCacheItem cacheItem = (ConfigurationCacheItem)_cache.Get(context.FeatureName);
+
+            if (cacheItem == null ||
+                cacheItem.Parameters != context.Parameters)
+            {
+                settings = binder.BindParameters(context.Parameters);
+
+                _cache.Set(
+                    context.FeatureName,
+                    new ConfigurationCacheItem
+                    {
+                        Settings = settings,
+                        Parameters = context.Parameters
+                    },
+                    new MemoryCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = SettingsCachePeriod
+                    });
+            }
+            else
+            {
+                settings = cacheItem.Settings;
+            }
+
+            context.Settings = settings;
         }
 
         private IFeatureFilterMetadata GetFeatureFilterMetadata(string filterName)
