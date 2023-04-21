@@ -1,6 +1,6 @@
-# ASP.NET Core Feature Flags
+# .NET Feature Management
 
-Feature flags provide a way for ASP.NET Core applications to turn features on or off dynamically. Developers can use feature flags in simple use cases like conditional statements to more advanced scenarios like conditionally adding routes or MVC filters. Feature flags build on top of the .NET Core configuration system. Any .NET Core configuration provider is capable of acting as the back-bone for feature flags.
+Feature flags provide a way for .NET and ASP.NET Core applications to turn features on or off dynamically. Developers can use feature flags in simple use cases like conditional statements to more advanced scenarios like conditionally adding routes or MVC filters. Feature flags build on top of the .NET Core configuration system. Any .NET Core configuration provider is capable of acting as the back-bone for feature flags.
 
 Here are some of the benefits of using this library:
 
@@ -20,7 +20,18 @@ Here are some of the benefits of using this library:
 
 **API Reference**: https://go.microsoft.com/fwlink/?linkid=2091700
 
-### Feature Flags
+## Index
+* [Feature Flags](#feature-flags)
+    * [Feature Filters](#feature-filters)
+    * [Feature Flag Declaration](#feature-flag-declaration)
+    * [ASP.NET Core Integration](#ASPNET-Core-Integration)
+    * [Built-in Feature Filters](#built-in-Feature-Filters)
+* [Targeting](#targeting)
+  * [Targeting Exclusion](#targeting-exclusion)
+* [Caching](#caching)
+* [Custom Feature Providers](#custom-feature-providers)
+
+## Feature Flags
 Feature flags are composed of two parts, a name and a list of feature-filters that are used to turn the feature on.
 
 ### Feature Filters
@@ -28,7 +39,7 @@ Feature filters define a scenario for when a feature should be enabled. When a f
 
 As an example, a Microsoft Edge browser feature filter could be designed. This feature filter would activate any features it is attached to as long as an HTTP request is coming from Microsoft Edge.
 
-## Registration
+### Feature Flag Configuration
 
 The .NET Core configuration system is used to determine the state of feature flags. The foundation of this system is `IConfiguration`. Any provider for IConfiguration can be used as the feature state provider for the feature flag library. This enables scenarios ranging from appsettings.json to Azure App Configuration and more.
 
@@ -193,6 +204,9 @@ public class HomeController : Controller
     }
 }
 ```
+
+## ASP.NET Core Integration
+The feature management library provides functionality in ASP.NET Core and MVC to enable common feature flag scenarios in web applications. These capabilities are available by referencing the [Microsoft.FeatureManagement.AspNetCore](https://www.nuget.org/packages/Microsoft.FeatureManagement.AspNetCore/) NuGet package.
 
 ### Controllers and Actions
 MVC controller and actions can require that a given feature, or one of any list of features, be enabled in order to execute. This can be done by using a `FeatureGateAttribute`, which can be found in the `Microsoft.FeatureManagement.Mvc` namespace. 
@@ -531,7 +545,7 @@ The following steps demonstrate an example of a progressive rollout for a new 'B
 
 This strategy for rolling out a feature is built in to the library through the included [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter.
 
-## Targeting in a Web Application
+### Targeting in a Web Application
 
 An example web application that uses the targeting feature filter is available in the [FeatureFlagDemo](./examples/FeatureFlagDemo) example project.
 
@@ -547,13 +561,13 @@ services.AddFeatureManagement();
 
 ```
 
-### ITargetingContextAccessor
+#### ITargetingContextAccessor
 
 To use the `TargetingFilter` in a web application an implementation of `ITargetingContextAccessor` is required. This is because when a targeting evaluation is being performed information such as what user is currently being evaluated is needed. This information is known as the targeting context. Different web applications may extract this information from different places. Some common examples of where an application may pull the targeting context are the request's HTTP context or a database.
 
 An example that extracts targeting context information from the application's HTTP context is included in the [FeatureFlagDemo](./examples/FeatureFlagDemo/HttpContextTargetingContextAccessor.cs) example project. This method relies on the use of `IHttpContextAccessor` which is discussed [here](./README.md#Using-HttpContext).
 
-## Targeting in a Console Application
+### Targeting in a Console Application
 
 The targeting filter relies on a targeting context to evaluate whether a feature should be turned on. This targeting context contains information such as what user is currently being evaluated, and what groups the user in. In console applications there is typically no ambient context available to flow this information in to the targeting filter, thus it must be passed directly when `FeatureManager.IsEnabledAsync` is called. This is supported through the use of the `ContextualTargetingFilter`. Applications that need to float the targeting context into the feature manager should use this instead of the `TargetingFilter.`
 
@@ -581,7 +595,7 @@ The `ContextualTargetingFilter` still uses the feature filter alias [Microsoft.T
 
 An example that uses the `ContextualTargetingFilter` in a console application is available in the [TargetingConsoleApp](./examples/TargetingConsoleApp) example project.
 
-## Targeting Evaluation Options
+### Targeting Evaluation Options
 
 Options are available to customize how targeting evaluation is performed across all features. These options can be configured when setting up feature management.
 
@@ -592,7 +606,7 @@ services.Configure<TargetingEvaluationOptions>(options =>
 });
 ```
 
-## Targeting Exclusion
+### Targeting Exclusion
 
 When defining an Audience, users and groups can be excluded from the audience. This is useful when a feature is being rolled out to a group of users, but a few users or groups need to be excluded from the rollout. Exclusion is defined by adding a list of users and groups to the `Exclusion` property of the audience.
 ```
