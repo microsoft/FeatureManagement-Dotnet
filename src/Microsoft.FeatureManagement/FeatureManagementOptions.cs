@@ -26,10 +26,12 @@ namespace Microsoft.FeatureManagement
         public bool IgnoreMissingFeatures { get; set; } = true;
 
         /// <summary>
-        /// Controls the duration of the cache from Parameters to Settings.
-        /// If the cache period is set to TimeSpan.Zero, the cache will be disabled.
-        /// The default value is TimeSpan.Zero.
+        /// Controls the cache lifetime of settings bound by <see cref="IFilterParametersBinder"/> in the feature management cache.
+        /// By default, this cache is off, with a ttl of <see cref="TimeSpan.Zero"/>.
+        /// To enable caching of filter parameters, a non-zero ttl should be provided. A recommendation is five seconds.
+        /// Increasing the value may cause an observed increase in memory footprint as items live longer.
+        /// Lowering the value will decrease performance benefits yielded by caching bound parameters.
         /// </summary>
-        public TimeSpan SettingsCachePeriod { get; set; } = TimeSpan.Zero;
+        public TimeSpan FilterSettingsCacheTtl { get; set; } = TimeSpan.Zero;
     }
 }

@@ -878,7 +878,7 @@ namespace Tests.FeatureManagement
 
             services.Configure<FeatureManagementOptions>(options =>
             {
-                options.SettingsCachePeriod = TimeSpan.FromSeconds(5);
+                options.FilterSettingsCacheTtl = TimeSpan.FromSeconds(5);
             });
 
             services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)

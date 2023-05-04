@@ -51,7 +51,7 @@ namespace Microsoft.FeatureManagement
             _cache = new MemoryCache(
                 new MemoryCacheOptions
                 {
-                    ExpirationScanFrequency = _options.SettingsCachePeriod
+                    ExpirationScanFrequency = _options.FilterSettingsCacheTtl
                 });
         }
 
@@ -232,19 +232,20 @@ namespace Microsoft.FeatureManagement
             {
                 settings = binder.BindParameters(context.Parameters);
 
-                _cache.Set(
-                    context.FeatureName,
-                    new ConfigurationCacheItem
-                    {
-                        Settings = settings,
-                        Parameters = context.Parameters
-                    },
-                    new MemoryCacheEntryOptions
-                    {
-                        AbsoluteExpiration = _options.SettingsCachePeriod.Equals(TimeSpan.Zero) ? 
-                            DateTimeOffset.UtcNow : 
-                            DateTimeOffset.UtcNow.Add(_options.SettingsCachePeriod)
-                    });
+                if (_options.FilterSettingsCacheTtl > TimeSpan.Zero)
+                {
+                    _cache.Set(
+                        context.FeatureName,
+                        new ConfigurationCacheItem
+                        {
+                            Settings = settings,
+                            Parameters = context.Parameters
+                        },
+                        new MemoryCacheEntryOptions
+                        {
+                            AbsoluteExpirationRelativeToNow = _options.FilterSettingsCacheTtl
+                        });
+                }
             }
             else
             {
