@@ -18,7 +18,6 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     class FeatureManager : IFeatureManager, IDisposable
     {
-        private readonly TimeSpan SettingsCachePeriod = TimeSpan.FromSeconds(5);
         private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
@@ -50,11 +49,10 @@ namespace Microsoft.FeatureManagement
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _cache = new MemoryCache(
-                Options.Create(
-                    new MemoryCacheOptions
-                    {
-                        ExpirationScanFrequency = SettingsCachePeriod
-                    }));
+                new MemoryCacheOptions
+                {
+                    ExpirationScanFrequency = _options.SettingsCachePeriod
+                });
         }
 
         public Task<bool> IsEnabledAsync(string feature)
@@ -74,6 +72,7 @@ namespace Microsoft.FeatureManagement
                 yield return featureDefintion.Name;
             }
         }
+
         public void Dispose()
         {
             _cache.Dispose();
@@ -224,11 +223,11 @@ namespace Microsoft.FeatureManagement
 
             object settings;
 
+            ConfigurationCacheItem cacheItem;
+            
             //
-            // Check if settings already bound from configuration
-            ConfigurationCacheItem cacheItem = (ConfigurationCacheItem)_cache.Get(context.FeatureName);
-
-            if (cacheItem == null ||
+            // Check if settings already bound from configuration or the parameters have changed
+            if (!_cache.TryGetValue(context.FeatureName, out cacheItem) ||
                 cacheItem.Parameters != context.Parameters)
             {
                 settings = binder.BindParameters(context.Parameters);
@@ -242,7 +241,7 @@ namespace Microsoft.FeatureManagement
                     },
                     new MemoryCacheEntryOptions
                     {
-                        AbsoluteExpirationRelativeToNow = SettingsCachePeriod
+                        AbsoluteExpirationRelativeToNow = _options.SettingsCachePeriod
                     });
             }
             else

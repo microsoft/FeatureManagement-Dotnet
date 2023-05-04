@@ -22,7 +22,7 @@ namespace Microsoft.FeatureManagement
 
         /// <summary>
         /// A settings object, if any, that has been pre-bound from <see cref="Parameters"/>.
-        /// The settings are made available for <see cref="IFeatureFilter"/>'s that implement <see cref="IFilterParametersBinder"/>.
+        /// The settings are made available for <see cref="IFeatureFilter"/>s that implement <see cref="IFilterParametersBinder"/>.
         /// </summary>
         public object Settings { get; set; }
     }

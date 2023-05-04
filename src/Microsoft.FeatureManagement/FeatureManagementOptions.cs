@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using System;
+
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
@@ -22,5 +24,12 @@ namespace Microsoft.FeatureManagement
         /// The default value is true.
         /// </summary>
         public bool IgnoreMissingFeatures { get; set; } = true;
+
+        /// <summary>
+        /// Controls the duration of the cache from Parameters to Settings.
+        /// If the cache period is set to TimeSpan.Zero, the cache will be disabled.
+        /// The default value is 5 seconds.
+        /// </summary>
+        public TimeSpan SettingsCachePeriod { get; set; } = TimeSpan.FromSeconds(5);
     }
 }
