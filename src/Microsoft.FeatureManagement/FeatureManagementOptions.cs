@@ -28,8 +28,8 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// Controls the duration of the cache from Parameters to Settings.
         /// If the cache period is set to TimeSpan.Zero, the cache will be disabled.
-        /// The default value is 5 seconds.
+        /// The default value is TimeSpan.Zero.
         /// </summary>
-        public TimeSpan SettingsCachePeriod { get; set; } = TimeSpan.FromSeconds(5);
+        public TimeSpan SettingsCachePeriod { get; set; } = TimeSpan.Zero;
     }
 }
