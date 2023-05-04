@@ -241,7 +241,9 @@ namespace Microsoft.FeatureManagement
                     },
                     new MemoryCacheEntryOptions
                     {
-                        AbsoluteExpirationRelativeToNow = _options.SettingsCachePeriod
+                        AbsoluteExpiration = _options.SettingsCachePeriod.Equals(TimeSpan.Zero) ? 
+                            DateTimeOffset.UtcNow : 
+                            DateTimeOffset.UtcNow.Add(_options.SettingsCachePeriod)
                     });
             }
             else
