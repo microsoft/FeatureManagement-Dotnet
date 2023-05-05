@@ -334,7 +334,7 @@ namespace Microsoft.FeatureManagement
 
             if (_options.FilterSettingsCacheTtl < TimeSpan.Zero)
             {
-                throw new FeatureManagementException(FeatureManagementError.InvalidOption, "FilterSettingsCacheTtl option must be greater than or equal to zero.");
+                throw new ArgumentException("FilterSettingsCacheTtl option must be greater than or equal to TimeSpan.Zero.");
             }
 
             return _options;

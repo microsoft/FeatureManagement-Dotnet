@@ -31,11 +31,6 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The given configuration setting was invalid.
         /// </summary>
-        InvalidConfigurationSetting,
-
-        /// <summary>
-        /// An option given to the feature management system was invalid.
-        /// </summary>
-        InvalidOption
+        InvalidConfigurationSetting
     }
 }
