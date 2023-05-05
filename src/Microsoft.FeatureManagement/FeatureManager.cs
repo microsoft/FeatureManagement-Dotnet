@@ -47,7 +47,7 @@ namespace Microsoft.FeatureManagement
             _logger = loggerFactory.CreateLogger<FeatureManager>();
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
-            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+            TryValidateOptions(options, out _options);
             _cache = new MemoryCache(
                 new MemoryCacheOptions
                 {
@@ -326,6 +326,18 @@ namespace Microsoft.FeatureManagement
             );
 
             return filter;
+        }
+
+        private FeatureManagementOptions TryValidateOptions(IOptions<FeatureManagementOptions> options, out FeatureManagementOptions _options)
+        {
+            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+
+            if (_options.FilterSettingsCacheTtl < TimeSpan.Zero)
+            {
+                throw new FeatureManagementException(FeatureManagementError.InvalidOption, "FilterSettingsCacheTtl option must be greater than or equal to zero.");
+            }
+
+            return _options;
         }
     }
 }
