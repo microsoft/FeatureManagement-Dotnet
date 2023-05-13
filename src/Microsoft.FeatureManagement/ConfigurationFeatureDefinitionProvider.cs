@@ -15,7 +15,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// A feature definition provider that pulls feature definitions from the .NET Core <see cref="IConfiguration"/> system.
     /// </summary>
-    sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable
+    sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable, IFeatureDefinitionProviderCacheable
     {
         private const string FeatureFiltersSectionName = "EnabledFor";
         private const string RequirementTypeKeyword = "RequirementType";

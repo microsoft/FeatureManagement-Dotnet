@@ -25,7 +25,7 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
         private readonly FeatureManagementOptions _options;
-        private readonly IMemoryCache _cache;
+        private readonly IMemoryCache _parametersCache;
         
         private class ConfigurationCacheItem
         {
@@ -47,12 +47,8 @@ namespace Microsoft.FeatureManagement
             _logger = loggerFactory.CreateLogger<FeatureManager>();
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
-            TryValidateOptions(options, out _options);
-            _cache = new MemoryCache(
-                new MemoryCacheOptions
-                {
-                    ExpirationScanFrequency = _options.FilterSettingsCacheTtl
-                });
+            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+            _parametersCache = new MemoryCache(new MemoryCacheOptions());
         }
 
         public Task<bool> IsEnabledAsync(string feature)
@@ -75,7 +71,7 @@ namespace Microsoft.FeatureManagement
 
         public void Dispose()
         {
-            _cache.Dispose();
+            _parametersCache.Dispose();
         }
 
         private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext)
@@ -227,14 +223,14 @@ namespace Microsoft.FeatureManagement
             
             //
             // Check if settings already bound from configuration or the parameters have changed
-            if (!_cache.TryGetValue(context.FeatureName, out cacheItem) ||
+            if (!_parametersCache.TryGetValue(context.FeatureName, out cacheItem) ||
                 cacheItem.Parameters != context.Parameters)
             {
                 settings = binder.BindParameters(context.Parameters);
 
-                if (_options.FilterSettingsCacheTtl > TimeSpan.Zero)
+                if (_featureDefinitionProvider is IFeatureDefinitionProviderCacheable)
                 {
-                    _cache.Set(
+                    _parametersCache.Set(
                         context.FeatureName,
                         new ConfigurationCacheItem
                         {
@@ -243,7 +239,8 @@ namespace Microsoft.FeatureManagement
                         },
                         new MemoryCacheEntryOptions
                         {
-                            AbsoluteExpirationRelativeToNow = _options.FilterSettingsCacheTtl
+                            SlidingExpiration = TimeSpan.FromMinutes(5),
+                            AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1)
                         });
                 }
             }
@@ -326,18 +323,6 @@ namespace Microsoft.FeatureManagement
             );
 
             return filter;
-        }
-
-        private FeatureManagementOptions TryValidateOptions(IOptions<FeatureManagementOptions> options, out FeatureManagementOptions _options)
-        {
-            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
-
-            if (_options.FilterSettingsCacheTtl < TimeSpan.Zero)
-            {
-                throw new ArgumentException("FilterSettingsCacheTtl option must be greater than or equal to TimeSpan.Zero.");
-            }
-
-            return _options;
         }
     }
 }

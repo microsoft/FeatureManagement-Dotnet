@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
@@ -875,11 +874,6 @@ namespace Tests.FeatureManagement
                         }
                     }
                 });
-
-            services.Configure<FeatureManagementOptions>(options =>
-            {
-                options.FilterSettingsCacheTtl = TimeSpan.FromSeconds(5);
-            });
 
             services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
                     .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
