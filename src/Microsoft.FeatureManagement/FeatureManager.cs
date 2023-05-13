@@ -116,9 +116,15 @@ namespace Microsoft.FeatureManagement
                     bool targetEvaluation = !enabled;
 
                     //
+                    // Keep track of the index of the filter we are evaluating
+                    int filterIndex = -1;
+
+                    //
                     // For all enabling filters listed in the feature's state, evaluate them according to requirement type
                     foreach (FeatureFilterConfiguration featureFilterConfiguration in featureDefinition.EnabledFor)
                     {
+                        filterIndex++;
+
                         //
                         // Handle AlwaysOn filters
                         if (string.Equals(featureFilterConfiguration.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase))
@@ -151,6 +157,7 @@ namespace Microsoft.FeatureManagement
                         var context = new FeatureFilterEvaluationContext()
                         {
                             FeatureName = feature,
+                            FilterIndex = filterIndex,
                             Parameters = featureFilterConfiguration.Parameters
                         };
 
@@ -220,10 +227,12 @@ namespace Microsoft.FeatureManagement
             object settings;
 
             ConfigurationCacheItem cacheItem;
-            
+
+            string cacheKey = $"{context.FeatureName}.{context.FilterIndex}";
+
             //
             // Check if settings already bound from configuration or the parameters have changed
-            if (!_parametersCache.TryGetValue(context.FeatureName, out cacheItem) ||
+            if (!_parametersCache.TryGetValue(cacheKey, out cacheItem) ||
                 cacheItem.Parameters != context.Parameters)
             {
                 settings = binder.BindParameters(context.Parameters);
@@ -231,7 +240,7 @@ namespace Microsoft.FeatureManagement
                 if (_featureDefinitionProvider is IFeatureDefinitionProviderCacheable)
                 {
                     _parametersCache.Set(
-                        context.FeatureName,
+                        cacheKey,
                         new ConfigurationCacheItem
                         {
                             Settings = settings,
