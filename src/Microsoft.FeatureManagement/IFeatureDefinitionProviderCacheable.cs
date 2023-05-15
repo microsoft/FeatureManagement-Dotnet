@@ -1,10 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
 
 namespace Microsoft.FeatureManagement
 {
-    public interface IFeatureDefinitionProviderCacheable
+    /// <summary>
+    /// An interface that marks this provider's parameters are cacheable.
+    /// </summary>
+    internal interface IFeatureDefinitionProviderCacheable
     {
     }
 }
