@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -13,7 +14,7 @@ namespace Microsoft.FeatureManagement
     class FeatureManagerSnapshot : IFeatureManagerSnapshot
     {
         private readonly IFeatureManager _featureManager;
-        private readonly IDictionary<string, bool> _flagCache = new Dictionary<string, bool>();
+        private readonly ConcurrentDictionary<string, Task<bool>> _flagCache = new ConcurrentDictionary<string, Task<bool>>();
         private IEnumerable<string> _featureNames;
 
         public FeatureManagerSnapshot(IFeatureManager featureManager)
@@ -41,36 +42,18 @@ namespace Microsoft.FeatureManagement
             }
         }
 
-        public async Task<bool> IsEnabledAsync(string feature)
+        public Task<bool> IsEnabledAsync(string feature)
         {
-            //
-            // First, check local cache
-            if (_flagCache.ContainsKey(feature))
-            {
-                return _flagCache[feature];
-            }
-
-            bool enabled = await _featureManager.IsEnabledAsync(feature).ConfigureAwait(false);
-
-            _flagCache[feature] = enabled;
-
-            return enabled;
+            return _flagCache.GetOrAdd(
+                feature,
+                (key) => _featureManager.IsEnabledAsync(key));
         }
 
-        public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
+        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
         {
-            //
-            // First, check local cache
-            if (_flagCache.ContainsKey(feature))
-            {
-                return _flagCache[feature];
-            }
-
-            bool enabled = await _featureManager.IsEnabledAsync(feature, context).ConfigureAwait(false);
-
-            _flagCache[feature] = enabled;
-
-            return enabled;
+            return _flagCache.GetOrAdd(
+                feature,
+                (key) => _featureManager.IsEnabledAsync(key, context));
         }
     }
 }

@@ -74,6 +74,19 @@ namespace Consoto.Banking.AccountService.Identity
                     "TeamMembers"
                 }
             },
+            new User
+            {
+                Id = "Anne",
+                Groups = Enumerable.Empty<string>()
+            },
+            new User
+            {
+                Id = "Chuck",
+                Groups =  new List<string>()
+                {
+                    "Contractor"
+                }
+            },
         };
 
         public Task<User> GetUser(string id)

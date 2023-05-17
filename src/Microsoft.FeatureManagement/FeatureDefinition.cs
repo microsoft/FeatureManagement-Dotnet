@@ -19,5 +19,11 @@ namespace Microsoft.FeatureManagement
         /// The feature filters that the feature can be enabled for.
         /// </summary>
         public IEnumerable<FeatureFilterConfiguration> EnabledFor { get; set; } = new List<FeatureFilterConfiguration>();
+
+        /// <summary>
+        /// Determines whether any or all registered feature filters must be enabled for the feature to be considered enabled
+        /// The default value is <see cref="RequirementType.Any"/>.
+        /// </summary>
+        public RequirementType RequirementType { get; set; } = RequirementType.Any;
     }
 }

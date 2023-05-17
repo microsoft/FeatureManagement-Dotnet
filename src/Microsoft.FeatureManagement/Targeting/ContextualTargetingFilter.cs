@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -34,6 +35,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         private StringComparison ComparisonType => _options.IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        private StringComparer ComparerType => _options.IgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
         /// <summary>
         /// Performs a targeting evaluation using the provided <see cref="TargetingContext"/> to determine if a feature should be enabled.
@@ -59,6 +61,27 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             if (!TryValidateSettings(settings, out string paramName, out string message))
             {
                 throw new ArgumentException(message, paramName);
+            }
+
+            if (settings.Audience.Exclusion != null)
+            {
+                //
+                // Check if the user is in the exclusion directly
+                if (targetingContext.UserId != null &&
+                    settings.Audience.Exclusion.Users != null &&
+                    settings.Audience.Exclusion.Users.Any(user => targetingContext.UserId.Equals(user, ComparisonType)))
+                {
+                    return Task.FromResult(false);
+                }
+
+                //
+                // Check if the user is in a group within exclusion
+                if (targetingContext.Groups != null &&
+                    settings.Audience.Exclusion.Groups != null &&
+                    settings.Audience.Exclusion.Groups.Any(group => targetingContext.Groups.Contains(group, ComparerType)))
+                {
+                    return Task.FromResult(false);
+                }
             }
 
             //

@@ -16,6 +16,21 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// A feature filter configured for the feature being evaluated is an ambiguous reference to multiple registered feature filters.
         /// </summary>
-        AmbiguousFeatureFilter
+        AmbiguousFeatureFilter,
+
+        /// <summary>
+        /// A feature that was requested for evaluation was not found.
+        /// </summary>
+        MissingFeature,
+
+        /// <summary>
+        /// There was a conflict in the feature management system.
+        /// </summary>
+        Conflict,
+
+        /// <summary>
+        /// The given configuration setting was invalid.
+        /// </summary>
+        InvalidConfigurationSetting
     }
 }

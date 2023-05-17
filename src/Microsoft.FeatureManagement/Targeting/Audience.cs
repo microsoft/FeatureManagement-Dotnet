@@ -24,5 +24,10 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// Includes users in the audience based off a percentage of the total possible audience. Valid values range from 0 to 100 inclusive.
         /// </summary>
         public double DefaultRolloutPercentage { get; set; }
+
+        /// <summary>
+        /// Excludes a basic audience from this audience.
+        /// </summary>
+        public BasicAudience Exclusion { get; set; }
     }
 }

@@ -1,8 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\..\build\NugetProperties.props" />
 
+  <!-- Official Version -->
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>
+    <MajorVersion>2</MajorVersion>
+    <MinorVersion>6</MinorVersion>
+    <PatchVersion>0</PatchVersion>
+    <PreviewVersion>-preview</PreviewVersion>
+  </PropertyGroup>
+
+  <Import Project="..\..\build\Versioning.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net5.0;net6.0</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>..\..\build\Microsoft.FeatureManagement.snk</AssemblyOriginatorKeyFile>
@@ -13,8 +23,10 @@
     <Description>Microsoft.FeatureManagement provides a way to develop and expose application functionality based on features. Many applications have special requirements when a new feature is developed such as when the feature should be enabled and under what conditions. This library provides a way to define these relationships, and also integrates into common .NET code patterns to make exposing these features possible.</Description>
     <Authors>Microsoft</Authors>
     <Company>Microsoft</Company>
-    <PackageLicenseUrl>https://aka.ms/AzureAppConfigurationDotnetCorePublicPreviewEula</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/Azure/AppConfiguration</PackageProjectUrl>
+    <PackageLicenseUrl>https://licenses.nuget.org/MIT</PackageLicenseUrl>
+    <PackageReleaseNotes>Release notes can be found at https://aka.ms/MicrosoftFeatureManagementReleaseNotes</PackageReleaseNotes>
+    <PackageTags>Microsoft FeatureManagement FeatureFlags AzureAppConfiguration</PackageTags>
     <PackageIconUrl>https://aka.ms/AzureAppConfigurationPackageIcon</PackageIconUrl>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
   </PropertyGroup>
