@@ -18,6 +18,9 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     class FeatureManager : IFeatureManager, IDisposable
     {
+        private readonly TimeSpan ParametersCacheSlidingExpiration = TimeSpan.FromMinutes(5);
+        private readonly TimeSpan ParametersCacheAbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
+
         private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
@@ -248,8 +251,8 @@ namespace Microsoft.FeatureManagement
                         },
                         new MemoryCacheEntryOptions
                         {
-                            SlidingExpiration = TimeSpan.FromMinutes(5),
-                            AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1)
+                            SlidingExpiration = ParametersCacheSlidingExpiration,
+                            AbsoluteExpirationRelativeToNow = ParametersCacheAbsoluteExpirationRelativeToNow
                         });
                 }
             }
