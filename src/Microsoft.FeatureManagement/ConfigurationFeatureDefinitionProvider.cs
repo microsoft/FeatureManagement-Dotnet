@@ -17,6 +17,10 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable, IFeatureDefinitionProviderCacheable
     {
+        //
+        // IFeatureDefinitionProviderCacheable interface is only used to mark this provider as cacheable. This allows our test suite's
+        // provider to be marked for caching as well.
+
         private const string FeatureFiltersSectionName = "EnabledFor";
         private const string RequirementTypeKeyword = "RequirementType";
         private readonly IConfiguration _configuration;

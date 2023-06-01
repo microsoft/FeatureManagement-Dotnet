@@ -16,11 +16,6 @@ namespace Microsoft.FeatureManagement
         public string FeatureName { get; set; }
 
         /// <summary>
-        /// The index of the feature filter this context is being used for.
-        /// </summary>
-        public int FilterIndex { get; set; }
-
-        /// <summary>
         /// The settings provided for the feature filter to use when evaluating whether the feature should be enabled.
         /// </summary>
         public IConfiguration Parameters { get; set; }

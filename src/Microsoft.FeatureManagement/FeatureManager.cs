@@ -160,7 +160,6 @@ namespace Microsoft.FeatureManagement
                         var context = new FeatureFilterEvaluationContext()
                         {
                             FeatureName = feature,
-                            FilterIndex = filterIndex,
                             Parameters = featureFilterConfiguration.Parameters
                         };
 
@@ -170,7 +169,7 @@ namespace Microsoft.FeatureManagement
                         {
                             ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
 
-                            BindSettings(filter, context);
+                            BindSettings(filter, context, filterIndex);
 
                             if (contextualFilter != null &&
                                 await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation)
@@ -185,7 +184,7 @@ namespace Microsoft.FeatureManagement
                         // IFeatureFilter
                         if (filter is IFeatureFilter featureFilter)
                         {
-                            BindSettings(filter, context);
+                            BindSettings(filter, context, filterIndex);
 
                             if (await featureFilter.EvaluateAsync(context).ConfigureAwait(false) == targetEvaluation) {
                                 enabled = targetEvaluation;
@@ -218,7 +217,7 @@ namespace Microsoft.FeatureManagement
             return enabled;
         }
 
-        private void BindSettings(IFeatureFilterMetadata filter, FeatureFilterEvaluationContext context)
+        private void BindSettings(IFeatureFilterMetadata filter, FeatureFilterEvaluationContext context, int filterIndex)
         {
             IFilterParametersBinder binder = filter as IFilterParametersBinder;
 
@@ -227,11 +226,18 @@ namespace Microsoft.FeatureManagement
                 return;
             }
 
+            if (!(_featureDefinitionProvider is IFeatureDefinitionProviderCacheable))
+            {
+                context.Settings = binder.BindParameters(context.Parameters);
+
+                return;
+            }
+
             object settings;
 
             ConfigurationCacheItem cacheItem;
 
-            string cacheKey = $"{context.FeatureName}.{context.FilterIndex}";
+            string cacheKey = $"{context.FeatureName}.{filterIndex}";
 
             //
             // Check if settings already bound from configuration or the parameters have changed
@@ -240,21 +246,18 @@ namespace Microsoft.FeatureManagement
             {
                 settings = binder.BindParameters(context.Parameters);
 
-                if (_featureDefinitionProvider is IFeatureDefinitionProviderCacheable)
-                {
-                    _parametersCache.Set(
-                        cacheKey,
-                        new ConfigurationCacheItem
-                        {
-                            Settings = settings,
-                            Parameters = context.Parameters
-                        },
-                        new MemoryCacheEntryOptions
-                        {
-                            SlidingExpiration = ParametersCacheSlidingExpiration,
-                            AbsoluteExpirationRelativeToNow = ParametersCacheAbsoluteExpirationRelativeToNow
-                        });
-                }
+                _parametersCache.Set(
+                    cacheKey,
+                    new ConfigurationCacheItem
+                    {
+                        Settings = settings,
+                        Parameters = context.Parameters
+                    },
+                    new MemoryCacheEntryOptions
+                    {
+                        SlidingExpiration = ParametersCacheSlidingExpiration,
+                        AbsoluteExpirationRelativeToNow = ParametersCacheAbsoluteExpirationRelativeToNow
+                    });
             }
             else
             {
