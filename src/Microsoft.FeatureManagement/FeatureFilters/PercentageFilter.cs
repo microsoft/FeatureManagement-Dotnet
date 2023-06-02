@@ -12,7 +12,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
     /// A feature filter that can be used to activate a feature based on a random percentage.
     /// </summary>
     [FilterAlias(Alias)]
-    public class PercentageFilter : IFeatureFilter
+    public class PercentageFilter : IFeatureFilter, IFilterParametersBinder
     {
         private const string Alias = "Microsoft.Percentage";
         private readonly ILogger _logger;
@@ -27,13 +27,23 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
+        /// Binds configuration representing filter parameters to <see cref="PercentageFilterSettings"/>.
+        /// </summary>
+        /// <param name="filterParameters">The configuration representing filter parameters that should be bound to <see cref="PercentageFilterSettings"/>.</param>
+        /// <returns><see cref="PercentageFilterSettings"/> that can later be used in feature evaluation.</returns>
+        public object BindParameters(IConfiguration filterParameters)
+        {
+            return filterParameters.Get<PercentageFilterSettings>() ?? new PercentageFilterSettings();
+        }
+
+        /// <summary>
         /// Performs a percentage based evaluation to determine whether a feature is enabled.
         /// </summary>
         /// <param name="context">The feature evaluation context.</param>
         /// <returns>True if the feature is enabled, false otherwise.</returns>
         public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
-            PercentageFilterSettings settings = context.Parameters.Get<PercentageFilterSettings>() ?? new PercentageFilterSettings();
+            PercentageFilterSettings settings = (PercentageFilterSettings)context.Settings;
 
             bool result = true;
 

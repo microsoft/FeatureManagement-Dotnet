@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
 {
-    class InMemoryFeatureDefinitionProvider : IFeatureDefinitionProvider
+    class InMemoryFeatureDefinitionProvider : IFeatureDefinitionProvider, IFeatureDefinitionProviderCacheable
     {
         private IEnumerable<FeatureDefinition> _definitions;
 
