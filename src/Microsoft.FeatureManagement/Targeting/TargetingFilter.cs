@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -12,7 +13,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
     /// A feature filter that can be used to activate features for targeted audiences.
     /// </summary>
     [FilterAlias(Alias)]
-    public class TargetingFilter : IFeatureFilter
+    public class TargetingFilter : IFeatureFilter, IFilterParametersBinder
     {
         private const string Alias = "Microsoft.Targeting";
         private readonly ITargetingContextAccessor _contextAccessor;
@@ -30,6 +31,16 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             _contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
             _contextualFilter = new ContextualTargetingFilter(options, loggerFactory);
             _logger = loggerFactory?.CreateLogger<TargetingFilter>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+        }
+
+        /// <summary>
+        /// Binds configuration representing filter parameters to <see cref="TargetingFilterSettings"/>.
+        /// </summary>
+        /// <param name="filterParameters">The configuration representing filter parameters that should be bound to <see cref="TargetingFilterSettings"/>.</param>
+        /// <returns><see cref="TargetingFilterSettings"/> that can later be used in targeting.</returns>
+        public object BindParameters(IConfiguration filterParameters)
+        {
+            return filterParameters.Get<TargetingFilterSettings>() ?? new TargetingFilterSettings();
         }
 
         /// <summary>

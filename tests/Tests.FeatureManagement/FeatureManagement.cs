@@ -848,6 +848,97 @@ namespace Tests.FeatureManagement
             });
         }
 
+        [Fact]
+        public async Task BindsFeatureFlagSettings()
+        {
+            FeatureFilterConfiguration testFilterConfiguration = new FeatureFilterConfiguration
+            {
+                Name = "Test",
+                Parameters = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()
+                {
+                    { "P1", "V1" },
+                }).Build()
+            };
+
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = ConditionalFeature,
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            testFilterConfiguration
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            //
+            // Sync filter
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            bool binderCalled = false;
+
+            bool called = false;
+
+            testFeatureFilter.ParametersBinderCallback = (parameters) =>
+            {
+                binderCalled = true;
+
+                return parameters;
+            };
+
+            testFeatureFilter.Callback = (evaluationContext) =>
+            {
+                called = true;
+
+                return Task.FromResult(true);
+            };
+
+            await featureManager.IsEnabledAsync(ConditionalFeature);
+
+            Assert.True(binderCalled);
+
+            Assert.True(called);
+
+            binderCalled = false;
+
+            called = false;
+
+            await featureManager.IsEnabledAsync(ConditionalFeature);
+
+            Assert.False(binderCalled);
+
+            Assert.True(called);
+
+            //
+            // Cache break.
+            testFilterConfiguration.Parameters = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()).Build();
+
+            binderCalled = false;
+
+            called = false;
+
+            await featureManager.IsEnabledAsync(ConditionalFeature);
+
+            Assert.True(binderCalled);
+
+            Assert.True(called);
+        }
+
         private static void DisableEndpointRouting(MvcOptions options)
         {
 #if  NET6_0 || NET5_0 || NETCOREAPP3_1

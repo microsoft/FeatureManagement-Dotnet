@@ -15,8 +15,12 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// A feature definition provider that pulls feature definitions from the .NET Core <see cref="IConfiguration"/> system.
     /// </summary>
-    sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable
+    sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable, IFeatureDefinitionProviderCacheable
     {
+        //
+        // IFeatureDefinitionProviderCacheable interface is only used to mark this provider as cacheable. This allows our test suite's
+        // provider to be marked for caching as well.
+
         private const string FeatureFiltersSectionName = "EnabledFor";
         private const string RequirementTypeKeyword = "RequirementType";
         private readonly IConfiguration _configuration;
@@ -179,7 +183,7 @@ namespace Microsoft.FeatureManagement
                         enabledFor.Add(new FeatureFilterConfiguration()
                         {
                             Name = section[nameof(FeatureFilterConfiguration.Name)],
-                            Parameters = section.GetSection(nameof(FeatureFilterConfiguration.Parameters))
+                            Parameters = new ConfigurationWrapper(section.GetSection(nameof(FeatureFilterConfiguration.Parameters)))
                         });
                     }
                 }
