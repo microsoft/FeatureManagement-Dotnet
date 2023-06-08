@@ -1,6 +1,7 @@
 
 pr:
 - main
+- release/*
 
 trigger:
 - none
