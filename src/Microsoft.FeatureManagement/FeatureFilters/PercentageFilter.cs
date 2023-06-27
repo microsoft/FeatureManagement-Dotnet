@@ -43,7 +43,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <returns>True if the feature is enabled, false otherwise.</returns>
         public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
-            PercentageFilterSettings settings = (PercentageFilterSettings)context.Settings;
+            //
+            // Check if prebound settings available, otherwise bind from parameters.
+            PercentageFilterSettings settings = (PercentageFilterSettings)context.Settings ?? (PercentageFilterSettings)BindParameters(context.Parameters);
 
             bool result = true;
 

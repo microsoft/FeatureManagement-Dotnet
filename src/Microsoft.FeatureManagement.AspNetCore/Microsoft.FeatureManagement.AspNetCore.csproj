@@ -5,7 +5,7 @@
   <PropertyGroup>
     <MajorVersion>2</MajorVersion>
     <MinorVersion>6</MinorVersion>
-    <PatchVersion>0</PatchVersion>
+    <PatchVersion>1</PatchVersion>
   </PropertyGroup>
 
   <Import Project="..\..\build\Versioning.props" />
