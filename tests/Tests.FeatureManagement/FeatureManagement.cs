@@ -171,7 +171,29 @@ namespace Tests.FeatureManagement
             Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, gateAnyResponse.StatusCode);
         }
-        
+
+        [Fact]
+        public async Task ContextualTargetingWithNullContext()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            ServiceCollection services = new ServiceCollection();
+            
+            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
+            services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor);
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<CustomFilterTargeting>();
+
+            ServiceProvider provider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync("CustomFilterFeature"));
+        }
+
         [Fact]
         public async Task GatesRazorPageFeatures()
         {
