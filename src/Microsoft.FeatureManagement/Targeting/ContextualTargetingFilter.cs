@@ -78,7 +78,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 //
                 // Check if the user is in the exclusion directly
                 if (targetingContext.UserId != null &&
-                    settings.Audience.Exclusion.Users != null &&
+                    settings.Audience.Exclusion?.Users != null &&
                     settings.Audience.Exclusion.Users.Any(user => targetingContext.UserId.Equals(user, ComparisonType)))
                 {
                     return Task.FromResult(false);
@@ -87,7 +87,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 //
                 // Check if the user is in a group within exclusion
                 if (targetingContext.Groups != null &&
-                    settings.Audience.Exclusion.Groups != null &&
+                    settings.Audience.Exclusion?.Groups != null &&
                     settings.Audience.Exclusion.Groups.Any(group => targetingContext.Groups.Contains(group, ComparerType)))
                 {
                     return Task.FromResult(false);
