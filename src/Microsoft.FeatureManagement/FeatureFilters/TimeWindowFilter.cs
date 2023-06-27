@@ -43,7 +43,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <returns>True if the feature is enabled, false otherwise.</returns>
         public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
-            TimeWindowFilterSettings settings = (TimeWindowFilterSettings)context.Settings;
+            //
+            // Check if prebound settings available, otherwise bind from parameters.
+            TimeWindowFilterSettings settings = (TimeWindowFilterSettings)context.Settings ?? (TimeWindowFilterSettings)BindParameters(context.Parameters);
 
             DateTimeOffset now = DateTimeOffset.UtcNow;
 

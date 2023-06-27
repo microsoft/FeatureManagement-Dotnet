@@ -66,7 +66,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 throw new ArgumentNullException(nameof(targetingContext));
             }
 
-            TargetingFilterSettings settings = (TargetingFilterSettings)context.Settings;
+            //
+            // Check if prebound settings available, otherwise bind from parameters.
+            TargetingFilterSettings settings = (TargetingFilterSettings)context.Settings ?? (TargetingFilterSettings)BindParameters(context.Parameters);
 
             if (!TryValidateSettings(settings, out string paramName, out string message))
             {
