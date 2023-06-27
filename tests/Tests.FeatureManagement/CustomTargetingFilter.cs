@@ -11,12 +11,13 @@ using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
 {
-    class CustomFilterTargeting : IFeatureFilter
+    [FilterAlias(Alias)]
+    class CustomTargetingFilter : IFeatureFilter
     {
-        private const string Alias = "CustomFilterTargeting";
+        private const string Alias = "CustomTargetingFilter";
         private readonly ContextualTargetingFilter _contextualFilter;
 
-        public CustomFilterTargeting(IOptions<TargetingEvaluationOptions> options, ILoggerFactory loggerFactory)
+        public CustomTargetingFilter(IOptions<TargetingEvaluationOptions> options, ILoggerFactory loggerFactory)
         {
             _contextualFilter = new ContextualTargetingFilter(options, loggerFactory);
         }

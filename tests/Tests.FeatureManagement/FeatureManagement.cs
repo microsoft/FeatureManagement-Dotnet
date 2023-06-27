@@ -173,7 +173,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task ContextualTargetingWithNullContext()
+        public async Task CustomFilterContextualTargetingWithNullSetting()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
@@ -185,7 +185,7 @@ namespace Tests.FeatureManagement
             services
                 .AddSingleton(config)
                 .AddFeatureManagement()
-                .AddFeatureFilter<CustomFilterTargeting>();
+                .AddFeatureFilter<CustomTargetingFilter>();
 
             ServiceProvider provider = services.BuildServiceProvider();
 
