@@ -9,6 +9,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
@@ -54,19 +56,21 @@ namespace Microsoft.FeatureManagement
             _parametersCache = new MemoryCache(new MemoryCacheOptions());
         }
 
-        public Task<bool> IsEnabledAsync(string feature)
+        public Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
         {
-            return IsEnabledAsync<object>(feature, null, false);
+            return IsEnabledAsync<object>(feature, null, false, cancellationToken);
         }
 
-        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
+        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, CancellationToken cancellationToken)
         {
-            return IsEnabledAsync(feature, appContext, true);
+            return IsEnabledAsync(feature, appContext, true, cancellationToken);
         }
 
-        public async IAsyncEnumerable<string> GetFeatureNamesAsync()
+        public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            await foreach (FeatureDefinition featureDefintion in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
+            await foreach (FeatureDefinition featureDefintion in _featureDefinitionProvider
+                                .GetAllFeatureDefinitionsAsync(cancellationToken)
+                                .ConfigureAwait(false))
             {
                 yield return featureDefintion.Name;
             }
@@ -77,11 +81,11 @@ namespace Microsoft.FeatureManagement
             _parametersCache.Dispose();
         }
 
-        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext)
+        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                bool? readSessionResult = await sessionManager.GetAsync(feature).ConfigureAwait(false);
+                bool? readSessionResult = await sessionManager.GetAsync(feature, cancellationToken).ConfigureAwait(false);
 
                 if (readSessionResult.HasValue)
                 {
@@ -91,7 +95,9 @@ namespace Microsoft.FeatureManagement
 
             bool enabled;
 
-            FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
+            FeatureDefinition featureDefinition = await _featureDefinitionProvider
+                .GetFeatureDefinitionAsync(feature, cancellationToken)
+                .ConfigureAwait(false);
 
             if (featureDefinition != null)
             {
@@ -179,7 +185,7 @@ namespace Microsoft.FeatureManagement
                             BindSettings(filter, context, filterIndex);
 
                             if (contextualFilter != null &&
-                                await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation)
+                                await contextualFilter.EvaluateAsync(context, appContext, cancellationToken).ConfigureAwait(false) == targetEvaluation)
                             {
                                 enabled = targetEvaluation;
 
@@ -218,7 +224,7 @@ namespace Microsoft.FeatureManagement
 
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                await sessionManager.SetAsync(feature, enabled).ConfigureAwait(false);
+                await sessionManager.SetAsync(feature, enabled, cancellationToken).ConfigureAwait(false);
             }
 
             return enabled;

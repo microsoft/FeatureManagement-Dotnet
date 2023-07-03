@@ -30,7 +30,7 @@ namespace Microsoft.FeatureManagement
         {
             IFeatureManager featureManager = context.HttpContext.RequestServices.GetRequiredService<IFeatureManagerSnapshot>();
 
-            if (await featureManager.IsEnabledAsync(FeatureName).ConfigureAwait(false))
+            if (await featureManager.IsEnabledAsync(FeatureName, context.HttpContext.RequestAborted).ConfigureAwait(false))
             {
                 IServiceProvider serviceProvider = context.HttpContext.RequestServices.GetRequiredService<IServiceProvider>();
 

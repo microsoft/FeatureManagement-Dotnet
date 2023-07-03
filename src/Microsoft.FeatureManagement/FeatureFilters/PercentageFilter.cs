@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.FeatureManagement.Utils;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
@@ -40,8 +41,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// Performs a percentage based evaluation to determine whether a feature is enabled.
         /// </summary>
         /// <param name="context">The feature evaluation context.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>True if the feature is enabled, false otherwise.</returns>
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken)
         {
             //
             // Check if prebound settings available, otherwise bind from parameters.

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
@@ -47,9 +48,10 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// Performs a targeting evaluation using the current <see cref="TargetingContext"/> to determine if a feature should be enabled.
         /// </summary>
         /// <param name="context">The feature evaluation context.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="context"/> is null.</exception>
         /// <returns>True if the feature is enabled, false otherwise.</returns>
-        public async Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
+        public async Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken)
         {
             if (context == null)
             {
@@ -58,7 +60,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             //
             // Acquire targeting context via accessor
-            TargetingContext targetingContext = await _contextAccessor.GetContextAsync().ConfigureAwait(false);
+            TargetingContext targetingContext = await _contextAccessor.GetContextAsync(cancellationToken).ConfigureAwait(false);
 
             //
             // Ensure targeting can be performed
@@ -71,7 +73,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             //
             // Utilize contextual filter for targeting evaluation
-            return await _contextualFilter.EvaluateAsync(context, targetingContext).ConfigureAwait(false);
+            return await _contextualFilter.EvaluateAsync(context, targetingContext, cancellationToken).ConfigureAwait(false);
         }
     }
 }
