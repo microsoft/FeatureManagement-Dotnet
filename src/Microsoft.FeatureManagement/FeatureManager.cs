@@ -199,7 +199,7 @@ namespace Microsoft.FeatureManagement
                         {
                             BindSettings(filter, context, filterIndex);
 
-                            if (await featureFilter.EvaluateAsync(context).ConfigureAwait(false) == targetEvaluation) {
+                            if (await featureFilter.EvaluateAsync(context, cancellationToken).ConfigureAwait(false) == targetEvaluation) {
                                 enabled = targetEvaluation;
 
                                 break;
@@ -230,12 +230,12 @@ namespace Microsoft.FeatureManagement
             return enabled;
         }
 
-        public ValueTask<Variant> GetVariantAsync(string feature)
+        public ValueTask<Variant> GetVariantAsync(string feature, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
 
-        public ValueTask<Variant> GetVariantAsync<TContext>(string feature, TContext context)
+        public ValueTask<Variant> GetVariantAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

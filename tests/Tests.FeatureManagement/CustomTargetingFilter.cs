@@ -1,12 +1,12 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
@@ -24,9 +24,9 @@ namespace Tests.FeatureManagement
 
         public Func<FeatureFilterEvaluationContext, Task<bool>> Callback { get; set; }
 
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken)
         {
-            return _contextualFilter.EvaluateAsync(context, new TargetingContext(){ UserId = "Jeff" });
+            return _contextualFilter.EvaluateAsync(context, new TargetingContext(){ UserId = "Jeff" }, cancellationToken);
         }
     }
 }

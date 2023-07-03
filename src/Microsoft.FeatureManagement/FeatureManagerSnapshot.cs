@@ -44,14 +44,14 @@ namespace Microsoft.FeatureManagement
             }
         }
 
-        public async Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
+        public Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
         {
             return _flagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key));
+                (key) => _featureManager.IsEnabledAsync(key, cancellationToken));
         }
 
-        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
+        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
         {
             return _flagCache.GetOrAdd(
                 feature,

@@ -34,7 +34,7 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// 
         /// </summary>
-        public Allocation Allocation { get; set; };
+        public Allocation Allocation { get; set; }
 
         /// <summary>
         /// 
