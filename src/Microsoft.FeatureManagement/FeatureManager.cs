@@ -16,7 +16,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Used to evaluate whether a feature is enabled or disabled.
     /// </summary>
-    class FeatureManager : IFeatureManager, IDisposable
+    class FeatureManager : IFeatureManager, IDisposable, IVariantFeatureManager
     {
         private readonly TimeSpan ParametersCacheSlidingExpiration = TimeSpan.FromMinutes(5);
         private readonly TimeSpan ParametersCacheAbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
@@ -141,6 +141,13 @@ namespace Microsoft.FeatureManagement
                             continue;
                         }
 
+                        //
+                        // Handle On filters for variants
+                        if (string.Equals(featureFilterConfiguration.Name, "On", StringComparison.OrdinalIgnoreCase))
+                        {
+                               // TODO
+                        }
+
                         IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
 
                         if (filter == null)
@@ -215,6 +222,16 @@ namespace Microsoft.FeatureManagement
             }
 
             return enabled;
+        }
+
+        public ValueTask<Variant> GetVariantAsync(string feature)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ValueTask<Variant> GetVariantAsync<TContext>(string feature, TContext context)
+        {
+            throw new NotImplementedException();
         }
 
         private void BindSettings(IFeatureFilterMetadata filter, FeatureFilterEvaluationContext context, int filterIndex)

@@ -25,5 +25,20 @@ namespace Microsoft.FeatureManagement
         /// The default value is <see cref="RequirementType.Any"/>.
         /// </summary>
         public RequirementType RequirementType { get; set; } = RequirementType.Any;
+
+        /// <summary>
+        /// kill switch
+        /// </summary>
+        public Status Status { get; set; } = Status.Conditional;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public Allocation Allocation { get; set; };
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public List<FeatureVariant> Variants { get; set; }
     }
 }
