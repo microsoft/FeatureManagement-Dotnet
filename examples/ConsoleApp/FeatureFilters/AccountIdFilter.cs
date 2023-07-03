@@ -18,7 +18,7 @@ namespace Consoto.Banking.AccountService.FeatureManagement
     [FilterAlias("AccountId")]
     class AccountIdFilter : IContextualFeatureFilter<IAccountContext>
     {
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext featureEvaluationContext, IAccountContext accountContext, CancellationToken _)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext featureEvaluationContext, IAccountContext accountContext, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(accountContext?.AccountId))
             {

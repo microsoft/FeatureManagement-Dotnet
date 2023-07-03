@@ -17,6 +17,6 @@ namespace Microsoft.FeatureManagement
         /// <param name="context">A feature filter evaluation context that contains information that may be needed to evaluate the filter. This context includes configuration, if any, for this filter for the feature being evaluated.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>True if the filter's criteria has been met, false otherwise.</returns>
-        Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken);
+        Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken = default);
     }
 }

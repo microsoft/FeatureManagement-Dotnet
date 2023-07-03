@@ -18,13 +18,13 @@ namespace Microsoft.FeatureManagement
         /// <param name="featureName">The name of the feature to retrieve the definition for.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>The feature's definition.</returns>	
-        Task<FeatureDefinition> GetFeatureDefinitionAsync(string featureName, CancellationToken cancellationToken);
+        Task<FeatureDefinition> GetFeatureDefinitionAsync(string featureName, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Retrieves definitions for all features.
         /// </summary>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>An enumerator which provides asynchronous iteration over feature definitions.</returns>
-        IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync(CancellationToken cancellationToken);
+        IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync(CancellationToken cancellationToken = default);
     }
 }

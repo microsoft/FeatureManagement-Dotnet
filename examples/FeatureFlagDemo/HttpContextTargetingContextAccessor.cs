@@ -24,7 +24,7 @@ namespace FeatureFlagDemo
             _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
         }
 
-        public ValueTask<TargetingContext> GetContextAsync(CancellationToken _)
+        public ValueTask<TargetingContext> GetContextAsync(CancellationToken cancellationToken)
         {
             HttpContext httpContext = _httpContextAccessor.HttpContext;
 

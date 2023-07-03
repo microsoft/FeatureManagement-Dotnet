@@ -24,7 +24,7 @@ namespace FeatureFlagDemo.FeatureManagement.FeatureFilters
             _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
         }
 
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken _)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken)
         {
             BrowserFilterSettings settings = context.Parameters.Get<BrowserFilterSettings>() ?? new BrowserFilterSettings();
 
