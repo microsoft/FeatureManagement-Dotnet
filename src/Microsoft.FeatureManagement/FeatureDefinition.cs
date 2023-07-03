@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.FeatureManagement
 {
@@ -39,6 +40,6 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// 
         /// </summary>
-        public List<FeatureVariant> Variants { get; set; }
+        public IEnumerable<FeatureVariant> Variants { get; set; } = Enumerable.Empty<FeatureVariant>();
     }
 }

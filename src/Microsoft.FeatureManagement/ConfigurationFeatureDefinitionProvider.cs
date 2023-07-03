@@ -23,7 +23,6 @@ namespace Microsoft.FeatureManagement
         // provider to be marked for caching as well.
 
         private const string FeatureFiltersSectionName = "EnabledFor";
-        private const string RequirementTypeKeyword = "RequirementType";
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
@@ -136,6 +135,9 @@ namespace Microsoft.FeatureManagement
             */
 
             RequirementType requirementType = RequirementType.Any;
+            Status status = Status.Conditional;
+            Allocation allocation = null;
+            IEnumerable<FeatureVariant> variants = Enumerable.Empty<FeatureVariant>();
 
             var enabledFor = new List<FeatureFilterConfiguration>();
 
@@ -161,16 +163,10 @@ namespace Microsoft.FeatureManagement
             }
             else
             {
-                string rawRequirementType = configurationSection[RequirementTypeKeyword];
-
-                //
-                // If requirement type is specified, parse it and set the requirementType variable
-                if (!string.IsNullOrEmpty(rawRequirementType) && !Enum.TryParse(rawRequirementType, ignoreCase: true, out requirementType))
-                {
-                    throw new FeatureManagementException(
-                        FeatureManagementError.InvalidConfigurationSetting, 
-                        $"Invalid requirement type '{rawRequirementType}' for feature '{configurationSection.Key}'.");
-                }
+                requirementType = ParseFeatureDefinitionSectionEnum(configurationSection, nameof(RequirementType), requirementType);
+                status = ParseFeatureDefinitionSectionEnum(configurationSection, nameof(FeatureDefinition.Status), status);
+                allocation = configurationSection.GetValue<Allocation>(nameof(FeatureDefinition.Allocation));
+                variants = configurationSection.GetValue<IEnumerable<FeatureVariant>>(nameof(FeatureDefinition.Variants));
 
                 IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(FeatureFiltersSectionName).GetChildren();
 
@@ -194,7 +190,10 @@ namespace Microsoft.FeatureManagement
             {
                 Name = configurationSection.Key,
                 EnabledFor = enabledFor,
-                RequirementType = requirementType
+                RequirementType = requirementType,
+                Status = status,
+                Allocation = allocation,
+                Variants = variants
             };
         }
 
@@ -212,6 +211,23 @@ namespace Microsoft.FeatureManagement
             {
                 return _configuration.GetChildren();
             }
+        }
+
+        private T ParseFeatureDefinitionSectionEnum<T>(IConfigurationSection configurationSection, string keyword, T enumValue)
+            where T : struct, Enum
+        {
+            string rawValue = configurationSection[keyword];
+
+            //
+            // If requirement type is specified, parse it and set the requirementType variable
+            if (!string.IsNullOrEmpty(rawValue) && !Enum.TryParse(rawValue, ignoreCase: true, out enumValue))
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.InvalidConfigurationSetting,
+                    $"Invalid requirement type '{rawValue}' for feature '{configurationSection.Key}'.");
+            }
+
+            return enumValue;
         }
     }
 }

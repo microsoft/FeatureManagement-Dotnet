@@ -1,23 +1,24 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.Extensions.Configuration;
+
+using System.Collections.Generic;
 
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
     /// 
     /// </summary>
-    public class Variant
+    public class Group
     {
         /// <summary>
-        /// 
+        /// The name of the variant.
         /// </summary>
         public string Name { get; set; }
 
         /// <summary>
         /// 
         /// </summary>
-        public IConfiguration Configuration { get; set; }
+        public IEnumerable<string> Groups { get; set; }
     }
 }

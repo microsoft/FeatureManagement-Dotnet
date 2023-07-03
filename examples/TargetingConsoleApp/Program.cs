@@ -53,7 +53,7 @@ namespace Consoto.Banking.HelpDesk
 
                     //
                     // Get user
-                    User user = await userRepository.GetUser(userId);
+                    AccountService.Identity.User user = await userRepository.GetUser(userId);
 
                     //
                     // Check if feature enabled
