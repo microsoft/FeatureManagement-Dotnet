@@ -22,8 +22,9 @@ namespace FeatureFlagDemo.Controllers
         }
 
         [FeatureGate(MyFeatureFlags.Home)]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
+            bool test = await _featureManager.IsEnabledAsync(nameof(MyFeatureFlags.Banner));
             return View();
         }
 

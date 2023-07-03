@@ -11,6 +11,7 @@ namespace FeatureFlagDemo
         Beta,
         CustomViewData,
         ContentEnhancement,
-        EnhancedPipeline
+        EnhancedPipeline,
+        Banner
     }
 }
