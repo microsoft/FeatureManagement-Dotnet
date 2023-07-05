@@ -272,7 +272,62 @@ namespace Microsoft.FeatureManagement
 
             FeatureVariant variant = null;
 
-            //TODO
+            IFeatureVariantAllocatorMetadata allocator = GetFeatureVariantAllocatorMetadata(feature);
+
+            if (allocator == null)
+            {
+                throw new FeatureManagementException(
+                       FeatureManagementError.MissingFeatureVariantAllocator,
+                       $"The feature variant allocator for feature '{feature}' was not found.");
+            }
+
+            var allocationContext = new FeatureVariantAllocationContext()
+            {
+                FeatureDefinition = featureDefinition
+            };
+
+            //
+            // IFeatureVariantAllocator
+            if (allocator is IFeatureVariantAllocator featureVariantAllocator)
+            {
+                variant = await featureVariantAllocator.AllocateVariantAsync(allocationContext, cancellationToken).ConfigureAwait(false);
+            }
+            //
+            // IContextualFeatureVariantAllocator
+            else if (useContext &&
+                     TryGetContextualFeatureVariantAllocator(featureDefinition.Name, typeof(TContext), out ContextualFeatureVariantAllocatorEvaluator contextualAllocator))
+            {
+                variant = await contextualAllocator.AllocateVariantAsync(allocationContext, context, cancellationToken).ConfigureAwait(false);
+            }
+            //
+            // The allocator doesn't implement a feature variant allocator interface capable of performing the evaluation
+            else
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.InvalidFeatureVariantAllocator,
+                    useContext ?
+                        $"The feature variant assigner '{featureDefinition.Assigner}' specified for the feature '{feature}' is not capable of evaluating the requested feature with the provided context." :
+                        $"The feature variant assigner '{featureDefinition.Assigner}' specified for the feature '{feature}' is not capable of evaluating the requested feature.");
+            }
+
+            // TODO
+
+            if (variant == null)
+            {
+                // throw something?
+            }
+
+            // logic to figure out whether to return ConfigurationValue or resolve ConfigurationReference.
+        }
+
+        private IFeatureVariantAllocatorMetadata GetFeatureVariantAllocatorMetadata(string featureName)
+        {
+            throw new NotImplementedException();
+        }
+
+        private bool TryGetContextualFeatureVariantAllocator(string featureName, Type appContextType, out ContextualFeatureVariantAllocatorEvaluator contextualAllocator)
+        {
+            throw new NotImplementedException();
         }
 
         private void BindSettings(IFeatureFilterMetadata filter, FeatureFilterEvaluationContext context, int filterIndex)
