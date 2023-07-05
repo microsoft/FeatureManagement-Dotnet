@@ -232,12 +232,47 @@ namespace Microsoft.FeatureManagement
 
         public ValueTask<Variant> GetVariantAsync(string feature, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(feature))
+            {
+                throw new ArgumentNullException(nameof(feature));
+            }
+
+            return GetVariantAsync<Variant, object>(feature, null, false, cancellationToken);
         }
 
         public ValueTask<Variant> GetVariantAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(feature))
+            {
+                throw new ArgumentNullException(nameof(feature));
+            }
+
+            return GetVariantAsync<Variant, TContext>(feature, context, true, cancellationToken);
+        }
+
+        private async ValueTask<Variant> GetVariantAsync<Variant, TContext>(string feature, TContext context, bool useContext, CancellationToken cancellationToken)
+        {
+            FeatureDefinition featureDefinition = await _featureDefinitionProvider
+                .GetFeatureDefinitionAsync(feature, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (featureDefinition == null)
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.MissingFeature,
+                    $"The feature declaration for the dynamic feature '{feature}' was not found.");
+            }
+
+            if (featureDefinition.Variants == null)
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.MissingFeatureVariant,
+                    $"No variants are registered for the feature {feature}");
+            }
+
+            FeatureVariant variant = null;
+
+            
         }
 
         private void BindSettings(IFeatureFilterMetadata filter, FeatureFilterEvaluationContext context, int filterIndex)

@@ -12,7 +12,7 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The name of the variant.
         /// </summary>
-        public string Name { get; set; }
+        public string Variant { get; set; }
 
         /// <summary>
         /// 

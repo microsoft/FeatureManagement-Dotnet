@@ -137,7 +137,7 @@ namespace Microsoft.FeatureManagement
             RequirementType requirementType = RequirementType.Any;
             Status status = Status.Conditional;
             Allocation allocation = null;
-            IEnumerable<FeatureVariant> variants = Enumerable.Empty<FeatureVariant>();
+            List<FeatureVariant> variants = new List<FeatureVariant>();
 
             var enabledFor = new List<FeatureFilterConfiguration>();
 
@@ -165,8 +165,6 @@ namespace Microsoft.FeatureManagement
             {
                 requirementType = ParseFeatureDefinitionSectionEnum(configurationSection, nameof(RequirementType), requirementType);
                 status = ParseFeatureDefinitionSectionEnum(configurationSection, nameof(FeatureDefinition.Status), status);
-                allocation = configurationSection.GetValue<Allocation>(nameof(FeatureDefinition.Allocation));
-                variants = configurationSection.GetValue<IEnumerable<FeatureVariant>>(nameof(FeatureDefinition.Variants));
 
                 IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(FeatureFiltersSectionName).GetChildren();
 
@@ -175,13 +173,29 @@ namespace Microsoft.FeatureManagement
                     //
                     // Arrays in json such as "myKey": [ "some", "values" ]
                     // Are accessed through the configuration system by using the array index as the property name, e.g. "myKey": { "0": "some", "1": "values" }
-                    if (int.TryParse(section.Key, out int i) && !string.IsNullOrEmpty(section[nameof(FeatureFilterConfiguration.Name)]))
+                    if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[nameof(FeatureFilterConfiguration.Name)]))
                     {
                         enabledFor.Add(new FeatureFilterConfiguration()
                         {
                             Name = section[nameof(FeatureFilterConfiguration.Name)],
                             Parameters = new ConfigurationWrapper(section.GetSection(nameof(FeatureFilterConfiguration.Parameters)))
                         });
+                    }
+                }
+
+                IConfigurationSection allocationSection = configurationSection.GetSection(nameof(FeatureDefinition.Allocation));
+                allocation = new Allocation();
+                allocationSection.Bind(allocation);
+
+                IEnumerable<IConfigurationSection> variantsSections = configurationSection.GetSection(nameof(FeatureDefinition.Variants)).GetChildren();
+
+                foreach (IConfigurationSection section in variantsSections)
+                {
+                    if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[nameof(FeatureVariant.Name)]))
+                    {
+                        FeatureVariant variant = new FeatureVariant();
+                        section.Bind(variant);
+                        variants.Add(variant);
                     }
                 }
             }
