@@ -272,7 +272,7 @@ namespace Microsoft.FeatureManagement
 
             FeatureVariant variant = null;
 
-            
+            //TODO
         }
 
         private void BindSettings(IFeatureFilterMetadata filter, FeatureFilterEvaluationContext context, int filterIndex)
