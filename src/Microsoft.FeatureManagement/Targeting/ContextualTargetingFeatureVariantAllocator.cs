@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -62,11 +63,11 @@ namespace Microsoft.FeatureManagement.Allocators
                     nameof(variantAllocationContext));
             }
 
-
+            FeatureVariant variant = featureDefinition.Variants.First();
 
             //TODO
 
-            return new ValueTask<FeatureVariant>((FeatureVariant)null);
+            return new ValueTask<FeatureVariant>(variant);
         }
     }
 }

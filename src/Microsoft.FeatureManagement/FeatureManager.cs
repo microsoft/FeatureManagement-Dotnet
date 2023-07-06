@@ -10,6 +10,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,6 +27,9 @@ namespace Microsoft.FeatureManagement
         private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
+        private readonly IEnumerable<IFeatureVariantAllocatorMetadata> _variantAllocators;
+        private readonly ConcurrentDictionary<string, IFeatureVariantAllocatorMetadata> _allocatorMetadataCache;
+        private readonly ConcurrentDictionary<string, ContextualFeatureVariantAllocatorEvaluator> _contextualFeatureVariantAllocatorCache;
         private readonly ILogger _logger;
         private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
@@ -43,12 +47,16 @@ namespace Microsoft.FeatureManagement
             IFeatureDefinitionProvider featureDefinitionProvider,
             IEnumerable<IFeatureFilterMetadata> featureFilters,
             IEnumerable<ISessionManager> sessionManagers,
+            IEnumerable<IFeatureVariantAllocatorMetadata> variantAllocators,
             ILoggerFactory loggerFactory,
             IOptions<FeatureManagementOptions> options)
         {
             _featureDefinitionProvider = featureDefinitionProvider;
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
             _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
+            _variantAllocators = variantAllocators ?? throw new ArgumentNullException(nameof(variantAllocators));
+            _allocatorMetadataCache = new ConcurrentDictionary<string, IFeatureVariantAllocatorMetadata>(StringComparer.OrdinalIgnoreCase);
+            _contextualFeatureVariantAllocatorCache = new ConcurrentDictionary<string, ContextualFeatureVariantAllocatorEvaluator>(StringComparer.OrdinalIgnoreCase);
             _logger = loggerFactory.CreateLogger<FeatureManager>();
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
@@ -237,7 +245,7 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(feature));
             }
 
-            return GetVariantAsync<Variant, object>(feature, null, false, cancellationToken);
+            return GetVariantAsync<object>(feature, null, false, cancellationToken);
         }
 
         public ValueTask<Variant> GetVariantAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
@@ -247,10 +255,10 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(feature));
             }
 
-            return GetVariantAsync<Variant, TContext>(feature, context, true, cancellationToken);
+            return GetVariantAsync<TContext>(feature, context, true, cancellationToken);
         }
 
-        private async ValueTask<Variant> GetVariantAsync<Variant, TContext>(string feature, TContext context, bool useContext, CancellationToken cancellationToken)
+        private async ValueTask<Variant> GetVariantAsync<TContext>(string feature, TContext context, bool useContext, CancellationToken cancellationToken)
         {
             FeatureDefinition featureDefinition = await _featureDefinitionProvider
                 .GetFeatureDefinitionAsync(feature, cancellationToken)
@@ -272,7 +280,9 @@ namespace Microsoft.FeatureManagement
 
             FeatureVariant variant = null;
 
-            IFeatureVariantAllocatorMetadata allocator = GetFeatureVariantAllocatorMetadata(feature);
+            const string allocatorName = "Targeting";
+
+            IFeatureVariantAllocatorMetadata allocator = GetFeatureVariantAllocatorMetadata(allocatorName);
 
             if (allocator == null)
             {
@@ -295,7 +305,7 @@ namespace Microsoft.FeatureManagement
             //
             // IContextualFeatureVariantAllocator
             else if (useContext &&
-                     TryGetContextualFeatureVariantAllocator(featureDefinition.Name, typeof(TContext), out ContextualFeatureVariantAllocatorEvaluator contextualAllocator))
+                     TryGetContextualFeatureVariantAllocator(allocatorName, typeof(TContext), out ContextualFeatureVariantAllocatorEvaluator contextualAllocator))
             {
                 variant = await contextualAllocator.AllocateVariantAsync(allocationContext, context, cancellationToken).ConfigureAwait(false);
             }
@@ -306,8 +316,8 @@ namespace Microsoft.FeatureManagement
                 throw new FeatureManagementException(
                     FeatureManagementError.InvalidFeatureVariantAllocator,
                     useContext ?
-                        $"The feature variant assigner '{featureDefinition.Assigner}' specified for the feature '{feature}' is not capable of evaluating the requested feature with the provided context." :
-                        $"The feature variant assigner '{featureDefinition.Assigner}' specified for the feature '{feature}' is not capable of evaluating the requested feature.");
+                        $"The feature variant allocator '{allocatorName}' specified for the feature '{feature}' is not capable of evaluating the requested feature with the provided context." :
+                        $"The feature variant allocator '{allocatorName}' specified for the feature '{feature}' is not capable of evaluating the requested feature.");
             }
 
             // TODO
@@ -317,17 +327,71 @@ namespace Microsoft.FeatureManagement
                 // throw something?
             }
 
-            // logic to figure out whether to return ConfigurationValue or resolve ConfigurationReference.
+            // logic to figure out whether to return ConfigurationValue or resolve ConfigurationReference
+
+
+            Variant returnVariant = new Variant();
+
+            return returnVariant;
         }
 
-        private IFeatureVariantAllocatorMetadata GetFeatureVariantAllocatorMetadata(string featureName)
+        private IFeatureVariantAllocatorMetadata GetFeatureVariantAllocatorMetadata(string allocatorName)
         {
-            throw new NotImplementedException();
+            const string allocatorSuffix = "allocator";
+
+            IFeatureVariantAllocatorMetadata allocator = _allocatorMetadataCache.GetOrAdd(
+                allocatorName,
+                (_) => {
+
+                    IEnumerable<IFeatureVariantAllocatorMetadata> matchingAllocators = _variantAllocators.Where(a =>
+                    {
+                        Type allocatorType = a.GetType();
+
+                        string name = ((AllocatorAliasAttribute)Attribute.GetCustomAttribute(allocatorType, typeof(AllocatorAliasAttribute)))?.Alias;
+
+                        if (name == null)
+                        {
+                            name = allocatorType.Name;
+                        }
+
+                        return NameHelper.IsMatchingReference(
+                            reference: allocatorName,
+                            metadataName: name,
+                            suffix: allocatorSuffix);
+                    });
+
+                    if (matchingAllocators.Count() > 1)
+                    {
+                        throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureVariantAllocator, $"Multiple feature variant allocators match the configured allocator named '{allocatorName}'.");
+                    }
+
+                    return matchingAllocators.FirstOrDefault();
+                }
+            );
+
+            return allocator;
         }
 
-        private bool TryGetContextualFeatureVariantAllocator(string featureName, Type appContextType, out ContextualFeatureVariantAllocatorEvaluator contextualAllocator)
+        private bool TryGetContextualFeatureVariantAllocator(string allocatorName, Type appContextType, out ContextualFeatureVariantAllocatorEvaluator contextualAllocator)
         {
-            throw new NotImplementedException();
+            if (appContextType == null)
+            {
+                throw new ArgumentNullException(nameof(appContextType));
+            }
+
+            contextualAllocator = _contextualFeatureVariantAllocatorCache.GetOrAdd(
+                $"{allocatorName}{Environment.NewLine}{appContextType.FullName}",
+                (_) => {
+
+                    IFeatureVariantAllocatorMetadata metadata = GetFeatureVariantAllocatorMetadata(allocatorName);
+
+                    return ContextualFeatureVariantAllocatorEvaluator.IsContextualVariantAllocator(metadata, appContextType) ?
+                        new ContextualFeatureVariantAllocatorEvaluator(metadata, appContextType) :
+                        null;
+                }
+            );
+
+            return contextualAllocator != null;
         }
 
         private void BindSettings(IFeatureFilterMetadata filter, FeatureFilterEvaluationContext context, int filterIndex)
