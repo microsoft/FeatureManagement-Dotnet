@@ -183,6 +183,7 @@ namespace Microsoft.FeatureManagement
                     }
                 }
 
+                // fix logic for when not to set allocation/detect when not set
                 IConfigurationSection allocationSection = configurationSection.GetSection(nameof(FeatureDefinition.Allocation));
                 allocation = new Allocation();
                 allocationSection.Bind(allocation);

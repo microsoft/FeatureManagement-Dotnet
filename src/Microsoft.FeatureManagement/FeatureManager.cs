@@ -329,8 +329,11 @@ namespace Microsoft.FeatureManagement
 
             // logic to figure out whether to return ConfigurationValue or resolve ConfigurationReference
 
-
-            Variant returnVariant = new Variant();
+            Variant returnVariant = new Variant()
+            {
+                Name = variant.Name,
+                ConfigurationValue = variant.ConfigurationValue
+            };
 
             return returnVariant;
         }
