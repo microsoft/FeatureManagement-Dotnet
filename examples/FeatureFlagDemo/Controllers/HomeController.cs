@@ -24,7 +24,7 @@ namespace FeatureFlagDemo.Controllers
         [FeatureGate(MyFeatureFlags.Home)]
         public async Task<IActionResult> Index()
         {
-            bool test = await _featureManager.IsEnabledAsync(nameof(MyFeatureFlags.Banner));
+            bool test = await _featureManager.IsEnabledAsync(nameof(MyFeatureFlags.Banner), CancellationToken.None);
             return View();
         }
 
