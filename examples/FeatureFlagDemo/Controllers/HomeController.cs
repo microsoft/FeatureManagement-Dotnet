@@ -16,7 +16,7 @@ namespace FeatureFlagDemo.Controllers
     {
         private readonly IVariantFeatureManager _featureManager;
 
-        public HomeController(IFeatureManagerSnapshot featureSnapshot)
+        public HomeController(IVariantFeatureManagerSnapshot featureSnapshot)
         {
             _featureManager = featureSnapshot;
         }
@@ -24,7 +24,7 @@ namespace FeatureFlagDemo.Controllers
         [FeatureGate(MyFeatureFlags.Home)]
         public async Task<IActionResult> Index()
         {
-            bool test = await _featureManager.GetVariantAsync(nameof(MyFeatureFlags.Banner));
+            Variant test = await _featureManager.GetVariantAsync(nameof(MyFeatureFlags.Banner), CancellationToken.None);
             return View();
         }
 

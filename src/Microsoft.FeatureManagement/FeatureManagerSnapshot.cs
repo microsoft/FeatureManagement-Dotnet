@@ -13,13 +13,14 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Provides a snapshot of feature state to ensure consistency across a given request.
     /// </summary>
-    class FeatureManagerSnapshot : IFeatureManagerSnapshot
+    class FeatureManagerSnapshot : IFeatureManagerSnapshot, IVariantFeatureManagerSnapshot
     {
-        private readonly IFeatureManager _featureManager;
+        private readonly FeatureManager _featureManager;
         private readonly ConcurrentDictionary<string, Task<bool>> _flagCache = new ConcurrentDictionary<string, Task<bool>>();
+        private readonly IDictionary<string, Variant> _variantCache = new Dictionary<string, Variant>();
         private IEnumerable<string> _featureNames;
 
-        public FeatureManagerSnapshot(IFeatureManager featureManager)
+        public FeatureManagerSnapshot(FeatureManager featureManager)
         {
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
         }
@@ -55,7 +56,48 @@ namespace Microsoft.FeatureManagement
         {
             return _flagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key, context));
+                (key) => _featureManager.IsEnabledAsync(key, context, cancellationToken));
+        }
+
+        public async ValueTask<Variant> GetVariantAsync(string feature, CancellationToken cancellationToken)
+        {
+            string cacheKey = GetVariantCacheKey(feature);
+
+            //
+            // First, check local cache
+            if (_variantCache.ContainsKey(feature))
+            {
+                return _variantCache[cacheKey];
+            }
+
+            Variant variant = await _featureManager.GetVariantAsync(feature, cancellationToken).ConfigureAwait(false);
+
+            _variantCache[cacheKey] = variant;
+
+            return variant;
+        }
+
+        public async ValueTask<Variant> GetVariantAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
+        {
+            string cacheKey = GetVariantCacheKey(feature);
+
+            //
+            // First, check local cache
+            if (_variantCache.ContainsKey(feature))
+            {
+                return _variantCache[cacheKey];
+            }
+
+            Variant variant = await _featureManager.GetVariantAsync<TContext>(feature, context, cancellationToken).ConfigureAwait(false);
+
+            _variantCache[cacheKey] = variant;
+
+            return variant;
+        }
+
+        private string GetVariantCacheKey(string feature)
+        {
+            return $"{typeof(Variant).FullName}\n{feature}";
         }
     }
 }
