@@ -88,6 +88,7 @@ namespace Microsoft.FeatureManagement
             _parametersCache.Dispose();
         }
 
+        // need way to differentiate between using IsEnabledAsync for variants and not variants
         private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
             foreach (ISessionManager sessionManager in _sessionManagers)

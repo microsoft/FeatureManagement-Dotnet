@@ -3,6 +3,7 @@
 //
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.FeatureFilters;
+using Microsoft.FeatureManagement.Targeting;
 using System;
 using System.Linq;
 using System.Threading;
@@ -63,11 +64,75 @@ namespace Microsoft.FeatureManagement.Allocators
                     nameof(variantAllocationContext));
             }
 
-            FeatureVariant variant = featureDefinition.Variants.First();
+            // check if feature is disabled, and if so just return DefaultWhenDisabled variant? IsEnabledAsync or just EvaluateAsync somewhere? don't want it to be a loop anyway
+            if (featureDefinition.Status == Status.Disabled || )
+            {
+                if (!string.IsNullOrEmpty(featureDefinition.Allocation.DefaultWhenDisabled))
+                {
+                    FeatureVariant variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(featureDefinition.Allocation.DefaultWhenDisabled));
+
+                    if (!string.IsNullOrEmpty(variant.Name))
+                    {
+                        return new ValueTask<FeatureVariant>(variant);
+                    }
+                }
+
+                return new ValueTask<FeatureVariant>((FeatureVariant)null);
+            }
+
+            foreach (User user in featureDefinition.Allocation.User)
+            {
+                if (TargetingEvaluator.IsTargeted(targetingContext, user.Users, _options.IgnoreCase))
+                {
+                    FeatureVariant variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(user.Variant));
+
+                    if (!string.IsNullOrEmpty(variant.Name))
+                    {
+                        return new ValueTask<FeatureVariant>(variant);
+                    }
+                }
+            }
+
+            foreach (Group group in featureDefinition.Allocation.Group)
+            {
+                if (TargetingEvaluator.IsGroupTargeted(targetingContext, group.Groups, _options.IgnoreCase))
+                {
+                    FeatureVariant variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(group.Variant));
+
+                    if (!string.IsNullOrEmpty(variant.Name))
+                    {
+                        return new ValueTask<FeatureVariant>(variant);
+                    }
+                }
+            }
+
+            // what to do if seed not specified? random int?
+            foreach (Percentile percentile in featureDefinition.Allocation.Percentile)
+            {
+                if (TargetingEvaluator.IsTargeted(targetingContext, percentile.From, percentile.To, featureDefinition.Allocation.Seed, _options.IgnoreCase, featureDefinition.Name))
+                {
+                    FeatureVariant variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(percentile.Variant));
+
+                    if (!string.IsNullOrEmpty(variant.Name))
+                    {
+                        return new ValueTask<FeatureVariant>(variant);
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(featureDefinition.Allocation.DefaultWhenEnabled))
+            {
+                FeatureVariant variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(featureDefinition.Allocation.DefaultWhenEnabled));
+
+                if (!string.IsNullOrEmpty(variant.Name))
+                {
+                    return new ValueTask<FeatureVariant>(variant);
+                }
+            }
 
             //TODO
 
-            return new ValueTask<FeatureVariant>(variant);
+            return new ValueTask<FeatureVariant>((FeatureVariant)null);
         }
     }
 }
