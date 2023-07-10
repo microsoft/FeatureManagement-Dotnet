@@ -43,6 +43,29 @@ namespace Microsoft.FeatureManagement
             return this;
         }
 
+        public IFeatureManagementBuilder AddFeatureVariantAllocator<T>() where T : IFeatureVariantAllocatorMetadata
+        {
+            Type serviceType = typeof(IFeatureVariantAllocatorMetadata);
+
+            Type implementationType = typeof(T);
+
+            IEnumerable<Type> featureVariantAssignerImplementations = implementationType.GetInterfaces()
+                .Where(i => i == typeof(IFeatureVariantAllocator) ||
+                            (i.IsGenericType && i.GetGenericTypeDefinition().IsAssignableFrom(typeof(IContextualFeatureVariantAllocator<>))));
+
+            if (featureVariantAssignerImplementations.Count() > 1)
+            {
+                throw new ArgumentException($"A single feature variant allocator cannot implement more than one feature variant allocator interface.", nameof(T));
+            }
+
+            if (!Services.Any(descriptor => descriptor.ServiceType == serviceType && descriptor.ImplementationType == implementationType))
+            {
+                Services.AddSingleton(typeof(IFeatureVariantAllocatorMetadata), typeof(T));
+            }
+
+            return this;
+        }
+
         public IFeatureManagementBuilder AddSessionManager<T>() where T : ISessionManager
         {
             Services.AddSingleton(typeof(ISessionManager), typeof(T));
