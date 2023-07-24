@@ -64,12 +64,14 @@ namespace Microsoft.FeatureManagement.Allocators
                     nameof(variantAllocationContext));
             }
 
+            FeatureVariant variant = null;
+
             // check if feature is disabled, and if so just return DefaultWhenDisabled variant? IsEnabledAsync or just EvaluateAsync somewhere? don't want it to be a loop anyway
-            if (featureDefinition.Status == Status.Disabled || )
+            if (featureDefinition.Status == Status.Disabled) // || what? TODO
             {
                 if (!string.IsNullOrEmpty(featureDefinition.Allocation.DefaultWhenDisabled))
                 {
-                    FeatureVariant variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(featureDefinition.Allocation.DefaultWhenDisabled));
+                    variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(featureDefinition.Allocation.DefaultWhenDisabled));
 
                     if (!string.IsNullOrEmpty(variant.Name))
                     {
@@ -84,7 +86,7 @@ namespace Microsoft.FeatureManagement.Allocators
             {
                 if (TargetingEvaluator.IsTargeted(targetingContext, user.Users, _options.IgnoreCase))
                 {
-                    FeatureVariant variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(user.Variant));
+                    variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(user.Variant));
 
                     if (!string.IsNullOrEmpty(variant.Name))
                     {
@@ -97,7 +99,7 @@ namespace Microsoft.FeatureManagement.Allocators
             {
                 if (TargetingEvaluator.IsGroupTargeted(targetingContext, group.Groups, _options.IgnoreCase))
                 {
-                    FeatureVariant variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(group.Variant));
+                    variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(group.Variant));
 
                     if (!string.IsNullOrEmpty(variant.Name))
                     {
@@ -111,7 +113,7 @@ namespace Microsoft.FeatureManagement.Allocators
             {
                 if (TargetingEvaluator.IsTargeted(targetingContext, percentile.From, percentile.To, featureDefinition.Allocation.Seed, _options.IgnoreCase, featureDefinition.Name))
                 {
-                    FeatureVariant variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(percentile.Variant));
+                    variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(percentile.Variant));
 
                     if (!string.IsNullOrEmpty(variant.Name))
                     {
@@ -122,7 +124,7 @@ namespace Microsoft.FeatureManagement.Allocators
 
             if (!string.IsNullOrEmpty(featureDefinition.Allocation.DefaultWhenEnabled))
             {
-                FeatureVariant variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(featureDefinition.Allocation.DefaultWhenEnabled));
+                variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(featureDefinition.Allocation.DefaultWhenEnabled));
 
                 if (!string.IsNullOrEmpty(variant.Name))
                 {
@@ -132,7 +134,7 @@ namespace Microsoft.FeatureManagement.Allocators
 
             //TODO
 
-            return new ValueTask<FeatureVariant>((FeatureVariant)null);
+            return new ValueTask<FeatureVariant>(variant);
         }
     }
 }

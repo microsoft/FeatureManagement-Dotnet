@@ -32,6 +32,7 @@ namespace Microsoft.FeatureManagement
         private readonly ILogger _logger;
         private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
+        private readonly IFeatureVariantOptionsResolver _variantOptionsResolver;
         private readonly FeatureManagementOptions _options;
         private readonly IMemoryCache _parametersCache;
         
@@ -47,6 +48,7 @@ namespace Microsoft.FeatureManagement
             IEnumerable<IFeatureFilterMetadata> featureFilters,
             IEnumerable<ISessionManager> sessionManagers,
             IEnumerable<IFeatureVariantAllocatorMetadata> variantAllocators,
+            IFeatureVariantOptionsResolver variantOptionsResolver,
             ILoggerFactory loggerFactory,
             IOptions<FeatureManagementOptions> options)
         {
@@ -54,6 +56,7 @@ namespace Microsoft.FeatureManagement
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
             _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
             _variantAllocators = variantAllocators ?? throw new ArgumentNullException(nameof(variantAllocators));
+            _variantOptionsResolver = variantOptionsResolver ?? throw new ArgumentNullException(nameof(variantOptionsResolver));
             _allocatorMetadataCache = new ConcurrentDictionary<string, IFeatureVariantAllocatorMetadata>(StringComparer.OrdinalIgnoreCase);
             _contextualFeatureVariantAllocatorCache = new ConcurrentDictionary<string, ContextualFeatureVariantAllocatorEvaluator>(StringComparer.OrdinalIgnoreCase);
             _logger = loggerFactory.CreateLogger<FeatureManager>();
@@ -65,12 +68,17 @@ namespace Microsoft.FeatureManagement
 
         public Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
         {
-            return IsEnabledAsync<object>(feature, null, false, cancellationToken);
+            return IsEnabledAsync<object>(feature, null, false, false, cancellationToken);
         }
 
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, CancellationToken cancellationToken)
         {
-            return IsEnabledAsync(feature, appContext, true, cancellationToken);
+            return IsEnabledAsync(feature, appContext, true, false, cancellationToken);
+        }
+
+        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool ignoreVariant, CancellationToken cancellationToken)
+        {
+            return IsEnabledAsync(feature, appContext, true, ignoreVariant, cancellationToken);
         }
 
         public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
@@ -88,8 +96,8 @@ namespace Microsoft.FeatureManagement
             _parametersCache.Dispose();
         }
 
-        // need way to differentiate between using IsEnabledAsync for variants and not variants
-        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
+        // TODO use ignoreVariant to differentiate between customer use and variant use
+        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, bool ignoreVariant, CancellationToken cancellationToken)
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
@@ -278,7 +286,7 @@ namespace Microsoft.FeatureManagement
                     $"No variants are registered for the feature {feature}");
             }
 
-            FeatureVariant variant = null;
+            FeatureVariant variant;
 
             const string allocatorName = "Targeting";
 
@@ -327,12 +335,13 @@ namespace Microsoft.FeatureManagement
                 // throw something?
             }
 
-            // logic to figure out whether to return ConfigurationValue or resolve ConfigurationReference
+            // logic to figure out how to resolve Configuration to one variable betwen value/reference
 
             Variant returnVariant = new Variant()
             {
                 Name = variant.Name,
-                ConfigurationValue = variant.ConfigurationValue
+                ConfigurationValue = variant.ConfigurationValue,
+                Configuration = await _variantOptionsResolver.GetOptionsAsync(featureDefinition, variant, cancellationToken).ConfigureAwait(false)
             };
 
             return returnVariant;

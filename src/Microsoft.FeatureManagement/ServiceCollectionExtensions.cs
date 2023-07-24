@@ -32,6 +32,8 @@ namespace Microsoft.FeatureManagement
 
             services.TryAddSingleton<IVariantFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 
+            services.TryAddSingleton<IFeatureVariantOptionsResolver, ConfigurationFeatureVariantOptionsResolver>();
+
             services.AddSingleton<ISessionManager, EmptySessionManager>();
 
             services.AddSingleton<FeatureManagerSnapshot>();
