@@ -25,6 +25,7 @@ namespace FeatureFlagDemo.Controllers
         public async Task<IActionResult> Index()
         {
             Variant test = await _featureManager.GetVariantAsync(nameof(MyFeatureFlags.Banner), CancellationToken.None);
+            bool isEnabled = await _featureManager.IsEnabledAsync(nameof(MyFeatureFlags.Banner), CancellationToken.None);
             return View();
         }
 

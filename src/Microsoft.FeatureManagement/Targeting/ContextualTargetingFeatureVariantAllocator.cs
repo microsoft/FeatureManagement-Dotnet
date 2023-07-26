@@ -67,7 +67,6 @@ namespace Microsoft.FeatureManagement.Allocators
 
             FeatureVariant variant = null;
 
-            // check if feature is disabled, and if so just return DefaultWhenDisabled variant? 
             if (!isFeatureEnabled)
             {
                 if (!string.IsNullOrEmpty(featureDefinition.Allocation.DefaultWhenDisabled))

@@ -96,7 +96,6 @@ namespace Microsoft.FeatureManagement
             _parametersCache.Dispose();
         }
 
-        // TODO use ignoreVariant to differentiate between customer use and variant use
         private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, bool ignoreVariant, CancellationToken cancellationToken)
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
@@ -229,13 +228,16 @@ namespace Microsoft.FeatureManagement
                 {
                     FeatureVariant featureVariant = await GetFeatureVariantAsync(feature, featureDefinition, appContext, useAppContext, enabled, cancellationToken);
 
-                    if (featureVariant.StatusOverride == StatusOverride.Enabled)
+                    if (featureVariant != null)
                     {
-                        enabled = true;
-                    }
-                    else if (featureVariant.StatusOverride == StatusOverride.Disabled)
-                    {
-                        enabled = false;
+                        if (featureVariant.StatusOverride == StatusOverride.Enabled)
+                        {
+                            enabled = true;
+                        }
+                        else if (featureVariant.StatusOverride == StatusOverride.Disabled)
+                        {
+                            enabled = false;
+                        }
                     }
                 }
             }
