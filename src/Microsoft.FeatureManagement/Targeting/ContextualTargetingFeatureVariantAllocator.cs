@@ -34,9 +34,10 @@ namespace Microsoft.FeatureManagement.Allocators
         /// </summary>
         /// <param name="variantAllocationContext">Contextual information available for use during the allocation process.</param>
         /// <param name="targetingContext">The targeting context used to determine which variant should be allocated.</param>
+        /// <param name="isFeatureEnabled">A boolean indicating whether the feature the variant is being allocated to is enabled.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns></returns>
-        public ValueTask<FeatureVariant> AllocateVariantAsync(FeatureVariantAllocationContext variantAllocationContext, ITargetingContext targetingContext, CancellationToken cancellationToken)
+        public ValueTask<FeatureVariant> AllocateVariantAsync(FeatureVariantAllocationContext variantAllocationContext, ITargetingContext targetingContext, bool isFeatureEnabled, CancellationToken cancellationToken)
         {
             if (variantAllocationContext == null)
             {
@@ -66,8 +67,8 @@ namespace Microsoft.FeatureManagement.Allocators
 
             FeatureVariant variant = null;
 
-            // check if feature is disabled, and if so just return DefaultWhenDisabled variant? IsEnabledAsync or just EvaluateAsync somewhere? don't want it to be a loop anyway
-            if (featureDefinition.Status == Status.Disabled) // || what? TODO
+            // check if feature is disabled, and if so just return DefaultWhenDisabled variant? 
+            if (!isFeatureEnabled)
             {
                 if (!string.IsNullOrEmpty(featureDefinition.Allocation.DefaultWhenDisabled))
                 {
@@ -108,7 +109,7 @@ namespace Microsoft.FeatureManagement.Allocators
                 }
             }
 
-            // what to do if seed not specified? random int?
+            // what to do if seed not specified? random int? TODO
             foreach (Percentile percentile in featureDefinition.Allocation.Percentile)
             {
                 if (TargetingEvaluator.IsTargeted(targetingContext, percentile.From, percentile.To, featureDefinition.Allocation.Seed, _options.IgnoreCase, featureDefinition.Name))
@@ -131,8 +132,6 @@ namespace Microsoft.FeatureManagement.Allocators
                     return new ValueTask<FeatureVariant>(variant);
                 }
             }
-
-            //TODO
 
             return new ValueTask<FeatureVariant>(variant);
         }

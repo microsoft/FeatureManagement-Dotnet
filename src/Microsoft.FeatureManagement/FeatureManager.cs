@@ -125,8 +125,8 @@ namespace Microsoft.FeatureManagement
                 }
 
                 //
-                // Treat an empty list of enabled filters as a disabled feature
-                if (featureDefinition.EnabledFor == null || !featureDefinition.EnabledFor.Any())
+                // Treat an empty list of enabled filters or if status is disabled as a disabled feature
+                if (featureDefinition.EnabledFor == null || !featureDefinition.EnabledFor.Any() || featureDefinition.Status == Status.Disabled)
                 {
                     enabled = false;
                 }
@@ -159,16 +159,16 @@ namespace Microsoft.FeatureManagement
                                 enabled = true;
                                 break;
                             }
-                            
+
                             continue;
                         }
 
-                        //
-                        // Handle On filters for variants
-                        if (string.Equals(featureFilterConfiguration.Name, "On", StringComparison.OrdinalIgnoreCase))
-                        {
-                               // TODO
-                        }
+                        ////
+                        //// Handle On filters for variants
+                        //if (string.Equals(featureFilterConfiguration.Name, "On", StringComparison.OrdinalIgnoreCase))
+                        //{
+                        //    // TODO
+                        //}
 
                         IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
 
@@ -215,12 +215,27 @@ namespace Microsoft.FeatureManagement
                         {
                             BindSettings(filter, context, filterIndex);
 
-                            if (await featureFilter.EvaluateAsync(context, cancellationToken).ConfigureAwait(false) == targetEvaluation) {
+                            if (await featureFilter.EvaluateAsync(context, cancellationToken).ConfigureAwait(false) == targetEvaluation)
+                            {
                                 enabled = targetEvaluation;
 
                                 break;
                             }
                         }
+                    }
+                }
+                
+                if (!ignoreVariant && (featureDefinition.Variants?.Any() ?? false))
+                {
+                    FeatureVariant featureVariant = await GetFeatureVariantAsync(feature, featureDefinition, appContext, useAppContext, enabled, cancellationToken);
+
+                    if (featureVariant.StatusOverride == StatusOverride.Enabled)
+                    {
+                        enabled = true;
+                    }
+                    else if (featureVariant.StatusOverride == StatusOverride.Disabled)
+                    {
+                        enabled = false;
                     }
                 }
             }
@@ -286,7 +301,29 @@ namespace Microsoft.FeatureManagement
                     $"No variants are registered for the feature {feature}");
             }
 
-            FeatureVariant variant;
+            bool isFeatureEnabled = await IsEnabledAsync(feature, context, true, cancellationToken).ConfigureAwait(false);
+
+            FeatureVariant featureVariant = await GetFeatureVariantAsync(feature, featureDefinition, context, useContext, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
+
+            if (featureVariant == null)
+            {
+                return null;
+            }
+
+            // logic to figure out how to resolve Configuration to one variable betwen value/reference TODO
+            Variant returnVariant = new Variant()
+            {
+                Name = featureVariant.Name,
+                ConfigurationValue = featureVariant.ConfigurationValue,
+                Configuration = await _variantOptionsResolver.GetOptionsAsync(featureDefinition, featureVariant, cancellationToken).ConfigureAwait(false)
+            };
+
+            return returnVariant;
+        }
+
+        private async ValueTask<FeatureVariant> GetFeatureVariantAsync<TContext>(string feature, FeatureDefinition featureDefinition, TContext context, bool useContext, bool isFeatureEnabled, CancellationToken cancellationToken)
+        {
+            FeatureVariant featureVariant;
 
             const string allocatorName = "Targeting";
 
@@ -308,14 +345,14 @@ namespace Microsoft.FeatureManagement
             // IFeatureVariantAllocator
             if (allocator is IFeatureVariantAllocator featureVariantAllocator)
             {
-                variant = await featureVariantAllocator.AllocateVariantAsync(allocationContext, cancellationToken).ConfigureAwait(false);
+                featureVariant = await featureVariantAllocator.AllocateVariantAsync(allocationContext, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
             }
             //
             // IContextualFeatureVariantAllocator
             else if (useContext &&
                      TryGetContextualFeatureVariantAllocator(allocatorName, typeof(TContext), out ContextualFeatureVariantAllocatorEvaluator contextualAllocator))
             {
-                variant = await contextualAllocator.AllocateVariantAsync(allocationContext, context, cancellationToken).ConfigureAwait(false);
+                featureVariant = await contextualAllocator.AllocateVariantAsync(allocationContext, context, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
             }
             //
             // The allocator doesn't implement a feature variant allocator interface capable of performing the evaluation
@@ -328,23 +365,7 @@ namespace Microsoft.FeatureManagement
                         $"The feature variant allocator '{allocatorName}' specified for the feature '{feature}' is not capable of evaluating the requested feature.");
             }
 
-            // TODO
-
-            if (variant == null)
-            {
-                // throw something?
-            }
-
-            // logic to figure out how to resolve Configuration to one variable betwen value/reference
-
-            Variant returnVariant = new Variant()
-            {
-                Name = variant.Name,
-                ConfigurationValue = variant.ConfigurationValue,
-                Configuration = await _variantOptionsResolver.GetOptionsAsync(featureDefinition, variant, cancellationToken).ConfigureAwait(false)
-            };
-
-            return returnVariant;
+            return featureVariant;
         }
 
         private IFeatureVariantAllocatorMetadata GetFeatureVariantAllocatorMetadata(string allocatorName)
