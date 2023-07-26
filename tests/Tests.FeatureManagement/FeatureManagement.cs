@@ -963,6 +963,41 @@ namespace Tests.FeatureManagement
             Assert.True(called);
         }
 
+        [Fact]
+        public async Task UsesVariants()
+        {
+            FeatureFilterConfiguration testFilterConfiguration = new FeatureFilterConfiguration
+            {
+                Name = "Test",
+                Parameters = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()
+                {
+                    { "P1", "V1" },
+                }).Build()
+            };
+
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = ConditionalFeature,
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            testFilterConfiguration
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<TestFilter>();
+
+            // TODO
+        }
+
         private static void DisableEndpointRouting(MvcOptions options)
         {
 #if  NET6_0 || NET5_0 || NETCOREAPP3_1
