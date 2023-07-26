@@ -312,7 +312,7 @@ namespace Microsoft.FeatureManagement
                 return null;
             }
 
-            // logic to figure out how to resolve Configuration to one variable betwen value/reference TODO
+            // logic to resolve Configuration to one variable betwen value/reference TODO
             Variant returnVariant = new Variant()
             {
                 Name = featureVariant.Name,
