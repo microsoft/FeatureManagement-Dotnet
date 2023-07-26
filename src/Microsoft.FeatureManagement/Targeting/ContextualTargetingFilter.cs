@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace Microsoft.FeatureManagement.FeatureFilters
 {
     /// <summary>
-    /// A feature filter that can be used to activate feature for targeted audiences.
+    /// A feature filter that can be used to activate features for targeted audiences.
     /// </summary>
     [FilterAlias(Alias)]
     public class ContextualTargetingFilter : IContextualFeatureFilter<ITargetingContext>, IFilterParametersBinder
