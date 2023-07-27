@@ -17,9 +17,8 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="variantAllocationContext">A variant allocation context that contains information needed to allocate a variant for a feature.</param>
         /// <param name="appContext">A context defined by the application that is passed in to the feature management system to provide contextual information for allocating a variant of a feature.</param>
-        /// <param name="isFeatureEnabled">A boolean indicating whether the feature the variant is being allocated to is enabled.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>The variant that should be allocated for a given feature.</returns>
-        ValueTask<FeatureVariant> AllocateVariantAsync(FeatureVariantAllocationContext variantAllocationContext, TContext appContext, bool isFeatureEnabled, CancellationToken cancellationToken = default);
+        ValueTask<FeatureVariant> AllocateVariantAsync(FeatureVariantAllocationContext variantAllocationContext, TContext appContext, CancellationToken cancellationToken = default);
     }
 }

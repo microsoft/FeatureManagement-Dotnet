@@ -11,6 +11,10 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// 
         /// </summary>
+        None,
+        /// <summary>
+        /// 
+        /// </summary>
         Enabled,
         /// <summary>
         /// 

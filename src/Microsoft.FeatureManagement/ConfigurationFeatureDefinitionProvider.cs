@@ -183,7 +183,6 @@ namespace Microsoft.FeatureManagement
                     }
                 }
 
-                // fix logic for when not to set allocation, shouldn't always be not null? TODO
                 IConfigurationSection allocationSection = configurationSection.GetSection(nameof(FeatureDefinition.Allocation));
                 allocation = new Allocation();
                 allocationSection.Bind(allocation);

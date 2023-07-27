@@ -34,10 +34,9 @@ namespace Microsoft.FeatureManagement.Allocators
         /// </summary>
         /// <param name="variantAllocationContext">Contextual information available for use during the allocation process.</param>
         /// <param name="targetingContext">The targeting context used to determine which variant should be allocated.</param>
-        /// <param name="isFeatureEnabled">A boolean indicating whether the feature the variant is being allocated to is enabled.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns></returns>
-        public ValueTask<FeatureVariant> AllocateVariantAsync(FeatureVariantAllocationContext variantAllocationContext, ITargetingContext targetingContext, bool isFeatureEnabled, CancellationToken cancellationToken)
+        public ValueTask<FeatureVariant> AllocateVariantAsync(FeatureVariantAllocationContext variantAllocationContext, ITargetingContext targetingContext, CancellationToken cancellationToken)
         {
             if (variantAllocationContext == null)
             {
@@ -67,21 +66,6 @@ namespace Microsoft.FeatureManagement.Allocators
 
             FeatureVariant variant = null;
 
-            if (!isFeatureEnabled)
-            {
-                if (!string.IsNullOrEmpty(featureDefinition.Allocation.DefaultWhenDisabled))
-                {
-                    variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(featureDefinition.Allocation.DefaultWhenDisabled));
-
-                    if (!string.IsNullOrEmpty(variant.Name))
-                    {
-                        return new ValueTask<FeatureVariant>(variant);
-                    }
-                }
-
-                return new ValueTask<FeatureVariant>((FeatureVariant)null);
-            }
-
             foreach (User user in featureDefinition.Allocation.User)
             {
                 if (TargetingEvaluator.IsTargeted(targetingContext, user.Users, _options.IgnoreCase))
@@ -108,7 +92,6 @@ namespace Microsoft.FeatureManagement.Allocators
                 }
             }
 
-            // what to do if seed not specified? random int? TODO
             foreach (Percentile percentile in featureDefinition.Allocation.Percentile)
             {
                 if (TargetingEvaluator.IsTargeted(targetingContext, percentile.From, percentile.To, featureDefinition.Allocation.Seed, _options.IgnoreCase, featureDefinition.Name))

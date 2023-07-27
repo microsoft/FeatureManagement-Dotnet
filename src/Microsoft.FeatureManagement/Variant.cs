@@ -18,7 +18,7 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// 
         /// </summary>
-        public IConfiguration Configuration { get; set; }
+        public IConfigurationSection Configuration { get; set; }
 
         /// <summary>
         /// 

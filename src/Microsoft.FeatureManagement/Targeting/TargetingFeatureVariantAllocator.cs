@@ -40,10 +40,9 @@ namespace Microsoft.FeatureManagement.Allocators
         /// Allocates one of the variants configured for a feature based off the provided targeting context.
         /// </summary>
         /// <param name="variantAllocationContext">Contextual information available for use during the allocation process.</param>
-        /// <param name="isFeatureEnabled">A boolean indicating whether the feature the variant is being allocated to is enabled.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns></returns>
-        public async ValueTask<FeatureVariant> AllocateVariantAsync(FeatureVariantAllocationContext variantAllocationContext, bool isFeatureEnabled, CancellationToken cancellationToken)
+        public async ValueTask<FeatureVariant> AllocateVariantAsync(FeatureVariantAllocationContext variantAllocationContext, CancellationToken cancellationToken)
         {
             if (variantAllocationContext == null)
             {
@@ -63,7 +62,7 @@ namespace Microsoft.FeatureManagement.Allocators
                 return null;
             }
 
-            return await _contextualResolver.AllocateVariantAsync(variantAllocationContext, targetingContext, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
+            return await _contextualResolver.AllocateVariantAsync(variantAllocationContext, targetingContext, cancellationToken).ConfigureAwait(false);
         }
     }
 }

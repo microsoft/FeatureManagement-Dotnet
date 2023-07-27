@@ -16,7 +16,7 @@ namespace Microsoft.FeatureManagement
     sealed class ContextualFeatureVariantAllocatorEvaluator : IContextualFeatureVariantAllocator<object>
     {
         private IFeatureVariantAllocatorMetadata _allocator;
-        private Func<object, FeatureVariantAllocationContext, object, bool, CancellationToken, ValueTask<FeatureVariant>> _evaluateFunc;
+        private Func<object, FeatureVariantAllocationContext, object, CancellationToken, ValueTask<FeatureVariant>> _evaluateFunc;
 
         public ContextualFeatureVariantAllocatorEvaluator(IFeatureVariantAllocatorMetadata allocator, Type appContextType)
         {
@@ -44,7 +44,7 @@ namespace Microsoft.FeatureManagement
             _allocator = allocator;
         }
 
-        public ValueTask<FeatureVariant> AllocateVariantAsync(FeatureVariantAllocationContext allocationContext, object context, bool isFeatureEnabled, CancellationToken cancellationToken)
+        public ValueTask<FeatureVariant> AllocateVariantAsync(FeatureVariantAllocationContext allocationContext, object context, CancellationToken cancellationToken)
         {
             if (allocationContext == null)
             {
@@ -56,7 +56,7 @@ namespace Microsoft.FeatureManagement
                 return new ValueTask<FeatureVariant>((FeatureVariant)null);
             }
 
-            return _evaluateFunc(_allocator, allocationContext, context, isFeatureEnabled, cancellationToken);
+            return _evaluateFunc(_allocator, allocationContext, context, cancellationToken);
         }
 
         public static bool IsContextualVariantAllocator(IFeatureVariantAllocatorMetadata allocator, Type appContextType)
@@ -88,7 +88,7 @@ namespace Microsoft.FeatureManagement
             return targetInterface;
         }
 
-        private static Func<object, FeatureVariantAllocationContext, object, bool, CancellationToken, ValueTask<FeatureVariant>> TypeAgnosticEvaluate(Type allocatorType, MethodInfo method)
+        private static Func<object, FeatureVariantAllocationContext, object, CancellationToken, ValueTask<FeatureVariant>> TypeAgnosticEvaluate(Type allocatorType, MethodInfo method)
         {
             //
             // Get the generic version of the evaluation helper method
@@ -108,18 +108,18 @@ namespace Microsoft.FeatureManagement
             // Invoke the method to get the func
             object typeAgnosticDelegate = constructedHelper.Invoke(null, new object[] { method });
 
-            return (Func<object, FeatureVariantAllocationContext, object, bool, CancellationToken, ValueTask<FeatureVariant>>)typeAgnosticDelegate;
+            return (Func<object, FeatureVariantAllocationContext, object, CancellationToken, ValueTask<FeatureVariant>>)typeAgnosticDelegate;
         }
 
-        private static Func<object, FeatureVariantAllocationContext, object, bool, CancellationToken, ValueTask<FeatureVariant>> GenericTypeAgnosticEvaluate<TTarget, TParam1, TParam2, TParam3, TParam4, TReturn>(MethodInfo method)
+        private static Func<object, FeatureVariantAllocationContext, object, CancellationToken, ValueTask<FeatureVariant>> GenericTypeAgnosticEvaluate<TTarget, TParam1, TParam2, TParam3, TReturn>(MethodInfo method)
         {
-            Func<TTarget, FeatureVariantAllocationContext, TParam2, bool, CancellationToken, ValueTask<FeatureVariant>> func =
-                (Func<TTarget, FeatureVariantAllocationContext, TParam2, bool, CancellationToken, ValueTask<FeatureVariant>>)
-                Delegate.CreateDelegate(typeof(Func<TTarget, FeatureVariantAllocationContext, TParam2, bool, CancellationToken, ValueTask<FeatureVariant>>), method);
+            Func<TTarget, FeatureVariantAllocationContext, TParam2, CancellationToken, ValueTask<FeatureVariant>> func =
+                (Func<TTarget, FeatureVariantAllocationContext, TParam2, CancellationToken, ValueTask<FeatureVariant>>)
+                Delegate.CreateDelegate(typeof(Func<TTarget, FeatureVariantAllocationContext, TParam2, CancellationToken, ValueTask<FeatureVariant>>), method);
 
-            Func<object, FeatureVariantAllocationContext, object, bool, CancellationToken, ValueTask<FeatureVariant>> genericDelegate =
-                (object target, FeatureVariantAllocationContext param1, object param2, bool param3, CancellationToken param4) =>
-                    func((TTarget)target, param1, (TParam2)param2, param3, param4);
+            Func<object, FeatureVariantAllocationContext, object, CancellationToken, ValueTask<FeatureVariant>> genericDelegate =
+                (object target, FeatureVariantAllocationContext param1, object param2, CancellationToken param3) =>
+                    func((TTarget)target, param1, (TParam2)param2, param3);
 
             return genericDelegate;
         }

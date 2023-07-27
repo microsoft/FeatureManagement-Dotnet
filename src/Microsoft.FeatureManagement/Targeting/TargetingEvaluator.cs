@@ -5,10 +5,8 @@ using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Microsoft.FeatureManagement.Targeting
 {
@@ -292,17 +290,25 @@ namespace Microsoft.FeatureManagement.Targeting
         {
             byte[] hash;
 
-            byte[] seedBytes = BitConverter.GetBytes(seed);
-
             string userId = ignoreCase ?
                 targetingContext.UserId.ToLower() :
                 targetingContext.UserId;
 
-            string contextId = $"{userId}\n{hint}";
+            string contextId;
+
+            // TODO designate int value for unset seeds (0 here) or add featurevariant property "seedSet"?
+            if (seed != 0)
+            {
+                contextId = $"{userId}\n{seed}";
+            }
+            else
+            {
+                contextId = $"{userId}\n{hint}";
+            }
 
             using (HashAlgorithm hashAlgorithm = SHA256.Create())
             {
-                hash = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(contextId).Concat(seedBytes).ToArray());
+                hash = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(contextId).ToArray());
             }
 
             //
