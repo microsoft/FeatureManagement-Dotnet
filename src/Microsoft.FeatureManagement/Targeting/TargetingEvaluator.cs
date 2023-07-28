@@ -286,7 +286,7 @@ namespace Microsoft.FeatureManagement.Targeting
         /// <summary>
         /// Determines if a given context id should be targeted based off the percentage range given
         /// </summary>
-        public static bool IsTargeted(ITargetingContext targetingContext, double from, double to, int seed, bool ignoreCase, string hint)
+        public static bool IsTargeted(ITargetingContext targetingContext, double from, double to, string seed, bool ignoreCase, string hint)
         {
             byte[] hash;
 
@@ -296,8 +296,7 @@ namespace Microsoft.FeatureManagement.Targeting
 
             string contextId;
 
-            // TODO designate int value for unset seeds (0 here) or add featurevariant property "seedSet"?
-            if (seed != 0)
+            if (!string.IsNullOrEmpty(seed))
             {
                 contextId = $"{userId}\n{seed}";
             }

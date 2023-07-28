@@ -38,6 +38,6 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// Maps users to the same percentile across multiple feature flags.
         /// </summary>
-        public int Seed { get; set; }
+        public string Seed { get; set; }
     }
 }
