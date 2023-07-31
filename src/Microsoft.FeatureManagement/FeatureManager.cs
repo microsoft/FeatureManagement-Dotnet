@@ -5,6 +5,8 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement.Allocators;
+using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -26,10 +28,9 @@ namespace Microsoft.FeatureManagement
         private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
-        private readonly IEnumerable<IFeatureVariantAllocatorMetadata> _variantAllocators;
+        private readonly IContextualFeatureVariantAllocator _contextualFeatureVariantAllocator;
+        private readonly ITargetingContextAccessor _contextAccessor;
         private readonly IConfiguration _configuration;
-        private readonly ConcurrentDictionary<string, IFeatureVariantAllocatorMetadata> _allocatorMetadataCache;
-        private readonly ConcurrentDictionary<string, ContextualFeatureVariantAllocatorEvaluator> _contextualFeatureVariantAllocatorCache;
         private readonly ILogger _logger;
         private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
@@ -47,19 +48,19 @@ namespace Microsoft.FeatureManagement
             IFeatureDefinitionProvider featureDefinitionProvider,
             IEnumerable<IFeatureFilterMetadata> featureFilters,
             IEnumerable<ISessionManager> sessionManagers,
-            IEnumerable<IFeatureVariantAllocatorMetadata> variantAllocators,
+            ITargetingContextAccessor contextAccessor,
             IConfiguration configuration,
             ILoggerFactory loggerFactory,
-            IOptions<FeatureManagementOptions> options)
+            IOptions<FeatureManagementOptions> options,
+            IOptions<TargetingEvaluationOptions> assignerOptions)
         {
             _featureDefinitionProvider = featureDefinitionProvider;
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
             _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
-            _variantAllocators = variantAllocators ?? throw new ArgumentNullException(nameof(variantAllocators));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _allocatorMetadataCache = new ConcurrentDictionary<string, IFeatureVariantAllocatorMetadata>(StringComparer.OrdinalIgnoreCase);
-            _contextualFeatureVariantAllocatorCache = new ConcurrentDictionary<string, ContextualFeatureVariantAllocatorEvaluator>(StringComparer.OrdinalIgnoreCase);
+            _contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
             _logger = loggerFactory.CreateLogger<FeatureManager>();
+            _contextualFeatureVariantAllocator = new ContextualTargetingFeatureVariantAllocator(assignerOptions);
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
@@ -234,17 +235,20 @@ namespace Microsoft.FeatureManagement
 
             if (!ignoreVariant && (featureDefinition.Variants?.Any() ?? false) && featureDefinition.Status != Status.Disabled)
             {
-                FeatureVariant featureVariant = await GetFeatureVariantAsync(feature, featureDefinition, appContext, useAppContext, enabled, cancellationToken);
-
-                if (featureVariant != null)
+                if (appContext is TargetingContext)
                 {
-                    if (featureVariant.StatusOverride == StatusOverride.Enabled)
+                    FeatureVariant featureVariant = await GetFeatureVariantAsync(featureDefinition, appContext as TargetingContext, useAppContext, enabled, cancellationToken);
+
+                    if (featureVariant != null)
                     {
-                        enabled = true;
-                    }
-                    else if (featureVariant.StatusOverride == StatusOverride.Disabled)
-                    {
-                        enabled = false;
+                        if (featureVariant.StatusOverride == StatusOverride.Enabled)
+                        {
+                            enabled = true;
+                        }
+                        else if (featureVariant.StatusOverride == StatusOverride.Disabled)
+                        {
+                            enabled = false;
+                        }
                     }
                 }
             }
@@ -264,10 +268,10 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(feature));
             }
 
-            return GetVariantAsync<object>(feature, null, false, cancellationToken);
+            return GetVariantAsync(feature, null, false, cancellationToken);
         }
 
-        public ValueTask<Variant> GetVariantAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
+        public ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(feature))
             {
@@ -277,7 +281,7 @@ namespace Microsoft.FeatureManagement
             return GetVariantAsync(feature, context, true, cancellationToken);
         }
 
-        private async ValueTask<Variant> GetVariantAsync<TContext>(string feature, TContext context, bool useContext, CancellationToken cancellationToken)
+        private async ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, bool useContext, CancellationToken cancellationToken)
         {
             FeatureDefinition featureDefinition = await _featureDefinitionProvider
                 .GetFeatureDefinitionAsync(feature, cancellationToken)
@@ -301,7 +305,7 @@ namespace Microsoft.FeatureManagement
 
             bool isFeatureEnabled = await IsEnabledAsync(feature, context, true, cancellationToken).ConfigureAwait(false);
 
-            featureVariant = await GetFeatureVariantAsync(feature, featureDefinition, context, useContext, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
+            featureVariant = await GetFeatureVariantAsync(featureDefinition, context, useContext, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
 
             if (featureVariant == null)
             {
@@ -333,7 +337,7 @@ namespace Microsoft.FeatureManagement
             return _configuration.GetSection($"{featureVariant.ConfigurationReference}");
         }
 
-        private async ValueTask<FeatureVariant> GetFeatureVariantAsync<TContext>(string feature, FeatureDefinition featureDefinition, TContext context, bool useContext, bool isFeatureEnabled, CancellationToken cancellationToken)
+        private async ValueTask<FeatureVariant> GetFeatureVariantAsync(FeatureDefinition featureDefinition, TargetingContext context, bool useContext, bool isFeatureEnabled, CancellationToken cancellationToken)
         {
             if (!isFeatureEnabled)
             {
@@ -342,47 +346,25 @@ namespace Microsoft.FeatureManagement
 
             FeatureVariant featureVariant;
 
-            const string allocatorName = "Targeting";
+            // TODO rename back to assigner
 
-            IFeatureVariantAllocatorMetadata allocator = GetFeatureVariantAllocatorMetadata(allocatorName);
-
-            if (allocator == null)
+            if (!useContext) 
             {
-                throw new FeatureManagementException(
-                       FeatureManagementError.MissingFeatureVariantAllocator,
-                       $"The feature variant allocator for feature '{feature}' was not found.");
+                //
+                // Acquire targeting context via accessor
+                context = await _contextAccessor.GetContextAsync(cancellationToken).ConfigureAwait(false);
+
+                //
+                // Ensure targeting can be performed
+                if (context == null)
+                {
+                    _logger.LogWarning("No targeting context available for targeting evaluation.");
+
+                    return null;
+                }
             }
 
-            var allocationContext = new FeatureVariantAllocationContext()
-            {
-                FeatureDefinition = featureDefinition
-            };
-
-            // TODO rename back to assigner, try to move logic from other interfaces to featuremanager where possible and build up from this new perspective
-
-            //
-            // IFeatureVariantAllocator
-            if (allocator is IFeatureVariantAllocator featureVariantAllocator)
-            {
-                featureVariant = await featureVariantAllocator.AllocateVariantAsync(allocationContext, cancellationToken).ConfigureAwait(false);
-            }
-            //
-            // IContextualFeatureVariantAllocator
-            else if (useContext &&
-                     TryGetContextualFeatureVariantAllocator(allocatorName, typeof(TContext), out ContextualFeatureVariantAllocatorEvaluator contextualAllocator))
-            {
-                featureVariant = await contextualAllocator.AllocateVariantAsync(allocationContext, context, cancellationToken).ConfigureAwait(false);
-            }
-            //
-            // The allocator doesn't implement a feature variant allocator interface capable of performing the evaluation
-            else
-            {
-                throw new FeatureManagementException(
-                    FeatureManagementError.InvalidFeatureVariantAllocator,
-                    useContext ?
-                        $"The feature variant allocator '{allocatorName}' specified for the feature '{feature}' is not capable of evaluating the requested feature with the provided context." :
-                        $"The feature variant allocator '{allocatorName}' specified for the feature '{feature}' is not capable of evaluating the requested feature.");
-            }
+            featureVariant = await _contextualFeatureVariantAllocator.AllocateVariantAsync(featureDefinition, context, cancellationToken).ConfigureAwait(false);
 
             if (featureVariant == null)
             {
@@ -394,8 +376,7 @@ namespace Microsoft.FeatureManagement
 
         private FeatureVariant ResolveDefaultFeatureVariant(FeatureDefinition featureDefinition, bool isFeatureEnabled)
         {
-            string defaultVariantPath = isFeatureEnabled ? featureDefinition.Allocation.DefaultWhenEnabled :
-                defaultVariantPath = featureDefinition.Allocation.DefaultWhenDisabled;
+            string defaultVariantPath = isFeatureEnabled ? featureDefinition.Allocation.DefaultWhenEnabled : featureDefinition.Allocation.DefaultWhenDisabled;
 
             if (!string.IsNullOrEmpty(defaultVariantPath))
             {
@@ -408,65 +389,6 @@ namespace Microsoft.FeatureManagement
             }
             
             return null;
-        }
-
-        private IFeatureVariantAllocatorMetadata GetFeatureVariantAllocatorMetadata(string allocatorName)
-        {
-            const string allocatorSuffix = "allocator";
-
-            IFeatureVariantAllocatorMetadata allocator = _allocatorMetadataCache.GetOrAdd(
-                allocatorName,
-                (_) => {
-
-                    IEnumerable<IFeatureVariantAllocatorMetadata> matchingAllocators = _variantAllocators.Where(a =>
-                    {
-                        Type allocatorType = a.GetType();
-
-                        string name = ((AllocatorAliasAttribute)Attribute.GetCustomAttribute(allocatorType, typeof(AllocatorAliasAttribute)))?.Alias;
-
-                        if (name == null)
-                        {
-                            name = allocatorType.Name;
-                        }
-
-                        return NameHelper.IsMatchingReference(
-                            reference: allocatorName,
-                            metadataName: name,
-                            suffix: allocatorSuffix);
-                    });
-
-                    if (matchingAllocators.Count() > 1)
-                    {
-                        throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureVariantAllocator, $"Multiple feature variant allocators match the configured allocator named '{allocatorName}'.");
-                    }
-
-                    return matchingAllocators.FirstOrDefault();
-                }
-            );
-
-            return allocator;
-        }
-
-        private bool TryGetContextualFeatureVariantAllocator(string allocatorName, Type appContextType, out ContextualFeatureVariantAllocatorEvaluator contextualAllocator)
-        {
-            if (appContextType == null)
-            {
-                throw new ArgumentNullException(nameof(appContextType));
-            }
-
-            contextualAllocator = _contextualFeatureVariantAllocatorCache.GetOrAdd(
-                $"{allocatorName}{Environment.NewLine}{appContextType.FullName}",
-                (_) => {
-
-                    IFeatureVariantAllocatorMetadata metadata = GetFeatureVariantAllocatorMetadata(allocatorName);
-
-                    return ContextualFeatureVariantAllocatorEvaluator.IsContextualVariantAllocator(metadata, appContextType) ?
-                        new ContextualFeatureVariantAllocatorEvaluator(metadata, appContextType) :
-                        null;
-                }
-            );
-
-            return contextualAllocator != null;
         }
 
         private void BindSettings(IFeatureFilterMetadata filter, FeatureFilterEvaluationContext context, int filterIndex)

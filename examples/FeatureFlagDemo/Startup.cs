@@ -13,7 +13,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.FeatureManagement;
-using Microsoft.FeatureManagement.Allocators;
 using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace FeatureFlagDemo
@@ -60,7 +59,6 @@ namespace FeatureFlagDemo
                     .AddFeatureFilter<TimeWindowFilter>()
                     .AddFeatureFilter<PercentageFilter>()
                     .AddFeatureFilter<TargetingFilter>()
-                    .AddFeatureVariantAllocator<TargetingFeatureVariantAllocator>()
                     .UseDisabledFeaturesHandler(new FeatureNotEnabledDisabledHandler());
 
             services.AddMvc(o =>

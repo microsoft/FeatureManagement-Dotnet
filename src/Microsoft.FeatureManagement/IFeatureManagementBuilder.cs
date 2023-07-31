@@ -25,15 +25,6 @@ namespace Microsoft.FeatureManagement
         IFeatureManagementBuilder AddFeatureFilter<T>() where T : IFeatureFilterMetadata;
 
         /// <summary>
-        /// Adds a given feature variant allocator to the list of feature variant allocators that will be available to allocate feature variants during runtime.
-        /// Possible feature variant allocator metadata types include <see cref="IFeatureVariantAllocator"/> and <see cref="IContextualFeatureVariantAllocator{TContext}"/>
-        /// Only one feature variant allocator interface can be implemented by a single type.
-        /// </summary>
-        /// <typeparam name="T">An implementation of <see cref="IFeatureVariantAllocatorMetadata"/></typeparam>
-        /// <returns>The feature management builder.</returns>
-        IFeatureManagementBuilder AddFeatureVariantAllocator<T>() where T : IFeatureVariantAllocatorMetadata;
-
-        /// <summary>
         /// Adds an <see cref="ISessionManager"/> to be used for storing feature state in a session.
         /// </summary>
         /// <typeparam name="T">An implementation of <see cref="ISessionManager"/></typeparam>

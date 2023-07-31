@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -77,7 +78,7 @@ namespace Microsoft.FeatureManagement
             return variant;
         }
 
-        public async ValueTask<Variant> GetVariantAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
+        public async ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, CancellationToken cancellationToken)
         {
             string cacheKey = GetVariantCacheKey(feature);
 
@@ -88,7 +89,7 @@ namespace Microsoft.FeatureManagement
                 return _variantCache[cacheKey];
             }
 
-            Variant variant = await _featureManager.GetVariantAsync<TContext>(feature, context, cancellationToken).ConfigureAwait(false);
+            Variant variant = await _featureManager.GetVariantAsync(feature, context, cancellationToken).ConfigureAwait(false);
 
             _variantCache[cacheKey] = variant;
 

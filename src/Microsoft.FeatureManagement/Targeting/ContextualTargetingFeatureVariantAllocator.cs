@@ -14,10 +14,8 @@ namespace Microsoft.FeatureManagement.Allocators
     /// <summary>
     /// A feature variant allocator that can be used to allocate a variant based on targeted audiences.
     /// </summary>
-    [AllocatorAlias(Alias)]
-    public class ContextualTargetingFeatureVariantAllocator : IContextualFeatureVariantAllocator<ITargetingContext>
+    public class ContextualTargetingFeatureVariantAllocator : IContextualFeatureVariantAllocator
     {
-        private const string Alias = "Microsoft.Targeting";
         private readonly TargetingEvaluationOptions _options;
 
         /// <summary>
@@ -32,15 +30,15 @@ namespace Microsoft.FeatureManagement.Allocators
         /// <summary>
         /// Allocates one of the variants configured for a feature based off the provided targeting context.
         /// </summary>
-        /// <param name="variantAllocationContext">Contextual information available for use during the allocation process.</param>
+        /// <param name="featureDefinition">Contains all of the properties defined for a feature in feature management.</param>
         /// <param name="targetingContext">The targeting context used to determine which variant should be allocated.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns></returns>
-        public ValueTask<FeatureVariant> AllocateVariantAsync(FeatureVariantAllocationContext variantAllocationContext, ITargetingContext targetingContext, CancellationToken cancellationToken)
+        public ValueTask<FeatureVariant> AllocateVariantAsync(FeatureDefinition featureDefinition, TargetingContext targetingContext, CancellationToken cancellationToken)
         {
-            if (variantAllocationContext == null)
+            if (featureDefinition == null)
             {
-                throw new ArgumentNullException(nameof(variantAllocationContext));
+                throw new ArgumentNullException(nameof(featureDefinition));
             }
 
             if (targetingContext == null)
@@ -48,20 +46,18 @@ namespace Microsoft.FeatureManagement.Allocators
                 throw new ArgumentNullException(nameof(targetingContext));
             }
 
-            FeatureDefinition featureDefinition = variantAllocationContext.FeatureDefinition;
-
             if (featureDefinition == null)
             {
                 throw new ArgumentException(
-                    $"{nameof(variantAllocationContext)}.{nameof(variantAllocationContext.FeatureDefinition)} cannot be null.",
-                    nameof(variantAllocationContext));
+                    $"{nameof(featureDefinition)}.{nameof(featureDefinition)} cannot be null.",
+                    nameof(featureDefinition));
             }
 
             if (featureDefinition.Variants == null)
             {
                 throw new ArgumentException(
-                    $"{nameof(variantAllocationContext)}.{nameof(variantAllocationContext.FeatureDefinition)}.{nameof(featureDefinition.Variants)} cannot be null.",
-                    nameof(variantAllocationContext));
+                    $"{nameof(featureDefinition)}.{nameof(featureDefinition.Variants)} cannot be null.",
+                    nameof(featureDefinition));
             }
 
             FeatureVariant variant = null;

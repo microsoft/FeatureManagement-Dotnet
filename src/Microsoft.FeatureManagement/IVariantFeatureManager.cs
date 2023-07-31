@@ -3,6 +3,7 @@
 //
 using System.Threading.Tasks;
 using System.Threading;
+using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace Microsoft.FeatureManagement
 {
@@ -40,6 +41,6 @@ namespace Microsoft.FeatureManagement
         /// <param name="context">A context providing information that can be used to evaluate which variant the user will be assigned.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>A variant assigned to the user based on the feature's allocation logic.</returns>
-        ValueTask<Variant> GetVariantAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken = default);
+        ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, CancellationToken cancellationToken = default);
     }
 }
