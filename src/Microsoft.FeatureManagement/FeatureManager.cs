@@ -311,21 +311,7 @@ namespace Microsoft.FeatureManagement
                 return null;
             }
 
-            Variant returnVariant = new Variant()
-            {
-                Name = featureVariant.Name,
-                Configuration = GetVariantConfiguration(featureVariant)
-            };
-
-            return returnVariant;
-        }
-
-        private IConfigurationSection GetVariantConfiguration(FeatureVariant featureVariant)
-        {
-            if (featureVariant == null)
-            {
-                throw new ArgumentNullException(nameof(featureVariant));
-            }
+            IConfigurationSection variantConfiguration;
 
             // TODO how to return IConfigurationSection here? get to the one referenced here somehow?
             //if (featureVariant.ConfigurationValue != null)
@@ -333,7 +319,15 @@ namespace Microsoft.FeatureManagement
             //    return new ConfigurationSection(_configuration., );
             //}
 
-            return _configuration.GetSection($"{featureVariant.ConfigurationReference}");
+            variantConfiguration = _configuration.GetSection($"{featureVariant.ConfigurationReference}");
+
+            Variant returnVariant = new Variant()
+            {
+                Name = featureVariant.Name,
+                Configuration = variantConfiguration
+            };
+
+            return returnVariant;
         }
 
         private async ValueTask<FeatureVariant> GetFeatureVariantAsync(FeatureDefinition featureDefinition, TargetingContext context, bool useContext, bool isFeatureEnabled, CancellationToken cancellationToken)
@@ -344,8 +338,6 @@ namespace Microsoft.FeatureManagement
             }
 
             FeatureVariant featureVariant;
-
-            // TODO rename back to assigner
 
             if (!useContext) 
             {
@@ -367,7 +359,7 @@ namespace Microsoft.FeatureManagement
 
             if (featureVariant == null)
             {
-                return ResolveDefaultFeatureVariant(featureDefinition, isFeatureEnabled);
+                featureVariant = ResolveDefaultFeatureVariant(featureDefinition, isFeatureEnabled);
             }
 
             return featureVariant;
