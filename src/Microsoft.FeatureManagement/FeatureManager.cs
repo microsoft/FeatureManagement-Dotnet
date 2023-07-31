@@ -308,27 +308,24 @@ namespace Microsoft.FeatureManagement
                 return null;
             }
 
-            IConfigurationSection variantConfiguration;
+            IConfigurationSection variantConfiguration = null;
 
-            if (!string.IsNullOrEmpty(featureVariant.ConfigurationValue) && !string.IsNullOrEmpty(featureVariant.ConfigurationReference))
+            bool configValueSet = !string.IsNullOrEmpty(featureVariant.ConfigurationValue);
+            bool configReferenceValueSet = !string.IsNullOrEmpty(featureVariant.ConfigurationReference);
+
+            if (configValueSet && configReferenceValueSet)
             {
                 throw new FeatureManagementException(
                     FeatureManagementError.InvalidVariantConfiguration,
                     $"Both ConfigurationValue and ConfigurationReference are specified for the variant {featureVariant.Name} in feature {feature}");
             }
-
-            if (!string.IsNullOrEmpty(featureVariant.ConfigurationReference))
+            else if (configReferenceValueSet)
             {
-                variantConfiguration = _configuration.GetSection($"{featureVariant.ConfigurationReference}");
+                variantConfiguration = _configuration.GetSection(featureVariant.ConfigurationReference);
             }
-            else if (!string.IsNullOrEmpty(featureVariant.ConfigurationValue))
+            else if (configValueSet)
             {
-                variantConfiguration = null;
-                // TODO how to return IConfigurationSection here if it uses ConfigurationValue? get to the one referenced here somehow?
-                //if (featureVariant.ConfigurationValue != null)
-                //{
-                //    return new ConfigurationSection();
-                //}
+                variantConfiguration = _configuration.GetSection();
             }
 
             Variant returnVariant = new Variant()

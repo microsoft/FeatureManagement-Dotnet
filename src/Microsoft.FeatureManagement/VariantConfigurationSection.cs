@@ -10,6 +10,15 @@ namespace Microsoft.FeatureManagement
     {
         public VariantConfigurationSection(ConfigurationRoot root, string path) : base(root, path) {}
 
+        public VariantConfigurationSection(string configurationValue) 
+        {
 
+        }
+
+        public new string Value
+        {
+            get => this["Value"];
+            set => this["Value"] = value;
+        }
     }
 }

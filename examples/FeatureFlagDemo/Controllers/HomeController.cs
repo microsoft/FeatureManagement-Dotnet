@@ -26,6 +26,7 @@ namespace FeatureFlagDemo.Controllers
         {
             Variant test = await _featureManager.GetVariantAsync(nameof(MyFeatureFlags.Banner), CancellationToken.None);
             var x = test.Configuration["Size"];
+            var y = test.Configuration.Value;
             bool isEnabled = await _featureManager.IsEnabledAsync(nameof(MyFeatureFlags.Banner), CancellationToken.None);
             return View();
         }
