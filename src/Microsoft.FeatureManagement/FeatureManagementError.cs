@@ -36,6 +36,11 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// A feature does not have any feature variants registered when attempting to resolve the variant.
         /// </summary>
-        MissingFeatureVariant
+        MissingFeatureVariant,
+
+        /// <summary>
+        /// A feature variant specifies both a value and reference for its configuration.
+        /// </summary>
+        InvalidVariantConfiguration
     }
 }

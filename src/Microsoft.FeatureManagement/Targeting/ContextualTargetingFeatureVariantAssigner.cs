@@ -9,7 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.FeatureManagement.Assigners
+namespace Microsoft.FeatureManagement
 {
     /// <summary>
     /// A feature variant assigner that can be used to assign a variant based on targeted audiences.

@@ -234,20 +234,17 @@ namespace Microsoft.FeatureManagement
 
             if (!ignoreVariant && (featureDefinition.Variants?.Any() ?? false) && featureDefinition.Status != Status.Disabled)
             {
-                if (appContext is TargetingContext)
-                {
-                    FeatureVariant featureVariant = await GetFeatureVariantAsync(featureDefinition, appContext as TargetingContext, useAppContext, enabled, cancellationToken);
+                FeatureVariant featureVariant = await GetFeatureVariantAsync(featureDefinition, appContext as TargetingContext, useAppContext, enabled, cancellationToken);
 
-                    if (featureVariant != null)
+                if (featureVariant != null)
+                {
+                    if (featureVariant.StatusOverride == StatusOverride.Enabled)
                     {
-                        if (featureVariant.StatusOverride == StatusOverride.Enabled)
-                        {
-                            enabled = true;
-                        }
-                        else if (featureVariant.StatusOverride == StatusOverride.Disabled)
-                        {
-                            enabled = false;
-                        }
+                        enabled = true;
+                    }
+                    else if (featureVariant.StatusOverride == StatusOverride.Disabled)
+                    {
+                        enabled = false;
                     }
                 }
             }
@@ -313,13 +310,26 @@ namespace Microsoft.FeatureManagement
 
             IConfigurationSection variantConfiguration;
 
-            // TODO how to return IConfigurationSection here? get to the one referenced here somehow?
-            //if (featureVariant.ConfigurationValue != null)
-            //{
-            //    return new ConfigurationSection(_configuration., );
-            //}
+            if (!string.IsNullOrEmpty(featureVariant.ConfigurationValue) && !string.IsNullOrEmpty(featureVariant.ConfigurationReference))
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.InvalidVariantConfiguration,
+                    $"Both ConfigurationValue and ConfigurationReference are specified for the variant {featureVariant.Name} in feature {feature}");
+            }
 
-            variantConfiguration = _configuration.GetSection($"{featureVariant.ConfigurationReference}");
+            if (!string.IsNullOrEmpty(featureVariant.ConfigurationReference))
+            {
+                variantConfiguration = _configuration.GetSection($"{featureVariant.ConfigurationReference}");
+            }
+            else if (!string.IsNullOrEmpty(featureVariant.ConfigurationValue))
+            {
+                variantConfiguration = null;
+                // TODO how to return IConfigurationSection here if it uses ConfigurationValue? get to the one referenced here somehow?
+                //if (featureVariant.ConfigurationValue != null)
+                //{
+                //    return new ConfigurationSection();
+                //}
+            }
 
             Variant returnVariant = new Variant()
             {
