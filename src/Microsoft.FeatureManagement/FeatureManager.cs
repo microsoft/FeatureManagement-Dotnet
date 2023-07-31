@@ -232,7 +232,7 @@ namespace Microsoft.FeatureManagement
                 _logger.LogWarning(errorMessage);
             }
 
-            if (!ignoreVariant && (featureDefinition.Variants?.Any() ?? false))
+            if (!ignoreVariant && (featureDefinition.Variants?.Any() ?? false) && featureDefinition.Status != Status.Disabled)
             {
                 FeatureVariant featureVariant = await GetFeatureVariantAsync(feature, featureDefinition, appContext, useAppContext, enabled, cancellationToken);
 
@@ -274,7 +274,7 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(feature));
             }
 
-            return GetVariantAsync<TContext>(feature, context, true, cancellationToken);
+            return GetVariantAsync(feature, context, true, cancellationToken);
         }
 
         private async ValueTask<Variant> GetVariantAsync<TContext>(string feature, TContext context, bool useContext, CancellationToken cancellationToken)

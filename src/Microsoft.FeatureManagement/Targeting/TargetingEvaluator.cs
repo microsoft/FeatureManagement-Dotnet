@@ -284,7 +284,7 @@ namespace Microsoft.FeatureManagement.Targeting
         }
 
         /// <summary>
-        /// Determines if a given context id should be targeted based off the percentage range given
+        /// Determines if a given context id should be targeted based off the provided percentage range
         /// </summary>
         public static bool IsTargeted(ITargetingContext targetingContext, double from, double to, string seed, bool ignoreCase, string hint)
         {
