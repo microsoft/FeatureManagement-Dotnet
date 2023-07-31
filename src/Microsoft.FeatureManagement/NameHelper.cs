@@ -9,11 +9,11 @@ namespace Microsoft.FeatureManagement
     static class NameHelper
     {
         /// <summary>
-        /// Evaluates whether a feature filter or feature variant allocator reference matches a given feature filter/allocator name.
+        /// Evaluates whether a feature filter reference matches a given feature filter name.
         /// </summary>
         /// <param name="reference">A reference to some feature metadata that should be checked for a match with the provided metadata name</param>
-        /// <param name="metadataName">The name used by the feature filter/feature variant allocator</param>
-        /// <param name="suffix">An optional suffix that may be included when referencing the metadata type. E.g. "filter" or "allocator".</param>
+        /// <param name="metadataName">The name used by the feature filter.</param>
+        /// <param name="suffix">An optional suffix that may be included when referencing the metadata type. E.g. "filter".</param>
         /// <returns>True if the reference is a match for the metadata name. False otherwise.</returns>
         public static bool IsMatchingReference(string reference, string metadataName, string suffix)
         {
@@ -28,7 +28,7 @@ namespace Microsoft.FeatureManagement
             }
 
             //
-            // Feature filters/allocator can be referenced with or without their associated suffix ('filter' or 'allocator')
+            // Feature filters can be referenced with or without their associated suffix ('filter')
             // E.g. A feature can reference a filter named 'CustomFilter' as 'Custom' or 'CustomFilter'
             if (!reference.EndsWith(suffix, StringComparison.OrdinalIgnoreCase) &&
                 metadataName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
@@ -37,7 +37,7 @@ namespace Microsoft.FeatureManagement
             }
 
             //
-            // Feature filters/allocators can have namespaces in their alias
+            // Feature filters can have namespaces in their alias
             // If a feature is configured to use a filter without a namespace such as 'MyFilter', then it can match 'MyOrg.MyProduct.MyFilter' or simply 'MyFilter'
             // If a feature is configured to use a filter with a namespace such as 'MyOrg.MyProduct.MyFilter' then it can only match 'MyOrg.MyProduct.MyFilter' 
             if (reference.Contains('.'))

@@ -9,12 +9,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.FeatureManagement.Allocators
+namespace Microsoft.FeatureManagement.Assigners
 {
     /// <summary>
-    /// A feature variant allocator that can be used to allocate a variant based on targeted audiences.
+    /// A feature variant assigner that can be used to assign a variant based on targeted audiences.
     /// </summary>
-    public class ContextualTargetingFeatureVariantAllocator : IContextualFeatureVariantAllocator
+    public class ContextualTargetingFeatureVariantAssigner : IContextualFeatureVariantAssigner
     {
         private readonly TargetingEvaluationOptions _options;
 
@@ -22,19 +22,19 @@ namespace Microsoft.FeatureManagement.Allocators
         /// Creates a targeting contextual feature filter.
         /// </summary>
         /// <param name="options">Options controlling the behavior of the targeting evaluation performed by the filter.</param>
-        public ContextualTargetingFeatureVariantAllocator(IOptions<TargetingEvaluationOptions> options)
+        public ContextualTargetingFeatureVariantAssigner(IOptions<TargetingEvaluationOptions> options)
         {
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         }
 
         /// <summary>
-        /// Allocates one of the variants configured for a feature based off the provided targeting context.
+        /// Assigns one of the variants configured for a feature based off the provided targeting context.
         /// </summary>
         /// <param name="featureDefinition">Contains all of the properties defined for a feature in feature management.</param>
-        /// <param name="targetingContext">The targeting context used to determine which variant should be allocated.</param>
+        /// <param name="targetingContext">The targeting context used to determine which variant should be assigned.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns></returns>
-        public ValueTask<FeatureVariant> AllocateVariantAsync(FeatureDefinition featureDefinition, TargetingContext targetingContext, CancellationToken cancellationToken)
+        public ValueTask<FeatureVariant> AssignVariantAsync(FeatureDefinition featureDefinition, TargetingContext targetingContext, CancellationToken cancellationToken)
         {
             if (featureDefinition == null)
             {

@@ -36,15 +36,6 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// A feature does not have any feature variants registered when attempting to resolve the variant.
         /// </summary>
-        MissingFeatureVariant,
-
-        /// <summary>
-        /// The feature variant allocator configured for the feature being evaluated is an ambiguous reference to multiple registered feature variant allocators.
-        /// </summary>
-        AmbiguousFeatureVariantAllocator,
-
-        MissingFeatureVariantAllocator,
-
-        InvalidFeatureVariantAllocator
+        MissingFeatureVariant
     }
 }

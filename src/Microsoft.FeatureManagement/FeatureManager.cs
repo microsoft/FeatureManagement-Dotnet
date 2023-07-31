@@ -5,7 +5,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.FeatureManagement.Allocators;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Concurrent;
@@ -28,7 +27,7 @@ namespace Microsoft.FeatureManagement
         private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
-        private readonly IContextualFeatureVariantAllocator _contextualFeatureVariantAllocator;
+        private readonly IContextualFeatureVariantAssigner _contextualFeatureVariantAssigner;
         private readonly ITargetingContextAccessor _contextAccessor;
         private readonly IConfiguration _configuration;
         private readonly ILogger _logger;
@@ -60,7 +59,7 @@ namespace Microsoft.FeatureManagement
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
             _logger = loggerFactory.CreateLogger<FeatureManager>();
-            _contextualFeatureVariantAllocator = new ContextualTargetingFeatureVariantAllocator(assignerOptions);
+            _contextualFeatureVariantAssigner = new ContextualTargetingFeatureVariantAssigner(assignerOptions);
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
@@ -364,7 +363,7 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            featureVariant = await _contextualFeatureVariantAllocator.AllocateVariantAsync(featureDefinition, context, cancellationToken).ConfigureAwait(false);
+            featureVariant = await _contextualFeatureVariantAssigner.AssignVariantAsync(featureDefinition, context, cancellationToken).ConfigureAwait(false);
 
             if (featureVariant == null)
             {
