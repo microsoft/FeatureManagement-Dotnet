@@ -9,7 +9,6 @@ using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc;
 using System.Threading.Tasks;
 using System.Threading;
-using Microsoft.Extensions.Configuration;
 
 namespace FeatureFlagDemo.Controllers
 {

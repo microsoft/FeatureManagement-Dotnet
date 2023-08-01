@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.FeatureFilters;
+using Microsoft.FeatureManagement.Targeting;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -27,13 +28,13 @@ namespace Microsoft.FeatureManagement
         private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
-        private readonly IContextualFeatureVariantAssigner _contextualFeatureVariantAssigner;
         private readonly ITargetingContextAccessor _contextAccessor;
         private readonly IConfiguration _configuration;
         private readonly ILogger _logger;
         private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
         private readonly FeatureManagementOptions _options;
+        private readonly TargetingEvaluationOptions _assignerOptions;
         private readonly IMemoryCache _parametersCache;
         
         private class ConfigurationCacheItem
@@ -59,7 +60,7 @@ namespace Microsoft.FeatureManagement
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
             _logger = loggerFactory.CreateLogger<FeatureManager>();
-            _contextualFeatureVariantAssigner = new ContextualTargetingFeatureVariantAssigner(assignerOptions);
+            _assignerOptions = assignerOptions?.Value ?? throw new ArgumentNullException(nameof(assignerOptions));
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
@@ -368,7 +369,7 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            featureVariant = await _contextualFeatureVariantAssigner.AssignVariantAsync(featureDefinition, context, cancellationToken).ConfigureAwait(false);
+            featureVariant = await AssignVariantAsync(featureDefinition, context, cancellationToken).ConfigureAwait(false);
 
             if (featureVariant == null)
             {
@@ -376,6 +377,76 @@ namespace Microsoft.FeatureManagement
             }
 
             return featureVariant;
+        }
+
+        private ValueTask<FeatureVariant> AssignVariantAsync(FeatureDefinition featureDefinition, TargetingContext targetingContext, CancellationToken cancellationToken)
+        {
+            if (featureDefinition == null)
+            {
+                throw new ArgumentNullException(nameof(featureDefinition));
+            }
+
+            if (targetingContext == null)
+            {
+                throw new ArgumentNullException(nameof(targetingContext));
+            }
+
+            if (featureDefinition == null)
+            {
+                throw new ArgumentException(
+                    $"{nameof(featureDefinition)}.{nameof(featureDefinition)} cannot be null.",
+                    nameof(featureDefinition));
+            }
+
+            if (featureDefinition.Variants == null)
+            {
+                throw new ArgumentException(
+                    $"{nameof(featureDefinition)}.{nameof(featureDefinition.Variants)} cannot be null.",
+                    nameof(featureDefinition));
+            }
+
+            FeatureVariant variant = null;
+
+            foreach (User user in featureDefinition.Allocation.User)
+            {
+                if (TargetingEvaluator.IsTargeted(targetingContext, user.Users, _assignerOptions.IgnoreCase))
+                {
+                    variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(user.Variant));
+
+                    if (!string.IsNullOrEmpty(variant.Name))
+                    {
+                        return new ValueTask<FeatureVariant>(variant);
+                    }
+                }
+            }
+
+            foreach (Group group in featureDefinition.Allocation.Group)
+            {
+                if (TargetingEvaluator.IsGroupTargeted(targetingContext, group.Groups, _assignerOptions.IgnoreCase))
+                {
+                    variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(group.Variant));
+
+                    if (!string.IsNullOrEmpty(variant.Name))
+                    {
+                        return new ValueTask<FeatureVariant>(variant);
+                    }
+                }
+            }
+
+            foreach (Percentile percentile in featureDefinition.Allocation.Percentile)
+            {
+                if (TargetingEvaluator.IsTargeted(targetingContext, percentile.From, percentile.To, featureDefinition.Allocation.Seed, _assignerOptions.IgnoreCase, featureDefinition.Name))
+                {
+                    variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(percentile.Variant));
+
+                    if (!string.IsNullOrEmpty(variant.Name))
+                    {
+                        return new ValueTask<FeatureVariant>(variant);
+                    }
+                }
+            }
+
+            return new ValueTask<FeatureVariant>(variant);
         }
 
         private FeatureVariant ResolveDefaultFeatureVariant(FeatureDefinition featureDefinition, bool isFeatureEnabled)
