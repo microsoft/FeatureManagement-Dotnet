@@ -101,16 +101,6 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            if (!string.IsNullOrEmpty(featureDefinition.Allocation.DefaultWhenEnabled))
-            {
-                variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(featureDefinition.Allocation.DefaultWhenEnabled));
-
-                if (!string.IsNullOrEmpty(variant.Name))
-                {
-                    return new ValueTask<FeatureVariant>(variant);
-                }
-            }
-
             return new ValueTask<FeatureVariant>(variant);
         }
     }

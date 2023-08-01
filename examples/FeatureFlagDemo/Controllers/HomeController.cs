@@ -9,6 +9,7 @@ using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc;
 using System.Threading.Tasks;
 using System.Threading;
+using Microsoft.Extensions.Configuration;
 
 namespace FeatureFlagDemo.Controllers
 {
@@ -25,8 +26,8 @@ namespace FeatureFlagDemo.Controllers
         public async Task<IActionResult> Index()
         {
             Variant test = await _featureManager.GetVariantAsync(nameof(MyFeatureFlags.Banner), CancellationToken.None);
-            var x = test.Configuration["Size"];
-            var y = test.Configuration.Value;
+            string x = test.Configuration["Size"];
+            string y = test.Configuration.Value;
             bool isEnabled = await _featureManager.IsEnabledAsync(nameof(MyFeatureFlags.Banner), CancellationToken.None);
             return View();
         }

@@ -325,7 +325,13 @@ namespace Microsoft.FeatureManagement
             }
             else if (configValueSet)
             {
-                variantConfiguration = _configuration.GetSection();
+                foreach (IConfigurationSection section in _configuration.GetSection($"FeatureManagement:{feature}:Variants").GetChildren())
+                {
+                    if (section["Name"] == featureVariant.Name)
+                    {
+                        variantConfiguration = _configuration.GetSection($"{section.Path}:ConfigurationValue");
+                    }
+                }
             }
 
             Variant returnVariant = new Variant()
