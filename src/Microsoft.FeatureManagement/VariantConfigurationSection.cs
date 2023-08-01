@@ -17,7 +17,7 @@ namespace Microsoft.FeatureManagement
         public VariantConfigurationSection(string key, string value)
         {
             MemoryConfigurationSource source = new MemoryConfigurationSource();
-            source.InitialData.Append(new KeyValuePair<string, string>(key, value));
+            source.InitialData = new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>(key, value) };
 
             _root = new ConfigurationRoot(new List<IConfigurationProvider> { new MemoryConfigurationProvider(source) });
             _key = key;
