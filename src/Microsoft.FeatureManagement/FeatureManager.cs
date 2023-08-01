@@ -326,13 +326,17 @@ namespace Microsoft.FeatureManagement
             }
             else if (configValueSet)
             {
-                foreach (IConfigurationSection section in _configuration.GetSection($"FeatureManagement:{feature}:Variants").GetChildren())
-                {
-                    if (section["Name"] == featureVariant.Name)
-                    {
-                        variantConfiguration = _configuration.GetSection($"{section.Path}:ConfigurationValue");
-                    }
-                }
+                //foreach (IConfigurationSection section in _configuration.GetSection($"FeatureManagement:{feature}:Variants").GetChildren())
+                //{
+                //    if (section["Name"] == featureVariant.Name)
+                //    {
+                //        variantConfiguration = _configuration.GetSection($"{section.Path}:ConfigurationValue");
+                //    }
+                //}
+
+                VariantConfigurationSection section = new VariantConfigurationSection(featureVariant.Name, featureVariant.ConfigurationValue);
+
+                variantConfiguration = section;
             }
 
             Variant returnVariant = new Variant()
