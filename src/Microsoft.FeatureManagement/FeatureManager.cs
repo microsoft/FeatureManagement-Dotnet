@@ -48,17 +48,17 @@ namespace Microsoft.FeatureManagement
             IFeatureDefinitionProvider featureDefinitionProvider,
             IEnumerable<IFeatureFilterMetadata> featureFilters,
             IEnumerable<ISessionManager> sessionManagers,
-            ITargetingContextAccessor contextAccessor,
             IConfiguration configuration,
             ILoggerFactory loggerFactory,
             IOptions<FeatureManagementOptions> options,
-            IOptions<TargetingEvaluationOptions> assignerOptions)
+            IOptions<TargetingEvaluationOptions> assignerOptions,
+            ITargetingContextAccessor contextAccessor = null)
         {
             _featureDefinitionProvider = featureDefinitionProvider;
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
             _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
+            _contextAccessor = contextAccessor;
             _logger = loggerFactory.CreateLogger<FeatureManager>();
             _assignerOptions = assignerOptions?.Value ?? throw new ArgumentNullException(nameof(assignerOptions));
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
@@ -288,7 +288,7 @@ namespace Microsoft.FeatureManagement
             {
                 throw new FeatureManagementException(
                     FeatureManagementError.MissingFeature,
-                    $"The feature declaration for the dynamic feature '{feature}' was not found.");
+                    $"The feature declaration for the feature '{feature}' was not found.");
             }
 
             if (featureDefinition.Variants == null)
@@ -326,16 +326,7 @@ namespace Microsoft.FeatureManagement
             }
             else if (configValueSet)
             {
-                //foreach (IConfigurationSection section in _configuration.GetSection($"FeatureManagement:{feature}:Variants").GetChildren())
-                //{
-                //    if (section["Name"] == featureVariant.Name)
-                //    {
-                //        variantConfiguration = _configuration.GetSection($"{section.Path}:ConfigurationValue");
-                //    }
-                //}
-
                 VariantConfigurationSection section = new VariantConfigurationSection(featureVariant.Name, featureVariant.ConfigurationValue);
-
                 variantConfiguration = section;
             }
 
@@ -355,25 +346,35 @@ namespace Microsoft.FeatureManagement
                 return ResolveDefaultFeatureVariant(featureDefinition, isFeatureEnabled);
             }
 
-            FeatureVariant featureVariant;
+            FeatureVariant featureVariant = null;
 
             if (!useContext) 
             {
-                //
-                // Acquire targeting context via accessor
-                context = await _contextAccessor.GetContextAsync(cancellationToken).ConfigureAwait(false);
-
-                //
-                // Ensure targeting can be performed
-                if (context == null)
+                if (_contextAccessor == null)
                 {
-                    _logger.LogWarning("No targeting context available for targeting evaluation.");
+                    _logger.LogWarning($"No instance of {nameof(ITargetingContextAccessor)} is available for targeting evaluation.");
+                }
+                else
+                {
+                    //
+                    // Acquire targeting context via accessor
+                    context = await _contextAccessor.GetContextAsync(cancellationToken).ConfigureAwait(false);
 
-                    return null;
+                    //
+                    // Ensure targeting can be performed
+                    if (context == null)
+                    {
+                        _logger.LogWarning("No targeting context available for targeting evaluation.");
+
+                        return null;
+                    }
                 }
             }
 
-            featureVariant = await AssignVariantAsync(featureDefinition, context, cancellationToken).ConfigureAwait(false);
+            if (context != null)
+            {
+                featureVariant = await AssignVariantAsync(featureDefinition, context, cancellationToken).ConfigureAwait(false);
+            }
 
             if (featureVariant == null)
             {
@@ -395,57 +396,57 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(targetingContext));
             }
 
-            if (featureDefinition == null)
-            {
-                throw new ArgumentException(
-                    $"{nameof(featureDefinition)}.{nameof(featureDefinition)} cannot be null.",
-                    nameof(featureDefinition));
-            }
-
             if (featureDefinition.Variants == null)
             {
-                throw new ArgumentException(
-                    $"{nameof(featureDefinition)}.{nameof(featureDefinition.Variants)} cannot be null.",
-                    nameof(featureDefinition));
+                throw new ArgumentNullException(nameof(featureDefinition.Variants));
             }
 
             FeatureVariant variant = null;
 
-            foreach (User user in featureDefinition.Allocation.User)
+            if (featureDefinition.Allocation.User != null)
             {
-                if (TargetingEvaluator.IsTargeted(targetingContext, user.Users, _assignerOptions.IgnoreCase))
+                foreach (User user in featureDefinition.Allocation.User)
                 {
-                    variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(user.Variant));
-
-                    if (!string.IsNullOrEmpty(variant.Name))
+                    if (TargetingEvaluator.IsTargeted(targetingContext, user.Users, _assignerOptions.IgnoreCase))
                     {
-                        return new ValueTask<FeatureVariant>(variant);
+                        variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(user.Variant));
+
+                        if (!string.IsNullOrEmpty(variant.Name))
+                        {
+                            return new ValueTask<FeatureVariant>(variant);
+                        }
                     }
                 }
             }
 
-            foreach (Group group in featureDefinition.Allocation.Group)
+            if (featureDefinition.Allocation.Group != null)
             {
-                if (TargetingEvaluator.IsGroupTargeted(targetingContext, group.Groups, _assignerOptions.IgnoreCase))
+                foreach (Group group in featureDefinition.Allocation.Group)
                 {
-                    variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(group.Variant));
-
-                    if (!string.IsNullOrEmpty(variant.Name))
+                    if (TargetingEvaluator.IsGroupTargeted(targetingContext, group.Groups, _assignerOptions.IgnoreCase))
                     {
-                        return new ValueTask<FeatureVariant>(variant);
+                        variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(group.Variant));
+
+                        if (!string.IsNullOrEmpty(variant.Name))
+                        {
+                            return new ValueTask<FeatureVariant>(variant);
+                        }
                     }
                 }
             }
 
-            foreach (Percentile percentile in featureDefinition.Allocation.Percentile)
+            if (featureDefinition.Allocation.Percentile != null)
             {
-                if (TargetingEvaluator.IsTargeted(targetingContext, percentile.From, percentile.To, featureDefinition.Allocation.Seed, _assignerOptions.IgnoreCase, featureDefinition.Name))
+                foreach (Percentile percentile in featureDefinition.Allocation.Percentile)
                 {
-                    variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(percentile.Variant));
-
-                    if (!string.IsNullOrEmpty(variant.Name))
+                    if (TargetingEvaluator.IsTargeted(targetingContext, percentile.From, percentile.To, featureDefinition.Allocation.Seed, _assignerOptions.IgnoreCase, featureDefinition.Name))
                     {
-                        return new ValueTask<FeatureVariant>(variant);
+                        variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(percentile.Variant));
+
+                        if (!string.IsNullOrEmpty(variant.Name))
+                        {
+                            return new ValueTask<FeatureVariant>(variant);
+                        }
                     }
                 }
             }

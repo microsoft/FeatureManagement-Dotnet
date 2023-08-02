@@ -17,11 +17,11 @@ namespace Microsoft.FeatureManagement
         public VariantConfigurationSection(string key, string value)
         {
             MemoryConfigurationSource source = new MemoryConfigurationSource();
-            source.InitialData = new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>(key, value) };
+            _path = "Root";
+            source.InitialData = new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>($"{_path}:{key}", value) };
 
             _root = new ConfigurationRoot(new List<IConfigurationProvider> { new MemoryConfigurationProvider(source) });
             _key = key;
-            _path = key;
             Value = value;
         }
 

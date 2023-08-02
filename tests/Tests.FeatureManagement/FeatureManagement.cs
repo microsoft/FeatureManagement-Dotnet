@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
@@ -966,36 +967,65 @@ namespace Tests.FeatureManagement
         [Fact]
         public async Task UsesVariants()
         {
-            FeatureFilterConfiguration testFilterConfiguration = new FeatureFilterConfiguration
-            {
-                Name = "Test",
-                Parameters = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()
-                {
-                    { "P1", "V1" },
-                }).Build()
-            };
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             var services = new ServiceCollection();
 
-            var definitionProvider = new InMemoryFeatureDefinitionProvider(
-                new FeatureDefinition[]
-                {
-                    new FeatureDefinition
-                    {
-                        Name = ConditionalFeature,
-                        EnabledFor = new List<FeatureFilterConfiguration>()
-                        {
-                            testFilterConfiguration
-                        }
-                    }
-                });
-
-            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
-                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
+            services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor)
+                    .AddSingleton(config)
                     .AddFeatureManagement()
-                    .AddFeatureFilter<TestFilter>();
+                    .AddFeatureFilter<TargetingFilter>();
 
-            // TODO
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            targetingContextAccessor.Current = new TargetingContext
+            {
+                UserId = "Marsha",
+                Groups = new List<string> { "Group1" }
+            };
+
+            // Test StatusOverride and Percentile with Seed
+            Variant variant = await featureManager.GetVariantAsync("VariantFeaturePercentileOn");
+
+            Assert.Equal("Big", variant.Name);
+            Assert.Equal("green", variant.Configuration["Color"]);
+            Assert.False(await featureManager.IsEnabledAsync("VariantFeaturePercentileOn"));
+
+            variant = await featureManager.GetVariantAsync("VariantFeaturePercentileOff");
+
+            Assert.Null(variant);
+            Assert.True(await featureManager.IsEnabledAsync("VariantFeaturePercentileOff"));
+
+            // Test Status = Disabled
+            variant = await featureManager.GetVariantAsync("VariantFeatureStatusDisabled");
+
+            Assert.Equal("Small", variant.Name);
+            Assert.Equal("300px", variant.Configuration.Value);
+            Assert.False(await featureManager.IsEnabledAsync("VariantFeatureStatusDisabled"));
+
+            // Test DefaultWhenEnabled
+            variant = await featureManager.GetVariantAsync("VariantFeatureDefaultEnabled");
+
+            Assert.Equal("Medium", variant.Name);
+            Assert.Equal("450px", variant.Configuration.Value);
+            Assert.True(await featureManager.IsEnabledAsync("VariantFeatureDefaultEnabled"));
+
+            // Test User allocation
+            variant = await featureManager.GetVariantAsync("VariantFeatureUser");
+
+            Assert.Equal("Small", variant.Name);
+            Assert.Equal("300px", variant.Configuration.Value);
+            Assert.True(await featureManager.IsEnabledAsync("VariantFeatureUser"));
+
+            // Test Group allocation
+            variant = await featureManager.GetVariantAsync("VariantFeatureGroup");
+
+            Assert.Equal("Small", variant.Name);
+            Assert.Equal("300px", variant.Configuration.Value);
+            Assert.True(await featureManager.IsEnabledAsync("VariantFeatureGroup"));
         }
 
         private static void DisableEndpointRouting(MvcOptions options)
