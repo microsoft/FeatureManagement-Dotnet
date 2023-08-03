@@ -5,7 +5,7 @@
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// A variant of a feature.
+    /// The definition for a variant of a feature.
     /// </summary>
     public class FeatureVariant
     {
@@ -25,7 +25,7 @@ namespace Microsoft.FeatureManagement
         public string ConfigurationReference { get; set; }
 
         /// <summary>
-        /// 
+        /// Overrides the state of the feature if this variant has been assigned.
         /// </summary>
         public StatusOverride StatusOverride { get; set; }
     }

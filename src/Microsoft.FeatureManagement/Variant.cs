@@ -6,17 +6,17 @@ using Microsoft.Extensions.Configuration;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// 
+    /// A variant for a feature.
     /// </summary>
     public class Variant
     {
         /// <summary>
-        /// 
+        /// The name of the variant.
         /// </summary>
         public string Name { get; set; }
 
         /// <summary>
-        /// 
+        /// The configuration value.
         /// </summary>
         public IConfigurationSection Configuration { get; set; }
     }

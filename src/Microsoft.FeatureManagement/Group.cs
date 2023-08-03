@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// 
+    /// The definition of a group allocation.
     /// </summary>
     public class Group
     {
@@ -17,7 +17,7 @@ namespace Microsoft.FeatureManagement
         public string Variant { get; set; }
 
         /// <summary>
-        /// 
+        /// A list of groups that can be assigned this variant.
         /// </summary>
         public IEnumerable<string> Groups { get; set; }
     }

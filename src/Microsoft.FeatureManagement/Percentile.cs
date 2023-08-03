@@ -5,7 +5,7 @@
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// 
+    /// The definition of a percentile allocation.
     /// </summary>
     public class Percentile
     {
@@ -15,12 +15,12 @@ namespace Microsoft.FeatureManagement
         public string Variant { get; set; }
 
         /// <summary>
-        /// 
+        /// The lower bound of the percentage to which the variant will be assigned.
         /// </summary>
         public double From { get; set; }
 
         /// <summary>
-        /// 
+        /// The upper bound of the percentage to which the variant will be assigned.
         /// </summary>
         public double To { get; set; }
     }
