@@ -14,20 +14,16 @@ namespace FeatureFlagDemo.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly IVariantFeatureManager _featureManager;
+        private readonly IFeatureManager _featureManager;
 
-        public HomeController(IVariantFeatureManagerSnapshot featureSnapshot)
+        public HomeController(IFeatureManagerSnapshot featureSnapshot)
         {
             _featureManager = featureSnapshot;
         }
 
         [FeatureGate(MyFeatureFlags.Home)]
-        public async Task<IActionResult> Index()
+        public Task<IActionResult> Index()
         {
-            Variant test = await _featureManager.GetVariantAsync(nameof(MyFeatureFlags.Banner), CancellationToken.None);
-            string x = test.Configuration["Size"];
-            string y = test.Configuration.Value;
-            bool isEnabled = await _featureManager.IsEnabledAsync(nameof(MyFeatureFlags.Banner), CancellationToken.None);
             return View();
         }
 
