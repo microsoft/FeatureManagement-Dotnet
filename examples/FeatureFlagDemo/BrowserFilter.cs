@@ -6,7 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.FeatureManagement;
 using System;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace FeatureFlagDemo.FeatureManagement.FeatureFilters
@@ -24,7 +23,7 @@ namespace FeatureFlagDemo.FeatureManagement.FeatureFilters
             _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
         }
 
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken _)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
             BrowserFilterSettings settings = context.Parameters.Get<BrowserFilterSettings>() ?? new BrowserFilterSettings();
 

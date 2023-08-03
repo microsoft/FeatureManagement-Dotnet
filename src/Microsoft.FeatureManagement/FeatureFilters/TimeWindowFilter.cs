@@ -4,7 +4,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
@@ -41,9 +40,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// Evaluates whether a feature is enabled based on a configurable time window.
         /// </summary>
         /// <param name="context">The feature evaluation context.</param>
-        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>True if the feature is enabled, false otherwise.</returns>
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
             //
             // Check if prebound settings available, otherwise bind from parameters.

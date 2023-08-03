@@ -5,7 +5,6 @@ using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,13 +25,13 @@ namespace Microsoft.FeatureManagement
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
         }
 
-        public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation]CancellationToken cancellationToken)
+        public async IAsyncEnumerable<string> GetFeatureNamesAsync()
         {
             if (_featureNames == null)
             {
                 var featureNames = new List<string>();
 
-                await foreach (string featureName in _featureManager.GetFeatureNamesAsync(cancellationToken).ConfigureAwait(false))
+                await foreach (string featureName in _featureManager.GetFeatureNamesAsync().ConfigureAwait(false))
                 {
                     featureNames.Add(featureName);
                 }
@@ -46,18 +45,18 @@ namespace Microsoft.FeatureManagement
             }
         }
 
-        public Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
+        public Task<bool> IsEnabledAsync(string feature)
         {
             return _flagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key, cancellationToken));
+                (key) => _featureManager.IsEnabledAsync(key));
         }
 
-        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
+        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
         {
             return _flagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key, context, cancellationToken));
+                (key) => _featureManager.IsEnabledAsync(key, context));
         }
 
         public async ValueTask<Variant> GetVariantAsync(string feature, CancellationToken cancellationToken)

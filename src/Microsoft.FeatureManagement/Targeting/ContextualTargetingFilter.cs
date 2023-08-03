@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.Targeting;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
@@ -47,10 +46,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// </summary>
         /// <param name="context">The feature evaluation context.</param>
         /// <param name="targetingContext">The targeting context to use during targeting evaluation.</param>
-        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <exception cref="ArgumentNullException">Thrown if either <paramref name="context"/> or <paramref name="targetingContext"/> is null.</exception>
         /// <returns>True if the feature is enabled, false otherwise.</returns>
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, ITargetingContext targetingContext, CancellationToken cancellationToken)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, ITargetingContext targetingContext)
         {
             if (context == null)
             {

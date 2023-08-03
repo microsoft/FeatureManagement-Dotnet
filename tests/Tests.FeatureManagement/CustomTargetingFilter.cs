@@ -24,9 +24,9 @@ namespace Tests.FeatureManagement
 
         public Func<FeatureFilterEvaluationContext, Task<bool>> Callback { get; set; }
 
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
-            return _contextualFilter.EvaluateAsync(context, new TargetingContext(){ UserId = "Jeff" }, cancellationToken);
+            return _contextualFilter.EvaluateAsync(context, new TargetingContext(){ UserId = "Jeff" });
         }
     }
 }

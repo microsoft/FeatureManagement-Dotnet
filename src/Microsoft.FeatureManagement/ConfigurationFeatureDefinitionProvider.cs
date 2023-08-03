@@ -7,7 +7,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -45,7 +44,7 @@ namespace Microsoft.FeatureManagement
             _changeSubscription = null;
         }
 
-        public Task<FeatureDefinition> GetFeatureDefinitionAsync(string featureName, CancellationToken _)
+        public Task<FeatureDefinition> GetFeatureDefinitionAsync(string featureName)
         {
             if (featureName == null)
             {
@@ -68,7 +67,7 @@ namespace Microsoft.FeatureManagement
         // The async key word is necessary for creating IAsyncEnumerable.
         // The need to disable this warning occurs when implementaing async stream synchronously. 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync([EnumeratorCancellation] CancellationToken _)
+        public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998
         {
             if (Interlocked.Exchange(ref _stale, 0) != 0)

@@ -9,7 +9,6 @@ using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Consoto.Banking.HelpDesk
@@ -63,7 +62,7 @@ namespace Consoto.Banking.HelpDesk
                         Groups = user.Groups
                     };
 
-                    bool enabled = await featureManager.IsEnabledAsync(FeatureName, targetingContext, CancellationToken.None);
+                    bool enabled = await featureManager.IsEnabledAsync(FeatureName, targetingContext);
 
                     //
                     // Output results

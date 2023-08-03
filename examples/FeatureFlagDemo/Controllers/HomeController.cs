@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc;
 using System.Threading.Tasks;
-using System.Threading;
 
 namespace FeatureFlagDemo.Controllers
 {
@@ -22,16 +21,16 @@ namespace FeatureFlagDemo.Controllers
         }
 
         [FeatureGate(MyFeatureFlags.Home)]
-        public Task<IActionResult> Index()
+        public IActionResult Index()
         {
             return View();
         }
 
-        public async Task<IActionResult> About(CancellationToken cancellationToken)
+        public async Task<IActionResult> About()
         {
             ViewData["Message"] = "Your application description page.";
 
-            if (await _featureManager.IsEnabledAsync(nameof(MyFeatureFlags.CustomViewData), cancellationToken))
+            if (await _featureManager.IsEnabledAsync(nameof(MyFeatureFlags.CustomViewData)))
             {
                 ViewData["Message"] = $"This is FANCY CONTENT you can see only if '{nameof(MyFeatureFlags.CustomViewData)}' is enabled.";
             };

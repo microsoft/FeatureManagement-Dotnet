@@ -4,7 +4,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.FeatureManagement;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
@@ -25,7 +24,7 @@ namespace Tests.FeatureManagement
             return parameters;
         }
 
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken _)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
             return Callback?.Invoke(context) ?? Task.FromResult(false);
         }

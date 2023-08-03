@@ -11,7 +11,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -67,26 +66,24 @@ namespace Microsoft.FeatureManagement
             _parametersCache = new MemoryCache(new MemoryCacheOptions());
         }
 
-        public Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
+        public Task<bool> IsEnabledAsync(string feature)
         {
-            return IsEnabledAsync<object>(feature, null, false, false, cancellationToken);
+            return IsEnabledAsync<object>(feature, null, false, false);
         }
 
-        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, CancellationToken cancellationToken)
+        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
         {
-            return IsEnabledAsync(feature, appContext, true, false, cancellationToken);
+            return IsEnabledAsync(feature, appContext, true, false);
         }
 
-        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool ignoreVariant, CancellationToken cancellationToken)
+        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool ignoreVariant)
         {
-            return IsEnabledAsync(feature, appContext, true, ignoreVariant, cancellationToken);
+            return IsEnabledAsync(feature, appContext, true, ignoreVariant);
         }
 
-        public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<string> GetFeatureNamesAsync()
         {
-            await foreach (FeatureDefinition featureDefintion in _featureDefinitionProvider
-                                .GetAllFeatureDefinitionsAsync(cancellationToken)
-                                .ConfigureAwait(false))
+            await foreach (FeatureDefinition featureDefintion in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
             {
                 yield return featureDefintion.Name;
             }
@@ -97,11 +94,11 @@ namespace Microsoft.FeatureManagement
             _parametersCache.Dispose();
         }
 
-        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, bool ignoreVariant, CancellationToken cancellationToken)
+        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, bool ignoreVariant)
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                bool? readSessionResult = await sessionManager.GetAsync(feature, cancellationToken).ConfigureAwait(false);
+                bool? readSessionResult = await sessionManager.GetAsync(feature).ConfigureAwait(false);
 
                 if (readSessionResult.HasValue)
                 {
@@ -111,9 +108,7 @@ namespace Microsoft.FeatureManagement
 
             bool enabled;
 
-            FeatureDefinition featureDefinition = await _featureDefinitionProvider
-                .GetFeatureDefinitionAsync(feature, cancellationToken)
-                .ConfigureAwait(false);
+            FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
 
             if (featureDefinition != null)
             {
@@ -195,7 +190,7 @@ namespace Microsoft.FeatureManagement
                             BindSettings(filter, context, filterIndex);
 
                             if (contextualFilter != null &&
-                                await contextualFilter.EvaluateAsync(context, appContext, cancellationToken).ConfigureAwait(false) == targetEvaluation)
+                                await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation)
                             {
                                 enabled = targetEvaluation;
 
@@ -209,7 +204,7 @@ namespace Microsoft.FeatureManagement
                         {
                             BindSettings(filter, context, filterIndex);
 
-                            if (await featureFilter.EvaluateAsync(context, cancellationToken).ConfigureAwait(false) == targetEvaluation)
+                            if (await featureFilter.EvaluateAsync(context).ConfigureAwait(false) == targetEvaluation)
                             {
                                 enabled = targetEvaluation;
 
@@ -221,7 +216,7 @@ namespace Microsoft.FeatureManagement
 
                 if (!ignoreVariant && (featureDefinition.Variants?.Any() ?? false) && featureDefinition.Status != Status.Disabled)
                 {
-                    FeatureVariant featureVariant = await GetFeatureVariantAsync(featureDefinition, appContext as TargetingContext, useAppContext, enabled, cancellationToken);
+                    FeatureVariant featureVariant = await GetFeatureVariantAsync(featureDefinition, appContext as TargetingContext, useAppContext, enabled, CancellationToken.None);
 
                     if (featureVariant != null)
                     {
@@ -252,7 +247,7 @@ namespace Microsoft.FeatureManagement
 
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                await sessionManager.SetAsync(feature, enabled, cancellationToken).ConfigureAwait(false);
+                await sessionManager.SetAsync(feature, enabled).ConfigureAwait(false);
             }
 
             return enabled;
@@ -281,7 +276,7 @@ namespace Microsoft.FeatureManagement
         private async ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, bool useContext, CancellationToken cancellationToken)
         {
             FeatureDefinition featureDefinition = await _featureDefinitionProvider
-                .GetFeatureDefinitionAsync(feature, cancellationToken)
+                .GetFeatureDefinitionAsync(feature)
                 .ConfigureAwait(false);
 
             if (featureDefinition == null)
@@ -300,7 +295,7 @@ namespace Microsoft.FeatureManagement
 
             FeatureVariant featureVariant;
 
-            bool isFeatureEnabled = await IsEnabledAsync(feature, context, true, cancellationToken).ConfigureAwait(false);
+            bool isFeatureEnabled = await IsEnabledAsync(feature, context, true).ConfigureAwait(false);
 
             featureVariant = await GetFeatureVariantAsync(featureDefinition, context, useContext, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
 
@@ -365,7 +360,7 @@ namespace Microsoft.FeatureManagement
                 {
                     //
                     // Acquire targeting context via accessor
-                    context = await _contextAccessor.GetContextAsync(cancellationToken).ConfigureAwait(false);
+                    context = await _contextAccessor.GetContextAsync().ConfigureAwait(false);
 
                     //
                     // Ensure targeting can be performed
