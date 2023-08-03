@@ -39,7 +39,7 @@ namespace Microsoft.FeatureManagement
         MissingFeatureVariant,
 
         /// <summary>
-        /// A feature variant specifies both a value and reference for its configuration.
+        /// A feature variant specifies both a configuration reference and configuration value, or an invalid configuration reference.
         /// </summary>
         InvalidVariantConfiguration
     }

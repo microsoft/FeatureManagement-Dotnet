@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
@@ -25,7 +24,7 @@ namespace Tests.FeatureManagement
     public class FeatureManagement
     {
         private const string OnFeature = "OnTestFeature";
-        private const string OffFeature = "OffFeature";
+        private const string OffFeature = "OffTestFeature";
         private const string ConditionalFeature = "ConditionalFeature";
         private const string ContextualFeature = "ContextualFeature";
 
@@ -974,8 +973,7 @@ namespace Tests.FeatureManagement
             var targetingContextAccessor = new OnDemandTargetingContextAccessor();
             services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor)
                     .AddSingleton(config)
-                    .AddFeatureManagement()
-                    .AddFeatureFilter<TargetingFilter>();
+                    .AddFeatureManagement();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 

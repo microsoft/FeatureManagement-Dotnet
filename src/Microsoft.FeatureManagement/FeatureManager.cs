@@ -48,19 +48,19 @@ namespace Microsoft.FeatureManagement
             IFeatureDefinitionProvider featureDefinitionProvider,
             IEnumerable<IFeatureFilterMetadata> featureFilters,
             IEnumerable<ISessionManager> sessionManagers,
-            IConfiguration configuration,
             ILoggerFactory loggerFactory,
             IOptions<FeatureManagementOptions> options,
             IOptions<TargetingEvaluationOptions> assignerOptions,
+            IConfiguration configuration = null,
             ITargetingContextAccessor contextAccessor = null)
         {
             _featureDefinitionProvider = featureDefinitionProvider;
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
             _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _contextAccessor = contextAccessor;
             _logger = loggerFactory.CreateLogger<FeatureManager>();
             _assignerOptions = assignerOptions?.Value ?? throw new ArgumentNullException(nameof(assignerOptions));
+            _contextAccessor = contextAccessor;
+            _configuration = configuration;
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
@@ -218,6 +218,23 @@ namespace Microsoft.FeatureManagement
                         }
                     }
                 }
+
+                if (!ignoreVariant && (featureDefinition.Variants?.Any() ?? false) && featureDefinition.Status != Status.Disabled)
+                {
+                    FeatureVariant featureVariant = await GetFeatureVariantAsync(featureDefinition, appContext as TargetingContext, useAppContext, enabled, cancellationToken);
+
+                    if (featureVariant != null)
+                    {
+                        if (featureVariant.StatusOverride == StatusOverride.Enabled)
+                        {
+                            enabled = true;
+                        }
+                        else if (featureVariant.StatusOverride == StatusOverride.Disabled)
+                        {
+                            enabled = false;
+                        }
+                    }
+                }
             }
             else
             {
@@ -231,23 +248,6 @@ namespace Microsoft.FeatureManagement
                 }
                 
                 _logger.LogWarning(errorMessage);
-            }
-
-            if (!ignoreVariant && (featureDefinition.Variants?.Any() ?? false) && featureDefinition.Status != Status.Disabled)
-            {
-                FeatureVariant featureVariant = await GetFeatureVariantAsync(featureDefinition, appContext as TargetingContext, useAppContext, enabled, cancellationToken);
-
-                if (featureVariant != null)
-                {
-                    if (featureVariant.StatusOverride == StatusOverride.Enabled)
-                    {
-                        enabled = true;
-                    }
-                    else if (featureVariant.StatusOverride == StatusOverride.Disabled)
-                    {
-                        enabled = false;
-                    }
-                }
             }
 
             foreach (ISessionManager sessionManager in _sessionManagers)
@@ -291,7 +291,7 @@ namespace Microsoft.FeatureManagement
                     $"The feature declaration for the feature '{feature}' was not found.");
             }
 
-            if (featureDefinition.Variants == null)
+            if (!featureDefinition.Variants?.Any() ?? false)
             {
                 throw new FeatureManagementException(
                     FeatureManagementError.MissingFeatureVariant,
@@ -322,6 +322,13 @@ namespace Microsoft.FeatureManagement
             }
             else if (configReferenceValueSet)
             {
+                if (_configuration == null)
+                {
+                    throw new FeatureManagementException(
+                        FeatureManagementError.InvalidVariantConfiguration,
+                        $"Cannot use {nameof(featureVariant.ConfigurationReference)} if no instance of {nameof(IConfiguration)} is present.");
+                }
+
                 variantConfiguration = _configuration.GetSection(featureVariant.ConfigurationReference);
             }
             else if (configValueSet)
@@ -352,7 +359,7 @@ namespace Microsoft.FeatureManagement
             {
                 if (_contextAccessor == null)
                 {
-                    _logger.LogWarning($"No instance of {nameof(ITargetingContextAccessor)} is available for targeting evaluation.");
+                    _logger.LogWarning($"No instance of {nameof(ITargetingContextAccessor)} is available for targeting evaluation. Using default variants.");
                 }
                 else
                 {
@@ -386,19 +393,11 @@ namespace Microsoft.FeatureManagement
 
         private ValueTask<FeatureVariant> AssignVariantAsync(FeatureDefinition featureDefinition, TargetingContext targetingContext, CancellationToken cancellationToken)
         {
-            if (featureDefinition == null)
+            if (!featureDefinition.Variants?.Any() ?? false)
             {
-                throw new ArgumentNullException(nameof(featureDefinition));
-            }
-
-            if (targetingContext == null)
-            {
-                throw new ArgumentNullException(nameof(targetingContext));
-            }
-
-            if (featureDefinition.Variants == null)
-            {
-                throw new ArgumentNullException(nameof(featureDefinition.Variants));
+                throw new FeatureManagementException(
+                    FeatureManagementError.MissingFeatureVariant,
+                    $"No variants are registered for the feature {featureDefinition.Name}");
             }
 
             FeatureVariant variant = null;
