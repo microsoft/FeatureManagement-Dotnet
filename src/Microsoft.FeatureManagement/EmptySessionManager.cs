@@ -11,12 +11,12 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     class EmptySessionManager : ISessionManager
     {
-        public Task SetAsync(string featureName, bool enabled, CancellationToken cancellationToken)
+        public Task SetAsync(string featureName, bool enabled, CancellationToken _)
         {
             return Task.CompletedTask;
         }
 
-        public Task<bool?> GetAsync(string featureName, CancellationToken cancellationToken)
+        public Task<bool?> GetAsync(string featureName, CancellationToken _)
         {
             return Task.FromResult((bool?)null);
         }

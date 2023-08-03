@@ -25,7 +25,7 @@ namespace Tests.FeatureManagement
             return parameters;
         }
 
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken cancellationToken)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, CancellationToken _)
         {
             return Callback?.Invoke(context) ?? Task.FromResult(false);
         }
