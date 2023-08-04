@@ -232,12 +232,12 @@ namespace Microsoft.FeatureManagement
             string rawValue = configurationSection[keyword];
 
             //
-            // If requirement type is specified, parse it and set the requirementType variable
+            // If the enum is specified, parse it and set the return value
             if (!string.IsNullOrEmpty(rawValue) && !Enum.TryParse(rawValue, ignoreCase: true, out enumValue))
             {
                 throw new FeatureManagementException(
                     FeatureManagementError.InvalidConfigurationSetting,
-                    $"Invalid requirement type '{rawValue}' for feature '{configurationSection.Key}'.");
+                    $"Invalid {typeof(T)?.Name} with value '{rawValue}' for feature '{configurationSection.Key}'.");
             }
 
             return enumValue;

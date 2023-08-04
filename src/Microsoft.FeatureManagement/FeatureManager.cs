@@ -328,7 +328,7 @@ namespace Microsoft.FeatureManagement
             }
             else if (configValueSet)
             {
-                VariantConfigurationSection section = new VariantConfigurationSection(featureVariant.Name, featureVariant.ConfigurationValue);
+                VariantConfigurationSection section = new VariantConfigurationSection(featureVariant.Name, "", featureVariant.ConfigurationValue);
                 variantConfiguration = section;
             }
 

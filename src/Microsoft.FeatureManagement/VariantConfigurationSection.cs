@@ -14,13 +14,12 @@ namespace Microsoft.FeatureManagement
         private readonly string _path;
         private string _key;
 
-        public VariantConfigurationSection(string key, string value)
+        public VariantConfigurationSection(string key, string path, string value)
         {
             MemoryConfigurationSource source = new MemoryConfigurationSource();
-            _path = "Root";
-            source.InitialData = new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>($"{_path}:{key}", value) };
 
             _root = new ConfigurationRoot(new List<IConfigurationProvider> { new MemoryConfigurationProvider(source) });
+            _path = path;
             _key = key;
             Value = value;
         }
@@ -65,7 +64,7 @@ namespace Microsoft.FeatureManagement
 
         public IConfigurationSection GetSection(string key)
         {
-            throw new NotImplementedException();
+            return new VariantConfigurationSection(key, key, null);
         }
     }
 }
