@@ -6,7 +6,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement

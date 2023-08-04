@@ -1,7 +1,9 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.Primitives;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;

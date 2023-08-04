@@ -136,7 +136,7 @@ namespace Microsoft.FeatureManagement
             RequirementType requirementType = RequirementType.Any;
             Status status = Status.Conditional;
             Allocation allocation = null;
-            List<FeatureVariant> variants = new List<FeatureVariant>();
+            List<FeatureVariant> variants = null;
 
             var enabledFor = new List<FeatureFilterConfiguration>();
 
@@ -187,6 +187,7 @@ namespace Microsoft.FeatureManagement
                 allocationSection.Bind(allocation);
 
                 IEnumerable<IConfigurationSection> variantsSections = configurationSection.GetSection(nameof(FeatureDefinition.Variants)).GetChildren();
+                variants = new List<FeatureVariant>();
 
                 foreach (IConfigurationSection section in variantsSections)
                 {

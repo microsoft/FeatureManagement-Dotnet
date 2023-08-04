@@ -214,7 +214,7 @@ namespace Microsoft.FeatureManagement
                     }
                 }
 
-                if (!ignoreVariant && (featureDefinition.Variants?.Any() ?? false) && featureDefinition.Status != Status.Disabled)
+                if (!ignoreVariant && (featureDefinition.Variants?.Any() ?? false) && featureDefinition.Allocation != null && featureDefinition.Status != Status.Disabled)
                 {
                     FeatureVariant featureVariant = await GetFeatureVariantAsync(featureDefinition, appContext as TargetingContext, useAppContext, enabled, CancellationToken.None);
 
@@ -284,6 +284,13 @@ namespace Microsoft.FeatureManagement
                 throw new FeatureManagementException(
                     FeatureManagementError.MissingFeature,
                     $"The feature declaration for the feature '{feature}' was not found.");
+            }
+
+            if (featureDefinition.Allocation == null)
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.MissingAllocation,
+                    $"No allocation is defined for the feature {featureDefinition.Name}");
             }
 
             if (!featureDefinition.Variants?.Any() ?? false)
@@ -388,13 +395,6 @@ namespace Microsoft.FeatureManagement
 
         private ValueTask<FeatureVariant> AssignVariantAsync(FeatureDefinition featureDefinition, TargetingContext targetingContext, CancellationToken cancellationToken)
         {
-            if (!featureDefinition.Variants?.Any() ?? false)
-            {
-                throw new FeatureManagementException(
-                    FeatureManagementError.MissingFeatureVariant,
-                    $"No variants are registered for the feature {featureDefinition.Name}");
-            }
-
             FeatureVariant variant = null;
 
             if (featureDefinition.Allocation.User != null)
