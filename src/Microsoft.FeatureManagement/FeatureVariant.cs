@@ -27,6 +27,6 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// Overrides the state of the feature if this variant has been assigned.
         /// </summary>
-        public StatusOverride StatusOverride { get; set; }
+        public StatusOverride StatusOverride { get; set; } = StatusOverride.None;
     }
 }

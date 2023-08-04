@@ -6,17 +6,17 @@ using System.Collections.Generic;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// 
+    /// The definition of how variants are allocated for a feature.
     /// </summary>
     public class Allocation
     {
         /// <summary>
-        /// 
+        /// The default variant used if the feature is enabled and no variant is assigned.
         /// </summary>
         public string DefaultWhenEnabled { get; set; }
 
         /// <summary>
-        /// 
+        /// The default variant used if the feature is disabled and no variant is assigned.
         /// </summary>
         public string DefaultWhenDisabled { get; set; }
 
