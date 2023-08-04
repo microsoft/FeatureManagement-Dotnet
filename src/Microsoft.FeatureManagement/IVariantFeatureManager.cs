@@ -36,7 +36,7 @@ namespace Microsoft.FeatureManagement
         /// Gets the assigned variant for a specfic feature.
         /// </summary>
         /// <param name="feature">The name of the feature from which the variant will be assigned.</param>
-        /// <param name="context">A context providing information that can be used to evaluate which variant the user will be assigned.</param>
+        /// <param name="context">An instance of <see cref="TargetingContext"/> used to evaluate which variant the user will be assigned.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>A variant assigned to the user based on the feature's allocation logic.</returns>
         ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, CancellationToken cancellationToken = default);

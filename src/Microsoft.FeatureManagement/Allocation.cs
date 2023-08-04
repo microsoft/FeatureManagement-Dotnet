@@ -21,7 +21,7 @@ namespace Microsoft.FeatureManagement
         public string DefaultWhenDisabled { get; set; }
 
         /// <summary>
-        /// Describes a mapping of user id to variant.
+        /// Describes a mapping of user ids to variants.
         /// </summary>
         public IEnumerable<User> User { get; set; }
 
@@ -31,7 +31,7 @@ namespace Microsoft.FeatureManagement
         public IEnumerable<Group> Group { get; set; }
 
         /// <summary>
-        /// Allocate a percentage of the user base to variants.
+        /// Allocates a percentage of the user base to chosen variants.
         /// </summary>
         public IEnumerable<Percentile> Percentile { get; set; }
 

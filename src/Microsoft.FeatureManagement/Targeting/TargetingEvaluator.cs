@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.Targeting
 {
@@ -35,6 +36,27 @@ namespace Microsoft.FeatureManagement.Targeting
             if (!TryValidateSettings(settings, out string paramName, out string reason))
             {
                 throw new ArgumentException(reason, paramName);
+            }
+
+            if (settings.Audience.Exclusion != null)
+            {
+                //
+                // Check if the user is in the exclusion directly
+                if (targetingContext.UserId != null &&
+                    settings.Audience.Exclusion.Users != null &&
+                    settings.Audience.Exclusion.Users.Any(user => targetingContext.UserId.Equals(user, GetComparisonType(ignoreCase))))
+                {
+                    return false;
+                }
+
+                //
+                // Check if the user is in a group within exclusion
+                if (targetingContext.Groups != null &&
+                    settings.Audience.Exclusion.Groups != null &&
+                    settings.Audience.Exclusion.Groups.Any(group => targetingContext.Groups.Any(g => g?.Equals(group, GetComparisonType(ignoreCase)) ?? false)))
+                {
+                    return false;
+                }
             }
 
             //
