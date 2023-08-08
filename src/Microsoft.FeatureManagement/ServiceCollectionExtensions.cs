@@ -34,11 +34,11 @@ namespace Microsoft.FeatureManagement
 
             services.AddSingleton<ISessionManager, EmptySessionManager>();
 
-            services.AddSingleton<FeatureManagerSnapshot>();
+            services.AddScoped<FeatureManagerSnapshot>();
 
-            services.TryAddSingleton<IFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
+            services.TryAddScoped<IFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
 
-            services.TryAddSingleton<IVariantFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
+            services.TryAddScoped<IVariantFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
 
             return new FeatureManagementBuilder(services);
         }
