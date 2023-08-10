@@ -3,12 +3,14 @@
 //
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
+using Microsoft.FeatureManagement.VariantAllocation;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using static System.Collections.Specialized.BitVector32;
 
 namespace Microsoft.FeatureManagement
 {
@@ -183,8 +185,12 @@ namespace Microsoft.FeatureManagement
                 }
 
                 IConfigurationSection allocationSection = configurationSection.GetSection(nameof(FeatureDefinition.Allocation));
-                allocation = new Allocation();
-                allocationSection.Bind(allocation);
+
+                if (allocationSection.Exists())
+                {
+                    allocation = new Allocation();
+                    allocationSection.Bind(allocation);
+                }
 
                 IEnumerable<IConfigurationSection> variantsSections = configurationSection.GetSection(nameof(FeatureDefinition.Variants)).GetChildren();
                 variants = new List<FeatureVariant>();

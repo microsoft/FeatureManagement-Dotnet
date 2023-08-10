@@ -3,6 +3,7 @@
 //
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.FeatureManagement.VariantAllocation;
 
 namespace Microsoft.FeatureManagement
 {

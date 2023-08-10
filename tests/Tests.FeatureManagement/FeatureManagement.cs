@@ -1024,6 +1024,38 @@ namespace Tests.FeatureManagement
             Assert.True(await featureManager.IsEnabledAsync("VariantFeatureGroup"));
         }
 
+        [Fact]
+        public async Task VariantsExceptions()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
+            services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor)
+                    .AddSingleton(config)
+                    .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            // Test throws missing variants exception
+            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.GetVariantAsync("VariantFeatureNoVariants"));
+
+            Assert.Equal(FeatureManagementError.MissingFeatureVariant, e.Error);
+
+            // Test throws invalid variant configuration
+            e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.GetVariantAsync("VariantFeatureBothConfigurations"));
+
+            Assert.Equal(FeatureManagementError.InvalidVariantConfiguration, e.Error);
+
+            // Test throws missing allocation
+            e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.GetVariantAsync("VariantFeatureNoAllocation"));
+
+            Assert.Equal(FeatureManagementError.MissingAllocation, e.Error);
+        }
+
         private static void DisableEndpointRouting(MvcOptions options)
         {
 #if  NET6_0 || NET5_0 || NETCOREAPP3_1

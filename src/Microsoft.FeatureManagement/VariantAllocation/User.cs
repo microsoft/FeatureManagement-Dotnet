@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.FeatureManagement
+namespace Microsoft.FeatureManagement.VariantAllocation
 {
     /// <summary>
     /// The definition of a user allocation.

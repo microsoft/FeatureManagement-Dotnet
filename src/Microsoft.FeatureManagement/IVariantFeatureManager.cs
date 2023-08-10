@@ -7,22 +7,27 @@ using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace Microsoft.FeatureManagement
 {
+    /// <summary>
+    /// Used to evaluate the variant for a feature or whether a feature is enabled or disabled.
+    /// </summary>
     public interface IVariantFeatureManager
     {
         /// <summary>
         /// Checks whether a given feature is enabled.
         /// </summary>
         /// <param name="feature">The name of the feature to check.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>True if the feature is enabled, otherwise false.</returns>
-        Task<bool> IsEnabledAsync(string feature);
+        Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Checks whether a given feature is enabled.
         /// </summary>
         /// <param name="feature">The name of the feature to check.</param>
         /// <param name="context">A context providing information that can be used to evaluate whether a feature should be on or off.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>True if the feature is enabled, otherwise false.</returns>
-        Task<bool> IsEnabledAsync<TContext>(string feature, TContext context);
+        Task<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets the assigned variant for a specfic feature.

@@ -3,7 +3,7 @@
 //
 using System.Collections.Generic;
 
-namespace Microsoft.FeatureManagement
+namespace Microsoft.FeatureManagement.VariantAllocation
 {
     /// <summary>
     /// The definition of how variants are allocated for a feature.
@@ -11,7 +11,7 @@ namespace Microsoft.FeatureManagement
     public class Allocation
     {
         /// <summary>
-        /// The default variant used if the feature is enabled and no variant is assigned.
+        /// The default variant used if the feature is disabled.
         /// </summary>
         public string DefaultWhenEnabled { get; set; }
 
@@ -31,7 +31,7 @@ namespace Microsoft.FeatureManagement
         public IEnumerable<Group> Group { get; set; }
 
         /// <summary>
-        /// Allocates a percentage of the user base to chosen variants.
+        /// Allocates percentiles of user base to variants.
         /// </summary>
         public IEnumerable<Percentile> Percentile { get; set; }
 

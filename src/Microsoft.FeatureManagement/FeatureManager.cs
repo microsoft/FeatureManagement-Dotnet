@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.FeatureFilters;
 using Microsoft.FeatureManagement.Targeting;
+using Microsoft.FeatureManagement.VariantAllocation;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -68,17 +69,27 @@ namespace Microsoft.FeatureManagement
 
         public Task<bool> IsEnabledAsync(string feature)
         {
-            return IsEnabledAsync<object>(feature, null, false, false);
+            return IsEnabledAsync<object>(feature, null, false, false, CancellationToken.None);
         }
 
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
         {
-            return IsEnabledAsync(feature, appContext, true, false);
+            return IsEnabledAsync(feature, appContext, true, false, CancellationToken.None);
         }
 
-        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool ignoreVariant)
+        public Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
         {
-            return IsEnabledAsync(feature, appContext, true, ignoreVariant);
+            return IsEnabledAsync<object>(feature, null, false, false, cancellationToken);
+        }
+
+        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, CancellationToken cancellationToken)
+        {
+            return IsEnabledAsync(feature, appContext, true, false, cancellationToken);
+        }
+
+        private Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool ignoreVariant, CancellationToken cancellationToken)
+        {
+            return IsEnabledAsync(feature, appContext, true, ignoreVariant, cancellationToken);
         }
 
         public async IAsyncEnumerable<string> GetFeatureNamesAsync()
@@ -94,7 +105,7 @@ namespace Microsoft.FeatureManagement
             _parametersCache.Dispose();
         }
 
-        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, bool ignoreVariant)
+        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, bool ignoreVariant, CancellationToken cancellationToken)
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
@@ -302,7 +313,7 @@ namespace Microsoft.FeatureManagement
 
             FeatureVariant featureVariant;
 
-            bool isFeatureEnabled = await IsEnabledAsync(feature, context, true).ConfigureAwait(false);
+            bool isFeatureEnabled = await IsEnabledAsync(feature, context, true, cancellationToken).ConfigureAwait(false);
 
             featureVariant = await GetFeatureVariantAsync(featureDefinition, context, useContext, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
 
@@ -374,8 +385,6 @@ namespace Microsoft.FeatureManagement
                     if (context == null)
                     {
                         _logger.LogWarning("No targeting context available for targeting evaluation.");
-
-                        return null;
                     }
                 }
             }
@@ -403,7 +412,7 @@ namespace Microsoft.FeatureManagement
                 {
                     if (TargetingEvaluator.IsTargeted(targetingContext, user.Users, _assignerOptions.IgnoreCase))
                     {
-                        variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(user.Variant));
+                        variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == user.Variant);
 
                         if (!string.IsNullOrEmpty(variant.Name))
                         {
@@ -419,7 +428,7 @@ namespace Microsoft.FeatureManagement
                 {
                     if (TargetingEvaluator.IsGroupTargeted(targetingContext, group.Groups, _assignerOptions.IgnoreCase))
                     {
-                        variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(group.Variant));
+                        variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == group.Variant);
 
                         if (!string.IsNullOrEmpty(variant.Name))
                         {
@@ -435,7 +444,7 @@ namespace Microsoft.FeatureManagement
                 {
                     if (TargetingEvaluator.IsTargeted(targetingContext, percentile.From, percentile.To, featureDefinition.Allocation.Seed, _assignerOptions.IgnoreCase, featureDefinition.Name))
                     {
-                        variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(percentile.Variant));
+                        variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == percentile.Variant);
 
                         if (!string.IsNullOrEmpty(variant.Name))
                         {
@@ -454,7 +463,7 @@ namespace Microsoft.FeatureManagement
 
             if (!string.IsNullOrEmpty(defaultVariantPath))
             {
-                FeatureVariant defaultVariant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name.Equals(defaultVariantPath));
+                FeatureVariant defaultVariant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == defaultVariantPath);
 
                 if (!string.IsNullOrEmpty(defaultVariant.Name))
                 {

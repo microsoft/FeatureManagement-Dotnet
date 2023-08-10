@@ -59,6 +59,20 @@ namespace Microsoft.FeatureManagement
                 (key) => _featureManager.IsEnabledAsync(key, context));
         }
 
+        public Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
+        {
+            return _flagCache.GetOrAdd(
+                feature,
+                (key) => _featureManager.IsEnabledAsync(key));
+        }
+
+        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
+        {
+            return _flagCache.GetOrAdd(
+                feature,
+                (key) => _featureManager.IsEnabledAsync(key, context));
+        }
+
         public async ValueTask<Variant> GetVariantAsync(string feature, CancellationToken cancellationToken)
         {
             string cacheKey = GetVariantCacheKey(feature);

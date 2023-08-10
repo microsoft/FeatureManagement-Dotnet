@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.Targeting
 {
@@ -198,7 +197,7 @@ namespace Microsoft.FeatureManagement.Targeting
                     {
                         string audienceContextId = $"{userId}\n{hint}\n{group}";
 
-                        if (IsTargeted(audienceContextId, groupRollout.RolloutPercentage))
+                        if (IsTargeted(audienceContextId, 0, groupRollout.RolloutPercentage))
                         {
                             return true;
                         }
@@ -234,7 +233,7 @@ namespace Microsoft.FeatureManagement.Targeting
 
             string defaultContextId = $"{userId}\n{hint}";
 
-            return IsTargeted(defaultContextId, defaultRolloutPercentage);
+            return IsTargeted(defaultContextId, 0, defaultRolloutPercentage);
         }
 
         /// <summary>
@@ -310,8 +309,6 @@ namespace Microsoft.FeatureManagement.Targeting
         /// </summary>
         public static bool IsTargeted(ITargetingContext targetingContext, double from, double to, string seed, bool ignoreCase, string hint)
         {
-            byte[] hash;
-
             string userId = ignoreCase ?
                 targetingContext.UserId.ToLower() :
                 targetingContext.UserId;
@@ -327,28 +324,17 @@ namespace Microsoft.FeatureManagement.Targeting
                 contextId = $"{userId}\n{hint}";
             }
 
-            using (HashAlgorithm hashAlgorithm = SHA256.Create())
-            {
-                hash = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(contextId).ToArray());
-            }
-
-            //
-            // Use first 4 bytes for percentage calculation
-            // Cryptographic hashing algorithms ensure adequate entropy across hash
-            uint contextMarker = BitConverter.ToUInt32(hash, 0);
-
-            double contextPercentage = (contextMarker / (double)uint.MaxValue) * 100;
-
-            return contextPercentage >= from && contextPercentage <= to;
+            return IsTargeted(contextId, from, to);
         }
 
         /// <summary>
         /// Determines if a given context id should be targeted based off the provided percentage
         /// </summary>
         /// <param name="contextId">A context identifier that determines what the percentage is applicable for</param>
-        /// <param name="percentage">The total percentage of possible context identifiers that should be targeted</param>
+        /// <param name="from">The lower bound of the percentage for which the context identifier will be targeted</param>
+        /// <param name="to">The upper bound of the percentage for which the context identifier will be targeted</param>
         /// <returns>A boolean representing if the context identifier should be targeted</returns>
-        private static bool IsTargeted(string contextId, double percentage)
+        private static bool IsTargeted(string contextId, double from, double to)
         {
             byte[] hash;
 
@@ -364,7 +350,7 @@ namespace Microsoft.FeatureManagement.Targeting
 
             double contextPercentage = (contextMarker / (double)uint.MaxValue) * 100;
 
-            return contextPercentage < percentage;
+            return contextPercentage >= from && contextPercentage < to;
         }
     }
 }
