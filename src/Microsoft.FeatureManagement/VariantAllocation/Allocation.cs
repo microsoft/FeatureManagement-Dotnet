@@ -11,12 +11,12 @@ namespace Microsoft.FeatureManagement.VariantAllocation
     public class Allocation
     {
         /// <summary>
-        /// The default variant used if the feature is disabled.
+        /// The default variant used if the feature is enabled and no variant is assigned.
         /// </summary>
         public string DefaultWhenEnabled { get; set; }
 
         /// <summary>
-        /// The default variant used if the feature is disabled and no variant is assigned.
+        /// The default variant used if the feature is disabled.
         /// </summary>
         public string DefaultWhenDisabled { get; set; }
 
