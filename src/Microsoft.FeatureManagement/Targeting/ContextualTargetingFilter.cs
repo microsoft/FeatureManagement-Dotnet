@@ -142,6 +142,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <returns>A boolean representing if the context identifier should be targeted</returns>
         private bool IsTargeted(string contextId, double percentage)
         {
+            //
+            // Handle edge case of exact 100 bucket
+            if (percentage == 100)
+            {
+                return true;
+            }
+
             byte[] hash;
 
             using (HashAlgorithm hashAlgorithm = SHA256.Create())
