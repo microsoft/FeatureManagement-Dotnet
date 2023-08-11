@@ -442,7 +442,7 @@ namespace Microsoft.FeatureManagement
             {
                 foreach (Percentile percentile in featureDefinition.Allocation.Percentile)
                 {
-                    if (TargetingEvaluator.IsTargeted(targetingContext, percentile.From, percentile.To, featureDefinition.Allocation.Seed, _assignerOptions.IgnoreCase, featureDefinition.Name))
+                    if (TargetingEvaluator.IsTargeted(targetingContext, percentile.From, percentile.To, _assignerOptions.IgnoreCase, featureDefinition.Allocation.Seed))
                     {
                         variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == percentile.Variant);
 

@@ -16,7 +16,7 @@ namespace Microsoft.FeatureManagement
         public string Name { get; set; }
 
         /// <summary>
-        /// The configuration value.
+        /// The configuration of the variant.
         /// </summary>
         public IConfigurationSection Configuration { get; set; }
     }

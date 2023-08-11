@@ -156,7 +156,7 @@ namespace Microsoft.FeatureManagement.Targeting
         }
 
         /// <summary>
-        /// Determine if a targeting context is targeted by presence in a group
+        /// Determine if a targeting context is targeted by presence in a group and its rollout percentage
         /// </summary>
         public static bool IsTargeted(
             ITargetingContext targetingContext,
@@ -307,22 +307,13 @@ namespace Microsoft.FeatureManagement.Targeting
         /// <summary>
         /// Determines if a given context id should be targeted based off the provided percentage range
         /// </summary>
-        public static bool IsTargeted(ITargetingContext targetingContext, double from, double to, string seed, bool ignoreCase, string hint)
+        public static bool IsTargeted(ITargetingContext targetingContext, double from, double to, bool ignoreCase, string hint)
         {
             string userId = ignoreCase ?
                 targetingContext.UserId.ToLower() :
                 targetingContext.UserId;
 
-            string contextId;
-
-            if (!string.IsNullOrEmpty(seed))
-            {
-                contextId = $"{userId}\n{seed}";
-            }
-            else
-            {
-                contextId = $"{userId}\n{hint}";
-            }
+            string contextId = $"{userId}\n{hint}";
 
             return IsTargeted(contextId, from, to);
         }
@@ -349,6 +340,13 @@ namespace Microsoft.FeatureManagement.Targeting
             uint contextMarker = BitConverter.ToUInt32(hash, 0);
 
             double contextPercentage = (contextMarker / (double)uint.MaxValue) * 100;
+
+            //
+            // Handle edge case of exact 100 bucket
+            if (contextPercentage == 100)
+            {
+                return to == 100;
+            }
 
             return contextPercentage >= from && contextPercentage < to;
         }

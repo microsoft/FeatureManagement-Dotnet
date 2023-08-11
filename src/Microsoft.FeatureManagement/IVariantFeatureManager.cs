@@ -8,7 +8,7 @@ using Microsoft.FeatureManagement.FeatureFilters;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// Used to evaluate the variant for a feature or whether a feature is enabled or disabled.
+    /// Used to evaluate the enabled state of a feature and/or get the assigned variant of a feature, if any.
     /// </summary>
     public interface IVariantFeatureManager
     {
@@ -32,18 +32,18 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// Gets the assigned variant for a specfic feature.
         /// </summary>
-        /// <param name="feature">The name of the feature from which the variant will be assigned.</param>
+        /// <param name="feature">The name of the feature to evaluate.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
-        /// <returns>A variant assigned to the user based on the feature's allocation logic.</returns>
+        /// <returns>A variant assigned to the user based on the feature's configured allocation.</returns>
         ValueTask<Variant> GetVariantAsync(string feature, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets the assigned variant for a specfic feature.
         /// </summary>
-        /// <param name="feature">The name of the feature from which the variant will be assigned.</param>
+        /// <param name="feature">The name of the feature to evaluate.</param>
         /// <param name="context">An instance of <see cref="TargetingContext"/> used to evaluate which variant the user will be assigned.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
-        /// <returns>A variant assigned to the user based on the feature's allocation logic.</returns>
+        /// <returns>A variant assigned to the user based on the feature's configured allocation.</returns>
         ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, CancellationToken cancellationToken = default);
     }
 }
