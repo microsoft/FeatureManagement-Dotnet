@@ -4,12 +4,12 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.FeatureManagement.VariantAllocation
+namespace Microsoft.FeatureManagement
 {
     /// <summary>
     /// The definition of a user allocation.
     /// </summary>
-    public class User
+    public class UserAllocation
     {
         /// <summary>
         /// The name of the variant.

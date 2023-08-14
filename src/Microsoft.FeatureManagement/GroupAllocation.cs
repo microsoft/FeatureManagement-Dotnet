@@ -4,12 +4,12 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.FeatureManagement.VariantAllocation
+namespace Microsoft.FeatureManagement
 {
     /// <summary>
     /// The definition of a group allocation.
     /// </summary>
-    public class Group
+    public class GroupAllocation
     {
         /// <summary>
         /// The name of the variant.

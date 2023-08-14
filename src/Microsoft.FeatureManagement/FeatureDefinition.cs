@@ -3,7 +3,6 @@
 //
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.FeatureManagement.VariantAllocation;
 
 namespace Microsoft.FeatureManagement
 {
@@ -29,10 +28,10 @@ namespace Microsoft.FeatureManagement
         public RequirementType RequirementType { get; set; } = RequirementType.Any;
 
         /// <summary>
-        /// When set to <see cref="Status.Disabled"/>, this feature will always be considered disabled regardless of the rest of the feature definition.
-        /// The default value is <see cref="Status.Conditional"/>.
+        /// When set to <see cref="FeatureStatus.Disabled"/>, this feature will always be considered disabled regardless of the rest of the feature definition.
+        /// The default value is <see cref="FeatureStatus.Conditional"/>.
         /// </summary>
-        public Status Status { get; set; } = Status.Conditional;
+        public FeatureStatus Status { get; set; } = FeatureStatus.Conditional;
 
         /// <summary>
         /// Describes how variants should be allocated.
@@ -40,8 +39,8 @@ namespace Microsoft.FeatureManagement
         public Allocation Allocation { get; set; }
 
         /// <summary>
-        /// A list of feature variants that specify a configuration to return when assigned.
+        /// A list of variant definitions that specify a configuration to return when assigned.
         /// </summary>
-        public IEnumerable<FeatureVariant> Variants { get; set; } = Enumerable.Empty<FeatureVariant>();
+        public IEnumerable<VariantDefinition> Variants { get; set; } = Enumerable.Empty<VariantDefinition>();
     }
 }

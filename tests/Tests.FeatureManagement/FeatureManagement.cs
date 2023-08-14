@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -976,6 +977,7 @@ namespace Tests.FeatureManagement
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
             IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+            CancellationToken cancellationToken = CancellationToken.None;
 
             targetingContextAccessor.Current = new TargetingContext
             {
@@ -984,44 +986,44 @@ namespace Tests.FeatureManagement
             };
 
             // Test StatusOverride and Percentile with Seed
-            Variant variant = await featureManager.GetVariantAsync("VariantFeaturePercentileOn");
+            Variant variant = await featureManager.GetVariantAsync("VariantFeaturePercentileOn", cancellationToken);
 
             Assert.Equal("Big", variant.Name);
             Assert.Equal("green", variant.Configuration["Color"]);
-            Assert.False(await featureManager.IsEnabledAsync("VariantFeaturePercentileOn"));
+            Assert.False(await featureManager.IsEnabledAsync("VariantFeaturePercentileOn", cancellationToken));
 
-            variant = await featureManager.GetVariantAsync("VariantFeaturePercentileOff");
+            variant = await featureManager.GetVariantAsync("VariantFeaturePercentileOff", cancellationToken);
 
             Assert.Null(variant);
-            Assert.True(await featureManager.IsEnabledAsync("VariantFeaturePercentileOff"));
+            Assert.True(await featureManager.IsEnabledAsync("VariantFeaturePercentileOff", cancellationToken));
 
             // Test Status = Disabled
-            variant = await featureManager.GetVariantAsync("VariantFeatureStatusDisabled");
+            variant = await featureManager.GetVariantAsync("VariantFeatureStatusDisabled", cancellationToken);
 
             Assert.Equal("Small", variant.Name);
             Assert.Equal("300px", variant.Configuration.Value);
-            Assert.False(await featureManager.IsEnabledAsync("VariantFeatureStatusDisabled"));
+            Assert.False(await featureManager.IsEnabledAsync("VariantFeatureStatusDisabled", cancellationToken));
 
             // Test DefaultWhenEnabled
-            variant = await featureManager.GetVariantAsync("VariantFeatureDefaultEnabled");
+            variant = await featureManager.GetVariantAsync("VariantFeatureDefaultEnabled", cancellationToken);
 
             Assert.Equal("Medium", variant.Name);
             Assert.Equal("450px", variant.Configuration.Value);
-            Assert.True(await featureManager.IsEnabledAsync("VariantFeatureDefaultEnabled"));
+            Assert.True(await featureManager.IsEnabledAsync("VariantFeatureDefaultEnabled", cancellationToken));
 
             // Test User allocation
-            variant = await featureManager.GetVariantAsync("VariantFeatureUser");
+            variant = await featureManager.GetVariantAsync("VariantFeatureUser", cancellationToken);
 
             Assert.Equal("Small", variant.Name);
             Assert.Equal("300px", variant.Configuration.Value);
-            Assert.True(await featureManager.IsEnabledAsync("VariantFeatureUser"));
+            Assert.True(await featureManager.IsEnabledAsync("VariantFeatureUser", cancellationToken));
 
             // Test Group allocation
-            variant = await featureManager.GetVariantAsync("VariantFeatureGroup");
+            variant = await featureManager.GetVariantAsync("VariantFeatureGroup", cancellationToken);
 
             Assert.Equal("Small", variant.Name);
             Assert.Equal("300px", variant.Configuration.Value);
-            Assert.True(await featureManager.IsEnabledAsync("VariantFeatureGroup"));
+            Assert.True(await featureManager.IsEnabledAsync("VariantFeatureGroup", cancellationToken));
         }
 
         [Fact]
@@ -1039,19 +1041,20 @@ namespace Tests.FeatureManagement
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
             IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+            CancellationToken cancellationToken = CancellationToken.None;
 
             // Test throws missing variants exception
-            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.GetVariantAsync("VariantFeatureNoVariants"));
+            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.GetVariantAsync("VariantFeatureNoVariants", cancellationToken));
 
-            Assert.Equal(FeatureManagementError.MissingFeatureVariant, e.Error);
+            Assert.Equal(FeatureManagementError.MissingVariantDefinition, e.Error);
 
             // Test throws invalid variant configuration
-            e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.GetVariantAsync("VariantFeatureBothConfigurations"));
+            e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.GetVariantAsync("VariantFeatureBothConfigurations", cancellationToken));
 
             Assert.Equal(FeatureManagementError.InvalidVariantConfiguration, e.Error);
 
             // Test throws missing allocation
-            e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.GetVariantAsync("VariantFeatureNoAllocation"));
+            e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.GetVariantAsync("VariantFeatureNoAllocation", cancellationToken));
 
             Assert.Equal(FeatureManagementError.MissingAllocation, e.Error);
         }

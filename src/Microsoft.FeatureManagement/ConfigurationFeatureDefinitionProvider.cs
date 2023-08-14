@@ -3,7 +3,6 @@
 //
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
-using Microsoft.FeatureManagement.VariantAllocation;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -135,9 +134,9 @@ namespace Microsoft.FeatureManagement
             */
 
             RequirementType requirementType = RequirementType.Any;
-            Status status = Status.Conditional;
+            FeatureStatus status = FeatureStatus.Conditional;
             Allocation allocation = null;
-            List<FeatureVariant> variants = null;
+            List<VariantDefinition> variants = null;
 
             var enabledFor = new List<FeatureFilterConfiguration>();
 
@@ -192,13 +191,13 @@ namespace Microsoft.FeatureManagement
                 }
 
                 IEnumerable<IConfigurationSection> variantsSections = configurationSection.GetSection(nameof(FeatureDefinition.Variants)).GetChildren();
-                variants = new List<FeatureVariant>();
+                variants = new List<VariantDefinition>();
 
                 foreach (IConfigurationSection section in variantsSections)
                 {
-                    if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[nameof(FeatureVariant.Name)]))
+                    if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[nameof(VariantDefinition.Name)]))
                     {
-                        FeatureVariant variant = new FeatureVariant();
+                        VariantDefinition variant = new VariantDefinition();
                         section.Bind(variant);
                         variants.Add(variant);
                     }

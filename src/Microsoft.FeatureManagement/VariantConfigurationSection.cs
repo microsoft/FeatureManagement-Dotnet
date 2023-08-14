@@ -2,8 +2,8 @@
 // Licensed under the MIT license.
 //
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.Primitives;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -12,15 +12,16 @@ namespace Microsoft.FeatureManagement
 {
     internal class VariantConfigurationSection : IConfigurationSection
     {
-        private readonly ConfigurationRoot _root;
+        private readonly string _key;
         private readonly string _path;
-        private string _key;
 
         public VariantConfigurationSection(string key, string path, string value)
         {
-            MemoryConfigurationSource source = new MemoryConfigurationSource();
+            if (string.IsNullOrEmpty(key))
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
 
-            _root = new ConfigurationRoot(new List<IConfigurationProvider> { new MemoryConfigurationProvider(source) });
             _path = path;
             _key = key;
             Value = value;
@@ -30,11 +31,11 @@ namespace Microsoft.FeatureManagement
         {
             get
             {
-                return _root[ConfigurationPath.Combine(Path, key)];
+                throw new NotImplementedException();
             }
             set
             {
-                _root[ConfigurationPath.Combine(Path, key)] = value;
+                throw new NotImplementedException();
             }
         }
 
@@ -42,17 +43,7 @@ namespace Microsoft.FeatureManagement
 
         public string Path => _path;
 
-        public string Value
-        {
-            get
-            {
-                return _root[Path];
-            }
-            set
-            {
-                _root[Path] = value;
-            }
-        }
+        public string Value { get; set; }
 
         public IEnumerable<IConfigurationSection> GetChildren()
         {

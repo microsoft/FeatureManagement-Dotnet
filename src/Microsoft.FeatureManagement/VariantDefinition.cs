@@ -7,7 +7,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// The definition for a variant of a feature.
     /// </summary>
-    public class FeatureVariant
+    public class VariantDefinition
     {
         /// <summary>
         /// The name of the variant.

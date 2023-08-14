@@ -2,12 +2,12 @@
 // Licensed under the MIT license.
 //
 
-namespace Microsoft.FeatureManagement.VariantAllocation
+namespace Microsoft.FeatureManagement
 {
     /// <summary>
     /// The definition of a percentile allocation.
     /// </summary>
-    public class Percentile
+    public class PercentileAllocation
     {
         /// <summary>
         /// The name of the variant.

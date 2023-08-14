@@ -3,7 +3,7 @@
 //
 using System.Collections.Generic;
 
-namespace Microsoft.FeatureManagement.VariantAllocation
+namespace Microsoft.FeatureManagement
 {
     /// <summary>
     /// The definition of how variants are allocated for a feature.
@@ -23,17 +23,17 @@ namespace Microsoft.FeatureManagement.VariantAllocation
         /// <summary>
         /// Describes a mapping of user ids to variants.
         /// </summary>
-        public IEnumerable<User> User { get; set; }
+        public IEnumerable<UserAllocation> User { get; set; }
 
         /// <summary>
         /// Describes a mapping of group names to variants.
         /// </summary>
-        public IEnumerable<Group> Group { get; set; }
+        public IEnumerable<GroupAllocation> Group { get; set; }
 
         /// <summary>
         /// Allocates percentiles of user base to variants.
         /// </summary>
-        public IEnumerable<Percentile> Percentile { get; set; }
+        public IEnumerable<PercentileAllocation> Percentile { get; set; }
 
         /// <summary>
         /// Maps users to the same percentile across multiple feature flags.

@@ -17,6 +17,9 @@ namespace Microsoft.FeatureManagement.Targeting
                 StringComparison.OrdinalIgnoreCase :
                 StringComparison.Ordinal;
 
+        const string OutOfRange = "The value is out of the accepted range.";
+        const string RequiredParameter = "Value cannot be null.";
+
         /// <summary>
         /// Checks if a provided targeting context should be targeted given targeting settings.
         /// </summary>
@@ -245,10 +248,6 @@ namespace Microsoft.FeatureManagement.Targeting
         /// <returns>True if the provided settings are valid. False if the provided settings are invalid.</returns>
         public static bool TryValidateSettings(TargetingFilterSettings targetingSettings, out string paramName, out string reason)
         {
-            const string OutOfRange = "The value is out of the accepted range.";
-
-            const string RequiredParameter = "Value cannot be null.";
-
             paramName = null;
 
             reason = null;
@@ -309,6 +308,31 @@ namespace Microsoft.FeatureManagement.Targeting
         /// </summary>
         public static bool IsTargeted(ITargetingContext targetingContext, double from, double to, bool ignoreCase, string hint)
         {
+            if (targetingContext == null)
+            {
+                throw new ArgumentNullException(nameof(targetingContext));
+            }
+
+            if (string.IsNullOrEmpty(hint))
+            {
+                throw new ArgumentNullException(nameof(hint));
+            }
+
+            if (from < 0 || from > 100)
+            {
+                throw new ArgumentException(OutOfRange, nameof(from));
+            }
+
+            if (to < 0 || to > 100)
+            {
+                throw new ArgumentException(OutOfRange, nameof(to));
+            }
+
+            if (from > to)
+            {
+                throw new ArgumentException($"Double {nameof(from)} cannot be larger than double {nameof(to)}.");
+            }
+
             string userId = ignoreCase ?
                 targetingContext.UserId.ToLower() :
                 targetingContext.UserId;

@@ -6,7 +6,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Describes how a feature's state will be evaluated.
     /// </summary>
-    public enum Status
+    public enum FeatureStatus
     {
         /// <summary>
         /// The state of the feature is conditional on the rest of its definition.
