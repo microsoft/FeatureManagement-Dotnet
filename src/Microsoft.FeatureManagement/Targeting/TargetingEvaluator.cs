@@ -367,9 +367,9 @@ namespace Microsoft.FeatureManagement.Targeting
 
             //
             // Handle edge case of exact 100 bucket
-            if (contextPercentage == 100)
+            if (to == 100)
             {
-                return to == 100;
+                return contextPercentage >= from;
             }
 
             return contextPercentage >= from && contextPercentage < to;
