@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 
@@ -15,16 +16,23 @@ namespace Microsoft.FeatureManagement
         private readonly string _key;
         private readonly string _path;
 
-        public VariantConfigurationSection(string key, string path, string value)
+        public VariantConfigurationSection(string key, string value)
         {
             if (string.IsNullOrEmpty(key))
             {
                 throw new ArgumentNullException(nameof(key));
             }
 
-            _path = path;
+            _path = "";
             _key = key;
             Value = value;
+        }
+
+        private VariantConfigurationSection(string key)
+        {
+            _path = key;
+            _key = key;
+            Value = null;
         }
 
         public string this[string key]
@@ -57,7 +65,7 @@ namespace Microsoft.FeatureManagement
 
         public IConfigurationSection GetSection(string key)
         {
-            return new VariantConfigurationSection(key, key, null);
+            return new VariantConfigurationSection(key);
         }
     }
 }

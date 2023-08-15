@@ -65,7 +65,7 @@ namespace Microsoft.FeatureManagement.Targeting
             // Check if the user is being targeted directly
             if (settings.Audience.Users != null &&
                 IsTargeted(
-                    targetingContext,
+                    targetingContext.UserId,
                     settings.Audience.Users,
                     ignoreCase))
             {
@@ -97,22 +97,17 @@ namespace Microsoft.FeatureManagement.Targeting
         /// Determines if a targeting context is targeted by presence in a list of users
         /// </summary>
         public static bool IsTargeted(
-            ITargetingContext targetingContext,
+            string userId,
             IEnumerable<string> users,
             bool ignoreCase)
         {
-            if (targetingContext == null)
-            {
-                throw new ArgumentNullException(nameof(targetingContext));
-            }
-
             if (users == null)
             {
                 throw new ArgumentNullException(nameof(users));
             }
 
-            if (targetingContext.UserId != null &&
-                users.Any(user => targetingContext.UserId.Equals(user, GetComparisonType(ignoreCase))))
+            if (userId != null &&
+                users.Any(user => userId.Equals(user, GetComparisonType(ignoreCase))))
             {
                 return true;
             }
@@ -121,28 +116,23 @@ namespace Microsoft.FeatureManagement.Targeting
         }
 
         /// <summary>
-        /// Determines if a targeting context is targeted by presence in a list of groups
+        /// Determines if targeting context is targeted by presence in a list of groups
         /// </summary>
-        public static bool IsGroupTargeted(
-            ITargetingContext targetingContext,
+        public static bool IsTargeted(
+            IEnumerable<string> targetingContextGroups,
             IEnumerable<string> groups,
             bool ignoreCase)
         {
-            if (targetingContext == null)
-            {
-                throw new ArgumentNullException(nameof(targetingContext));
-            }
-
             if (groups == null)
             {
                 throw new ArgumentNullException(nameof(groups));
             }
 
-            if (targetingContext.Groups != null)
+            if (targetingContextGroups != null)
             {
                 IEnumerable<string> normalizedGroups = ignoreCase ?
-                    targetingContext.Groups.Select(g => g.ToLower()) :
-                    targetingContext.Groups;
+                    targetingContextGroups.Select(g => g.ToLower()) :
+                    targetingContextGroups;
 
                 foreach (string group in normalizedGroups)
                 {
@@ -246,7 +236,7 @@ namespace Microsoft.FeatureManagement.Targeting
         /// <param name="paramName">The name of the invalid setting, if any.</param>
         /// <param name="reason">The reason that the setting is invalid.</param>
         /// <returns>True if the provided settings are valid. False if the provided settings are invalid.</returns>
-        public static bool TryValidateSettings(TargetingFilterSettings targetingSettings, out string paramName, out string reason)
+        private static bool TryValidateSettings(TargetingFilterSettings targetingSettings, out string paramName, out string reason)
         {
             paramName = null;
 

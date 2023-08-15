@@ -1027,7 +1027,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task VariantsExceptions()
+        public async Task VariantsInvalidScenarios()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
@@ -1043,20 +1043,20 @@ namespace Tests.FeatureManagement
             IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
             CancellationToken cancellationToken = CancellationToken.None;
 
-            // Test throws missing variants exception
-            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.GetVariantAsync("VariantFeatureNoVariants", cancellationToken));
+            // Verify null variant returned if no variants are specified
+            Variant variant = await featureManager.GetVariantAsync("VariantFeatureNoVariants", cancellationToken);
 
-            Assert.Equal(FeatureManagementError.MissingVariantDefinition, e.Error);
+            Assert.Null(variant);
 
-            // Test throws invalid variant configuration
-            e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.GetVariantAsync("VariantFeatureBothConfigurations", cancellationToken));
+            // Verify null variant returned if no allocation is specified
+            variant = await featureManager.GetVariantAsync("VariantFeatureNoAllocation", cancellationToken);
 
-            Assert.Equal(FeatureManagementError.InvalidVariantConfiguration, e.Error);
+            Assert.Null(variant);
 
-            // Test throws missing allocation
-            e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.GetVariantAsync("VariantFeatureNoAllocation", cancellationToken));
+            // Verify that ConfigurationValue has priority over ConfigurationReference
+            variant = await featureManager.GetVariantAsync("VariantFeatureBothConfigurations", cancellationToken);
 
-            Assert.Equal(FeatureManagementError.MissingAllocation, e.Error);
+            Assert.Equal("600px", variant.Configuration.Value);
         }
 
         private static void DisableEndpointRouting(MvcOptions options)

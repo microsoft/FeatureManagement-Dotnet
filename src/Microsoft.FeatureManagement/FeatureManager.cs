@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace Microsoft.FeatureManagement
 {
@@ -68,27 +69,27 @@ namespace Microsoft.FeatureManagement
 
         public Task<bool> IsEnabledAsync(string feature)
         {
-            return IsEnabledAsync<object>(feature, null, false, false, CancellationToken.None);
+            return IsEnabledAsync<object>(feature, appContext: null, useAppContext: false, ignoreVariant: false, CancellationToken.None);
         }
 
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
         {
-            return IsEnabledAsync(feature, appContext, true, false, CancellationToken.None);
+            return IsEnabledAsync(feature, appContext, useAppContext: true, ignoreVariant: false, CancellationToken.None);
         }
 
         public Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
         {
-            return IsEnabledAsync<object>(feature, null, false, false, cancellationToken);
+            return IsEnabledAsync<object>(feature, appContext: null, useAppContext: false, ignoreVariant: false, cancellationToken);
         }
 
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, CancellationToken cancellationToken)
         {
-            return IsEnabledAsync(feature, appContext, true, false, cancellationToken);
+            return IsEnabledAsync(feature, appContext, useAppContext: true, ignoreVariant: false, cancellationToken);
         }
 
         private Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool ignoreVariant, CancellationToken cancellationToken)
         {
-            return IsEnabledAsync(feature, appContext, true, ignoreVariant, cancellationToken);
+            return IsEnabledAsync(feature, appContext, useAppContext: true, ignoreVariant, cancellationToken);
         }
 
         public async IAsyncEnumerable<string> GetFeatureNamesAsync()
@@ -226,7 +227,7 @@ namespace Microsoft.FeatureManagement
 
                 if (!ignoreVariant && (featureDefinition.Variants?.Any() ?? false) && featureDefinition.Allocation != null && featureDefinition.Status != FeatureStatus.Disabled)
                 {
-                    VariantDefinition variantDefinition = await GetVariantDefinitionAsync(featureDefinition, appContext as TargetingContext, useAppContext, enabled, CancellationToken.None);
+                    VariantDefinition variantDefinition = await GetVariantDefinitionAsync(featureDefinition, appContext as TargetingContext, useAppContext, enabled, cancellationToken);
 
                     if (variantDefinition != null)
                     {
@@ -270,7 +271,7 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(feature));
             }
 
-            return GetVariantAsync(feature, null, false, cancellationToken);
+            return GetVariantAsync(feature, context: null, useContext: false, cancellationToken);
         }
 
         public ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, CancellationToken cancellationToken)
@@ -280,7 +281,12 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(feature));
             }
 
-            return GetVariantAsync(feature, context, true, cancellationToken);
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            return GetVariantAsync(feature, context, useContext: true, cancellationToken);
         }
 
         private async ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, bool useContext, CancellationToken cancellationToken)
@@ -291,28 +297,24 @@ namespace Microsoft.FeatureManagement
 
             if (featureDefinition == null)
             {
-                throw new FeatureManagementException(
-                    FeatureManagementError.MissingFeature,
-                    $"The feature declaration for the feature '{feature}' was not found.");
+                string errorMessage = $"The feature declaration for the feature '{feature}' was not found.";
+
+                if (!_options.IgnoreMissingFeatures)
+                {
+                    throw new FeatureManagementException(FeatureManagementError.MissingFeature, errorMessage);
+                }
+
+                _logger.LogWarning(errorMessage);
             }
 
-            if (featureDefinition.Allocation == null)
+            if (featureDefinition.Allocation == null || (!featureDefinition.Variants?.Any() ?? false))
             {
-                throw new FeatureManagementException(
-                    FeatureManagementError.MissingAllocation,
-                    $"No allocation is defined for the feature {featureDefinition.Name}");
-            }
-
-            if (!featureDefinition.Variants?.Any() ?? false)
-            {
-                throw new FeatureManagementException(
-                    FeatureManagementError.MissingVariantDefinition,
-                    $"No variants are registered for the feature {feature}");
+                return null;
             }
 
             VariantDefinition variantDefinition;
 
-            bool isFeatureEnabled = await IsEnabledAsync(feature, context, true, cancellationToken).ConfigureAwait(false);
+            bool isFeatureEnabled = await IsEnabledAsync(feature, context, ignoreVariant: true, cancellationToken).ConfigureAwait(false);
 
             variantDefinition = await GetVariantDefinitionAsync(featureDefinition, context, useContext, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
 
@@ -324,41 +326,40 @@ namespace Microsoft.FeatureManagement
             IConfigurationSection variantConfiguration = null;
 
             bool configValueSet = !string.IsNullOrEmpty(variantDefinition.ConfigurationValue);
-            bool configReferenceValueSet = !string.IsNullOrEmpty(variantDefinition.ConfigurationReference);
+            bool configReferenceSet = !string.IsNullOrEmpty(variantDefinition.ConfigurationReference);
 
-            if (configValueSet && configReferenceValueSet)
+            if (configValueSet)
             {
-                throw new FeatureManagementException(
-                    FeatureManagementError.InvalidVariantConfiguration,
-                    $"Both ConfigurationValue and ConfigurationReference are specified for the variant {variantDefinition.Name} in feature {feature}");
+                variantConfiguration = new VariantConfigurationSection(nameof(variantDefinition.ConfigurationValue), variantDefinition.ConfigurationValue);
             }
-            else if (configReferenceValueSet)
+            else if (configReferenceSet)
             {
                 if (_configuration == null)
                 {
-                    throw new FeatureManagementException(
-                        FeatureManagementError.InvalidVariantConfiguration,
-                        $"Cannot use {nameof(variantDefinition.ConfigurationReference)} if no instance of {nameof(IConfiguration)} is present.");
+                    _logger.LogWarning($"Cannot use {nameof(variantDefinition.ConfigurationReference)} as no instance of {nameof(IConfiguration)} is present.");
+
+                    return null;
                 }
-
-                variantConfiguration = _configuration.GetSection(variantDefinition.ConfigurationReference);
-            }
-            else if (configValueSet)
-            {
-                VariantConfigurationSection section = new VariantConfigurationSection(variantDefinition.Name, "", variantDefinition.ConfigurationValue);
-                variantConfiguration = section;
+                else
+                {
+                    variantConfiguration = _configuration.GetSection(variantDefinition.ConfigurationReference);
+                }
             }
 
-            Variant returnVariant = new Variant()
+
+            return new Variant()
             {
                 Name = variantDefinition.Name,
                 Configuration = variantConfiguration
             };
-
-            return returnVariant;
         }
 
-        private async ValueTask<VariantDefinition> GetVariantDefinitionAsync(FeatureDefinition featureDefinition, TargetingContext context, bool useContext, bool isFeatureEnabled, CancellationToken cancellationToken)
+        private async ValueTask<VariantDefinition> GetVariantDefinitionAsync(
+            FeatureDefinition featureDefinition,
+            TargetingContext context,
+            bool useContext,
+            bool isFeatureEnabled,
+            CancellationToken cancellationToken)
         {
             if (!isFeatureEnabled)
             {
@@ -409,14 +410,23 @@ namespace Microsoft.FeatureManagement
             {
                 foreach (UserAllocation user in featureDefinition.Allocation.User)
                 {
-                    if (TargetingEvaluator.IsTargeted(targetingContext, user.Users, _assignerOptions.IgnoreCase))
+                    if (TargetingEvaluator.IsTargeted(targetingContext.UserId, user.Users, _assignerOptions.IgnoreCase))
                     {
+                        if (string.IsNullOrEmpty(user.Variant))
+                        {
+                            _logger.LogWarning($"Missing variant name for {nameof(featureDefinition.Allocation.User)} allocation in feature {featureDefinition.Name}");
+
+                            return new ValueTask<VariantDefinition>((VariantDefinition)null);
+                        }
+
+                        Assert.NotNull(featureDefinition.Variants);
+
                         variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == user.Variant);
 
-                        if (!string.IsNullOrEmpty(variant.Name))
-                        {
-                            return new ValueTask<VariantDefinition>(variant);
-                        }
+                        return new ValueTask<VariantDefinition>(
+                            featureDefinition
+                                .Variants
+                                .FirstOrDefault((variant) => variant.Name == user.Variant));
                     }
                 }
             }
@@ -425,14 +435,23 @@ namespace Microsoft.FeatureManagement
             {
                 foreach (GroupAllocation group in featureDefinition.Allocation.Group)
                 {
-                    if (TargetingEvaluator.IsGroupTargeted(targetingContext, group.Groups, _assignerOptions.IgnoreCase))
+                    if (TargetingEvaluator.IsTargeted(targetingContext.Groups, group.Groups, _assignerOptions.IgnoreCase))
                     {
+                        if (string.IsNullOrEmpty(group.Variant))
+                        {
+                            _logger.LogWarning($"Missing variant name for {nameof(featureDefinition.Allocation.Group)} allocation in feature {featureDefinition.Name}");
+
+                            return new ValueTask<VariantDefinition>((VariantDefinition)null);
+                        }
+
+                        Assert.NotNull(featureDefinition.Variants);
+
                         variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == group.Variant);
 
-                        if (!string.IsNullOrEmpty(variant.Name))
-                        {
-                            return new ValueTask<VariantDefinition>(variant);
-                        }
+                        return new ValueTask<VariantDefinition>(
+                            featureDefinition
+                                .Variants
+                                .FirstOrDefault((variant) => variant.Name == group.Variant));
                     }
                 }
             }
@@ -443,12 +462,21 @@ namespace Microsoft.FeatureManagement
                 {
                     if (TargetingEvaluator.IsTargeted(targetingContext, percentile.From, percentile.To, _assignerOptions.IgnoreCase, featureDefinition.Allocation.Seed))
                     {
+                        if (string.IsNullOrEmpty(percentile.Variant))
+                        {
+                            _logger.LogWarning($"Missing variant name for {nameof(featureDefinition.Allocation.Percentile)} allocation in feature {featureDefinition.Name}");
+
+                            return new ValueTask<VariantDefinition>((VariantDefinition)null);
+                        }
+
+                        Assert.NotNull(featureDefinition.Variants);
+
                         variant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == percentile.Variant);
 
-                        if (!string.IsNullOrEmpty(variant.Name))
-                        {
-                            return new ValueTask<VariantDefinition>(variant);
-                        }
+                        return new ValueTask<VariantDefinition>(
+                            featureDefinition
+                                .Variants
+                                .FirstOrDefault((variant) => variant.Name == percentile.Variant));
                     }
                 }
             }
@@ -458,11 +486,11 @@ namespace Microsoft.FeatureManagement
 
         private VariantDefinition ResolveDefaultVariantDefinition(FeatureDefinition featureDefinition, bool isFeatureEnabled)
         {
-            string defaultVariantPath = isFeatureEnabled ? featureDefinition.Allocation.DefaultWhenEnabled : featureDefinition.Allocation.DefaultWhenDisabled;
+            string defaultVariantName = isFeatureEnabled ? featureDefinition.Allocation.DefaultWhenEnabled : featureDefinition.Allocation.DefaultWhenDisabled;
 
-            if (!string.IsNullOrEmpty(defaultVariantPath))
+            if (!string.IsNullOrEmpty(defaultVariantName))
             {
-                VariantDefinition defaultVariant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == defaultVariantPath);
+                VariantDefinition defaultVariant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == defaultVariantName);
 
                 if (!string.IsNullOrEmpty(defaultVariant.Name))
                 {
