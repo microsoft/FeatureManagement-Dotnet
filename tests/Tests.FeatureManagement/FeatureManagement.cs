@@ -1003,11 +1003,11 @@ namespace Tests.FeatureManagement
             Assert.Equal("300px", variant.Configuration.Value);
             Assert.False(await featureManager.IsEnabledAsync("VariantFeatureStatusDisabled", cancellationToken));
 
-            // Test DefaultWhenEnabled
+            // Test DefaultWhenEnabled and ConfigurationValue with inline IConfigurationSection
             variant = await featureManager.GetVariantAsync("VariantFeatureDefaultEnabled", cancellationToken);
 
             Assert.Equal("Medium", variant.Name);
-            Assert.Equal("450px", variant.Configuration.Value);
+            Assert.Equal("450px", variant.Configuration["Size"]);
             Assert.True(await featureManager.IsEnabledAsync("VariantFeatureDefaultEnabled", cancellationToken));
 
             // Test User allocation

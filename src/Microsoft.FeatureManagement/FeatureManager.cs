@@ -363,12 +363,12 @@ namespace Microsoft.FeatureManagement
 
             IConfigurationSection variantConfiguration = null;
 
-            bool configValueSet = !string.IsNullOrEmpty(variantDefinition.ConfigurationValue);
+            bool configValueSet = variantDefinition.ConfigurationValue.Exists();
             bool configReferenceSet = !string.IsNullOrEmpty(variantDefinition.ConfigurationReference);
 
             if (configValueSet)
             {
-                variantConfiguration = new VariantConfigurationSection(nameof(variantDefinition.ConfigurationValue), variantDefinition.ConfigurationValue);
+                variantConfiguration = variantDefinition.ConfigurationValue;
             }
             else if (configReferenceSet)
             {

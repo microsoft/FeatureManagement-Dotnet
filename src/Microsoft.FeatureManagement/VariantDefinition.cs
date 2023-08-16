@@ -2,6 +2,8 @@
 // Licensed under the MIT license.
 //
 
+using Microsoft.Extensions.Configuration;
+
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
@@ -17,7 +19,7 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The value of the configuration for this variant of the feature.
         /// </summary>
-        public string ConfigurationValue { get; set; }
+        public IConfigurationSection ConfigurationValue { get; set; }
 
         /// <summary>
         /// A reference pointing to the configuration for this variant of the feature.
