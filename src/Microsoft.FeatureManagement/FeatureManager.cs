@@ -91,7 +91,7 @@ namespace Microsoft.FeatureManagement
         {
             bool isFeatureEnabled = await IsEnabledPrivateAsync(feature, appContext, useAppContext, cancellationToken).ConfigureAwait(false);
 
-            VariantDefinition variantDefinition = null;
+            VariantDefinition variantDefinition;
             FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
             TargetingContext targetingContext;
 
@@ -104,34 +104,27 @@ namespace Microsoft.FeatureManagement
             {
                 variantDefinition = ResolveDefaultVariantDefinition(featureDefinition, isFeatureEnabled: false);
             }
-            else if (!useAppContext)
+            else if (useAppContext && appContext is TargetingContext)
             {
-                if (appContext is TargetingContext)
-                {
-                    variantDefinition = await GetAssignedVariantAsync(featureDefinition, appContext as TargetingContext, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    targetingContext = await ResolveContextAsync(cancellationToken).ConfigureAwait(false);
-                    variantDefinition = await GetAssignedVariantAsync(featureDefinition, targetingContext, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
-                }
+                variantDefinition = await GetAssignedVariantAsync(featureDefinition, appContext as TargetingContext, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                targetingContext = await ResolveContextAsync(cancellationToken).ConfigureAwait(false);
+                variantDefinition = await GetAssignedVariantAsync(featureDefinition, targetingContext, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
             }
 
             if (variantDefinition == null)
             {
                 return isFeatureEnabled;
             }
-
-            if (variantDefinition != null)
+            else if (variantDefinition.StatusOverride == StatusOverride.Enabled)
             {
-                if (variantDefinition.StatusOverride == StatusOverride.Enabled)
-                {
-                    return true;
-                }
-                else if (variantDefinition.StatusOverride == StatusOverride.Disabled)
-                {
-                    return false;
-                }
+                return true;
+            }
+            else if (variantDefinition.StatusOverride == StatusOverride.Disabled)
+            {
+                return false;
             }
 
             return isFeatureEnabled;
