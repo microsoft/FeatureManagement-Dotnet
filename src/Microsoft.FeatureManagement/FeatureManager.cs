@@ -69,27 +69,72 @@ namespace Microsoft.FeatureManagement
 
         public Task<bool> IsEnabledAsync(string feature)
         {
-            return IsEnabledAsync<object>(feature, appContext: null, useAppContext: false, ignoreVariant: false, CancellationToken.None);
+            return IsEnabledWithVariantsAsync<object>(feature, appContext: null, useAppContext: false, CancellationToken.None);
         }
 
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
         {
-            return IsEnabledAsync(feature, appContext, useAppContext: true, ignoreVariant: false, CancellationToken.None);
+            return IsEnabledWithVariantsAsync(feature, appContext, useAppContext: true, CancellationToken.None);
         }
 
         public Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
         {
-            return IsEnabledAsync<object>(feature, appContext: null, useAppContext: false, ignoreVariant: false, cancellationToken);
+            return IsEnabledWithVariantsAsync<object>(feature, appContext: null, useAppContext: false, cancellationToken);
         }
 
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, CancellationToken cancellationToken)
         {
-            return IsEnabledAsync(feature, appContext, useAppContext: true, ignoreVariant: false, cancellationToken);
+            return IsEnabledWithVariantsAsync(feature, appContext, useAppContext: true, cancellationToken);
         }
 
-        private Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool ignoreVariant, CancellationToken cancellationToken)
+        private async Task<bool> IsEnabledWithVariantsAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
-            return IsEnabledAsync(feature, appContext, useAppContext: true, ignoreVariant, cancellationToken);
+            bool isFeatureEnabled = await IsEnabledPrivateAsync(feature, appContext, useAppContext, cancellationToken).ConfigureAwait(false);
+
+            VariantDefinition variantDefinition = null;
+            FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
+            TargetingContext targetingContext;
+
+            if (featureDefinition == null || !(featureDefinition.Variants?.Any() ?? false) || featureDefinition.Status == FeatureStatus.Disabled)
+            {
+                return isFeatureEnabled;
+            }
+
+            if (!isFeatureEnabled)
+            {
+                variantDefinition = ResolveDefaultVariantDefinition(featureDefinition, isFeatureEnabled: false);
+            }
+            else if (!useAppContext)
+            {
+                if (appContext is TargetingContext)
+                {
+                    variantDefinition = await GetAssignedVariantAsync(featureDefinition, appContext as TargetingContext, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    targetingContext = await ResolveContextAsync(cancellationToken).ConfigureAwait(false);
+                    variantDefinition = await GetAssignedVariantAsync(featureDefinition, targetingContext, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            if (variantDefinition == null)
+            {
+                return isFeatureEnabled;
+            }
+
+            if (variantDefinition != null)
+            {
+                if (variantDefinition.StatusOverride == StatusOverride.Enabled)
+                {
+                    return true;
+                }
+                else if (variantDefinition.StatusOverride == StatusOverride.Disabled)
+                {
+                    return false;
+                }
+            }
+
+            return isFeatureEnabled;
         }
 
         public async IAsyncEnumerable<string> GetFeatureNamesAsync()
@@ -105,7 +150,7 @@ namespace Microsoft.FeatureManagement
             _parametersCache.Dispose();
         }
 
-        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, bool ignoreVariant, CancellationToken cancellationToken)
+        private async Task<bool> IsEnabledPrivateAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
@@ -224,23 +269,6 @@ namespace Microsoft.FeatureManagement
                         }
                     }
                 }
-
-                if (!ignoreVariant && (featureDefinition.Variants?.Any() ?? false) && featureDefinition.Allocation != null && featureDefinition.Status != FeatureStatus.Disabled)
-                {
-                    VariantDefinition variantDefinition = await GetVariantDefinitionAsync(featureDefinition, appContext as TargetingContext, useAppContext, enabled, cancellationToken);
-
-                    if (variantDefinition != null)
-                    {
-                        if (variantDefinition.StatusOverride == StatusOverride.Enabled)
-                        {
-                            enabled = true;
-                        }
-                        else if (variantDefinition.StatusOverride == StatusOverride.Disabled)
-                        {
-                            enabled = false;
-                        }
-                    }
-                }
             }
             else
             {
@@ -314,9 +342,19 @@ namespace Microsoft.FeatureManagement
 
             VariantDefinition variantDefinition;
 
-            bool isFeatureEnabled = await IsEnabledAsync(feature, context, ignoreVariant: true, cancellationToken).ConfigureAwait(false);
+            bool isFeatureEnabled = await IsEnabledPrivateAsync(feature, context, useContext, cancellationToken).ConfigureAwait(false);
 
-            variantDefinition = await GetVariantDefinitionAsync(featureDefinition, context, useContext, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
+            if (!isFeatureEnabled)
+            {
+                variantDefinition = ResolveDefaultVariantDefinition(featureDefinition, isFeatureEnabled: false);
+            }
+
+            if (!useContext && context == null)
+            {
+                context = await ResolveContextAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            variantDefinition = await GetAssignedVariantAsync(featureDefinition, context, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
 
             if (variantDefinition == null)
             {
@@ -346,7 +384,6 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-
             return new Variant()
             {
                 Name = variantDefinition.Name,
@@ -354,40 +391,34 @@ namespace Microsoft.FeatureManagement
             };
         }
 
-        private async ValueTask<VariantDefinition> GetVariantDefinitionAsync(
-            FeatureDefinition featureDefinition,
-            TargetingContext context,
-            bool useContext,
-            bool isFeatureEnabled,
-            CancellationToken cancellationToken)
+        private async ValueTask<TargetingContext> ResolveContextAsync(CancellationToken cancellationToken)
         {
-            if (!isFeatureEnabled)
+            TargetingContext context = null;
+
+            if (_contextAccessor == null)
             {
-                return ResolveDefaultVariantDefinition(featureDefinition, isFeatureEnabled);
+                _logger.LogWarning($"No instance of {nameof(ITargetingContextAccessor)} is available for targeting evaluation. Using default variants.");
+            }
+            else
+            {
+                //
+                // Acquire targeting context via accessor
+                context = await _contextAccessor.GetContextAsync().ConfigureAwait(false);
+
+                //
+                // Ensure targeting can be performed
+                if (context == null)
+                {
+                    _logger.LogWarning($"No instance of {nameof(TargetingContext)} could be found using {nameof(ITargetingContextAccessor)} for targeting evaluation.");
+                }
             }
 
+            return context;
+        }
+
+        private async ValueTask<VariantDefinition> GetAssignedVariantAsync(FeatureDefinition featureDefinition, TargetingContext context, bool isFeatureEnabled, CancellationToken cancellationToken)
+        {
             VariantDefinition variantDefinition = null;
-
-            if (!useContext) 
-            {
-                if (_contextAccessor == null)
-                {
-                    _logger.LogWarning($"No instance of {nameof(ITargetingContextAccessor)} is available for targeting evaluation. Using default variants.");
-                }
-                else
-                {
-                    //
-                    // Acquire targeting context via accessor
-                    context = await _contextAccessor.GetContextAsync().ConfigureAwait(false);
-
-                    //
-                    // Ensure targeting can be performed
-                    if (context == null)
-                    {
-                        _logger.LogWarning($"No instance of {nameof(TargetingContext)} could be found using {nameof(ITargetingContextAccessor)} for targeting evaluation.");
-                    }
-                }
-            }
 
             if (context != null)
             {
@@ -460,7 +491,12 @@ namespace Microsoft.FeatureManagement
             {
                 foreach (PercentileAllocation percentile in featureDefinition.Allocation.Percentile)
                 {
-                    if (TargetingEvaluator.IsTargeted(targetingContext, percentile.From, percentile.To, _assignerOptions.IgnoreCase, featureDefinition.Allocation.Seed))
+                    if (TargetingEvaluator.IsTargeted(
+                        targetingContext,
+                        percentile.From,
+                        percentile.To,
+                        _assignerOptions.IgnoreCase,
+                        featureDefinition.Allocation.Seed))
                     {
                         if (string.IsNullOrEmpty(percentile.Variant))
                         {

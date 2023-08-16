@@ -814,7 +814,6 @@ namespace Tests.FeatureManagement
             // Set filters to all return true
             testFeatureFilter.Callback = _ => Task.FromResult(true);
 
-
             Assert.True(await featureManager.IsEnabledAsync(anyFilterFeature));
             Assert.True(await featureManager.IsEnabledAsync(allFilterFeature));
 
