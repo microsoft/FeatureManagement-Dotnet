@@ -119,24 +119,24 @@ namespace Microsoft.FeatureManagement.Targeting
         /// Determines if targeting context is targeted by presence in a list of groups
         /// </summary>
         public static bool IsTargeted(
-            IEnumerable<string> targetingContextGroups,
-            IEnumerable<string> groups,
+            IEnumerable<string> sourceGroups,
+            IEnumerable<string> targetedGroups,
             bool ignoreCase)
         {
-            if (groups == null)
+            if (targetedGroups == null)
             {
-                throw new ArgumentNullException(nameof(groups));
+                throw new ArgumentNullException(nameof(targetedGroups));
             }
 
-            if (targetingContextGroups != null)
+            if (sourceGroups != null)
             {
                 IEnumerable<string> normalizedGroups = ignoreCase ?
-                    targetingContextGroups.Select(g => g.ToLower()) :
-                    targetingContextGroups;
+                    sourceGroups.Select(g => g.ToLower()) :
+                    sourceGroups;
 
                 foreach (string group in normalizedGroups)
                 {
-                    string allocationGroup = groups.FirstOrDefault(g => g.Equals(group, GetComparisonType(ignoreCase)));
+                    string allocationGroup = targetedGroups.FirstOrDefault(g => g.Equals(group, GetComparisonType(ignoreCase)));
 
                     if (allocationGroup != null)
                     {

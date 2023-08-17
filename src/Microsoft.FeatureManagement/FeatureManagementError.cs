@@ -31,11 +31,6 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The given configuration setting was invalid.
         /// </summary>
-        InvalidConfigurationSetting,
-
-        /// <summary>
-        /// A feature variant specifies both a configuration reference and configuration value, or there is no valid configuration to reference.
-        /// </summary>
-        InvalidVariantConfiguration
+        InvalidConfigurationSetting
     }
 }
