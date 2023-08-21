@@ -93,12 +93,11 @@ namespace Microsoft.FeatureManagement
 
             FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
 
-            // If featureDefinition is null or FeatureStatus is Disabled, return isFeatureEnabled, which is false.
-            // If there are no variants or no allocation defined, also return isFeatureEnabled, true or false depending on IsEnabled.
-            if (featureDefinition != null &&
-                featureDefinition.Status != FeatureStatus.Disabled &&
-                (featureDefinition.Variants?.Any() ?? false) &&
-                featureDefinition.Allocation != null)
+            if (featureDefinition == null || featureDefinition.Status == FeatureStatus.Disabled)
+            {
+                isFeatureEnabled = false;
+            }
+            else if ((featureDefinition.Variants?.Any() ?? false) && featureDefinition.Allocation != null)
             {
                 VariantDefinition variantDefinition;
 
