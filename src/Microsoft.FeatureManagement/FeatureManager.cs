@@ -93,54 +93,56 @@ namespace Microsoft.FeatureManagement
 
             FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
 
-            if (featureDefinition == null || featureDefinition.Status == FeatureStatus.Disabled)
+            // If featureDefinition is null or FeatureStatus is Disabled, return isFeatureEnabled, which is false.
+            // If there are no variants or no allocation defined, also return isFeatureEnabled, true or false depending on IsEnabled.
+            if (featureDefinition != null &&
+                featureDefinition.Status != FeatureStatus.Disabled &&
+                (featureDefinition.Variants?.Any() ?? false) &&
+                featureDefinition.Allocation != null)
             {
-                return false;
-            }
+                VariantDefinition variantDefinition;
 
-            if (!(featureDefinition.Variants?.Any() ?? false) || featureDefinition?.Allocation == null)
-            {
-                return isFeatureEnabled;
-            }
-
-            VariantDefinition variantDefinition;
-
-            if (!isFeatureEnabled)
-            {
-                variantDefinition = ResolveDefaultVariantDefinition(featureDefinition, isFeatureEnabled: false);
-            }
-            else
-            {
-                TargetingContext targetingContext;
-
-                if (useAppContext)
+                if (!isFeatureEnabled)
                 {
-                    targetingContext = appContext as TargetingContext;
+                    variantDefinition = ResolveDefaultVariantDefinition(featureDefinition, isFeatureEnabled: false);
                 }
                 else
                 {
-                    targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
+                    TargetingContext targetingContext;
+
+                    if (useAppContext)
+                    {
+                        targetingContext = appContext as TargetingContext;
+                    }
+                    else
+                    {
+                        targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
+                    }
+
+                    variantDefinition = await GetAssignedVariantAsync(
+                        featureDefinition,
+                        targetingContext,
+                        isFeatureEnabled,
+                        cancellationToken)
+                        .ConfigureAwait(false);
                 }
 
-                variantDefinition = await GetAssignedVariantAsync(
-                    featureDefinition,
-                    targetingContext,
-                    isFeatureEnabled,
-                    cancellationToken)
-                    .ConfigureAwait(false);
+                if (variantDefinition != null)
+                {
+                    if (variantDefinition.StatusOverride == StatusOverride.Enabled)
+                    {
+                        isFeatureEnabled = true;
+                    }
+                    else if (variantDefinition.StatusOverride == StatusOverride.Disabled)
+                    {
+                        isFeatureEnabled = false;
+                    }
+                }
             }
 
-            if (variantDefinition == null)
+            foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                return isFeatureEnabled;
-            }
-            else if (variantDefinition.StatusOverride == StatusOverride.Enabled)
-            {
-                return true;
-            }
-            else if (variantDefinition.StatusOverride == StatusOverride.Disabled)
-            {
-                return false;
+                await sessionManager.SetAsync(feature, isFeatureEnabled).ConfigureAwait(false);
             }
 
             return isFeatureEnabled;
@@ -291,11 +293,6 @@ namespace Microsoft.FeatureManagement
                 }
                 
                 _logger.LogWarning(errorMessage);
-            }
-
-            foreach (ISessionManager sessionManager in _sessionManagers)
-            {
-                await sessionManager.SetAsync(feature, enabled).ConfigureAwait(false);
             }
 
             return enabled;
