@@ -43,7 +43,7 @@ namespace Microsoft.FeatureManagement
                 sp.GetRequiredService<IOptions<FeatureManagementOptions>>(),
                 sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>())
                 {
-                    Configuration = sp.GetService<IConfiguration>(), // May or may not exist in DI
+                    Configuration = sp.GetService<IConfiguration>(),
                     TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>()
                 });
 
@@ -56,7 +56,7 @@ namespace Microsoft.FeatureManagement
                 sp.GetRequiredService<IOptions<FeatureManagementOptions>>(),
                 sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>())
             {
-                Configuration = sp.GetService<IConfiguration>(), // May or may not exist in DI
+                Configuration = sp.GetService<IConfiguration>(),
                 TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>()
             });
             services.AddSingleton<ISessionManager, EmptySessionManager>();
