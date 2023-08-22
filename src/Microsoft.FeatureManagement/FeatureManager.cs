@@ -28,15 +28,13 @@ namespace Microsoft.FeatureManagement
         private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
-        private readonly ITargetingContextAccessor _contextAccessor;
-        private readonly IConfiguration _configuration;
         private readonly ILogger _logger;
         private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
         private readonly FeatureManagementOptions _options;
         private readonly TargetingEvaluationOptions _assignerOptions;
         private readonly IMemoryCache _parametersCache;
-        
+
         private class ConfigurationCacheItem
         {
             public IConfiguration Parameters { get; set; }
@@ -50,22 +48,22 @@ namespace Microsoft.FeatureManagement
             IEnumerable<ISessionManager> sessionManagers,
             ILoggerFactory loggerFactory,
             IOptions<FeatureManagementOptions> options,
-            IOptions<TargetingEvaluationOptions> assignerOptions,
-            IConfiguration configuration = null,
-            ITargetingContextAccessor contextAccessor = null)
+            IOptions<TargetingEvaluationOptions> assignerOptions)
         {
             _featureDefinitionProvider = featureDefinitionProvider;
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
             _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
             _logger = loggerFactory.CreateLogger<FeatureManager>();
             _assignerOptions = assignerOptions?.Value ?? throw new ArgumentNullException(nameof(assignerOptions));
-            _contextAccessor = contextAccessor;
-            _configuration = configuration;
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _parametersCache = new MemoryCache(new MemoryCacheOptions());
         }
+
+        public IConfiguration Configuration { get; init; }
+
+        public ITargetingContextAccessor TargetingContextAccessor { get; init; }
 
         public Task<bool> IsEnabledAsync(string feature)
         {
@@ -89,7 +87,7 @@ namespace Microsoft.FeatureManagement
 
         private async Task<bool> IsEnabledWithVariantsAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
-            bool isFeatureEnabled = await IsEnabled(feature, appContext, useAppContext, cancellationToken).ConfigureAwait(false);
+            bool isFeatureEnabled = await IsEnabledAsync(feature, appContext, useAppContext, cancellationToken).ConfigureAwait(false);
 
             FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
 
@@ -160,7 +158,7 @@ namespace Microsoft.FeatureManagement
             _parametersCache.Dispose();
         }
 
-        private async Task<bool> IsEnabled<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
+        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
@@ -347,7 +345,7 @@ namespace Microsoft.FeatureManagement
 
             VariantDefinition variantDefinition = null;
 
-            bool isFeatureEnabled = await IsEnabled(feature, context, useContext, cancellationToken).ConfigureAwait(false);
+            bool isFeatureEnabled = await IsEnabledAsync(feature, context, useContext, cancellationToken).ConfigureAwait(false);
 
             if (!isFeatureEnabled)
             {
@@ -379,7 +377,7 @@ namespace Microsoft.FeatureManagement
             }
             else if (configReferenceSet)
             {
-                if (_configuration == null)
+                if (Configuration == null)
                 {
                     _logger.LogWarning($"Cannot use {nameof(variantDefinition.ConfigurationReference)} as no instance of {nameof(IConfiguration)} is present.");
 
@@ -387,7 +385,7 @@ namespace Microsoft.FeatureManagement
                 }
                 else
                 {
-                    variantConfiguration = _configuration.GetSection(variantDefinition.ConfigurationReference);
+                    variantConfiguration = Configuration.GetSection(variantDefinition.ConfigurationReference);
                 }
             }
 
@@ -400,7 +398,7 @@ namespace Microsoft.FeatureManagement
 
         private async ValueTask<TargetingContext> ResolveTargetingContextAsync(CancellationToken cancellationToken)
         {
-            if (_contextAccessor == null)
+            if (TargetingContextAccessor == null)
             {
                 _logger.LogWarning($"No instance of {nameof(ITargetingContextAccessor)} is available for targeting evaluation.");
 
@@ -409,7 +407,7 @@ namespace Microsoft.FeatureManagement
 
             //
             // Acquire targeting context via accessor
-            TargetingContext context = await _contextAccessor.GetContextAsync().ConfigureAwait(false);
+            TargetingContext context = await TargetingContextAccessor.GetContextAsync().ConfigureAwait(false);
 
             //
             // Ensure targeting can be performed
