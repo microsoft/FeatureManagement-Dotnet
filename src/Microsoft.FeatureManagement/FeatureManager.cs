@@ -521,17 +521,7 @@ namespace Microsoft.FeatureManagement
         {
             string defaultVariantName = isFeatureEnabled ? featureDefinition.Allocation.DefaultWhenEnabled : featureDefinition.Allocation.DefaultWhenDisabled;
 
-            if (!string.IsNullOrEmpty(defaultVariantName))
-            {
-                VariantDefinition defaultVariant = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == defaultVariantName);
-
-                if (!string.IsNullOrEmpty(defaultVariant.Name))
-                {
-                    return defaultVariant;
-                }
-            }
-            
-            return null;
+            return featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == defaultVariantName);
         }
 
         private void BindSettings(IFeatureFilterMetadata filter, FeatureFilterEvaluationContext context, int filterIndex)
