@@ -400,7 +400,7 @@ namespace Microsoft.FeatureManagement
         {
             if (TargetingContextAccessor == null)
             {
-                _logger.LogWarning($"No instance of {nameof(ITargetingContextAccessor)} is available for targeting evaluation.");
+                _logger.LogWarning($"No instance of {nameof(ITargetingContextAccessor)} is available for variant assignment.");
 
                 return null;
             }
@@ -413,7 +413,7 @@ namespace Microsoft.FeatureManagement
             // Ensure targeting can be performed
             if (context == null)
             {
-                _logger.LogWarning($"No instance of {nameof(TargetingContext)} could be found using {nameof(ITargetingContextAccessor)} for targeting evaluation.");
+                _logger.LogWarning($"No instance of {nameof(TargetingContext)} could be found using {nameof(ITargetingContextAccessor)} for variant assignment.");
             }
 
             return context;
