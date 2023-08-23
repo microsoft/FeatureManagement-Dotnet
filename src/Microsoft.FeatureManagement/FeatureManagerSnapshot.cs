@@ -17,7 +17,7 @@ namespace Microsoft.FeatureManagement
     {
         private readonly FeatureManager _featureManager;
         private readonly ConcurrentDictionary<string, Task<bool>> _flagCache = new ConcurrentDictionary<string, Task<bool>>();
-        private readonly IDictionary<string, Variant> _variantCache = new Dictionary<string, Variant>();
+        private readonly ConcurrentDictionary<string, Variant> _variantCache = new ConcurrentDictionary<string, Variant>();
         private IEnumerable<string> _featureNames;
 
         public FeatureManagerSnapshot(FeatureManager featureManager)

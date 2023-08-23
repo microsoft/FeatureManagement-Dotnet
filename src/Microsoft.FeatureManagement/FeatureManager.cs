@@ -101,7 +101,7 @@ namespace Microsoft.FeatureManagement
 
                 if (!isFeatureEnabled)
                 {
-                    variantDefinition = ResolveDefaultVariantDefinition(featureDefinition, isFeatureEnabled: false);
+                    variantDefinition = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == featureDefinition.Allocation.DefaultWhenDisabled);
                 }
                 else
                 {
@@ -349,7 +349,7 @@ namespace Microsoft.FeatureManagement
 
             if (!isFeatureEnabled)
             {
-                variantDefinition = ResolveDefaultVariantDefinition(featureDefinition, isFeatureEnabled: false);
+                variantDefinition = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == featureDefinition.Allocation.DefaultWhenDisabled);
             }
             else
             {
@@ -430,7 +430,7 @@ namespace Microsoft.FeatureManagement
 
             if (variantDefinition == null)
             {
-                variantDefinition = ResolveDefaultVariantDefinition(featureDefinition, isFeatureEnabled: true);
+                variantDefinition = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == featureDefinition.Allocation.DefaultWhenEnabled);
             }
 
             return variantDefinition;
@@ -515,13 +515,6 @@ namespace Microsoft.FeatureManagement
             }
 
             return new ValueTask<VariantDefinition>(variant);
-        }
-
-        private VariantDefinition ResolveDefaultVariantDefinition(FeatureDefinition featureDefinition, bool isFeatureEnabled)
-        {
-            string defaultVariantName = isFeatureEnabled ? featureDefinition.Allocation.DefaultWhenEnabled : featureDefinition.Allocation.DefaultWhenDisabled;
-
-            return featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == defaultVariantName);
         }
 
         private void BindSettings(IFeatureFilterMetadata filter, FeatureFilterEvaluationContext context, int filterIndex)
