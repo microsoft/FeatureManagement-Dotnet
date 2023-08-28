@@ -22,6 +22,8 @@ namespace Microsoft.FeatureManagement
         // provider to be marked for caching as well.
 
         private const string FeatureFiltersSectionName = "EnabledFor";
+        private const string RequirementTypeKeyword = "RequirementType";
+        private const string FeatureStatusKeyword = "Status";
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
@@ -162,8 +164,8 @@ namespace Microsoft.FeatureManagement
             }
             else
             {
-                requirementType = ParseFeatureDefinitionSectionEnum(configurationSection, nameof(RequirementType), requirementType);
-                status = ParseFeatureDefinitionSectionEnum(configurationSection, nameof(FeatureDefinition.Status), status);
+                requirementType = ParseFeatureDefinitionSectionEnum(configurationSection.Key, configurationSection[RequirementTypeKeyword], requirementType);
+                status = ParseFeatureDefinitionSectionEnum(configurationSection.Key, configurationSection[FeatureStatusKeyword], status);
 
                 IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(FeatureFiltersSectionName).GetChildren();
 
@@ -186,8 +188,37 @@ namespace Microsoft.FeatureManagement
 
                 if (allocationSection.Exists())
                 {
-                    allocation = new Allocation();
-                    allocationSection.Bind(allocation);
+                    allocation = new Allocation()
+                    {
+                        DefaultWhenDisabled = allocationSection[nameof(Allocation.DefaultWhenDisabled)],
+                        DefaultWhenEnabled = allocationSection[nameof(Allocation.DefaultWhenEnabled)],
+                        User = allocationSection.GetSection(nameof(Allocation.User)).GetChildren().Select(userAllocation =>
+                        {
+                            return new UserAllocation()
+                            {
+                                Variant = userAllocation[nameof(UserAllocation.Variant)],
+                                Users = userAllocation.GetSection(nameof(UserAllocation.Users)).Get<IEnumerable<string>>()
+                            };
+                        }),
+                        Group = allocationSection.GetSection(nameof(Allocation.Group)).GetChildren().Select(groupAllocation =>
+                        {
+                            return new GroupAllocation()
+                            {
+                                Variant = groupAllocation[nameof(GroupAllocation.Variant)],
+                                Groups = groupAllocation.GetSection(nameof(GroupAllocation.Groups)).Get<IEnumerable<string>>()
+                            };
+                        }),
+                        Percentile = allocationSection.GetSection(nameof(Allocation.Percentile)).GetChildren().Select(percentileAllocation =>
+                        {
+                            return new PercentileAllocation()
+                            {
+                                Variant = percentileAllocation[nameof(PercentileAllocation.Variant)],
+                                From = percentileAllocation.GetValue<double>(nameof(PercentileAllocation.From)),
+                                To = percentileAllocation.GetValue<double>(nameof(PercentileAllocation.To))
+                            };
+                        }),
+                        Seed = allocationSection[nameof(Allocation.Seed)]
+                    };
                 }
 
                 IEnumerable<IConfigurationSection> variantsSections = configurationSection.GetSection(nameof(FeatureDefinition.Variants)).GetChildren();
@@ -197,8 +228,13 @@ namespace Microsoft.FeatureManagement
                 {
                     if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[nameof(VariantDefinition.Name)]))
                     {
-                        VariantDefinition variant = new VariantDefinition();
-                        section.Bind(variant);
+                        VariantDefinition variant = new VariantDefinition()
+                        {
+                            Name = section[nameof(VariantDefinition.Name)],
+                            ConfigurationValue = section.GetSection(nameof(VariantDefinition.ConfigurationValue)),
+                            ConfigurationReference = section[nameof(VariantDefinition.ConfigurationReference)],
+                            StatusOverride = section.GetValue<StatusOverride>(nameof(VariantDefinition.StatusOverride))
+                        };
                         variants.Add(variant);
                     }
                 }
@@ -231,18 +267,16 @@ namespace Microsoft.FeatureManagement
             }
         }
 
-        private T ParseFeatureDefinitionSectionEnum<T>(IConfigurationSection configurationSection, string keyword, T enumValue)
+        private T ParseFeatureDefinitionSectionEnum<T>(string feature, string value, T enumValue)
             where T : struct, Enum
         {
-            string rawValue = configurationSection[keyword];
-
             //
             // If the enum is specified, parse it and set the return value
-            if (!string.IsNullOrEmpty(rawValue) && !Enum.TryParse(rawValue, ignoreCase: true, out enumValue))
+            if (!string.IsNullOrEmpty(value) && !Enum.TryParse(value, ignoreCase: true, out enumValue))
             {
                 throw new FeatureManagementException(
                     FeatureManagementError.InvalidConfigurationSetting,
-                    $"Invalid {typeof(T)?.Name} with value '{rawValue}' for feature '{configurationSection.Key}'.");
+                    $"Invalid {typeof(T).Name} with value '{value}' for feature '{feature}'.");
             }
 
             return enumValue;
