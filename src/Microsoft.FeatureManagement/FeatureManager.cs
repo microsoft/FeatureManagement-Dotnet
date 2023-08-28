@@ -10,10 +10,10 @@ using Microsoft.FeatureManagement.Targeting;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Xunit;
 
 namespace Microsoft.FeatureManagement
 {
@@ -453,7 +453,7 @@ namespace Microsoft.FeatureManagement
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
 
-                        Assert.NotNull(featureDefinition.Variants);
+                        Debug.Assert(featureDefinition.Variants != null);
 
                         return new ValueTask<VariantDefinition>(
                             featureDefinition
@@ -476,7 +476,7 @@ namespace Microsoft.FeatureManagement
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
 
-                        Assert.NotNull(featureDefinition.Variants);
+                        Debug.Assert(featureDefinition.Variants != null);
 
                         return new ValueTask<VariantDefinition>(
                             featureDefinition
@@ -504,7 +504,7 @@ namespace Microsoft.FeatureManagement
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
 
-                        Assert.NotNull(featureDefinition.Variants);
+                        Debug.Assert(featureDefinition.Variants != null);
 
                         return new ValueTask<VariantDefinition>(
                             featureDefinition
