@@ -164,8 +164,8 @@ namespace Microsoft.FeatureManagement
             }
             else
             {
-                requirementType = ParseFeatureDefinitionSectionEnum(configurationSection.Key, configurationSection[RequirementTypeKeyword], requirementType);
-                status = ParseFeatureDefinitionSectionEnum(configurationSection.Key, configurationSection[FeatureStatusKeyword], status);
+                requirementType = ParseEnum(configurationSection.Key, configurationSection[RequirementTypeKeyword], requirementType);
+                status = ParseEnum(configurationSection.Key, configurationSection[FeatureStatusKeyword], status);
 
                 IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(FeatureFiltersSectionName).GetChildren();
 
@@ -267,7 +267,7 @@ namespace Microsoft.FeatureManagement
             }
         }
 
-        private T ParseFeatureDefinitionSectionEnum<T>(string feature, string value, T enumValue)
+        private T ParseEnum<T>(string feature, string value, T enumValue)
             where T : struct, Enum
         {
             //
