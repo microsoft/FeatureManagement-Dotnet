@@ -4,11 +4,10 @@
 
 using System;
 using System.Collections;
-using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
 {
-
     /// <summary>
     /// The Crontab field uses a BitArray to record which values are included in the field.
     /// </summary>
@@ -68,77 +67,89 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
         /// <param name="content">The content to parse.</param>
         /// <param name="message">The error message.</param>
         /// <returns>True if the content is valid and parsed successfully, otherwise false.</returns>
-        public bool Parse(string content, out string message)
+        public bool TryParse(string content, out string message)
         {
             message = "";
             _bits.SetAll(false);
 
             //
             // The field can be a list which is a set of numbers or ranges separated by commas.
-            // Ranges are two numbers/name separated with a hyphen or an asterisk which represents all possible values in the field.
+            // Ranges are two numbers/names separated with a hyphen or an asterisk which represents all possible values in the field.
             // Step values can be used in conjunction with ranges after a slash.
-            string validSegmentPattern = @"^(?:[0-9]+|[a-zA-Z]{3}|(?:\*|(?:[0-9]+|[a-zA-Z]{3})-(?:[0-9]+|[a-zA-Z]{3}))(/[0-9]+)?)$";
             string[] segments = content.Split(',');
             foreach (string segment in segments)
             {
-                if (Regex.IsMatch(segment, validSegmentPattern))
+                if (segment == null)
                 {
-                    string noRangePattern = @"^(?:[0-9]+|[a-zA-Z]{3})$";
-                    if (Regex.IsMatch(segment, noRangePattern))
+                    message = InvalidSyntaxErrorMessage(content);
+                    return false;
+                }
+
+                int value = TryGetNumber(segment);
+                if (IsValueValid(value))
+                {
+                    _bits[ValueToIndex(value)] = true;
+                    continue;
+                }
+
+                if (segment.Contains('-') || segment.Contains('*')) // The segment might be a range.
+                {
+                    string[] parts = segment.Split('/');
+                    if (parts.Length > 2) // multiple slashs
                     {
-                        int num = GetNumber(segment);
-                        if (!IsValueValid(num))
+                        message = InvalidSyntaxErrorMessage(content);
+                        return false;
+                    }
+
+                    int step = parts.Length == 2 ? TryGetNumber(parts[1]) : 1;
+                    if (step <= 0) // invalid step value 
+                    {
+                        message = InvalidValueErrorMessage(content, parts[1]);
+                        return false;
+                    }
+
+                    string range = parts[0];
+                    int first, last;
+                    if (string.Equals(range, "*")) // asterisk represents unrestricted range
+                    {
+                        (first, last) = (_minValue, _maxValue);
+
+                        if (_kind == CrontabFieldKind.DayOfWeek) // Corner case for Sunday: both 0 and 7 can be interpreted to Sunday
                         {
-                            message = $"Content of the {_kind} field: {content} is invalid. Value {segment} is out of range [{_minValue}, {_maxValue}].";
-                            return false;
-                        }
-                        else
-                        {
-                            _bits[ValueToIndex(num)] = true;
+                            last = _maxValue - 1;
                         }
                     }
-                    else // The segment is a range.
+                    else // range should be defined by two numbers separated with a hyphen
                     {
-                        string[] parts = segment.Split('/');
-                        string range = parts[0];
-                        int step = parts.Length > 1 ? GetNumber(parts[1]) : 1;
-
-                        int first, last;
-                        if (string.Equals(range, "*"))
+                        string[] numbers = range.Split('-');
+                        if (numbers.Length != 2)
                         {
-                            (first, last) = (_minValue, _maxValue);
-
-                            if (_kind == CrontabFieldKind.DayOfWeek) // Corner case for Sunday: both 0 and 7 can be interpreted to Sunday
-                            {
-                                last = _maxValue - 1;
-                            }
+                            message = InvalidSyntaxErrorMessage(content);
+                            return false;
                         }
-                        else
-                        {
-                            string[] numbers = range.Split('-');
-                            (first, last) = (GetNumber(numbers[0]), GetNumber(numbers[1]));
 
-                            if (!IsValueValid(first) || !IsValueValid(last))
-                            {
-                                message = $"Content of the {_kind} field: {content} is invalid. Value {segment} is out of range [{_minValue}, {_maxValue}].";
-                                return false;
-                            }
+                        (first, last) = (TryGetNumber(numbers[0]), TryGetNumber(numbers[1]));
+
+                        if (!IsValueValid(first) || !IsValueValid(last))
+                        {
+                            message = InvalidValueErrorMessage(content, range);
+                            return false;
                         }
 
                         if (_kind == CrontabFieldKind.DayOfWeek && last == 0 && last != first) // Corner case for Sunday: both 0 and 7 can be interpreted to Sunday
                         {
                             last = 7; // Mon-Sun should be intepreted to 1-7 instead of 1-0
                         }
+                    }
 
-                        for (int num = first; num <= last; num += step)
-                        {
-                            _bits[ValueToIndex(num)] = true;
-                        }
+                    for (int num = first; num <= last; num += step)
+                    {
+                        _bits[ValueToIndex(num)] = true;
                     }
                 }
-                else // The segment is not a valid number or range.
+                else // The segment is neither a range nor a valid number.
                 {
-                    message = $"Content of the {_kind} field: {content} is invalid. Syntax cannot be parsed.";
+                    message = InvalidValueErrorMessage(content, segment);
                     return false;
                 }
             }
@@ -146,7 +157,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
             return true;
         }
 
-        private int GetNumber(string str)
+        private int TryGetNumber(string str)
         {
             if (int.TryParse(str, out int num) == true)
             {
@@ -156,11 +167,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
             {
                 if (_kind == CrontabFieldKind.Month)
                 {
-                    return GetMonthNumber(str);
+                    return TryGetMonthNumber(str);
                 }
                 else if (_kind == CrontabFieldKind.DayOfWeek)
                 {
-                    return GetDayOfWeekNumber(str);
+                    return TryGetDayOfWeekNumber(str);
                 }
                 else
                 {
@@ -169,8 +180,10 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
             }
         }
 
-        static private int GetMonthNumber(string name)
+        private static int TryGetMonthNumber(string name)
         {
+            if (name == null) return -1;
+
             return name.ToUpper() switch
             {
                 "JAN" => 1,
@@ -189,8 +202,10 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
             };
         }
 
-        static private int GetDayOfWeekNumber(string name)
+        private static int TryGetDayOfWeekNumber(string name)
         {
+            if (name == null) return -1;
+
             return name.ToUpper() switch
             {
                 "SUN" => 0,
@@ -212,6 +227,16 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
         private int ValueToIndex(int value)
         {
             return value - _minValue;
+        }
+
+        private string InvalidSyntaxErrorMessage(string content)
+        {
+            return $"Content of the {_kind} field: {content} is invalid. Syntax cannot be parsed.";
+        }
+
+        private string InvalidValueErrorMessage(string content, string segment)
+        {
+            return $"Content of the {_kind} field: {content} is invalid. The value of {segment} is invalid.";
         }
     }
 }

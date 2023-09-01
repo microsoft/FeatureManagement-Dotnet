@@ -1,6 +1,10 @@
-﻿using Xunit;
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+
 using Microsoft.FeatureManagement.FeatureFilters.Crontab;
 using System;
+using Xunit;
 
 namespace Tests.FeatureManagement
 {
@@ -9,8 +13,7 @@ namespace Tests.FeatureManagement
         [Theory]
         [InlineData("* * * * *", true)]
         [InlineData("1 2 3 Apr Fri", true)]
-        [InlineData("00-59/3,1,2-2 01,3,20-23 31-1/100 Apr,1-Feb,oct-DEC/1 Sun-Sat/2,1-7", true)]
-
+        [InlineData("00-59/3,1,2-2 01,3,20-23 */10,31-1/100 Apr,1-Feb,oct-DEC/1 Sun-Sat/2,1-7", true)]
         [InlineData("Fri * * * *", false)]
         [InlineData("1 2 Wed 4 5", false)]
         [InlineData("* * * * * *", false)]
@@ -28,6 +31,10 @@ namespace Tests.FeatureManagement
         [InlineData("* * * * 8", false)]
         [InlineData("* * 0 * *", false)]
         [InlineData("* * * 0 *", false)]
+        [InlineData("* * * */ *", false)]
+        [InlineData("* * * *// *", false)]
+        [InlineData("* * * --- *", false)]
+        [InlineData("* * * - *", false)]
         public void ValidateCronExpressionTest(string expression, bool expected)
         {
             bool result = ValidateExpression(expression);
@@ -42,6 +49,8 @@ namespace Tests.FeatureManagement
         [InlineData("00 21 30 8 Mon-Sun/2", "Wed, 30 Aug 2023 21:00:30 +08:00", true)]
         [InlineData("0-29 20-23 1,2,15-31/2 Jun-Sep */2", "Thu, 31 Aug 2023 21:00:00 +08:00", true)]
         [InlineData("0-29 21 * * *", "Thu, 31 Aug 2023 21:30:00 +08:00", false)]
+        [InlineData("* * * * Sun-Sat", "Fri, 1 Sep 2023 21:00:00 +08:00", true)]
+        [InlineData("* * 3 9 Mon-Sun", "Sun, 3 Sep 2023 21:00:00 +08:00", true)]
         public void IsCrontabSatisfiedByTimeTest(string expression, string timeString, bool expected)
         {
             Assert.True(ValidateExpression(expression));
@@ -53,14 +62,13 @@ namespace Tests.FeatureManagement
         private bool ValidateExpression(string expression)
         {
             CrontabExpression crontabExpression = new CrontabExpression();
-            return crontabExpression.Parse(expression, out string _);
+            return crontabExpression.TryParse(expression, out string _);
         }
 
         private bool IsCrontabSatisfiedByTime(string expression, string timeString)
         {
             DateTimeOffset dateTimeOffset = DateTimeOffset.Parse(timeString);
-            CrontabExpression crontabExpression = new CrontabExpression();
-            crontabExpression.Parse(expression, out string _);
+            CrontabExpression crontabExpression = CrontabExpression.Parse(expression);
             return crontabExpression.IsSatisfiedBy(dateTimeOffset);
         }
     }
