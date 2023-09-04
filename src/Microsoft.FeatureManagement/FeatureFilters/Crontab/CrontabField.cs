@@ -1,10 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-
 using System;
 using System.Collections;
-using System.Linq;
 
 namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
 {
@@ -92,7 +90,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
                     continue;
                 }
 
-                if (segment.Contains('-') || segment.Contains('*')) // The segment might be a range.
+                if (segment.Contains("-") || segment.Contains("*")) // The segment might be a range.
                 {
                     string[] parts = segment.Split('/');
                     if (parts.Length > 2) // multiple slashs

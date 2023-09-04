@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-
 using System;
 
 namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
@@ -34,7 +33,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
             CrontabExpression crontabExpression = new CrontabExpression();
             if (crontabExpression.TryParse(expression, out string message) == false)
             {
-                throw new ArgumentException(message, expression);
+                throw new ArgumentException($"Crontab expression: \"{expression}\" is invalid. " + message);
             }
 
             return crontabExpression;
@@ -46,7 +45,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
         /// <param name="expression">The expression to parse.</param>
         /// <param name="message">The error message.</param>
         /// <returns>True if the expression is valid and parsed successfully, otherwise false.</returns>
-        public bool TryParse(string expression, out string message)
+        private bool TryParse(string expression, out string message)
         {
             if (expression == null)
             {
@@ -59,7 +58,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
 
             if (fields.Length != NumberOfFields)
             {
-                message = $"Expression: {expression} is invalid. Five fields in the sequence of Minute, Hour, Day of month, Month, and Day of week are required.";
+                message = $"Five fields in the sequence of Minute, Hour, Day of month, Month, and Day of week are required.";
                 return false;
             }
 

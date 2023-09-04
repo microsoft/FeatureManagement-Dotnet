@@ -61,8 +61,15 @@ namespace Tests.FeatureManagement
 
         private bool ValidateExpression(string expression)
         {
-            CrontabExpression crontabExpression = new CrontabExpression();
-            return crontabExpression.TryParse(expression, out string _);
+            try
+            {
+                CrontabExpression crontabExpression = CrontabExpression.Parse(expression);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
 
         private bool IsCrontabSatisfiedByTime(string expression, string timeString)
