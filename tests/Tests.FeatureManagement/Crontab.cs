@@ -14,6 +14,7 @@ namespace Tests.FeatureManagement
         [InlineData("* * * * *", true)]
         [InlineData("1 2 3 Apr Fri", true)]
         [InlineData("00-59/3,1,2-2 01,3,20-23 */10,31-1/100 Apr,1-Feb,oct-DEC/1 Sun-Sat/2,1-7", true)]
+        [InlineData("* * * * 0-7", true)]
         [InlineData("Fri * * * *", false)]
         [InlineData("1 2 Wed 4 5", false)]
         [InlineData("* * * * * *", false)]
@@ -51,6 +52,8 @@ namespace Tests.FeatureManagement
         [InlineData("0-29 21 * * *", "Thu, 31 Aug 2023 21:30:00 +08:00", false)]
         [InlineData("* * * * Sun-Sat", "Fri, 1 Sep 2023 21:00:00 +08:00", true)]
         [InlineData("* * 3 9 Mon-Sun", "Sun, 3 Sep 2023 21:00:00 +08:00", true)]
+        [InlineData("* * * * 0", "Sun, 3 Sep 2023 21:00:00 +08:00", true)]
+        [InlineData("* * * * 7", "Sun, 3 Sep 2023 21:00:00 +08:00", true)]
         public void IsCrontabSatisfiedByTimeTest(string expression, string timeString, bool expected)
         {
             Assert.True(ValidateExpression(expression));
@@ -66,7 +69,7 @@ namespace Tests.FeatureManagement
                 CrontabExpression crontabExpression = CrontabExpression.Parse(expression);
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception _)
             {
                 return false;
             }

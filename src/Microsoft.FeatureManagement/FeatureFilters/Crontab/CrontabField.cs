@@ -111,11 +111,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
                     if (string.Equals(range, "*")) // asterisk represents unrestricted range
                     {
                         (first, last) = (_minValue, _maxValue);
-
-                        if (_kind == CrontabFieldKind.DayOfWeek) // Corner case for Sunday: both 0 and 7 can be interpreted to Sunday
-                        {
-                            last = _maxValue - 1;
-                        }
                     }
                     else // range should be defined by two numbers separated with a hyphen
                     {
