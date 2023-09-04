@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -255,6 +256,9 @@ namespace Tests.FeatureManagement
             string feature2 = "feature2";
             string feature3 = "feature3";
             string feature4 = "feature4";
+            string feature5 = "feature5";
+            string feature6 = "feature6";
+            string feature7 = "feature7";
 
             Environment.SetEnvironmentVariable($"FeatureManagement:{feature1}:EnabledFor:0:Name", "TimeWindow");
             Environment.SetEnvironmentVariable($"FeatureManagement:{feature1}:EnabledFor:0:Parameters:End", DateTimeOffset.UtcNow.AddDays(1).ToString("r"));
@@ -267,6 +271,18 @@ namespace Tests.FeatureManagement
 
             Environment.SetEnvironmentVariable($"FeatureManagement:{feature4}:EnabledFor:0:Name", "TimeWindow");
             Environment.SetEnvironmentVariable($"FeatureManagement:{feature4}:EnabledFor:0:Parameters:Start", DateTimeOffset.UtcNow.AddDays(1).ToString("r"));
+
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature5}:EnabledFor:0:Name", "TimeWindow");
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature5}:EnabledFor:0:Parameters:Filters:0", "* * * * Mon-Fri");
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature5}:EnabledFor:0:Parameters:Filters:1", "* * * * Sat");
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature5}:EnabledFor:0:Parameters:Filters:2", "* * * * Sun");
+
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature6}:EnabledFor:0:Name", "TimeWindow");
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature6}:EnabledFor:0:Parameters:End", DateTimeOffset.UtcNow.ToString("r"));
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature6}:EnabledFor:0:Parameters:Filters:0", "* * * * *");
+
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature7}:EnabledFor:0:Name", "TimeWindow");
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature7}:EnabledFor:0:Parameters:Filters:0", "*/2 * * * *");
 
             IConfiguration config = new ConfigurationBuilder().AddEnvironmentVariables().Build();
 
@@ -284,6 +300,14 @@ namespace Tests.FeatureManagement
             Assert.False(await featureManager.IsEnabledAsync(feature2));
             Assert.True(await featureManager.IsEnabledAsync(feature3));
             Assert.False(await featureManager.IsEnabledAsync(feature4));
+            Assert.True(await featureManager.IsEnabledAsync(feature5));
+            Assert.False(await featureManager.IsEnabledAsync(feature6));
+
+            bool IsEnabled = await featureManager.IsEnabledAsync(feature7);
+            Thread.Sleep(60000);
+            bool IsEnabledAfterOneMinute = await featureManager.IsEnabledAsync(feature7);
+            Assert.False(IsEnabled && IsEnabledAfterOneMinute);
+            Assert.True(IsEnabled || IsEnabledAfterOneMinute);
         }
 
         [Fact]
