@@ -489,6 +489,45 @@ This filter provides the capability to enable a feature based on a time window. 
 }
 ```
 
+This filter also provides the capability to enable a feature during some recurring time windows. The recurring time windows act as the additional filters of evaluation, supplementing the time window defined by the `Start` and `End`. If any recurring time window filter is specified, the feature will only be enabled when the current time falls between the `Start` and `End`, and also falls within a recurring time window listed in the `Filters`.
+We can see some Crontab expressions are listed under the `Filters`, which specify the recurring time windows. 
+``` JavaScript
+"EnhancedPipeline": {
+    "EnabledFor": [
+        {
+            "Name": "Microsoft.TimeWindow",
+            "Parameters": {
+                "Start": "Mon, 04 Sep 2023 00:00:00 GMT",
+                "Filters": [
+                    // 18:00-20:00 on weekdays
+                    "* 18-19 * * Mon-Fri",
+                    // 18:00-22:00 on weekends
+                    "* 18-21 * * Sat,Sun"
+                ]
+            }
+        }
+    ]
+}
+```
+In UNIX, the usage of Crontab expression is to represent the time to execute a command. The Crontab serves as a schedule. The Crontab expression is designed to represent discrete time point rather than continuous time span. For example, the Cron job “* * * * * echo hi >> log” will execute “echo hi >> log” at the beginning of each minute. 
+
+However, when the time granularity is at minute-level, we can consider it as a continuous time intervals. For example, the Crontab expression “* 16 * * *” means “at every minute past the 16th hour of the day”. We can intuitively consider it as the time span 16:00-17:00. As a result, the recurring time window can be represented by a Crontab expression. 
+
+The UNIX Crontab format can be refered to [man-pages](https://man7.org/linux/man-pages/man5/crontab.5.html). Notice that randomization(e.g., 0~59) is not supported.
+
+The crontab format has five time fields separated by at least one blank:
+
+```
+{minute} {hour} {day-of-month} {month} {day-of-week}
+```
+
+| Crontab Expression Example | Recurring Time Window |
+|--------|--------|
+| * 6-9,16-19 * * *| 6:00-10:00 and 16:00-20:00 every day |
+| * * * 7-8 Wed,Fri | Every Wednesday and Friday in July and August |
+| * 18-21 25 12 * | 18:00-22:00 on Dec 25th |
+| * * 1-7 9 Mon | The first Monday in September |
+
 #### Microsoft.Targeting
 
 This filter provides the capability to enable a feature for a target audience. An in-depth explanation of targeting is explained in the [targeting](./README.md#Targeting) section below. The filter parameters include an audience object which describes users, groups, excluded users/groups, and a default percentage of the user base that should have access to the feature. Each group object that is listed in the target audience must also specify what percentage of the group's members should have access. If a user is specified in the exclusion section, either directly or if the user is in an excluded group, the feature will be disabled. Otherwise, if a user is specified in the users section directly, or if the user is in the included percentage of any of the group rollouts, or if the user falls into the default rollout percentage then that user will have the feature enabled.
