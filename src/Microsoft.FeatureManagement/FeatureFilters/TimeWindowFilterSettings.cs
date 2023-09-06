@@ -17,7 +17,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// An optional start time used to determine when a feature configured to use the <see cref="TimeWindowFilter"/> feature filter should be enabled.
         /// If no start time is specified the time window is considered to have already started.
         /// </summary>
-        public DateTimeOffset? Start { get; set; } // E.g. "Wed, 01 May 2019 22:59:30 GMT"
+        public DateTimeOffset? Start { get; set; } // E.g. "Wed, 01 May 2019 22:59:30 GMT+0800"
 
         /// <summary>
         /// An optional end time used to determine when a feature configured to use the <see cref="TimeWindowFilter"/> feature filter should be enabled.

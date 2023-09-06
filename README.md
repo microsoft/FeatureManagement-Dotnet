@@ -497,7 +497,7 @@ We can see some Crontab expressions are listed under the `Filters`, which specif
         {
             "Name": "Microsoft.TimeWindow",
             "Parameters": {
-                "Start": "Mon, 04 Sep 2023 00:00:00 GMT",
+                "Start": "2023-09-06T00:00:00+08:00",
                 "Filters": [
                     // 18:00-20:00 on weekdays
                     "* 18-19 * * Mon-Fri",
@@ -528,11 +528,12 @@ The crontab format has five time fields separated by at least one blank:
 | * 18-21 25 12 * | 18:00-22:00 on Dec 25th |
 | * * 1-7 9 Mon | The first Monday in September |
 
-If the UTC offset is specified in `Start`, it will also be applied to Crontabs listed in `Filters`. 
-If the UTC offset of `Start` is not specified and the UTC offset of `End` is specified, the UTC offset of `End` will be applied to Crons listed in `Filters`. 
+The Crontab does not contain the information of UTC time offset.
+- If the UTC offset is specified in `Start`, it will also be applied to Crontabs listed in `Filters`. 
+- If the UTC offset of `Start` is not specified and the UTC offset of `End` is specified, the UTC offset of `End` will be applied to Crontabs listed in `Filters`. 
+- Otherwise, we will use the default UTC offset: UTC+0:00. 
 
-Otherwise, we will use the default UTC offset: UTC+0:00. 
-
+In the above example, the `Start` is "2023-09-06T00:00:00+08:00", as a result, the UTC+8:00 will be also applied to the recurring time window filters: 18:00-20:00 on weekdays and 18:00-22:00 on weekends.
 #### Microsoft.Targeting
 
 This filter provides the capability to enable a feature for a target audience. An in-depth explanation of targeting is explained in the [targeting](./README.md#Targeting) section below. The filter parameters include an audience object which describes users, groups, excluded users/groups, and a default percentage of the user base that should have access to the feature. Each group object that is listed in the target audience must also specify what percentage of the group's members should have access. If a user is specified in the exclusion section, either directly or if the user is in an excluded group, the feature will be disabled. Otherwise, if a user is specified in the users section directly, or if the user is in the included percentage of any of the group rollouts, or if the user falls into the default rollout percentage then that user will have the feature enabled.
