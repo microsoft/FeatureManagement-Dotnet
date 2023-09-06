@@ -528,6 +528,11 @@ The crontab format has five time fields separated by at least one blank:
 | * 18-21 25 12 * | 18:00-22:00 on Dec 25th |
 | * * 1-7 9 Mon | The first Monday in September |
 
+If the UTC offset is specified in `Start`, it will also be applied to Crontabs listed in `Filters`. 
+If the UTC offset of `Start` is not specified and the UTC offset of `End` is specified, the UTC offset of `End` will be applied to Crons listed in `Filters`. 
+
+Otherwise, we will use the default UTC offset: UTC+0:00. 
+
 #### Microsoft.Targeting
 
 This filter provides the capability to enable a feature for a target audience. An in-depth explanation of targeting is explained in the [targeting](./README.md#Targeting) section below. The filter parameters include an audience object which describes users, groups, excluded users/groups, and a default percentage of the user base that should have access to the feature. Each group object that is listed in the target audience must also specify what percentage of the group's members should have access. If a user is specified in the exclusion section, either directly or if the user is in an excluded group, the feature will be disabled. Otherwise, if a user is specified in the users section directly, or if the user is in the included percentage of any of the group rollouts, or if the user falls into the default rollout percentage then that user will have the feature enabled.
