@@ -1039,8 +1039,7 @@ namespace Tests.FeatureManagement
 
             targetingContextAccessor.Current = new TargetingContext
             {
-                UserId = "Marsha",
-                Groups = new List<string> { "Group1" }
+                UserId = "Jeff"
             };
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
