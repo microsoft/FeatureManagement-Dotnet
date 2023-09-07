@@ -1037,6 +1037,12 @@ namespace Tests.FeatureManagement
                     .AddSingleton(config)
                     .AddFeatureManagement();
 
+            targetingContextAccessor.Current = new TargetingContext
+            {
+                UserId = "Marsha",
+                Groups = new List<string> { "Group1" }
+            };
+
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
             IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
