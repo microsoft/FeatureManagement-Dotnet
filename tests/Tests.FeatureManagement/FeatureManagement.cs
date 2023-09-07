@@ -1056,6 +1056,24 @@ namespace Tests.FeatureManagement
             variant = await featureManager.GetVariantAsync("VariantFeatureBothConfigurations", cancellationToken);
 
             Assert.Equal("600px", variant.Configuration.Value);
+
+            // Verify that an exception is thrown for invalid StatusOverride value
+            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () =>
+            {
+                variant = await featureManager.GetVariantAsync("VariantFeatureInvalidStatusOverride", cancellationToken);
+            });
+
+            Assert.Equal(FeatureManagementError.InvalidConfigurationSetting, e.Error);
+            Assert.Contains(ConfigurationFields.VariantDefinitionStatusOverride, e.Message);
+
+            // Verify that an exception is thrown for invalid doubles From and To in the Percentile section
+            e = await Assert.ThrowsAsync<FeatureManagementException>(async () =>
+            {
+                variant = await featureManager.GetVariantAsync("VariantFeatureInvalidFromTo", cancellationToken);
+            });
+
+            Assert.Equal(FeatureManagementError.InvalidConfigurationSetting, e.Error);
+            Assert.Contains(ConfigurationFields.PercentileAllocationFrom, e.Message);
         }
 
         private static void DisableEndpointRouting(MvcOptions options)

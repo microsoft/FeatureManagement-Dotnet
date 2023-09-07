@@ -6,6 +6,8 @@ using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,6 +27,8 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
+
+        const string ParseValueErrorString = "Invalid {0} with value '{1}' for feature '{2}'.";
 
         public ConfigurationFeatureDefinitionProvider(IConfiguration configuration)
         {
@@ -168,22 +172,14 @@ namespace Microsoft.FeatureManagement
 
                 string rawFeatureStatus = configurationSection[ConfigurationFields.FeatureStatus];
 
-                string parseEnumErrorString = "Invalid {0} with value '{1}' for feature '{2}'.";
-
-                //
-                // If the enum is specified, parse it and set the return value
-                if (!string.IsNullOrEmpty(rawRequirementType) && !Enum.TryParse(rawRequirementType, ignoreCase: true, out requirementType))
+                if (!string.IsNullOrEmpty(rawRequirementType))
                 {
-                    throw new FeatureManagementException(
-                        FeatureManagementError.InvalidConfigurationSetting,
-                        string.Format(parseEnumErrorString, nameof(RequirementType), rawRequirementType, configurationSection.Key));
+                    requirementType = ParseEnum<RequirementType>(configurationSection.Key, rawRequirementType, ConfigurationFields.RequirementType);
                 }
 
-                if (!string.IsNullOrEmpty(rawFeatureStatus) && !Enum.TryParse(rawFeatureStatus, ignoreCase: true, out featureStatus))
+                if (!string.IsNullOrEmpty(rawFeatureStatus))
                 {
-                    throw new FeatureManagementException(
-                        FeatureManagementError.InvalidConfigurationSetting,
-                        string.Format(parseEnumErrorString, nameof(FeatureStatus), rawFeatureStatus, configurationSection.Key));
+                    featureStatus = ParseEnum<FeatureStatus>(configurationSection.Key, rawFeatureStatus, ConfigurationFields.FeatureStatus);
                 }
 
                 IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(ConfigurationFields.FeatureFiltersSectionName).GetChildren();
@@ -229,11 +225,29 @@ namespace Microsoft.FeatureManagement
                         }),
                         Percentile = allocationSection.GetSection(ConfigurationFields.PercentileAllocationSectionName).GetChildren().Select(percentileAllocation =>
                         {
+                            double from = 0;
+
+                            double to = 0;
+
+                            string rawFrom = percentileAllocation[ConfigurationFields.PercentileAllocationFrom];
+
+                            string rawTo = percentileAllocation[ConfigurationFields.PercentileAllocationTo];
+
+                            if (!string.IsNullOrEmpty(rawFrom))
+                            {
+                                from = ParseDouble(configurationSection.Key, rawFrom, ConfigurationFields.PercentileAllocationFrom);
+                            }
+
+                            if (!string.IsNullOrEmpty(rawTo))
+                            {
+                                to = ParseDouble(configurationSection.Key, rawTo, ConfigurationFields.PercentileAllocationTo);
+                            }
+
                             return new PercentileAllocation()
                             {
                                 Variant = percentileAllocation[ConfigurationFields.AllocationVariantKeyword],
-                                From = percentileAllocation.GetValue<double>(ConfigurationFields.PercentileAllocationFrom),
-                                To = percentileAllocation.GetValue<double>(ConfigurationFields.PercentileAllocationTo)
+                                From = from,
+                                To = to
                             };
                         }),
                         Seed = allocationSection[ConfigurationFields.AllocationSeed]
@@ -247,13 +261,23 @@ namespace Microsoft.FeatureManagement
                 {
                     if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[ConfigurationFields.NameKeyword]))
                     {
+                        StatusOverride statusOverride = StatusOverride.None;
+
+                        string rawStatusOverride = section[ConfigurationFields.VariantDefinitionStatusOverride];
+
+                        if (!string.IsNullOrEmpty(rawStatusOverride))
+                        {
+                            statusOverride = ParseEnum<StatusOverride>(configurationSection.Key, rawStatusOverride, ConfigurationFields.VariantDefinitionStatusOverride);
+                        }
+
                         VariantDefinition variant = new VariantDefinition()
                         {
                             Name = section[ConfigurationFields.NameKeyword],
                             ConfigurationValue = section.GetSection(ConfigurationFields.VariantDefinitionConfigurationValue),
                             ConfigurationReference = section[ConfigurationFields.VariantDefinitionConfigurationReference],
-                            StatusOverride = section.GetValue<StatusOverride>(ConfigurationFields.VariantDefinitionStatusOverride)
+                            StatusOverride = statusOverride
                         };
+
                         variants.Add(variant);
                     }
                 }
@@ -282,6 +306,35 @@ namespace Microsoft.FeatureManagement
             {
                 return _configuration.GetChildren();
             }
+        }
+
+        private T ParseEnum<T>(string feature, string rawValue, string fieldKeyword)
+            where T: struct, Enum
+        {
+            Debug.Assert(!string.IsNullOrEmpty(rawValue));
+
+            if (!Enum.TryParse(rawValue, ignoreCase: true, out T value))
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.InvalidConfigurationSetting,
+                    string.Format(ParseValueErrorString, fieldKeyword, rawValue, feature));
+            }
+
+            return value;
+        }
+
+        private double ParseDouble(string feature, string rawValue, string fieldKeyword)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(rawValue));
+
+            if (!double.TryParse(rawValue, out double value))
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.InvalidConfigurationSetting,
+                    string.Format(ParseValueErrorString, fieldKeyword, rawValue, feature));
+            }
+
+            return value;
         }
     }
 }
