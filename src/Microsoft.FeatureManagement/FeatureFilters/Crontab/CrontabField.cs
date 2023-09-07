@@ -133,6 +133,12 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
                         {
                             last = 7; // Mon-Sun should be intepreted to 1-7 instead of 1-0
                         }
+
+                        if (first > last)
+                        {
+                            message = InvalidSyntaxErrorMessage(content);
+                            return false;
+                        }
                     }
 
                     for (int num = first; num <= last; num += step)
