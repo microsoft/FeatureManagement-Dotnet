@@ -119,7 +119,6 @@ namespace Microsoft.FeatureManagement
                     variantDefinition = await GetAssignedVariantAsync(
                         featureDefinition,
                         targetingContext,
-                        isFeatureEnabled,
                         cancellationToken)
                         .ConfigureAwait(false);
                 }
@@ -358,7 +357,7 @@ namespace Microsoft.FeatureManagement
                     context = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
                 }
 
-                variantDefinition = await GetAssignedVariantAsync(featureDefinition, context, isFeatureEnabled, cancellationToken).ConfigureAwait(false);
+                variantDefinition = await GetAssignedVariantAsync(featureDefinition, context, cancellationToken).ConfigureAwait(false);
             }
 
             if (variantDefinition == null)
@@ -419,7 +418,7 @@ namespace Microsoft.FeatureManagement
             return context;
         }
 
-        private async ValueTask<VariantDefinition> GetAssignedVariantAsync(FeatureDefinition featureDefinition, TargetingContext context, bool isFeatureEnabled, CancellationToken cancellationToken)
+        private async ValueTask<VariantDefinition> GetAssignedVariantAsync(FeatureDefinition featureDefinition, TargetingContext context, CancellationToken cancellationToken)
         {
             VariantDefinition variantDefinition = null;
 
