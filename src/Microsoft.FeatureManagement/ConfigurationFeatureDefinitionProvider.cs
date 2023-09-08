@@ -27,7 +27,7 @@ namespace Microsoft.FeatureManagement
         private IDisposable _changeSubscription;
         private int _stale = 0;
 
-        const string ParseValueErrorString = "Invalid {0} with value '{1}' for feature '{2}'.";
+        const string ParseValueErrorString = "Invalid setting '{0}' with value '{1}' for feature '{2}'.";
 
         public ConfigurationFeatureDefinitionProvider(IConfiguration configuration)
         {

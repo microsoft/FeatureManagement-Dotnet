@@ -447,7 +447,7 @@ namespace Microsoft.FeatureManagement
                     {
                         if (string.IsNullOrEmpty(user.Variant))
                         {
-                            _logger.LogWarning($"Missing variant name for {nameof(featureDefinition.Allocation.User)} allocation in feature {featureDefinition.Name}");
+                            _logger.LogWarning($"Missing variant name for user allocation in feature {featureDefinition.Name}");
 
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
@@ -470,7 +470,7 @@ namespace Microsoft.FeatureManagement
                     {
                         if (string.IsNullOrEmpty(group.Variant))
                         {
-                            _logger.LogWarning($"Missing variant name for {nameof(featureDefinition.Allocation.Group)} allocation in feature {featureDefinition.Name}");
+                            _logger.LogWarning($"Missing variant name for group allocation in feature {featureDefinition.Name}");
 
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
@@ -498,7 +498,7 @@ namespace Microsoft.FeatureManagement
                     {
                         if (string.IsNullOrEmpty(percentile.Variant))
                         {
-                            _logger.LogWarning($"Missing variant name for {nameof(featureDefinition.Allocation.Percentile)} allocation in feature {featureDefinition.Name}");
+                            _logger.LogWarning($"Missing variant name for percentile allocation in feature {featureDefinition.Name}");
 
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }

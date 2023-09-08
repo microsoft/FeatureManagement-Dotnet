@@ -320,7 +320,7 @@ namespace Microsoft.FeatureManagement.Targeting
 
             if (from > to)
             {
-                throw new ArgumentException($"Double {nameof(from)} cannot be larger than double {nameof(to)}.");
+                throw new ArgumentException($"Value of {nameof(from)} cannot be larger than value of {nameof(to)}.");
             }
 
             string userId = ignoreCase ?
