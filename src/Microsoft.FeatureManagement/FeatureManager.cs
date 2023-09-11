@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.FeatureFilters;
 using Microsoft.FeatureManagement.Targeting;
@@ -494,7 +495,7 @@ namespace Microsoft.FeatureManagement
                         percentile.From,
                         percentile.To,
                         _assignerOptions.IgnoreCase,
-                        featureDefinition.Allocation.Seed))
+                        featureDefinition.Allocation.Seed ?? $"allocation{featureDefinition.Name}"))
                     {
                         if (string.IsNullOrEmpty(percentile.Variant))
                         {
