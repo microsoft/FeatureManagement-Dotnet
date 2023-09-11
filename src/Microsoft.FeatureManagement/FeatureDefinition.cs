@@ -25,5 +25,27 @@ namespace Microsoft.FeatureManagement
         /// The default value is <see cref="RequirementType.Any"/>.
         /// </summary>
         public RequirementType RequirementType { get; set; } = RequirementType.Any;
+
+        /// <summary>
+        /// A value used to group configuration settings.
+        /// A <see cref="Label"/> is used together with a <see cref="Name"/> to uniquely identify a feature.
+        /// </summary>
+        public string Label { get; set; }
+
+        /// <summary>
+        /// An ETag indicating the state of a feature within a configuration store.
+        /// </summary>
+        public string ETag { get; set; }
+
+        /// <summary>
+        /// A dictionary of tags used to assign additional properties to a feature.
+        /// These can be used to indicate how a feature may be applied.
+        /// </summary>
+        public IReadOnlyDictionary<string,string> Tags { get; set; }
+
+        /// <summary>
+        /// A flag to enable or disable sending telemetry events to the ITelemetryProvider implementation.
+        /// </summary>
+        public bool EnableTelemetry { get; set; }
     }
 }

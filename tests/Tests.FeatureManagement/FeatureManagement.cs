@@ -10,6 +10,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
+using Microsoft.FeatureManagement.Telemetry;
+using Microsoft.FeatureManagement.Tests;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +25,7 @@ namespace Tests.FeatureManagement
     public class FeatureManagement
     {
         private const string OnFeature = "OnTestFeature";
-        private const string OffFeature = "OffFeature";
+        private const string OffFeature = "OffTestFeature";
         private const string ConditionalFeature = "ConditionalFeature";
         private const string ContextualFeature = "ContextualFeature";
 
@@ -959,6 +961,49 @@ namespace Tests.FeatureManagement
             Assert.True(binderCalled);
 
             Assert.True(called);
+        }
+
+        [Fact]
+        public async Task TelemetryPublishing()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            TestTelemetryPublisher testPublisher = new TestTelemetryPublisher();
+
+            services
+                .AddSingleton(config)
+                .AddSingleton<ITelemetryPublisher>(testPublisher)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TimeWindowFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            // Test a feature with telemetry disabled
+            bool result = featureManager.IsEnabledAsync(OnFeature).Result;
+
+            Assert.True(result);
+            Assert.Null(testPublisher.evalationEventCache);
+
+            // Test telemetry cases
+            string onFeature = "AlwaysOnTestFeature";
+
+            result = featureManager.IsEnabledAsync(onFeature).Result;
+
+            Assert.True(result);
+            Assert.Equal(onFeature, testPublisher.evalationEventCache.FeatureDefinition.Name);
+            Assert.Equal(result, testPublisher.evalationEventCache.IsEnabled);
+
+            string offFeature = "OffTimeTestFeature";
+
+            result = featureManager.IsEnabledAsync(offFeature).Result;
+
+            Assert.False(result);
+            Assert.Equal(offFeature, testPublisher.evalationEventCache.FeatureDefinition.Name);
+            Assert.Equal(result, testPublisher.evalationEventCache.IsEnabled);
         }
 
         private static void DisableEndpointRouting(MvcOptions options)

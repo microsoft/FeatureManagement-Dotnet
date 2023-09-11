@@ -5,10 +5,12 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement.Telemetry;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
@@ -53,6 +55,8 @@ namespace Microsoft.FeatureManagement
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _parametersCache = new MemoryCache(new MemoryCacheOptions());
         }
+
+        public ITelemetryPublisher _telemetryPublisher { get; init; }
 
         public Task<bool> IsEnabledAsync(string feature)
         {
@@ -212,6 +216,26 @@ namespace Microsoft.FeatureManagement
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
                 await sessionManager.SetAsync(feature, enabled).ConfigureAwait(false);
+            }
+
+            if (featureDefinition.EnableTelemetry)
+            {
+                if (_telemetryPublisher == null)
+                {
+                    string errorMessage = $"The feature declaration enabled telemetry but no instance of ITelemetryPublisher was initialized.";
+
+                    _logger.LogWarning(errorMessage);
+                } 
+                else
+                {
+                    EvaluationEvent evaluationEvent = new EvaluationEvent()
+                    {
+                        FeatureDefinition = featureDefinition,
+                        IsEnabled = enabled
+                    };
+
+                    await _telemetryPublisher.PublishEvent(evaluationEvent, CancellationToken.None);
+                }
             }
 
             return enabled;

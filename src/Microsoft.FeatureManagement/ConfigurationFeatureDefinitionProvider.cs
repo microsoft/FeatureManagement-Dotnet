@@ -135,6 +135,10 @@ namespace Microsoft.FeatureManagement
             */
 
             RequirementType requirementType = RequirementType.Any;
+            string label = null;
+            string eTag = null;
+            bool enableTelemetry = false;
+            IReadOnlyDictionary<string, string> tags = null;
 
             var enabledFor = new List<FeatureFilterConfiguration>();
 
@@ -167,7 +171,7 @@ namespace Microsoft.FeatureManagement
                 if (!string.IsNullOrEmpty(rawRequirementType) && !Enum.TryParse(rawRequirementType, ignoreCase: true, out requirementType))
                 {
                     throw new FeatureManagementException(
-                        FeatureManagementError.InvalidConfigurationSetting, 
+                        FeatureManagementError.InvalidConfigurationSetting,
                         $"Invalid requirement type '{rawRequirementType}' for feature '{configurationSection.Key}'.");
                 }
 
@@ -187,13 +191,26 @@ namespace Microsoft.FeatureManagement
                         });
                     }
                 }
+
+                IConfigurationSection tagsSection = configurationSection.GetSection("Tags");
+                if (tagsSection.Exists()) {
+                    tags = tagsSection.GetChildren().ToDictionary(s => s.Key, s => s.Value);
+                }
+
+                label = configurationSection["Label"];
+                eTag = configurationSection["ETag"];
+                enableTelemetry = configurationSection.GetValue<bool>("EnableTelemetry");
             }
 
             return new FeatureDefinition()
             {
                 Name = configurationSection.Key,
                 EnabledFor = enabledFor,
-                RequirementType = requirementType
+                RequirementType = requirementType,
+                Label = label,
+                ETag = eTag,
+                EnableTelemetry = enableTelemetry,
+                Tags = tags
             };
         }
 
