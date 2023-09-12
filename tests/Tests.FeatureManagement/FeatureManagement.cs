@@ -983,7 +983,7 @@ namespace Tests.FeatureManagement
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
             // Test a feature with telemetry disabled
-            bool result = featureManager.IsEnabledAsync(OnFeature).Result;
+            bool result = await featureManager.IsEnabledAsync(OnFeature);
 
             Assert.True(result);
             Assert.Null(testPublisher.evalationEventCache);
@@ -991,7 +991,7 @@ namespace Tests.FeatureManagement
             // Test telemetry cases
             string onFeature = "AlwaysOnTestFeature";
 
-            result = featureManager.IsEnabledAsync(onFeature).Result;
+            result = await featureManager.IsEnabledAsync(onFeature);
 
             Assert.True(result);
             Assert.Equal(onFeature, testPublisher.evalationEventCache.FeatureDefinition.Name);
@@ -999,7 +999,7 @@ namespace Tests.FeatureManagement
 
             string offFeature = "OffTimeTestFeature";
 
-            result = featureManager.IsEnabledAsync(offFeature).Result;
+            result = await featureManager.IsEnabledAsync(offFeature);
 
             Assert.False(result);
             Assert.Equal(offFeature, testPublisher.evalationEventCache.FeatureDefinition.Name);
