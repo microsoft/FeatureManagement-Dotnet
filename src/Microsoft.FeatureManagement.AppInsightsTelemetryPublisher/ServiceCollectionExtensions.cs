@@ -21,9 +21,7 @@ namespace Microsoft.FeatureManagement.AppInsightsTelemetryPublisher
         {
             //
             // Add required services
-            services.AddSingleton<ITelemetryPublisher>(serviceProvider =>
-                new TelemetryPublisherAppInsights(serviceProvider.GetRequiredService<TelemetryClient>())
-            );
+            services.AddSingleton<ITelemetryPublisher, TelemetryPublisherAppInsights>();
 
             return services;
         }
