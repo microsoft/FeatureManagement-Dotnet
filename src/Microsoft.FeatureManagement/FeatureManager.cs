@@ -495,7 +495,7 @@ namespace Microsoft.FeatureManagement
                         percentile.From,
                         percentile.To,
                         _assignerOptions.IgnoreCase,
-                        featureDefinition.Allocation.Seed ?? $"allocation{featureDefinition.Name}"))
+                        featureDefinition.Allocation.Seed ?? $"allocation\n{featureDefinition.Name}"))
                     {
                         if (string.IsNullOrEmpty(percentile.Variant))
                         {
