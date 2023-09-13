@@ -27,13 +27,13 @@ namespace Microsoft.FeatureManagement
         public RequirementType RequirementType { get; set; } = RequirementType.Any;
 
         /// <summary>
-        /// A value used to group configuration settings.
+        /// A value used to group feature flags.
         /// A <see cref="Label"/> is used together with a <see cref="Name"/> to uniquely identify a feature.
         /// </summary>
         public string Label { get; set; }
 
         /// <summary>
-        /// An ETag indicating the state of a feature within a configuration store.
+        /// An ETag indicating the state of a feature. This value is used to determine whether a feature has changed.
         /// </summary>
         public string ETag { get; set; }
 
