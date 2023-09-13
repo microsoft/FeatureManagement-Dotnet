@@ -4,7 +4,11 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement.FeatureFilters;
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.FeatureManagement
 {
@@ -26,11 +30,42 @@ namespace Microsoft.FeatureManagement
             // Add required services
             services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
 
-            services.AddSingleton<IFeatureManager, FeatureManager>();
+            services.AddSingleton<FeatureManager>();
 
+            services.TryAddSingleton<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
+
+            services.TryAddSingleton<IFeatureManager>(sp =>
+            new FeatureManager(
+                sp.GetRequiredService<IFeatureDefinitionProvider>(),
+                sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                sp.GetRequiredService<IEnumerable<ISessionManager>>(),
+                sp.GetRequiredService<ILoggerFactory>(),
+                sp.GetRequiredService<IOptions<FeatureManagementOptions>>(),
+                sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>())
+                {
+                    Configuration = sp.GetService<IConfiguration>(),
+                    TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>()
+                });
+
+            services.TryAddSingleton<IVariantFeatureManager>(sp =>
+            new FeatureManager(
+                sp.GetRequiredService<IFeatureDefinitionProvider>(),
+                sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                sp.GetRequiredService<IEnumerable<ISessionManager>>(),
+                sp.GetRequiredService<ILoggerFactory>(),
+                sp.GetRequiredService<IOptions<FeatureManagementOptions>>(),
+                sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>())
+            {
+                Configuration = sp.GetService<IConfiguration>(),
+                TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>()
+            });
             services.AddSingleton<ISessionManager, EmptySessionManager>();
 
-            services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
+            services.AddScoped<FeatureManagerSnapshot>();
+
+            services.TryAddScoped<IFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
+
+            services.TryAddScoped<IVariantFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
 
             return new FeatureManagementBuilder(services);
         }
