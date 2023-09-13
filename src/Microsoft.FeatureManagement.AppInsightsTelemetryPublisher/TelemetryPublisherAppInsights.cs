@@ -41,7 +41,7 @@ namespace Microsoft.FeatureManagement.Telemetry.AppInsights
 
             foreach (KeyValuePair<string, string> kvp in featureDefinition.Tags)
             {
-                properties["Tag." + kvp.Key] = kvp.Value;
+                properties["Tags." + kvp.Key] = kvp.Value;
             }
 
             _telemetryClient.TrackEvent(_eventName, properties);

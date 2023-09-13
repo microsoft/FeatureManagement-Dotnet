@@ -41,10 +41,10 @@ namespace Microsoft.FeatureManagement
         /// A dictionary of tags used to assign additional properties to a feature.
         /// These can be used to indicate how a feature may be applied.
         /// </summary>
-        public IReadOnlyDictionary<string,string> Tags { get; set; }
+        public IReadOnlyDictionary<string, string> Tags { get; set; }
 
         /// <summary>
-        /// A flag to enable or disable sending telemetry events to the ITelemetryProvider implementation.
+        /// A flag to enable or disable sending telemetry events to the registered <see cref="ITelemetryProvider">.
         /// </summary>
         public bool EnableTelemetry { get; set; }
     }
