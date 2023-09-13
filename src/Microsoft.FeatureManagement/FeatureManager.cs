@@ -228,13 +228,13 @@ namespace Microsoft.FeatureManagement
                 } 
                 else
                 {
-                    EvaluationEvent evaluationEvent = new EvaluationEvent()
-                    {
-                        FeatureDefinition = featureDefinition,
-                        IsEnabled = enabled
-                    };
-
-                    await _telemetryPublisher.PublishEvent(evaluationEvent, CancellationToken.None);
+                    await _telemetryPublisher.PublishEvent(
+                        new EvaluationEvent
+                        {
+                            FeatureDefinition = featureDefinition,
+                            IsEnabled = enabled
+                        },
+                        CancellationToken.None);
                 }
             }
 

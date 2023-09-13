@@ -1,11 +1,9 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.ApplicationInsights;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.FeatureManagement.Telemetry;
 
-namespace Microsoft.FeatureManagement.AppInsightsTelemetryPublisher
+namespace Microsoft.FeatureManagement.Telemetry.AppInsights
 {
     /// <summary>
     /// Extensions used to add feature management publisher functionality.

@@ -2,12 +2,11 @@
 // Licensed under the MIT license.
 //
 using Microsoft.ApplicationInsights;
-using Microsoft.FeatureManagement.Telemetry;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.FeatureManagement.AppInsightsTelemetryPublisher
+namespace Microsoft.FeatureManagement.Telemetry.AppInsights
 {
     /// <summary>
     /// Used to publish data from evaluation events to Application Insights
