@@ -222,7 +222,7 @@ namespace Microsoft.FeatureManagement
             {
                 if (_telemetryPublisher == null)
                 {
-                    string errorMessage = $"The feature declaration enabled telemetry but no instance of ITelemetryPublisher was initialized.";
+                    string errorMessage = $"The feature declaration enabled telemetry but no telemetry publisher was registered.";
 
                     _logger.LogWarning(errorMessage);
                 } 
