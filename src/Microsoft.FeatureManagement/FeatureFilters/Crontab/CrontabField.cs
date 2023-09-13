@@ -17,6 +17,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
         private readonly BitArray _bits;
 
         /// <summary>
+        /// Whether the CrontabField is an asterisk.
+        /// </summary>
+        public bool IsAsterisk { get; private set; } = false;
+
+        /// <summary>
         /// Set the min value and max value according to the field kind.
         /// Initialize the BitArray.
         /// </summary>
@@ -30,7 +35,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
                 CrontabFieldKind.Hour => (0, 23),
                 CrontabFieldKind.DayOfMonth => (1, 31),
                 CrontabFieldKind.Month => (1, 12),
-                CrontabFieldKind.DayOfWeek => (0, 7),
+                CrontabFieldKind.DayOfWeek => (0, 6),
                 _ => throw new ArgumentException("Invalid crontab field kind.")
             };
 
@@ -50,9 +55,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
             }
             else
             {
-                if (_kind == CrontabFieldKind.DayOfWeek && value == 0) // Corner case for Sunday: both 0 and 7 can be interpreted to Sunday
+                if (IsAsterisk)
                 {
-                    return _bits[0] | _bits[7];
+                    return true;
                 }
 
                 return _bits[ValueToIndex(value)];
@@ -74,6 +79,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
             // The field can be a list which is a set of numbers or ranges separated by commas.
             // Ranges are two numbers/names separated with a hyphen or an asterisk which represents all possible values in the field.
             // Step values can be used in conjunction with ranges after a slash.
+            if (string.Equals(content, "*"))
+            {
+                IsAsterisk = true;
+            }
+            
             string[] segments = content.Split(',');
             foreach (string segment in segments)
             {
@@ -127,11 +137,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
                         {
                             message = InvalidValueErrorMessage(content, range);
                             return false;
-                        }
-
-                        if (_kind == CrontabFieldKind.DayOfWeek && last == 0 && last != first) // Corner case for Sunday: both 0 and 7 can be interpreted to Sunday
-                        {
-                            last = 7; // Mon-Sun should be intepreted to 1-7 instead of 1-0
                         }
 
                         if (first > last)

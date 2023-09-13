@@ -79,11 +79,35 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
         /// <returns>True if the Crontab expression is satisfied by the give timestamp, otherwise false.</returns>
         public bool IsSatisfiedBy(DateTimeOffset time)
         {
-            bool isMatched = CrontabFields[0].Match((int)time.Minute)
-                          && CrontabFields[1].Match((int)time.Hour)
-                          && CrontabFields[2].Match((int)time.Day)
-                          && CrontabFields[3].Match((int)time.Month)
-                          && CrontabFields[4].Match((int)time.DayOfWeek);
+            /*
+            If month, day of month, and day of week are all asterisk characters, every day shall be matched.
+            
+            If either the month or day of month is specified as an element or list, but the day of week is an asterisk, 
+            the month and day of month fields shall specify the days that match. 
+
+            If both month and day of month are specified as an <asterisk>, but day of week is an element or list, 
+            then only the specified days of the week match. 
+
+            If either the month or day of month is specified as an element or list, and the day of week is also specified as an element or list, 
+            then any day matching either the month and day of month, or the day of week, shall be matched.
+             */
+            bool isDayMatched;
+            if (!CrontabFields[4].IsAsterisk && // the day of week is specified 
+                (!CrontabFields[3].IsAsterisk || !CrontabFields[2].IsAsterisk)) // either the month or day of month is specified
+            {
+                isDayMatched = CrontabFields[4].Match((int)time.DayOfWeek)
+                            || (CrontabFields[3].Match((int)time.Month) && CrontabFields[2].Match((int)time.Day));
+            }
+            else
+            {
+                isDayMatched = CrontabFields[4].Match((int)time.DayOfWeek)
+                            && CrontabFields[3].Match((int)time.Month) 
+                            && CrontabFields[2].Match((int)time.Day);
+            }
+
+            bool isTimeSpanMatched = CrontabFields[1].Match((int)time.Hour) && CrontabFields[0].Match((int)time.Minute);
+
+            bool isMatched = isDayMatched && isTimeSpanMatched;
 
             return isMatched;
         }
