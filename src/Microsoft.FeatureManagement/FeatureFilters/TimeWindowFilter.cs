@@ -3,15 +3,15 @@
 //
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.FeatureManagement.FeatureFilters.Crontab;
+using Microsoft.FeatureManagement.FeatureFilters.Cron;
 using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
 {
     /// <summary>
-    /// A feature filter that can be used to activate a feature based on time window.
+    /// A feature filter that can be used to activate a feature based on a singular or recurring time window.
     /// It supports activating the feature flag during a fixed time window, 
     /// and also allows for configuring recurring time window filters to activate the feature flag periodically.
     /// </summary>
@@ -37,26 +37,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <returns><see cref="TimeWindowFilterSettings"/> that can later be used in feature evaluation.</returns>
         public object BindParameters(IConfiguration filterParameters)
         {
-            DateTimeOffset? Start = filterParameters["Start"] != null ? filterParameters.GetValue<DateTimeOffset>("Start") : (DateTimeOffset?)null;
-            DateTimeOffset? End = filterParameters["End"] != null ? filterParameters.GetValue<DateTimeOffset>("End") : (DateTimeOffset?)null;
-
-            TimeWindowFilterSettings settings = new TimeWindowFilterSettings()
-            {
-                Start = Start,
-                End = End
-            };
-
-            List<string> Filters = filterParameters.GetSection("Filters").Get<List<string>>();
-            if (Filters != null)
-            {
-                foreach (string expression in Filters)
-                {
-                    CrontabExpression crontabExpression = CrontabExpression.Parse(expression);
-                    settings.Filters.Add(crontabExpression);
-                }
-            }
-
-            return settings;
+            return filterParameters.Get<TimeWindowFilterSettings>() ?? new TimeWindowFilterSettings();
         }
 
         /// <summary>
@@ -72,9 +53,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             DateTimeOffset now = DateTimeOffset.UtcNow;
 
-            if (!settings.Start.HasValue && !settings.End.HasValue && settings.Filters.Count == 0)
+            if (!settings.Start.HasValue && !settings.End.HasValue && (settings.Filters == null || !settings.Filters.Any()))
             {
-                _logger.LogWarning($"The '{Alias}' feature filter is not valid for feature '{context.FeatureName}'. It must specify at least one of '{nameof(settings.Start)}', '{nameof(settings.End)}' and '{nameof(settings.Filters)}'.");
+                _logger.LogWarning($"The '{Alias}' feature filter is not valid for feature '{context.FeatureName}'. It must specify at least one of '{nameof(settings.Start)}', '{nameof(settings.End)}' or '{nameof(settings.Filters)}'.");
 
                 return Task.FromResult(false);
             }
@@ -87,8 +68,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
 
             //
-            // If any recurring time window filters is specified, to activate the feature flag, the current time also needs to be within at least one of the recurring time windows.
-            if (settings.Filters.Count > 0)
+            // If any recurring time window filter is specified, to activate the feature flag, the current time also needs to be within at least one of the recurring time windows.
+            if (settings.Filters != null && settings.Filters.Any())
             {
                 enabled = false;
 
@@ -98,9 +79,10 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                                       utcOffsetForCrontab;
                 DateTimeOffset nowForCrontab = now + utcOffsetForCrontab;
 
-                foreach (CrontabExpression crontabExpression in settings.Filters)
+                foreach (string expression in settings.Filters)
                 {
-                    if (crontabExpression.IsSatisfiedBy(nowForCrontab))
+                    CronExpression cronExpression = CronExpression.Parse(expression);
+                    if (cronExpression.IsSatisfiedBy(nowForCrontab))
                     {
                         enabled = true;
                         break;

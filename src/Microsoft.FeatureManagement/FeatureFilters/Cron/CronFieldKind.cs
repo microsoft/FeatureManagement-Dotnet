@@ -1,12 +1,12 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
+namespace Microsoft.FeatureManagement.FeatureFilters.Cron
 {
     /// <summary>
     /// Define an enum of all required fields of the Crontab expression.
     /// </summary>
-    public enum CrontabFieldKind
+    internal enum CronFieldKind
     {
         /// <summary>
         /// Field Name: Minute
@@ -38,5 +38,4 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
         /// </summary>
         DayOfWeek
     }
-
 }

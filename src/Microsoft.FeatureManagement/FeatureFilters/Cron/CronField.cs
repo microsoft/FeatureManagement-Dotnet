@@ -4,38 +4,38 @@
 using System;
 using System.Collections;
 
-namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
+namespace Microsoft.FeatureManagement.FeatureFilters.Cron
 {
     /// <summary>
-    /// The Crontab field uses a BitArray to record which values are included in the field.
+    /// The CronField uses a BitArray to record which values are included in the field.
     /// </summary>
-    public class CrontabField
+    internal class CronField
     {
-        private readonly CrontabFieldKind _kind;
+        /// <summary>
+        /// Whether the CronField is an asterisk.
+        /// </summary>
+        public bool MatchAll { get; private set; } = false;
+
+        private readonly CronFieldKind _kind;
         private readonly int _minValue = -1;
         private readonly int _maxValue = -1;
         private readonly BitArray _bits;
 
         /// <summary>
-        /// Whether the CrontabField is an asterisk.
-        /// </summary>
-        public bool IsAsterisk { get; private set; } = false;
-
-        /// <summary>
         /// Set the min value and max value according to the field kind.
         /// Initialize the BitArray.
         /// </summary>
-        public CrontabField(CrontabFieldKind kind)
+        public CronField(CronFieldKind kind)
         {
             _kind = kind;
 
             (_minValue, _maxValue) = kind switch
             {
-                CrontabFieldKind.Minute => (0, 59),
-                CrontabFieldKind.Hour => (0, 23),
-                CrontabFieldKind.DayOfMonth => (1, 31),
-                CrontabFieldKind.Month => (1, 12),
-                CrontabFieldKind.DayOfWeek => (0, 6),
+                CronFieldKind.Minute => (0, 59),
+                CronFieldKind.Hour => (0, 23),
+                CronFieldKind.DayOfMonth => (1, 31),
+                CronFieldKind.Month => (1, 12),
+                CronFieldKind.DayOfWeek => (0, 7),
                 _ => throw new ArgumentException("Invalid crontab field kind.")
             };
 
@@ -55,9 +55,14 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
             }
             else
             {
-                if (IsAsterisk)
+                if (MatchAll)
                 {
                     return true;
+                }
+
+                if (_kind == CronFieldKind.DayOfWeek && value == 0) // Corner case for Sunday: both 0 and 7 can be interpreted to Sunday
+                {
+                    return _bits[0] | _bits[7];
                 }
 
                 return _bits[ValueToIndex(value)];
@@ -65,54 +70,52 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
         }
 
         /// <summary>
-        /// Checks whether the given content can be parsed by the Crontab field.
+        /// Checks whether the given content can be fit into the CronField.
         /// </summary>
+        /// <param name="kind">The CronField kind. <see cref="CronFieldKind"/></param>
         /// <param name="content">The content to parse.</param>
-        /// <param name="message">The error message.</param>
+        /// <param name="result">The parsed result.</param>
         /// <returns>True if the content is valid and parsed successfully, otherwise false.</returns>
-        public bool TryParse(string content, out string message)
+        public static bool TryParse(CronFieldKind kind, string content, out CronField result)
         {
-            message = "";
-            _bits.SetAll(false);
+            result = null;
+            CronField cronField = new CronField(kind);
 
             //
             // The field can be a list which is a set of numbers or ranges separated by commas.
             // Ranges are two numbers/names separated with a hyphen or an asterisk which represents all possible values in the field.
             // Step values can be used in conjunction with ranges after a slash.
-            if (string.Equals(content, "*"))
-            {
-                IsAsterisk = true;
-            }
-            
             string[] segments = content.Split(',');
             foreach (string segment in segments)
             {
                 if (segment == null)
                 {
-                    message = InvalidSyntaxErrorMessage(content);
                     return false;
                 }
 
-                int value = TryGetNumber(segment);
-                if (IsValueValid(value))
+                int value = cronField.TryGetNumber(segment);
+                if (cronField.IsValueValid(value))
                 {
-                    _bits[ValueToIndex(value)] = true;
+                    cronField._bits[cronField.ValueToIndex(value)] = true;
                     continue;
                 }
 
                 if (segment.Contains("-") || segment.Contains("*")) // The segment might be a range.
                 {
+                    if (string.Equals(segment, "*"))
+                    {
+                        cronField.MatchAll = true;
+                    }
+
                     string[] parts = segment.Split('/');
                     if (parts.Length > 2) // multiple slashs
                     {
-                        message = InvalidSyntaxErrorMessage(content);
                         return false;
                     }
 
-                    int step = parts.Length == 2 ? TryGetNumber(parts[1]) : 1;
+                    int step = parts.Length == 2 ? cronField.TryGetNumber(parts[1]) : 1;
                     if (step <= 0) // invalid step value 
                     {
-                        message = InvalidValueErrorMessage(content, parts[1]);
                         return false;
                     }
 
@@ -120,44 +123,46 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
                     int first, last;
                     if (string.Equals(range, "*")) // asterisk represents unrestricted range
                     {
-                        (first, last) = (_minValue, _maxValue);
+                        (first, last) = (cronField._minValue, cronField._maxValue);
                     }
                     else // range should be defined by two numbers separated with a hyphen
                     {
                         string[] numbers = range.Split('-');
                         if (numbers.Length != 2)
                         {
-                            message = InvalidSyntaxErrorMessage(content);
                             return false;
                         }
 
-                        (first, last) = (TryGetNumber(numbers[0]), TryGetNumber(numbers[1]));
+                        (first, last) = (cronField.TryGetNumber(numbers[0]), cronField.TryGetNumber(numbers[1]));
 
-                        if (!IsValueValid(first) || !IsValueValid(last))
+                        if (!cronField.IsValueValid(first) || !cronField.IsValueValid(last))
                         {
-                            message = InvalidValueErrorMessage(content, range);
                             return false;
+                        }
+
+                        if (cronField._kind == CronFieldKind.DayOfWeek && last == 0 && last != first) // Corner case for Sunday: both 0 and 7 can be interpreted to Sunday
+                        {
+                            last = 7; // Mon-Sun should be intepreted to 1-7 instead of 1-0
                         }
 
                         if (first > last)
                         {
-                            message = InvalidSyntaxErrorMessage(content);
                             return false;
                         }
                     }
 
                     for (int num = first; num <= last; num += step)
                     {
-                        _bits[ValueToIndex(num)] = true;
+                        cronField._bits[cronField.ValueToIndex(num)] = true;
                     }
                 }
                 else // The segment is neither a range nor a valid number.
                 {
-                    message = InvalidValueErrorMessage(content, segment);
                     return false;
                 }
             }
 
+            result = cronField;
             return true;
         }
 
@@ -169,11 +174,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
             }
             else
             {
-                if (_kind == CrontabFieldKind.Month)
+                if (_kind == CronFieldKind.Month)
                 {
                     return TryGetMonthNumber(str);
                 }
-                else if (_kind == CrontabFieldKind.DayOfWeek)
+                else if (_kind == CronFieldKind.DayOfWeek)
                 {
                     return TryGetDayOfWeekNumber(str);
                 }
@@ -231,16 +236,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Crontab
         private int ValueToIndex(int value)
         {
             return value - _minValue;
-        }
-
-        private string InvalidSyntaxErrorMessage(string content)
-        {
-            return $"Content of the {_kind} field: {content} is invalid. Syntax cannot be parsed.";
-        }
-
-        private string InvalidValueErrorMessage(string content, string segment)
-        {
-            return $"Content of the {_kind} field: {content} is invalid. The value of {segment} is invalid.";
         }
     }
 }
