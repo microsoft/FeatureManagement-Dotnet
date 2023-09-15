@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 {
@@ -19,7 +20,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
         {
             //
             // Add required services
-            services.AddSingleton<ITelemetryPublisher, TelemetryPublisherApplicationInsights>();
+            services.TryAddSingleton<ITelemetryPublisher, TelemetryPublisherApplicationInsights>();
 
             return services;
         }
