@@ -6,17 +6,17 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.FeatureManagement.Telemetry.AppInsights
+namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 {
     /// <summary>
     /// Used to publish data from evaluation events to Application Insights
     /// </summary>
-    public class TelemetryPublisherAppInsights : ITelemetryPublisher
+    public class TelemetryPublisherApplicationInsights : ITelemetryPublisher
     {
         private readonly string _eventName = "FeatureEvaluation";
         private readonly TelemetryClient _telemetryClient;
 
-        public TelemetryPublisherAppInsights(TelemetryClient telemetryClient)
+        public TelemetryPublisherApplicationInsights(TelemetryClient telemetryClient)
         {
             _telemetryClient = telemetryClient;
         }

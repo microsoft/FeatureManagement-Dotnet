@@ -3,7 +3,7 @@
 //
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Microsoft.FeatureManagement.Telemetry.AppInsights
+namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 {
     /// <summary>
     /// Extensions used to add feature management publisher functionality.
@@ -15,11 +15,11 @@ namespace Microsoft.FeatureManagement.Telemetry.AppInsights
         /// </summary>
         /// <param name="services">The service collection that feature management services are added to.</param>
         /// <returns>The <see cref="IServiceCollection"/> that was given as a parameter, with the publisher added.</returns>
-        public static IServiceCollection AddFeatureManagementTelemetryPublisherAppInsights(this IServiceCollection services)
+        public static IServiceCollection AddFeatureManagementTelemetryPublisherApplicationInsights(this IServiceCollection services)
         {
             //
             // Add required services
-            services.AddSingleton<ITelemetryPublisher, TelemetryPublisherAppInsights>();
+            services.AddSingleton<ITelemetryPublisher, TelemetryPublisherApplicationInsights>();
 
             return services;
         }
