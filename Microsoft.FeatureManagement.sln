@@ -21,7 +21,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TargetingConsoleApp", "exam
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RazorPages", "examples\RazorPages\RazorPages.csproj", "{BA29A1BB-81D5-4EB1-AF37-6ECF64AF27E2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.FeatureManagement.Telemetry.AppInsights", "src\Microsoft.FeatureManagement.AppInsightsTelemetryPublisher\Microsoft.FeatureManagement.Telemetry.AppInsights.csproj", "{F7CAA3C0-BBAE-4271-B08C-29C9A279DED1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.FeatureManagement.Telemetry.ApplicationInsights", "src\Microsoft.FeatureManagement.Telemetry.ApplicationInsights\Microsoft.FeatureManagement.Telemetry.ApplicationInsights.csproj", "{0ADB5CFC-D3FA-48E5-910A-51770C8E608C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -57,10 +57,10 @@ Global
 		{BA29A1BB-81D5-4EB1-AF37-6ECF64AF27E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BA29A1BB-81D5-4EB1-AF37-6ECF64AF27E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BA29A1BB-81D5-4EB1-AF37-6ECF64AF27E2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F7CAA3C0-BBAE-4271-B08C-29C9A279DED1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F7CAA3C0-BBAE-4271-B08C-29C9A279DED1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F7CAA3C0-BBAE-4271-B08C-29C9A279DED1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F7CAA3C0-BBAE-4271-B08C-29C9A279DED1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0ADB5CFC-D3FA-48E5-910A-51770C8E608C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0ADB5CFC-D3FA-48E5-910A-51770C8E608C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0ADB5CFC-D3FA-48E5-910A-51770C8E608C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0ADB5CFC-D3FA-48E5-910A-51770C8E608C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
