@@ -1,14 +1,13 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-
 using Microsoft.FeatureManagement.FeatureFilters.Cron;
 using System;
 using Xunit;
 
 namespace Tests.FeatureManagement
 {
-    public class CrontabTest
+    public class CronTest
     {
         [Fact]
         public void CronFieldTest()
@@ -21,7 +20,7 @@ namespace Tests.FeatureManagement
             }
 
             Assert.True(CronField.TryParse(CronFieldKind.Hour, "*/2", out CronField hourField));
-            Assert.False(hourField.MatchAll);
+            Assert.False(hourField.MatchesAll);
             for (int i = 0; i < 24; i++)
             {
                 if (i % 2 == 0)
@@ -72,22 +71,28 @@ namespace Tests.FeatureManagement
         [InlineData("* * * ,2 *", false)]
         [InlineData("* * , * *", false)]
         [InlineData("* * */-1 * *", false)]
+        [InlineData("* * */0 * *", false)]
         [InlineData("*****", false)]
+        [InlineData("  *        * * *   *  ", true)]
         [InlineData("* * * # *", false)]
         [InlineData("0-60 * * * *", false)]
         [InlineData("* 24 * * *", false)]
         [InlineData("* * 32 * *", false)]
         [InlineData("* * * 13 *", false)]
         [InlineData("* * * * 8", false)]
+        [InlineData("* * * * */Tue", false)]
         [InlineData("* * 0 * *", false)]
         [InlineData("* * * 0 *", false)]
         [InlineData("* * * */ *", false)]
         [InlineData("* * * *// *", false)]
         [InlineData("* * * --- *", false)]
+        [InlineData("* * 1-/2 * *", false)]
+        [InlineData("* * 1-*/2 * *", false)]
         [InlineData("* * * - *", false)]
         public void ValidateCronExpressionTest(string expression, bool expected)
         {
             bool result = ValidateExpression(expression);
+
             Assert.Equal(expected, result);
         }
 
@@ -119,6 +124,7 @@ namespace Tests.FeatureManagement
             Assert.True(ValidateExpression(expression));
 
             bool result = IsCronExpressionSatisfiedByTime(expression, timeString);
+
             Assert.Equal(expected, result);
         }
 
@@ -138,7 +144,9 @@ namespace Tests.FeatureManagement
         private bool IsCronExpressionSatisfiedByTime(string expression, string timeString)
         {
             DateTimeOffset dateTimeOffset = DateTimeOffset.Parse(timeString);
+
             CronExpression cronExpression = CronExpression.Parse(expression);
+
             return cronExpression.IsSatisfiedBy(dateTimeOffset);
         }
     }

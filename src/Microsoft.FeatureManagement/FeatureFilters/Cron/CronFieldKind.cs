@@ -4,7 +4,7 @@
 namespace Microsoft.FeatureManagement.FeatureFilters.Cron
 {
     /// <summary>
-    /// Define an enum of all required fields of the Crontab expression.
+    /// Define an enum of all required fields of the Cron expression.
     /// </summary>
     internal enum CronFieldKind
     {

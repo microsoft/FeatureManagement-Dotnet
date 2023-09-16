@@ -11,36 +11,26 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Cron
     /// </summary>
     internal class CronField
     {
-        /// <summary>
-        /// Whether the CronField is an asterisk.
-        /// </summary>
-        public bool MatchAll { get; private set; } = false;
-
         private readonly CronFieldKind _kind;
-        private readonly int _minValue = -1;
-        private readonly int _maxValue = -1;
         private readonly BitArray _bits;
 
         /// <summary>
-        /// Set the min value and max value according to the field kind.
         /// Initialize the BitArray.
         /// </summary>
+        /// <param name="kind">The CronField kind. <see cref="CronFieldKind"/></param>
         public CronField(CronFieldKind kind)
         {
             _kind = kind;
 
-            (_minValue, _maxValue) = kind switch
-            {
-                CronFieldKind.Minute => (0, 59),
-                CronFieldKind.Hour => (0, 23),
-                CronFieldKind.DayOfMonth => (1, 31),
-                CronFieldKind.Month => (1, 12),
-                CronFieldKind.DayOfWeek => (0, 7),
-                _ => throw new ArgumentException("Invalid crontab field kind.")
-            };
+            (int minValue, int maxValue) = GetFieldRange(kind);
 
-            _bits = new BitArray(_maxValue - _minValue + 1);
+            _bits = new BitArray(maxValue - minValue + 1);
         }
+
+        /// <summary>
+        /// Whether the CronField is an asterisk.
+        /// </summary>
+        public bool MatchesAll { get; private set; }
 
         /// <summary>
         /// Checks whether the field matches the give value.
@@ -49,13 +39,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Cron
         /// <returns>True if the value is matched, otherwise false.</returns>
         public bool Match(int value)
         {
-            if (!IsValueValid(value))
+            if (!IsValueValid(_kind, value))
             {
                 return false;
             }
             else
             {
-                if (MatchAll)
+                if (MatchesAll)
                 {
                     return true;
                 }
@@ -65,7 +55,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Cron
                     return _bits[0] | _bits[7];
                 }
 
-                return _bits[ValueToIndex(value)];
+                return _bits[ValueToIndex(_kind, value)];
             }
         }
 
@@ -79,6 +69,12 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Cron
         public static bool TryParse(CronFieldKind kind, string content, out CronField result)
         {
             result = null;
+
+            if (content == null)
+            {
+                return false;
+            }
+
             CronField cronField = new CronField(kind);
 
             //
@@ -86,6 +82,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Cron
             // Ranges are two numbers/names separated with a hyphen or an asterisk which represents all possible values in the field.
             // Step values can be used in conjunction with ranges after a slash.
             string[] segments = content.Split(',');
+
             foreach (string segment in segments)
             {
                 if (segment == null)
@@ -93,10 +90,12 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Cron
                     return false;
                 }
 
-                int value = cronField.TryGetNumber(segment);
-                if (cronField.IsValueValid(value))
+                if (TryGetNumber(kind, segment, out int value) == true)
                 {
-                    cronField._bits[cronField.ValueToIndex(value)] = true;
+                    int temp = ValueToIndex(kind, value);
+
+                    cronField._bits[temp] = true;
+
                     continue;
                 }
 
@@ -104,38 +103,44 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Cron
                 {
                     if (string.Equals(segment, "*"))
                     {
-                        cronField.MatchAll = true;
+                        cronField.MatchesAll = true;
                     }
 
                     string[] parts = segment.Split('/');
+
+                    int step = 1;
+
                     if (parts.Length > 2) // multiple slashs
                     {
                         return false;
                     }
-
-                    int step = parts.Length == 2 ? cronField.TryGetNumber(parts[1]) : 1;
-                    if (step <= 0) // invalid step value 
-                    {
-                        return false;
+                    
+                    if (parts.Length == 2) 
+                    { 
+                        if (int.TryParse(parts[1], out step) == false || step <= 0)
+                        {
+                            return false;
+                        }
                     }
 
                     string range = parts[0];
+
                     int first, last;
+
                     if (string.Equals(range, "*")) // asterisk represents unrestricted range
                     {
-                        (first, last) = (cronField._minValue, cronField._maxValue);
+                        (first, last) = GetFieldRange(kind);
                     }
                     else // range should be defined by two numbers separated with a hyphen
                     {
                         string[] numbers = range.Split('-');
+
                         if (numbers.Length != 2)
                         {
                             return false;
                         }
 
-                        (first, last) = (cronField.TryGetNumber(numbers[0]), cronField.TryGetNumber(numbers[1]));
-
-                        if (!cronField.IsValueValid(first) || !cronField.IsValueValid(last))
+                        if (TryGetNumber(kind, numbers[0], out first) == false || TryGetNumber(kind, numbers[1], out last) == false)
                         {
                             return false;
                         }
@@ -153,7 +158,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Cron
 
                     for (int num = first; num <= last; num += step)
                     {
-                        cronField._bits[cronField.ValueToIndex(num)] = true;
+                        cronField._bits[ValueToIndex(kind, num)] = true;
                     }
                 }
                 else // The segment is neither a range nor a valid number.
@@ -163,37 +168,67 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Cron
             }
 
             result = cronField;
+
             return true;
         }
 
-        private int TryGetNumber(string str)
+        private static (int, int) GetFieldRange(CronFieldKind kind)
         {
-            if (int.TryParse(str, out int num) == true)
+            (int minValue, int maxValue) = kind switch
             {
-                return num;
+                CronFieldKind.Minute => (0, 59),
+                CronFieldKind.Hour => (0, 23),
+                CronFieldKind.DayOfMonth => (1, 31),
+                CronFieldKind.Month => (1, 12),
+                CronFieldKind.DayOfWeek => (0, 7),
+                _ => throw new ArgumentException("Invalid Cron field kind.", nameof(kind))
+            };
+
+            return (minValue, maxValue);
+        }
+
+        private static bool TryGetNumber(CronFieldKind kind, string str, out int result)
+        {
+            if (str == null)
+            {
+                result = -1;
+
+                return false;
+            }
+
+            if (int.TryParse(str, out result) == true)
+            {
+                return IsValueValid(kind, result);
             }
             else
             {
-                if (_kind == CronFieldKind.Month)
+                if (kind == CronFieldKind.Month)
                 {
-                    return TryGetMonthNumber(str);
+                    return TryGetMonthNumber(str, out result);
                 }
-                else if (_kind == CronFieldKind.DayOfWeek)
+                else if (kind == CronFieldKind.DayOfWeek)
                 {
-                    return TryGetDayOfWeekNumber(str);
+                    return TryGetDayOfWeekNumber(str, out result);
                 }
                 else
                 {
-                    return -1;
+                    result = -1;
+
+                    return false;
                 }
             }
         }
 
-        private static int TryGetMonthNumber(string name)
+        private static bool TryGetMonthNumber(string name, out int result)
         {
-            if (name == null) return -1;
+            if (name == null)
+            {
+                result = -1;
 
-            return name.ToUpper() switch
+                return false;
+            }
+
+            result = name.ToUpper() switch
             {
                 "JAN" => 1,
                 "FEB" => 2,
@@ -209,13 +244,27 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Cron
                 "DEC" => 12,
                 _ => -1
             };
+
+            if (result == -1)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
         }
 
-        private static int TryGetDayOfWeekNumber(string name)
+        private static bool TryGetDayOfWeekNumber(string name, out int result)
         {
-            if (name == null) return -1;
+            if (name == null)
+            {
+                result = -1;
 
-            return name.ToUpper() switch
+                return false;
+            }
+
+            result = name.ToUpper() switch
             {
                 "SUN" => 0,
                 "MON" => 1,
@@ -226,16 +275,36 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Cron
                 "SAT" => 6,
                 _ => -1
             };
+
+            if (result == -1)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
         }
 
-        private bool IsValueValid(int value)
+        private static bool IsValueValid(CronFieldKind kind, int value)
         {
-            return (value >= _minValue) && (value <= _maxValue);
+            (int minValue, int maxValue) = GetFieldRange(kind);
+
+            return (value >= minValue) && (value <= maxValue);
         }
 
-        private int ValueToIndex(int value)
+        private static int ValueToIndex(CronFieldKind kind, int value)
         {
-            return value - _minValue;
+            string ValueOutOfRangeErrorMessage = $"Value is out of the range of {kind} field.";
+
+            if (!IsValueValid(kind, value))
+            {
+                throw new ArgumentException(ValueOutOfRangeErrorMessage, nameof(value));
+            }
+
+            (int minValue, int _) = GetFieldRange(kind);
+
+            return value - minValue;
         }
     }
 }

@@ -73,18 +73,22 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 enabled = false;
 
-                TimeSpan utcOffsetForCrontab = new TimeSpan(0, 0, 0); // By default, the UTC offset is UTC+00:00.
-                utcOffsetForCrontab = settings.Start.HasValue ? settings.Start.Value.Offset :
-                                      settings.End.HasValue ? settings.End.Value.Offset :
-                                      utcOffsetForCrontab;
-                DateTimeOffset nowForCrontab = now + utcOffsetForCrontab;
+                TimeSpan utcOffsetForCron = new TimeSpan(0, 0, 0); // By default, the UTC offset is UTC+00:00.
+                utcOffsetForCron = settings.Start.HasValue
+                                    ? settings.Start.Value.Offset
+                                    : settings.End.HasValue 
+                                        ? settings.End.Value.Offset
+                                        : utcOffsetForCron;
+
+                DateTimeOffset nowForCron = now + utcOffsetForCron;
 
                 foreach (string expression in settings.Filters)
                 {
                     CronExpression cronExpression = CronExpression.Parse(expression);
-                    if (cronExpression.IsSatisfiedBy(nowForCrontab))
+                    if (cronExpression.IsSatisfiedBy(nowForCron))
                     {
                         enabled = true;
+
                         break;
                     }
                 }
