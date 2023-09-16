@@ -64,7 +64,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Cron
         /// </summary>
         /// <param name="kind">The CronField kind. <see cref="CronFieldKind"/></param>
         /// <param name="content">The content to parse.</param>
-        /// <param name="result">The parsed result.</param>
+        /// <param name="result">The parsed number.</param>
         /// <returns>True if the content is valid and parsed successfully, otherwise false.</returns>
         public static bool TryParse(CronFieldKind kind, string content, out CronField result)
         {
@@ -187,48 +187,48 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Cron
             return (minValue, maxValue);
         }
 
-        private static bool TryGetNumber(CronFieldKind kind, string str, out int result)
+        private static bool TryGetNumber(CronFieldKind kind, string str, out int number)
         {
             if (str == null)
             {
-                result = -1;
+                number = -1;
 
                 return false;
             }
 
-            if (int.TryParse(str, out result) == true)
+            if (int.TryParse(str, out number) == true)
             {
-                return IsValueValid(kind, result);
+                return IsValueValid(kind, number);
             }
             else
             {
                 if (kind == CronFieldKind.Month)
                 {
-                    return TryGetMonthNumber(str, out result);
+                    return TryGetMonthNumber(str, out number);
                 }
                 else if (kind == CronFieldKind.DayOfWeek)
                 {
-                    return TryGetDayOfWeekNumber(str, out result);
+                    return TryGetDayOfWeekNumber(str, out number);
                 }
                 else
                 {
-                    result = -1;
+                    number = -1;
 
                     return false;
                 }
             }
         }
 
-        private static bool TryGetMonthNumber(string name, out int result)
+        private static bool TryGetMonthNumber(string name, out int number)
         {
             if (name == null)
             {
-                result = -1;
+                number = -1;
 
                 return false;
             }
 
-            result = name.ToUpper() switch
+            number = name.ToUpper() switch
             {
                 "JAN" => 1,
                 "FEB" => 2,
@@ -245,7 +245,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Cron
                 _ => -1
             };
 
-            if (result == -1)
+            if (number == -1)
             {
                 return false;
             }
@@ -255,16 +255,16 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Cron
             }
         }
 
-        private static bool TryGetDayOfWeekNumber(string name, out int result)
+        private static bool TryGetDayOfWeekNumber(string name, out int number)
         {
             if (name == null)
             {
-                result = -1;
+                number = -1;
 
                 return false;
             }
 
-            result = name.ToUpper() switch
+            number = name.ToUpper() switch
             {
                 "SUN" => 0,
                 "MON" => 1,
@@ -276,7 +276,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters.Cron
                 _ => -1
             };
 
-            if (result == -1)
+            if (number == -1)
             {
                 return false;
             }
