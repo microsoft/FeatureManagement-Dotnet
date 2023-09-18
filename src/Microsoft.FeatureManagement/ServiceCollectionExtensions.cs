@@ -38,7 +38,7 @@ namespace Microsoft.FeatureManagement
                     sp.GetRequiredService<ILoggerFactory>(),
                     sp.GetRequiredService<IOptions<FeatureManagementOptions>>())
                 {
-                    _telemetryPublisher = sp.GetService<ITelemetryPublisher>(),
+                    TelemetryPublisher = sp.GetService<ITelemetryPublisher>(),
                 });
 
             services.AddSingleton<ISessionManager, EmptySessionManager>();

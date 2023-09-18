@@ -10,13 +10,11 @@ namespace Microsoft.FeatureManagement.Tests
 {
     public class TestTelemetryPublisher : ITelemetryPublisher
     {
-        private readonly string _eventName = "FeatureEvaluation";
-        
-        public EvaluationEvent evalationEventCache { get; private set; }
+        public EvaluationEvent evaluationEventCache { get; private set; }
 
         public ValueTask PublishEvent(EvaluationEvent evaluationEvent, CancellationToken cancellationToken)
         {
-            evalationEventCache = evaluationEvent;
+            evaluationEventCache = evaluationEvent;
 
             return new ValueTask();
         }

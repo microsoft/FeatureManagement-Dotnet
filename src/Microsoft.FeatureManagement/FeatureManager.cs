@@ -56,7 +56,7 @@ namespace Microsoft.FeatureManagement
             _parametersCache = new MemoryCache(new MemoryCacheOptions());
         }
 
-        public ITelemetryPublisher _telemetryPublisher { get; init; }
+        public ITelemetryPublisher TelemetryPublisher { get; init; }
 
         public Task<bool> IsEnabledAsync(string feature)
         {
@@ -220,15 +220,13 @@ namespace Microsoft.FeatureManagement
 
             if (featureDefinition.EnableTelemetry)
             {
-                if (_telemetryPublisher == null)
+                if (TelemetryPublisher == null)
                 {
-                    string errorMessage = $"The feature declaration enabled telemetry but no telemetry publisher was registered.";
-
-                    _logger.LogWarning(errorMessage);
+                    _logger.LogWarning("The feature declaration enabled telemetry but no telemetry publisher was registered.");
                 } 
                 else
                 {
-                    await _telemetryPublisher.PublishEvent(
+                    await TelemetryPublisher.PublishEvent(
                         new EvaluationEvent
                         {
                             FeatureDefinition = featureDefinition,

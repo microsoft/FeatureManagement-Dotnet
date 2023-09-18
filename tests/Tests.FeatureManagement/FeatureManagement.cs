@@ -986,7 +986,7 @@ namespace Tests.FeatureManagement
             bool result = await featureManager.IsEnabledAsync(OnFeature);
 
             Assert.True(result);
-            Assert.Null(testPublisher.evalationEventCache);
+            Assert.Null(testPublisher.evaluationEventCache);
 
             // Test telemetry cases
             string onFeature = "AlwaysOnTestFeature";
@@ -994,16 +994,16 @@ namespace Tests.FeatureManagement
             result = await featureManager.IsEnabledAsync(onFeature);
 
             Assert.True(result);
-            Assert.Equal(onFeature, testPublisher.evalationEventCache.FeatureDefinition.Name);
-            Assert.Equal(result, testPublisher.evalationEventCache.IsEnabled);
+            Assert.Equal(onFeature, testPublisher.evaluationEventCache.FeatureDefinition.Name);
+            Assert.Equal(result, testPublisher.evaluationEventCache.IsEnabled);
 
             string offFeature = "OffTimeTestFeature";
 
             result = await featureManager.IsEnabledAsync(offFeature);
 
             Assert.False(result);
-            Assert.Equal(offFeature, testPublisher.evalationEventCache.FeatureDefinition.Name);
-            Assert.Equal(result, testPublisher.evalationEventCache.IsEnabled);
+            Assert.Equal(offFeature, testPublisher.evaluationEventCache.FeatureDefinition.Name);
+            Assert.Equal(result, testPublisher.evaluationEventCache.IsEnabled);
         }
 
         private static void DisableEndpointRouting(MvcOptions options)
