@@ -2,6 +2,8 @@
 // Licensed under the MIT license.
 //
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Concurrent;
@@ -21,16 +23,21 @@ namespace Microsoft.FeatureManagement
         // IFeatureDefinitionProviderCacheable interface is only used to mark this provider as cacheable. This allows our test suite's
         // provider to be marked for caching as well.
 
+        private const string FeatureManagementSectionName = "FeatureManagement";
         private const string FeatureFiltersSectionName = "EnabledFor";
         private const string RequirementTypeKeyword = "RequirementType";
         private readonly IConfiguration _configuration;
+        private readonly ILogger _logger;
+        private readonly FeatureManagementOptions _options;
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
 
-        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration)
+        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration, ILoggerFactory loggerFactory, IOptions<FeatureManagementOptions> options)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _logger = loggerFactory.CreateLogger<ConfigurationFeatureDefinitionProvider>();
+            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _definitions = new ConcurrentDictionary<string, FeatureDefinition>();
 
             _changeSubscription = ChangeToken.OnChange(
@@ -199,8 +206,6 @@ namespace Microsoft.FeatureManagement
 
         private IEnumerable<IConfigurationSection> GetFeatureDefinitionSections()
         {
-            const string FeatureManagementSectionName = "FeatureManagement";
-
             if (_configuration.GetChildren().Any(s => s.Key.Equals(FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase)))
             {
                 //
@@ -209,7 +214,14 @@ namespace Microsoft.FeatureManagement
             }
             else
             {
-                return _configuration.GetChildren();
+                if (_options.IgnoreMissingConfigurationSection)
+                {
+                    return Enumerable.Empty<IConfigurationSection>();
+                }
+                else
+                {
+                    return _configuration.GetChildren();
+                }   
             }
         }
     }
