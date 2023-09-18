@@ -34,14 +34,25 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
             Dictionary<string, string> properties = new Dictionary<string, string>()
             {
                 { "FeatureName", featureDefinition.Name },
-                { "IsEnabled", evaluationEvent.IsEnabled.ToString() },
-                { "Label", featureDefinition.Label },
-                { "ETag", featureDefinition.ETag },
+                { "IsEnabled", evaluationEvent.IsEnabled.ToString() }
             };
 
-            foreach (KeyValuePair<string, string> kvp in featureDefinition.Tags)
+            if (featureDefinition.ETag != null)
             {
-                properties["Tags." + kvp.Key] = kvp.Value;
+                properties.Add("ETag", featureDefinition.ETag);
+            }
+
+            if (featureDefinition.Label != null)
+            {
+                properties.Add("Label", featureDefinition.Label);
+            }
+
+            if (featureDefinition.Tags != null)
+            {
+                foreach (KeyValuePair<string, string> kvp in featureDefinition.Tags)
+                {
+                    properties["Tags." + kvp.Key] = kvp.Value;
+                }
             }
 
             _telemetryClient.TrackEvent(_eventName, properties);
