@@ -781,7 +781,7 @@ The `StatusOverride` property, if set for the assigned variant, overrides a feat
 ] 
 ```
 
-In the above example, the feature is enabled by the `On` filter and assigns the variant set for `DefaultWhenEnabled`, which is the `OffVariant` variant. The `OffVariant` variant has the `StatusOverride` property set to `Disabled`, so calling `IsEnabledAsync` for this feature will always return disabled, even though the feature would otherwise be enabled by its filters.
+In the above example, the feature is enabled by the `On` filter and assigns the variant set for `DefaultWhenEnabled`, which is the `OffVariant` variant. The `OffVariant` variant has the `StatusOverride` property set to `Disabled`, so calling `IsEnabledAsync` for this feature will return disabled, even though the feature would otherwise be enabled by its filters.
 
 ## Caching
 
