@@ -689,7 +689,7 @@ IConfigurationSection variantConfiguration = variant.Configuration;
 
 ### Setting a Variant's Configuration
 
-For each of the variants in the `Variants` property of a feature, there is a specified configuration. This can be set using either the `ConfigurationReference` or `ConfigurationValue` properties. `ConfigurationReference` is a string path that references a section of the current configuration. `ConfigurationValue` is an inline configuration. If both are specified, `ConfigurationValue` is used.
+For each of the variants in the `Variants` property of a feature, there is a specified configuration. This can be set using either the `ConfigurationReference` or `ConfigurationValue` properties. `ConfigurationReference` is a string path that references a section of the current configuration that contains the feature flag declaration. `ConfigurationValue` is an inline configuration. If both are specified, `ConfigurationValue` is used.
 
 ```
 "Variants": [
@@ -755,7 +755,7 @@ The process of deciding which variant to return for a feature is called assignme
 
 In the above example, if the feature is not enabled, `GetVariantAsync` would return the variant allocated by `DefaultWhenDisabled`, which is `Small` in this case. 
 
-If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to see if they match the targeting context or calculated percentile for that context. If they match, then the specified variant is returned for that allocation. If none of these allocations match the targeting context, the `DefaultWhenEnabled` variant is returned.
+If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to see if they match the targeting context or calculated percentile for that context. If the user is named `Marsha`, in the group named `Ring1`, or the user happens to fall between the 0 and 10th percentile calculated with the given `Seed`, then the specified variant is returned for that allocation. If none of these allocations match the targeting context, the `DefaultWhenEnabled` variant is returned.
 
 ### StatusOverride
 
