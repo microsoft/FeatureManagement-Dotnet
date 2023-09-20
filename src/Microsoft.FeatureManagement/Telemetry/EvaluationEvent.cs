@@ -17,5 +17,10 @@ namespace Microsoft.FeatureManagement.Telemetry
         /// The enabled state of the feature after evaluation.
         /// </summary>
         public bool IsEnabled { get; set; }
+
+        /// <summary>
+        /// The variant given after evaluation.
+        /// </summary>
+        public Variant Variant { get; set; }
     }
 }

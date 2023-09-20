@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using Microsoft.ApplicationInsights;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,14 +12,14 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
     /// <summary>
     /// Used to publish data from evaluation events to Application Insights
     /// </summary>
-    public class TelemetryPublisherApplicationInsights : ITelemetryPublisher
+    public class ApplicationInsightsTelemetryPublisher : ITelemetryPublisher
     {
         private readonly string _eventName = "FeatureEvaluation";
         private readonly TelemetryClient _telemetryClient;
 
-        public TelemetryPublisherApplicationInsights(TelemetryClient telemetryClient)
+        public ApplicationInsightsTelemetryPublisher(TelemetryClient telemetryClient)
         {
-            _telemetryClient = telemetryClient;
+            _telemetryClient = telemetryClient ?? throw new ArgumentNullException(nameof(telemetryClient));
         }
 
         /// <summary>
@@ -29,12 +30,15 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
         /// <returns>Returns a ValueTask that represents the asynchronous operation</returns>
         public ValueTask PublishEvent(EvaluationEvent evaluationEvent, CancellationToken cancellationToken)
         {
+            ValidateEvent(evaluationEvent);
+
             FeatureDefinition featureDefinition = evaluationEvent.FeatureDefinition;
 
             Dictionary<string, string> properties = new Dictionary<string, string>()
             {
                 { "FeatureName", featureDefinition.Name },
-                { "IsEnabled", evaluationEvent.IsEnabled.ToString() }
+                { "IsEnabled", evaluationEvent.IsEnabled.ToString() },
+                { "Variant", evaluationEvent.Variant?.Name }
             };
 
             if (featureDefinition.ETag != null)
@@ -59,6 +63,19 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 
 
             return new ValueTask();
+        }
+
+        private void ValidateEvent(EvaluationEvent evaluationEvent)
+        {
+            if (evaluationEvent == null)
+            {
+                throw new ArgumentNullException(nameof(evaluationEvent));
+            }
+
+            if (evaluationEvent.FeatureDefinition == null)
+            {
+                throw new ArgumentNullException(nameof(evaluationEvent.FeatureDefinition));
+            }
         }
     }
 }

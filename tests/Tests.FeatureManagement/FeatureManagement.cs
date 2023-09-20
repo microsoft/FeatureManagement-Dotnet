@@ -966,20 +966,23 @@ namespace Tests.FeatureManagement
         [Fact]
         public async Task TelemetryPublishing()
         {
-            TestTelemetryPublisher testPublisher = new TestTelemetryPublisher();
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
 
             services
                 .AddSingleton(config)
-                .AddSingleton<ITelemetryPublisher>(testPublisher)
                 .AddFeatureManagement()
+                .AddFeatureManagementTelemetry<TestTelemetryPublisher>()
                 .AddFeatureFilter<TimeWindowFilter>();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
-            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+            TestTelemetryPublisher testPublisher = (TestTelemetryPublisher) serviceProvider.GetRequiredService<ITelemetryPublisher>();
 
             // Test a feature with telemetry disabled
-            bool result = await featureManager.IsEnabledAsync(OnFeature);
+            bool result = await featureManager.IsEnabledAsync(OnFeature, CancellationToken.None);
 
             Assert.True(result);
             Assert.Null(testPublisher.evaluationEventCache);
@@ -987,7 +990,7 @@ namespace Tests.FeatureManagement
             // Test telemetry cases
             string onFeature = "AlwaysOnTestFeature";
 
-            result = await featureManager.IsEnabledAsync(onFeature);
+            result = await featureManager.IsEnabledAsync(onFeature, CancellationToken.None);
 
             Assert.True(result);
             Assert.Equal(onFeature, testPublisher.evaluationEventCache.FeatureDefinition.Name);
@@ -995,11 +998,42 @@ namespace Tests.FeatureManagement
 
             string offFeature = "OffTimeTestFeature";
 
-            result = await featureManager.IsEnabledAsync(offFeature);
+            result = await featureManager.IsEnabledAsync(offFeature, CancellationToken.None);
 
             Assert.False(result);
             Assert.Equal(offFeature, testPublisher.evaluationEventCache.FeatureDefinition.Name);
             Assert.Equal(result, testPublisher.evaluationEventCache.IsEnabled);
+
+            // Test variant cases
+            string variantDefaultEnabledFeature = "VariantFeatureDefaultEnabled";
+
+            result = await featureManager.IsEnabledAsync(variantDefaultEnabledFeature, CancellationToken.None);
+
+            Assert.True(result);
+            Assert.Equal(variantDefaultEnabledFeature, testPublisher.evaluationEventCache.FeatureDefinition.Name);
+            Assert.Equal(result, testPublisher.evaluationEventCache.IsEnabled);
+            Assert.Equal("Medium", testPublisher.evaluationEventCache.Variant.Name);
+
+            Variant variantResult = await featureManager.GetVariantAsync(variantDefaultEnabledFeature, CancellationToken.None);
+
+            Assert.True(testPublisher.evaluationEventCache.IsEnabled);
+            Assert.Equal(variantDefaultEnabledFeature, testPublisher.evaluationEventCache.FeatureDefinition.Name);
+            Assert.Equal(variantResult.Name, testPublisher.evaluationEventCache.Variant.Name);
+
+            string variantFeatureStatusDisabled = "VariantFeatureStatusDisabled";
+
+            result = await featureManager.IsEnabledAsync(variantFeatureStatusDisabled, CancellationToken.None);
+
+            Assert.False(result);
+            Assert.Equal(variantFeatureStatusDisabled, testPublisher.evaluationEventCache.FeatureDefinition.Name);
+            Assert.Equal(result, testPublisher.evaluationEventCache.IsEnabled);
+            Assert.Equal("Small", testPublisher.evaluationEventCache.Variant.Name);
+
+            variantResult = await featureManager.GetVariantAsync(variantFeatureStatusDisabled, CancellationToken.None);
+
+            Assert.False(testPublisher.evaluationEventCache.IsEnabled);
+            Assert.Equal(variantFeatureStatusDisabled, testPublisher.evaluationEventCache.FeatureDefinition.Name);
+            Assert.Equal(variantResult.Name, testPublisher.evaluationEventCache.Variant.Name);
         }
 
         public async Task UsesVariants()

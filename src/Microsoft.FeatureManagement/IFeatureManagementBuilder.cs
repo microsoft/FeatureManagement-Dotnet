@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.FeatureManagement.Telemetry;
 
 namespace Microsoft.FeatureManagement
 {
@@ -30,5 +31,11 @@ namespace Microsoft.FeatureManagement
         /// <typeparam name="T">An implementation of <see cref="ISessionManager"/></typeparam>
         /// <returns>The feature management builder.</returns>
         IFeatureManagementBuilder AddSessionManager<T>() where T : ISessionManager;
+
+        /// <summary>
+        /// Adds an event publisher that publishes feature evaluation events.
+        /// </summary>
+        /// <returns>The <see cref="IFeatureManagementBuilder"/> that the publisher was added to.</returns>
+        IFeatureManagementBuilder AddFeatureManagementTelemetry<T>() where T : ITelemetryPublisher;
     }
 }

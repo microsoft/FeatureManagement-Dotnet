@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.FeatureManagement.Telemetry;
 
 namespace Microsoft.FeatureManagement
 {
@@ -46,6 +48,13 @@ namespace Microsoft.FeatureManagement
         public IFeatureManagementBuilder AddSessionManager<T>() where T : ISessionManager
         {
             Services.AddSingleton(typeof(ISessionManager), typeof(T));
+
+            return this;
+        }
+
+        public IFeatureManagementBuilder AddFeatureManagementTelemetry<T>() where T : ITelemetryPublisher
+        {
+            Services.TryAddSingleton(typeof(ITelemetryPublisher), typeof(T));
 
             return this;
         }
