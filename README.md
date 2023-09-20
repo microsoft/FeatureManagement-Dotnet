@@ -86,7 +86,7 @@ The feature management library supports appsettings.json as a feature flag sourc
 }
 ```
 
-The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided three different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration so it only has the `Name` property. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
+The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided three different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration so it only has the `Name` property. The alternative name for this filter is `On`. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
 
 ### On/Off Declaration
  
@@ -138,6 +138,23 @@ A `RequirementType` of `All` changes the traversal. First, if there are no filte
 ```
 
 In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning all of it's filters must evaluate to true for the feature to be enabled. In this case, the feature will be enabled for 50% of users during the specified time window.
+
+### Status
+
+The `Status` property of a feature flag determines whether the remaining feature definition should be evaluated. `Status` is equal to `Conditional` by default, so the feature definition will determine whether the flag is enabled or which variant to return. If `Status` is equal to `Disabled`, then the feature flag is always considered disabled and will always return the `DefaultWhenDisabled` variant if specified.
+
+```
+"FeatureX": {
+    "Status": "Disabled",
+    "EnabledFor": [
+        {
+            "Name": "On"
+        }
+    ]
+}
+```
+
+In this example, even though the `On` filter would normally always make the feature enabled, the `Status` property is set to `Disabled`, so this feature will always be disabled. 
 
 ### Referencing
 
@@ -635,6 +652,136 @@ When defining an Audience, users and groups can be excluded from the audience. T
 ```
 
 In the above example, the feature will be enabled for users named `Jeff` and `Alicia`. It will also be enabled for users in the group named `Ring0`. However, if the user is named `Mark`, the feature will be disabled, regardless if they are in the group `Ring0` or not. Exclusions take priority over the rest of the targeting filter.
+
+## Variants
+
+Variants represent a configuration of a feature. A feature flag with variants contains a list of variants and assignment parameters dictating under what conditions each variant should be used. A variant's configuration can be a complex object, but it can also be as simple as a string or number.
+
+``` C#
+public class Variant
+{
+    /// <summary>
+    /// The name of the variant.
+    /// </summary>
+    public string Name { get; set; }
+
+    /// <summary>
+    /// The configuration of the variant.
+    /// </summary>
+    public IConfigurationSection Configuration { get; set; }
+}
+```
+
+### Getting a Feature's Variant
+
+Variants expand on the basic flow of feature management and enable getting a feature's variant to later perform actions based on the name or configuration. This is done through the `IVariantFeatureManager`'s `GetVariantAsync` method.
+
+``` C#
+…
+IVariantFeatureManager featureManager;
+…
+Variant variant = await featureManager.GetVariantAsync(nameof(MyFeatureFlags.FeatureU));
+
+IConfigurationSection variantConfiguration = variant.Configuration;
+
+// Do something with the resulting variant and its configuration
+```
+
+### Setting a Variant's Configuration
+
+For each of the variants in the `Variants` property of a feature, there is a specified configuration. This can be set using either the `ConfigurationReference` or `ConfigurationValue` properties. `ConfigurationReference` is a string path that references a section of the current configuration. `ConfigurationValue` is an inline configuration. If both are specified, `ConfigurationValue` is used.
+
+```
+"Variants": [
+    { 
+        "Name": "Big", 
+        "ConfigurationReference": "ShoppingCart:Big" 
+    },  
+    { 
+        "Name": "Small", 
+        "ConfigurationValue": {
+            "Size": 300
+        }
+    } 
+]
+```
+
+### Assigning a Variant
+
+The process of deciding which variant to return for a feature is called assignment. Assignment is determined by the `Allocation` property of the feature. Allocation logic is similar to the [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter, with some additional parameters to allow for more specific variant assignment.
+
+```
+"Allocation": { 
+    "DefaultWhenEnabled": "Small", 
+    "DefaultWhenDisabled": "Small",  
+    "User": [ 
+        { 
+            "Variant": "Big", 
+            "Users": [ 
+                "Marsha" 
+            ] 
+        } 
+    ], 
+    "Group": [ 
+        { 
+            "Variant": "Big", 
+            "Groups": [ 
+                "Ring1" 
+            ] 
+        } 
+    ],
+    "Percentile": [ 
+        { 
+            "Variant": "Big", 
+            "From": 0, 
+            "To": 10 
+        } 
+    ], 
+    "Seed": "13973240" 
+},
+"Variants": [
+    { 
+        "Name": "Big", 
+        "ConfigurationReference": "ShoppingCart:Big" 
+    },  
+    { 
+        "Name": "Small", 
+        "ConfigurationValue": {
+            "Size": 300
+        }
+    } 
+]
+```
+
+In the above example, if the feature is not enabled, `GetVariantAsync` would return the variant allocated by `DefaultWhenDisabled`, which is `Small` in this case. 
+
+If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to see if they match the targeting context or calculated percentile for that context. If they match, then the specified variant is returned for that allocation. If none of these allocations match the targeting context, the `DefaultWhenEnabled` variant is returned.
+
+### StatusOverride
+
+The `StatusOverride` property, if set for the assigned variant, overrides a feature's state. By default, this property is equal to `None`, which does not affect the feature state. If `StatusOverride` is equal to `Enabled` for the assigned variant, then the feature is enabled. If `StatusOverride` is equal to `Disabled` for the assigned variant, then the feature is disabled.
+
+```
+"Allocation": { 
+    "DefaultWhenEnabled": "OffVariant"
+},
+"Variants": [
+    { 
+        "Name": "OffVariant", 
+        "ConfigurationValue": {
+            "Size": 300
+        },
+        "StatusOverride": "Disabled"
+    }
+],
+"EnabledFor": [ 
+    { 
+        "Name": "On" 
+    } 
+] 
+```
+
+In the above example, the feature is enabled by the `On` filter and assigns the variant set for `DefaultWhenEnabled`, which is the `OffVariant` variant. The `OffVariant` variant has the `StatusOverride` property set to `Disabled`, so calling `IsEnabledAsync` for this feature will always return disabled, even though the feature would otherwise be enabled by its filters.
 
 ## Caching
 
