@@ -89,7 +89,7 @@ namespace Tests.FeatureManagement
 
             services.Configure<FeatureManagementOptions>(options =>
             {
-                options.IgnoreMissingConfigurationSection = true;
+                options.RequireFeatureManagementSection = true;
             });
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();

@@ -214,8 +214,10 @@ namespace Microsoft.FeatureManagement
             }
             else
             {
-                if (_options.IgnoreMissingConfigurationSection)
+                if (_options.RequireFeatureManagementSection)
                 {
+                    _logger.LogWarning($"No configuration section named '{FeatureManagementSectionName}' was found.");
+
                     return Enumerable.Empty<IConfigurationSection>();
                 }
                 else
