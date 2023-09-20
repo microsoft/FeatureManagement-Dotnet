@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.Telemetry;
+using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
 
@@ -31,19 +32,39 @@ namespace Microsoft.FeatureManagement
             services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
 
             services.TryAddSingleton<IFeatureManager>(sp =>
-                new FeatureManager(
-                    sp.GetRequiredService<IFeatureDefinitionProvider>(),
-                    sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
-                    sp.GetRequiredService<IEnumerable<ISessionManager>>(),
-                    sp.GetRequiredService<ILoggerFactory>(),
-                    sp.GetRequiredService<IOptions<FeatureManagementOptions>>())
+            new FeatureManager(
+                sp.GetRequiredService<IFeatureDefinitionProvider>(),
+                sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                sp.GetRequiredService<IEnumerable<ISessionManager>>(),
+                sp.GetRequiredService<ILoggerFactory>(),
+                sp.GetRequiredService<IOptions<FeatureManagementOptions>>(),
+                sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>())
                 {
-                    TelemetryPublisher = sp.GetService<ITelemetryPublisher>(),
-                });
+                    Configuration = sp.GetService<IConfiguration>(),
+                    TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
+                    TelemetryPublisher = sp.GetService<ITelemetryPublisher>()
+            });
 
+            services.TryAddSingleton<IVariantFeatureManager>(sp =>
+            new FeatureManager(
+                sp.GetRequiredService<IFeatureDefinitionProvider>(),
+                sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                sp.GetRequiredService<IEnumerable<ISessionManager>>(),
+                sp.GetRequiredService<ILoggerFactory>(),
+                sp.GetRequiredService<IOptions<FeatureManagementOptions>>(),
+                sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>())
+            {
+                Configuration = sp.GetService<IConfiguration>(),
+                TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
+                TelemetryPublisher = sp.GetService<ITelemetryPublisher>()
+            });
             services.AddSingleton<ISessionManager, EmptySessionManager>();
 
-            services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
+            services.AddScoped<FeatureManagerSnapshot>();
+
+            services.TryAddScoped<IFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
+
+            services.TryAddScoped<IVariantFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
 
             return new FeatureManagementBuilder(services);
         }

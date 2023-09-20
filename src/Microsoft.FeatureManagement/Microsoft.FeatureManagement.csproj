@@ -38,6 +38,7 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.1.23" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.1.10" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
+    <PackageReference Include="xunit.assert" Version="2.4.1" />
   </ItemGroup>
 
   <PropertyGroup>
