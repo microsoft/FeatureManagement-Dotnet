@@ -755,7 +755,7 @@ The process of deciding which variant to return for a feature is called assignme
 
 In the above example, if the feature is not enabled, `GetVariantAsync` would return the variant allocated by `DefaultWhenDisabled`, which is `Small` in this case. 
 
-If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to see if they match the targeting context or calculated percentile for that context. If the user is named `Marsha`, in the group named `Ring1`, or the user happens to fall between the 0 and 10th percentile calculated with the given `Seed`, then the specified variant is returned for that allocation. If none of these allocations match the targeting context, the `DefaultWhenEnabled` variant is returned.
+If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to see if they match the targeting context or calculated percentile for that context. If the user is named `Marsha`, in the group named `Ring1`, or the user happens to fall between the 0 and 10th percentile calculated with the given `Seed`, then the specified variant is returned for that allocation. In this case, all of these would return the `Big` variant. If none of these allocations match the targeting context, the `DefaultWhenEnabled` variant is returned.
 
 ### StatusOverride
 
