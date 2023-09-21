@@ -102,7 +102,7 @@ namespace Microsoft.FeatureManagement
 
             VariantDefinition variantDefinition = null;
 
-            if ((featureDefinition.Variants?.Any() ?? false) && featureDefinition.Allocation != null)
+            if (featureDefinition != null && (featureDefinition.Variants?.Any() ?? false) && featureDefinition.Allocation != null)
             {
                 if (!isFeatureEnabled)
                 {
