@@ -212,19 +212,17 @@ namespace Microsoft.FeatureManagement
                 // Look for feature definitions under the "FeatureManagement" section
                 return _configuration.GetSection(FeatureManagementSectionName).GetChildren();
             }
-            else
-            {
-                if (_options.RequireFeatureManagementSection)
-                {
-                    _logger.LogWarning($"No configuration section named '{FeatureManagementSectionName}' was found.");
 
-                    return Enumerable.Empty<IConfigurationSection>();
-                }
-                else
-                {
-                    return _configuration.GetChildren();
-                }   
+            //
+            // There is no "FeatureManagement" section in the configuration
+            if (_options.RequireFeatureManagementSection)
+            {
+                _logger.LogWarning($"No configuration section named '{FeatureManagementSectionName}' was found.");
+
+                return Enumerable.Empty<IConfigurationSection>();
             }
+                
+            return _configuration.GetChildren(); 
         }
     }
 }

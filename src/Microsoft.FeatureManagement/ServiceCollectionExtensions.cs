@@ -50,7 +50,11 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            services.AddSingleton<IFeatureDefinitionProvider>(sp => new ConfigurationFeatureDefinitionProvider(configuration, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<IOptions<FeatureManagementOptions>>()));
+            services.AddSingleton<IFeatureDefinitionProvider>(sp =>
+                new ConfigurationFeatureDefinitionProvider(
+                    configuration,
+                    sp.GetRequiredService<ILoggerFactory>(),
+                    sp.GetRequiredService<IOptions<FeatureManagementOptions>>()));
 
             return services.AddFeatureManagement();
         }
