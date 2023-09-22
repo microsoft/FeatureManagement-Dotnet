@@ -12,9 +12,11 @@ using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -69,6 +71,30 @@ namespace Tests.FeatureManagement
             await featureManager.IsEnabledAsync(ConditionalFeature);
 
             Assert.True(called);
+        }
+
+        [Fact]
+        public async Task ReadsOnlyFeatureManagementSection()
+        {
+            MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes("{\"AllowedHosts\": \"*\"}"));
+            IConfiguration config = new ConfigurationBuilder().AddJsonStream(stream).Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            await foreach (string featureName in featureManager.GetFeatureNamesAsync())
+            {
+                // Fail, as no features should be found
+                Assert.True(false);
+            }
         }
 
         [Fact]
