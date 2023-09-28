@@ -657,7 +657,7 @@ In the above example, the feature will be enabled for users named `Jeff` and `Al
 
 ## Variants
 
-Variants enable a feature flag to become more than a simple on/off flag. A variant represents a value of a feature flag that can be a string, a number, or even a configuration object. A feature flag that declares variants should define under what circumstances each variant should be used, which is covered in greater detail in the [Allocating a Variant](./README.md#allocating-a-variant) section.
+Variants enable a feature flag to become more than a simple on/off flag. A variant represents a value of a feature flag that can be a string, a number, a boolean, or even a configuration object. A feature flag that declares variants should define under what circumstances each variant should be used, which is covered in greater detail in the [Allocating a Variant](./README.md#allocating-a-variant) section.
 
 ``` C#
 public class Variant
@@ -691,7 +691,7 @@ IConfigurationSection variantConfiguration = variant.Configuration;
 
 ### Setting a Variant's Configuration
 
-For each of the variants in the `Variants` property of a feature, there is a specified configuration. This can be set using either the `ConfigurationReference` or `ConfigurationValue` properties. `ConfigurationReference` is a string path that references a section of the current configuration that contains the feature flag declaration. `ConfigurationValue` is an inline configuration that can be a string, number, boolean or a JSON. If both are specified, `ConfigurationValue` is used.
+For each of the variants in the `Variants` property of a feature, there is a specified configuration. This can be set using either the `ConfigurationReference` or `ConfigurationValue` properties. `ConfigurationReference` is a string path that references a section of the current configuration that contains the feature flag declaration. `ConfigurationValue` is an inline configuration that can be a string, number, boolean, or configuration object. If both are specified, `ConfigurationValue` is used.
 
 ```
 "Variants": [
@@ -748,9 +748,7 @@ The process of allocating a variant to a specific feature is determined by the `
     },  
     { 
         "Name": "Small", 
-        "ConfigurationValue": {
-            "Size": 300
-        }
+        "ConfigurationValue": "300px"
     } 
 ]
 ```
