@@ -213,12 +213,10 @@ namespace Microsoft.FeatureManagement
             {
                 return featureManagementConfigurationSection.GetChildren();
             }
-            else
-            {
-                _logger.LogWarning($"No configuration section named '{FeatureManagementSectionName}' was found.");
 
-                return Enumerable.Empty<IConfigurationSection>();
-            }
+            _logger.LogDebug($"No configuration section named '{FeatureManagementSectionName}' was found.");
+
+            return Enumerable.Empty<IConfigurationSection>();
         }
     }
 }
