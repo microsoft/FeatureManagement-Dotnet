@@ -141,7 +141,8 @@ In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning
 
 ### Status
 
-The `Status` property of a feature flag determines whether the remaining feature definition should be evaluated. `Status` is equal to `Conditional` by default, so the feature definition will determine whether the flag is enabled or which variant to return. If `Status` is equal to `Disabled`, then the feature flag is always considered disabled and will always return the `DefaultWhenDisabled` variant if specified.
+
+`Status` is an optional property of a feature flag that controls how a flags enabled state is evaluated. By default, the status of a flag is `Conditional`, meaning that feature filters should be evaluated to determine if the flag is enabled. If the `Status` of a flag is set to `Disabled` then feature filters are not evaluated and the flag is always considered to be disabled.
 
 ```
 "FeatureX": {
@@ -655,7 +656,7 @@ In the above example, the feature will be enabled for users named `Jeff` and `Al
 
 ## Variants
 
-Variants represent a configuration of a feature. A feature flag with variants contains a list of variants and assignment parameters dictating under what conditions each variant should be used. A variant's configuration can be a complex object, but it can also be as simple as a string or number.
+Variants enable a feature flag to become more than a simple on/off flag. A variant represents a value of a feature flag that can be a string, a number, or even a configuration object. A feature flag that declares variants should define under what circumstances each variant should be used which is covered in greater detail in the 'Assigning a variant' section.
 
 ``` C#
 public class Variant
@@ -680,7 +681,7 @@ Variants expand on the basic flow of feature management and enable getting a fea
 …
 IVariantFeatureManager featureManager;
 …
-Variant variant = await featureManager.GetVariantAsync(nameof(MyFeatureFlags.FeatureU));
+Variant variant = await featureManager.GetVariantAsync(MyFeatureFlags.FeatureU);
 
 IConfigurationSection variantConfiguration = variant.Configuration;
 
