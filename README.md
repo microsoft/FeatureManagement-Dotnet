@@ -150,13 +150,13 @@ In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning
     "Status": "Disabled",
     "EnabledFor": [
         {
-            "Name": "On"
+            "Name": "AlwaysOn"
         }
     ]
 }
 ```
 
-In this example, even though the `On` filter would normally always make the feature enabled, the `Status` property is set to `Disabled`, so this feature will always be disabled. 
+In this example, even though the `AlwaysOn` filter would normally always make the feature enabled, the `Status` property is set to `Disabled`, so this feature will always be disabled. 
 
 ### Referencing
 
@@ -789,12 +789,12 @@ You can use variants to override the enabled or disabled state of a feature flag
 ],
 "EnabledFor": [ 
     { 
-        "Name": "On" 
+        "Name": "AlwaysOn" 
     } 
 ] 
 ```
 
-In the above example, the feature is enabled by the `On` filter and assigns the variant set for `DefaultWhenEnabled`, which is the `OffVariant` variant. The `OffVariant` variant has the `StatusOverride` property set to `Disabled`, so calling `IsEnabledAsync` for this feature will return disabled, even though the feature would otherwise be enabled by its filters.
+In the above example, the feature is enabled by the `AlwaysOn` filter and assigns the variant set for `DefaultWhenEnabled`, which is the `OffVariant` variant. The `OffVariant` variant has the `StatusOverride` property set to `Disabled`, so calling `IsEnabledAsync` for this feature will return disabled, even though the feature would otherwise be enabled by its filters.
 
 ## Caching
 
