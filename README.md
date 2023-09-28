@@ -65,7 +65,7 @@ The feature management library supports appsettings.json as a feature flag sourc
         "FeatureT": {
             "EnabledFor": [
                 {
-                    "Name": "On"
+                    "Name": "AlwaysOn"
                 }
             ]
         },
@@ -87,7 +87,7 @@ The feature management library supports appsettings.json as a feature flag sourc
 }
 ```
 
-The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided three different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `On`. This feature filter is built-in and if specified will always enable the feature. The `On` feature filter does not require any configuration so it only has the `Name` property. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
+The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided three different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration so it only has the `Name` property. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
 
 ### On/Off Declaration
  
@@ -657,7 +657,7 @@ In the above example, the feature will be enabled for users named `Jeff` and `Al
 
 ## Variants
 
-Variants enable a feature flag to become more than a simple on/off flag. A variant represents a value of a feature flag that can be a string, a number, or even a configuration object. A feature flag that declares variants should define under what circumstances each variant should be used which is covered in greater detail in the 'Assigning a variant' section.
+Variants enable a feature flag to become more than a simple on/off flag. A variant represents a value of a feature flag that can be a string, a number, or even a configuration object. A feature flag that declares variants should define under what circumstances each variant should be used, which is covered in greater detail in the [Allocating a Variant](./README.md#allocating-a-variant) section.
 
 ``` C#
 public class Variant
@@ -755,15 +755,26 @@ The process of allocating a variant to a specific feature is determined by the `
 ]
 ```
 
+The `Allocation` setting of a feature flag has the following properties:
+
+| Property | Description |
+| ---------------- | ---------------- |
+| `DefaultWhenDisabled` | Specifies which variant should be used when a variant is requested while the feature is considered disabled. |
+| `DefaultWhenEnabled` | Specifies which variant should be used when a variant is requested while the feature is considered enabled and no other allocation properties matched the current user. |
+| `User` | Specifies a variant and a list of users for which that variant should be used. | 
+| `Group` | Specifies a variant and a list of groups the current user has to be in for that variant to be used. |
+| `Percentile` | Specifies a variant and a percentage range the user's calculated percentage has to fit into for that variant to be used. |
+| `Seed` | The value which percentage calculations are based on. The percentage calculation for a specific user will be the same across all features if the same `Seed` value is used. If no `Seed` is specified, then a default seed is created based on the feature name. |
+
 In the above example, if the feature is not enabled, `GetVariantAsync` would return the variant allocated by `DefaultWhenDisabled`, which is `Small` in this case. 
 
-If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to see if they match the targeting context or calculated percentile for that context. If the user is named `Marsha`, in the group named `Ring1`, or the user happens to fall between the 0 and 10th percentile calculated with the given `Seed`, then the specified variant is returned for that allocation. If no `Seed` is specified, then a default seed is created based on the feature name. In this case, all of these would return the `Big` variant. If none of these allocations match the targeting context, the `DefaultWhenEnabled` variant is returned.
+If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to allocate a variant for this feature. If the user being evaluated is named `Marsha`, in the group named `Ring1`, or the user happens to fall between the 0 and 10th percentile calculated with the given `Seed`, then the specified variant is returned for that allocation. In this case, all of these would return the `Big` variant. If none of these allocations match the targeting context, the `DefaultWhenEnabled` variant is returned, which is `Small`.
 
 Allocation logic is similar to the [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter, but there are some parameters that are present in targeting that aren't in allocation, and vice versa. The outcomes of targeting and allocation are not related.
 
-### StatusOverride
+### Overriding Enabled State with a Variant
 
-The `StatusOverride` property, if set for the assigned variant, overrides a feature's state. By default, this property is equal to `None`, which does not affect the feature state. If `StatusOverride` is equal to `Enabled` for the assigned variant, then the feature is enabled. If `StatusOverride` is equal to `Disabled` for the assigned variant, then the feature is disabled. A feature with a `Status` of `Disabled` cannot be overridden.
+You can use variants to override the enabled or disabled state of a feature flag. This gives variants an opportunity to extend the evaluation of a feature flag. If a caller is checking whether a flag that has variants is enabled, then variant allocation will be performed to see if an allocated variant is set up to override the result. This is done using the optional variant property `StatusOverride`. By default, this property is set to `None`, which means the variant doesn't affect whether the flag is considered enabled or disabled. Setting `StatusOverride` to `Enabled` allows the variant, when chosen, to override a flag to be enabled. Setting `StatusOverride` to `Disabled` provides the opposite functionality, therefore disabling the flag when the variant is chosen. A feature with a `Status` of `Disabled` cannot be overridden.
 
 ```
 "Allocation": { 
