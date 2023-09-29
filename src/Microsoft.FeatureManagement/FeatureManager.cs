@@ -192,21 +192,26 @@ namespace Microsoft.FeatureManagement
 
             bool enabled;
 
-            if (featureDefinition.RequirementType == RequirementType.All && _options.IgnoreMissingFeatureFilters)
-            {
-                throw new FeatureManagementException(
-                    FeatureManagementError.Conflict, 
-                    $"The 'IgnoreMissingFeatureFilters' flag cannot use used in combination with a feature of requirement type 'All'.");
-            }
-
             //
-            // Treat an empty list of enabled filters or if status is disabled as a disabled feature
-            if (featureDefinition.EnabledFor == null || !featureDefinition.EnabledFor.Any() || featureDefinition.Status == FeatureStatus.Disabled)
+            // Treat a null, empty, or status disabled feature as disabled
+            if (featureDefinition == null || 
+                featureDefinition.EnabledFor == null || 
+                !featureDefinition.EnabledFor.Any() || 
+                featureDefinition.Status == FeatureStatus.Disabled)
             {
                 enabled = false;
             }
             else
             {
+                //
+                // Ensure no conflicts in the feature definition
+                if (featureDefinition.RequirementType == RequirementType.All && _options.IgnoreMissingFeatureFilters)
+                {
+                    throw new FeatureManagementException(
+                        FeatureManagementError.Conflict,
+                        $"The 'IgnoreMissingFeatureFilters' flag cannot be used in combination with a feature of requirement type 'All'.");
+                }
+
                 //
                 // If the requirement type is all, we default to true. Requirement type All will end on a false
                 enabled = featureDefinition.RequirementType == RequirementType.All;

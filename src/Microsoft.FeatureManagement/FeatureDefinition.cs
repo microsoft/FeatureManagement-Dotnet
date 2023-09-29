@@ -61,7 +61,7 @@ namespace Microsoft.FeatureManagement
         public IReadOnlyDictionary<string, string> Tags { get; set; }
 
         /// <summary>
-        /// A flag to enable or disable sending telemetry events to the registered <see cref="ITelemetryProvider">.
+        /// A flag to enable or disable sending telemetry events to the registered <see cref="ITelemetryPublisher">.
         /// </summary>
         public bool EnableTelemetry { get; set; }
     }
