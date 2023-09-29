@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Concurrent;
@@ -23,14 +24,17 @@ namespace Microsoft.FeatureManagement
 
         private const string FeatureFiltersSectionName = "EnabledFor";
         private const string RequirementTypeKeyword = "RequirementType";
+        private const string FeatureManagementSectionName = "FeatureManagement";
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
+        private readonly ILogger _logger;
         private int _stale = 0;
 
-        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration)
+        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration, ILoggerFactory loggerFactory)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _logger = loggerFactory?.CreateLogger<ConfigurationFeatureDefinitionProvider>() ?? throw new ArgumentNullException(nameof(loggerFactory));
             _definitions = new ConcurrentDictionary<string, FeatureDefinition>();
 
             _changeSubscription = ChangeToken.OnChange(
@@ -199,18 +203,18 @@ namespace Microsoft.FeatureManagement
 
         private IEnumerable<IConfigurationSection> GetFeatureDefinitionSections()
         {
-            const string FeatureManagementSectionName = "FeatureManagement";
+            //
+            // Look for feature definitions under the "FeatureManagement" section
+            IConfigurationSection featureManagementConfigurationSection = _configuration.GetSection(FeatureManagementSectionName);
 
-            if (_configuration.GetChildren().Any(s => s.Key.Equals(FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase)))
+            if (featureManagementConfigurationSection.Exists())
             {
-                //
-                // Look for feature definitions under the "FeatureManagement" section
-                return _configuration.GetSection(FeatureManagementSectionName).GetChildren();
+                return featureManagementConfigurationSection.GetChildren();
             }
-            else
-            {
-                return _configuration.GetChildren();
-            }
+
+            _logger.LogDebug($"No configuration section named '{FeatureManagementSectionName}' was found.");
+
+            return Enumerable.Empty<IConfigurationSection>();
         }
     }
 }
