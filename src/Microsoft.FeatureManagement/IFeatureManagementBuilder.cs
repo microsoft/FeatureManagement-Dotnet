@@ -36,6 +36,6 @@ namespace Microsoft.FeatureManagement
         /// Adds an event publisher that publishes feature evaluation events.
         /// </summary>
         /// <returns>The <see cref="IFeatureManagementBuilder"/> that the publisher was added to.</returns>
-        IFeatureManagementBuilder AddFeatureManagementTelemetry<T>() where T : ITelemetryPublisher;
+        IFeatureManagementBuilder AddTelemetryPublisher<T>() where T : ITelemetryPublisher;
     }
 }

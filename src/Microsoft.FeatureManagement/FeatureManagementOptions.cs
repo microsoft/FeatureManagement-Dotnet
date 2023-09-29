@@ -1,6 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.FeatureManagement.Telemetry;
+using System;
+using System.Collections.Generic;
+
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
@@ -22,5 +26,7 @@ namespace Microsoft.FeatureManagement
         /// The default value is true.
         /// </summary>
         public bool IgnoreMissingFeatures { get; set; } = true;
+
+        internal ICollection<Func<IServiceProvider, ITelemetryPublisher>> telemetryPublisherFactories;
     }
 }

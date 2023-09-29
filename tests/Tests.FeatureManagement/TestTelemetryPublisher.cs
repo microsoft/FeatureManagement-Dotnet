@@ -2,7 +2,6 @@
 // Licensed under the MIT license.
 //
 using Microsoft.FeatureManagement.Telemetry;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 

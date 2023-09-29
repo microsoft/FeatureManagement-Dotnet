@@ -63,7 +63,7 @@ namespace Microsoft.FeatureManagement
             _parametersCache = new MemoryCache(new MemoryCacheOptions());
         }
 
-        public ITelemetryPublisher TelemetryPublisher { get; init; }
+        public ICollection<ITelemetryPublisher> TelemetryPublishers { get; init; }
 
         public IConfiguration Configuration { get; init; }
 
@@ -630,15 +630,18 @@ namespace Microsoft.FeatureManagement
         {
             if (evaluationEvent.FeatureDefinition.EnableTelemetry)
             {
-                if (TelemetryPublisher == null)
+                if (!TelemetryPublishers.Any())
                 {
                     _logger.LogWarning("The feature declaration enabled telemetry but no telemetry publisher was registered.");
                 }
                 else
                 {
-                    await TelemetryPublisher.PublishEvent(
-                        evaluationEvent,
-                        CancellationToken.None);
+                    foreach (ITelemetryPublisher telemetryPublisher in TelemetryPublishers)
+                    {
+                        await telemetryPublisher.PublishEvent(
+                            evaluationEvent,
+                            CancellationToken.None);
+                    }
                 }
             }
         }

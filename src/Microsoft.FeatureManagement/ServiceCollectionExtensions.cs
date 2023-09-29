@@ -10,6 +10,7 @@ using Microsoft.FeatureManagement.Telemetry;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.FeatureManagement
 {
@@ -41,8 +42,10 @@ namespace Microsoft.FeatureManagement
             {
                 Configuration = sp.GetService<IConfiguration>(),
                 TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
-                TelemetryPublisher = sp.GetService<ITelemetryPublisher>()
-            });
+                TelemetryPublishers = sp.GetService<IOptions<FeatureManagementOptions>>()?.Value.telemetryPublisherFactories?
+                    .Select(factory => factory(sp))
+                    .ToList()
+            });;
 
             services.TryAddSingleton<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 

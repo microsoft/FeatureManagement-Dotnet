@@ -973,13 +973,13 @@ namespace Tests.FeatureManagement
             services
                 .AddSingleton(config)
                 .AddFeatureManagement()
-                .AddFeatureManagementTelemetry<TestTelemetryPublisher>()
+                .AddTelemetryPublisher<TestTelemetryPublisher>()
                 .AddFeatureFilter<TimeWindowFilter>();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
-            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
-            TestTelemetryPublisher testPublisher = (TestTelemetryPublisher) serviceProvider.GetRequiredService<ITelemetryPublisher>();
+            FeatureManager featureManager = (FeatureManager) serviceProvider.GetRequiredService<IVariantFeatureManager>();
+            TestTelemetryPublisher testPublisher = (TestTelemetryPublisher) featureManager.TelemetryPublishers.First();
 
             // Test a feature with telemetry disabled
             bool result = await featureManager.IsEnabledAsync(OnFeature, CancellationToken.None);

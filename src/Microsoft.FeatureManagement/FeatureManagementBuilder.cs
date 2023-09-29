@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.FeatureManagement.Telemetry;
 
 namespace Microsoft.FeatureManagement
@@ -52,9 +51,24 @@ namespace Microsoft.FeatureManagement
             return this;
         }
 
-        public IFeatureManagementBuilder AddFeatureManagementTelemetry<T>() where T : ITelemetryPublisher
+        public IFeatureManagementBuilder AddTelemetryPublisher<T>() where T : ITelemetryPublisher
         {
-            Services.TryAddSingleton(typeof(ITelemetryPublisher), typeof(T));
+            AddTelemetryPublisher<T>(sp => ActivatorUtilities.CreateInstance(sp, typeof(T)) as ITelemetryPublisher);
+
+            return this;
+        }
+
+        private IFeatureManagementBuilder AddTelemetryPublisher<T>(Func<IServiceProvider, ITelemetryPublisher> factory) where T : ITelemetryPublisher
+        {
+            Services.Configure<FeatureManagementOptions>(options =>
+            {
+                if (options.telemetryPublisherFactories == null)
+                {
+                    options.telemetryPublisherFactories = new List<Func<IServiceProvider, ITelemetryPublisher>>();
+                }
+
+                options.telemetryPublisherFactories.Add(factory);
+            });
 
             return this;
         }
