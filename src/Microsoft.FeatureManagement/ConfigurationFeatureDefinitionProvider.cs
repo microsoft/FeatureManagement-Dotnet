@@ -34,7 +34,7 @@ namespace Microsoft.FeatureManagement
         public ConfigurationFeatureDefinitionProvider(IConfiguration configuration, ILoggerFactory loggerFactory)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _logger = loggerFactory.CreateLogger<ConfigurationFeatureDefinitionProvider>();
+            _logger = loggerFactory?.CreateLogger<ConfigurationFeatureDefinitionProvider>() ?? throw new ArgumentNullException(nameof(loggerFactory));
             _definitions = new ConcurrentDictionary<string, FeatureDefinition>();
 
             _changeSubscription = ChangeToken.OnChange(
