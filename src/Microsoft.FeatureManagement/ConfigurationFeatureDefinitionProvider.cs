@@ -31,8 +31,6 @@ namespace Microsoft.FeatureManagement
         private readonly ILogger _logger;
         private int _stale = 0;
 
-        const string ParseValueErrorString = "Invalid setting '{0}' with value '{1}' for feature '{2}'.";
-
         public ConfigurationFeatureDefinitionProvider(IConfiguration configuration, ILoggerFactory loggerFactory)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
