@@ -660,14 +660,11 @@ namespace Microsoft.FeatureManagement
 
             IConfigurationSection variantConfiguration = null;
 
-            bool configValueSet = variantDefinition.ConfigurationValue.Exists();
-            bool configReferenceSet = !string.IsNullOrEmpty(variantDefinition.ConfigurationReference);
-
-            if (configValueSet)
+            if (variantDefinition.ConfigurationValue.Exists())
             {
                 variantConfiguration = variantDefinition.ConfigurationValue;
             }
-            else if (configReferenceSet)
+            else if (!string.IsNullOrEmpty(variantDefinition.ConfigurationReference))
             {
                 if (Configuration == null)
                 {
