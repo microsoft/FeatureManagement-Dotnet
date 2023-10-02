@@ -50,27 +50,5 @@ namespace Microsoft.FeatureManagement
 
             return this;
         }
-
-        public IFeatureManagementBuilder AddTelemetryPublisher<T>() where T : ITelemetryPublisher
-        {
-            AddTelemetryPublisher(sp => ActivatorUtilities.CreateInstance(sp, typeof(T)) as ITelemetryPublisher);
-
-            return this;
-        }
-
-        private IFeatureManagementBuilder AddTelemetryPublisher(Func<IServiceProvider, ITelemetryPublisher> factory)
-        {
-            Services.Configure<FeatureManagementOptions>(options =>
-            {
-                if (options.TelemetryPublisherFactories == null)
-                {
-                    options.TelemetryPublisherFactories = new List<Func<IServiceProvider, ITelemetryPublisher>>();
-                }
-
-                options.TelemetryPublisherFactories.Add(factory);
-            });
-
-            return this;
-        }
     }
 }
