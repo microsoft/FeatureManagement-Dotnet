@@ -138,8 +138,8 @@ namespace Microsoft.FeatureManagement
             RequirementType requirementType = RequirementType.Any;
             string label = null;
             string eTag = null;
-            bool enableTelemetry = false;
-            IReadOnlyDictionary<string, string> tags = null;
+            bool telemetryEnabled = false;
+            Dictionary<string, string> tags = new Dictionary<string, string>();
 
             FeatureStatus featureStatus = FeatureStatus.Conditional;
 
@@ -288,12 +288,15 @@ namespace Microsoft.FeatureManagement
                 IConfigurationSection tagsSection = configurationSection.GetSection("Tags");
                 if (tagsSection.Exists())
                 {
-                    tags = tagsSection.GetChildren().ToDictionary(s => s.Key, s => s.Value);
+                    foreach (IConfigurationSection tag in tagsSection.GetChildren())
+                    {
+                        tags.Add(tag.Key, tag.Value);
+                    }
                 }
 
                 label = configurationSection["Label"];
                 eTag = configurationSection["ETag"];
-                enableTelemetry = configurationSection.GetValue<bool>("EnableTelemetry");
+                telemetryEnabled = configurationSection.GetValue<bool>("TelemetryEnabled");
             }
 
             return new FeatureDefinition()
@@ -306,7 +309,7 @@ namespace Microsoft.FeatureManagement
                 Variants = variants,
                 Label = label,
                 ETag = eTag,
-                EnableTelemetry = enableTelemetry,
+                TelemetryEnabled = telemetryEnabled,
                 Tags = tags
             };
         }

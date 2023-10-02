@@ -63,6 +63,6 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// A flag to enable or disable sending telemetry events to the registered <see cref="ITelemetryPublisher">.
         /// </summary>
-        public bool EnableTelemetry { get; set; }
+        public bool TelemetryEnabled { get; set; }
     }
 }

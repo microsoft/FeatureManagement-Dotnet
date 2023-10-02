@@ -6,7 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.FeatureManagement.Telemetry;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
@@ -42,10 +41,10 @@ namespace Microsoft.FeatureManagement
             {
                 Configuration = sp.GetService<IConfiguration>(),
                 TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
-                TelemetryPublishers = sp.GetService<IOptions<FeatureManagementOptions>>()?.Value.telemetryPublisherFactories?
+                TelemetryPublishers = sp.GetService<IOptions<FeatureManagementOptions>>()?.Value.TelemetryPublisherFactories?
                     .Select(factory => factory(sp))
                     .ToList()
-            });;
+            });
 
             services.TryAddSingleton<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 

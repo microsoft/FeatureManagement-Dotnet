@@ -53,21 +53,21 @@ namespace Microsoft.FeatureManagement
 
         public IFeatureManagementBuilder AddTelemetryPublisher<T>() where T : ITelemetryPublisher
         {
-            AddTelemetryPublisher<T>(sp => ActivatorUtilities.CreateInstance(sp, typeof(T)) as ITelemetryPublisher);
+            AddTelemetryPublisher(sp => ActivatorUtilities.CreateInstance(sp, typeof(T)) as ITelemetryPublisher);
 
             return this;
         }
 
-        private IFeatureManagementBuilder AddTelemetryPublisher<T>(Func<IServiceProvider, ITelemetryPublisher> factory) where T : ITelemetryPublisher
+        private IFeatureManagementBuilder AddTelemetryPublisher(Func<IServiceProvider, ITelemetryPublisher> factory)
         {
             Services.Configure<FeatureManagementOptions>(options =>
             {
-                if (options.telemetryPublisherFactories == null)
+                if (options.TelemetryPublisherFactories == null)
                 {
-                    options.telemetryPublisherFactories = new List<Func<IServiceProvider, ITelemetryPublisher>>();
+                    options.TelemetryPublisherFactories = new List<Func<IServiceProvider, ITelemetryPublisher>>();
                 }
 
-                options.telemetryPublisherFactories.Add(factory);
+                options.TelemetryPublisherFactories.Add(factory);
             });
 
             return this;

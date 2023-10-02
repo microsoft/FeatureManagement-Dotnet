@@ -63,7 +63,7 @@ namespace Microsoft.FeatureManagement
             _parametersCache = new MemoryCache(new MemoryCacheOptions());
         }
 
-        public ICollection<ITelemetryPublisher> TelemetryPublishers { get; init; }
+        public IEnumerable<ITelemetryPublisher> TelemetryPublishers { get; init; }
 
         public IConfiguration Configuration { get; init; }
 
@@ -91,52 +91,52 @@ namespace Microsoft.FeatureManagement
 
         private async Task<bool> IsEnabledWithVariantsAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
-            bool isFeatureEnabled = await IsEnabledAsync(feature, appContext, useAppContext, cancellationToken).ConfigureAwait(false);
+            bool isFeatureEnabled = false;
 
-            FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
-
-            if (featureDefinition == null || featureDefinition.Status == FeatureStatus.Disabled)
-            {
-                isFeatureEnabled = false;
-            }
+            FeatureDefinition featureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false);
 
             VariantDefinition variantDefinition = null;
 
-            if (featureDefinition != null && (featureDefinition.Variants?.Any() ?? false) && featureDefinition.Allocation != null)
+            if (featureDefinition != null)
             {
-                if (!isFeatureEnabled)
-                {
-                    variantDefinition = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == featureDefinition.Allocation.DefaultWhenDisabled);
-                }
-                else
-                {
-                    TargetingContext targetingContext;
+                isFeatureEnabled = await IsEnabledAsync(feature, appContext, useAppContext, featureDefinition, cancellationToken).ConfigureAwait(false);
 
-                    if (useAppContext)
+                if (featureDefinition.Variants != null && featureDefinition.Variants.Any() && featureDefinition.Allocation != null)
+                {
+                    if (!isFeatureEnabled)
                     {
-                        targetingContext = appContext as TargetingContext;
+                        variantDefinition = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == featureDefinition.Allocation.DefaultWhenDisabled);
                     }
                     else
                     {
-                        targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
+                        TargetingContext targetingContext;
+
+                        if (useAppContext)
+                        {
+                            targetingContext = appContext as TargetingContext;
+                        }
+                        else
+                        {
+                            targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
+                        }
+
+                        variantDefinition = await GetAssignedVariantAsync(
+                            featureDefinition,
+                            targetingContext,
+                            cancellationToken)
+                            .ConfigureAwait(false);
                     }
 
-                    variantDefinition = await GetAssignedVariantAsync(
-                        featureDefinition,
-                        targetingContext,
-                        cancellationToken)
-                        .ConfigureAwait(false);
-                }
-
-                if (variantDefinition != null && featureDefinition.Status != FeatureStatus.Disabled)
-                {
-                    if (variantDefinition.StatusOverride == StatusOverride.Enabled)
+                    if (variantDefinition != null && featureDefinition.Status != FeatureStatus.Disabled)
                     {
-                        isFeatureEnabled = true;
-                    }
-                    else if (variantDefinition.StatusOverride == StatusOverride.Disabled)
-                    {
-                        isFeatureEnabled = false;
+                        if (variantDefinition.StatusOverride == StatusOverride.Enabled)
+                        {
+                            isFeatureEnabled = true;
+                        }
+                        else if (variantDefinition.StatusOverride == StatusOverride.Disabled)
+                        {
+                            isFeatureEnabled = false;
+                        }
                     }
                 }
             }
@@ -150,7 +150,7 @@ namespace Microsoft.FeatureManagement
             {
                 FeatureDefinition = featureDefinition,
                 IsEnabled = isFeatureEnabled,
-                Variant = GetVariantFromVariantDefinition(variantDefinition)
+                Variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null
             });
 
             return isFeatureEnabled;
@@ -176,7 +176,7 @@ namespace Microsoft.FeatureManagement
             _parametersCache.Dispose();
         }
 
-        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
+        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, FeatureDefinition featureDefinition, CancellationToken cancellationToken)
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
@@ -187,8 +187,6 @@ namespace Microsoft.FeatureManagement
                     return readSessionResult.Value;
                 }
             }
-
-            FeatureDefinition featureDefinition = await GetFeatureDefinition(feature);
 
             bool enabled;
 
@@ -338,7 +336,7 @@ namespace Microsoft.FeatureManagement
 
             VariantDefinition variantDefinition = null;
 
-            bool isFeatureEnabled = await IsEnabledAsync(feature, context, useContext, cancellationToken).ConfigureAwait(false);
+            bool isFeatureEnabled = await IsEnabledAsync(feature, context, useContext, featureDefinition, cancellationToken).ConfigureAwait(false);
 
             if (!isFeatureEnabled)
             {
@@ -354,7 +352,7 @@ namespace Microsoft.FeatureManagement
                 variantDefinition = await GetAssignedVariantAsync(featureDefinition, context, cancellationToken).ConfigureAwait(false);
             }
 
-            Variant variant = GetVariantFromVariantDefinition(variantDefinition);
+            Variant variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null;
 
             PublishTelemetry(new EvaluationEvent
             {
@@ -633,7 +631,7 @@ namespace Microsoft.FeatureManagement
 
         private async void PublishTelemetry(EvaluationEvent evaluationEvent)
         {
-            if (evaluationEvent.FeatureDefinition.EnableTelemetry)
+            if (evaluationEvent.FeatureDefinition.TelemetryEnabled)
             {
                 if (!TelemetryPublishers.Any())
                 {

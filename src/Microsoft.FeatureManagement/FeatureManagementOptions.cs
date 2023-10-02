@@ -27,6 +27,10 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         public bool IgnoreMissingFeatures { get; set; } = true;
 
-        internal ICollection<Func<IServiceProvider, ITelemetryPublisher>> telemetryPublisherFactories;
+        /// <summary>
+        /// Holds a collection of factories that can be used to create <see cref="ITelemetryPublisher"/> instances.
+        /// This avoids the need to add the publishers to the service collection.
+        /// </summary>
+        internal ICollection<Func<IServiceProvider, ITelemetryPublisher>> TelemetryPublisherFactories { get; set; }
     }
 }
