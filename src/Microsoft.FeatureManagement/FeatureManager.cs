@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
 using Microsoft.Extensions.Caching.Memory;
@@ -15,7 +15,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.CompilerServices;
 
 namespace Microsoft.FeatureManagement
 {
@@ -156,18 +155,11 @@ namespace Microsoft.FeatureManagement
             return isFeatureEnabled;
         }
 
-        public IAsyncEnumerable<string> GetFeatureNamesAsync()
+        public async IAsyncEnumerable<string> GetFeatureNamesAsync()
         {
-            return GetFeatureNamesAsync(CancellationToken.None);
-        }
-
-        public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
-        {
-            await foreach (FeatureDefinition featureDefinition in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
+            await foreach (FeatureDefinition featureDefintion in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                yield return featureDefinition.Name;
+                yield return featureDefintion.Name;
             }
         }
 

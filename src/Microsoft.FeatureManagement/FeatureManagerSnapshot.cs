@@ -1,11 +1,10 @@
-﻿// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,28 +15,23 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     class FeatureManagerSnapshot : IFeatureManagerSnapshot, IVariantFeatureManagerSnapshot
     {
-        private readonly IVariantFeatureManager _featureManager;
+        private readonly FeatureManager _featureManager;
         private readonly ConcurrentDictionary<string, Task<bool>> _flagCache = new ConcurrentDictionary<string, Task<bool>>();
         private readonly ConcurrentDictionary<string, Variant> _variantCache = new ConcurrentDictionary<string, Variant>();
         private IEnumerable<string> _featureNames;
 
-        public FeatureManagerSnapshot(IVariantFeatureManager featureManager)
+        public FeatureManagerSnapshot(FeatureManager featureManager)
         {
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
         }
 
-        public IAsyncEnumerable<string> GetFeatureNamesAsync()
-        {
-            return GetFeatureNamesAsync(CancellationToken.None);
-        }
-
-        public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<string> GetFeatureNamesAsync()
         {
             if (_featureNames == null)
             {
                 var featureNames = new List<string>();
 
-                await foreach (string featureName in _featureManager.GetFeatureNamesAsync(cancellationToken).ConfigureAwait(false))
+                await foreach (string featureName in _featureManager.GetFeatureNamesAsync().ConfigureAwait(false))
                 {
                     featureNames.Add(featureName);
                 }
@@ -55,28 +49,28 @@ namespace Microsoft.FeatureManagement
         {
             return _flagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key, CancellationToken.None));
+                (key) => _featureManager.IsEnabledAsync(key));
         }
 
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
         {
             return _flagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key, context, CancellationToken.None));
+                (key) => _featureManager.IsEnabledAsync(key, context));
         }
 
         public Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
         {
             return _flagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key, cancellationToken));
+                (key) => _featureManager.IsEnabledAsync(key));
         }
 
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
         {
             return _flagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key, context, cancellationToken));
+                (key) => _featureManager.IsEnabledAsync(key, context));
         }
 
         public async ValueTask<Variant> GetVariantAsync(string feature, CancellationToken cancellationToken)
