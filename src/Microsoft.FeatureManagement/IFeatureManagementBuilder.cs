@@ -1,8 +1,7 @@
-﻿// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.FeatureManagement.Telemetry;
 
 namespace Microsoft.FeatureManagement
 {

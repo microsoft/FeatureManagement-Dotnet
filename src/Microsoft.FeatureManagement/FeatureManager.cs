@@ -98,7 +98,7 @@ namespace Microsoft.FeatureManagement
 
             if (featureDefinition != null)
             {
-                isFeatureEnabled = await IsEnabledAsync(feature, appContext, useAppContext, featureDefinition, cancellationToken).ConfigureAwait(false);
+                isFeatureEnabled = await IsEnabledAsync(featureDefinition, appContext, useAppContext, cancellationToken).ConfigureAwait(false);
 
                 if (featureDefinition.Variants != null && featureDefinition.Variants.Any() && featureDefinition.Allocation != null)
                 {
@@ -168,11 +168,11 @@ namespace Microsoft.FeatureManagement
             _parametersCache.Dispose();
         }
 
-        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, FeatureDefinition featureDefinition, CancellationToken cancellationToken)
+        private async Task<bool> IsEnabledAsync<TContext>(FeatureDefinition featureDefinition, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                bool? readSessionResult = await sessionManager.GetAsync(feature).ConfigureAwait(false);
+                bool? readSessionResult = await sessionManager.GetAsync(featureDefinition.Name).ConfigureAwait(false);
 
                 if (readSessionResult.HasValue)
                 {
@@ -183,9 +183,8 @@ namespace Microsoft.FeatureManagement
             bool enabled;
 
             //
-            // Treat a null, empty, or status disabled feature as disabled
-            if (featureDefinition == null || 
-                featureDefinition.EnabledFor == null || 
+            // Treat an empty or status disabled feature as disabled
+            if (featureDefinition.EnabledFor == null || 
                 !featureDefinition.EnabledFor.Any() || 
                 featureDefinition.Status == FeatureStatus.Disabled)
             {
@@ -238,7 +237,7 @@ namespace Microsoft.FeatureManagement
 
                     if (filter == null)
                     {
-                        string errorMessage = $"The feature filter '{featureFilterConfiguration.Name}' specified for feature '{feature}' was not found.";
+                        string errorMessage = $"The feature filter '{featureFilterConfiguration.Name}' specified for feature '{featureDefinition.Name}' was not found.";
 
                         if (!_options.IgnoreMissingFeatureFilters)
                         {
@@ -252,7 +251,7 @@ namespace Microsoft.FeatureManagement
 
                     var context = new FeatureFilterEvaluationContext()
                     {
-                        FeatureName = feature,
+                        FeatureName = featureDefinition.Name,
                         Parameters = featureFilterConfiguration.Parameters
                     };
 
@@ -321,14 +320,14 @@ namespace Microsoft.FeatureManagement
         {
             FeatureDefinition featureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false);
 
-            if (featureDefinition?.Allocation == null || (!featureDefinition.Variants?.Any() ?? false))
+            if (featureDefinition == null || featureDefinition.Allocation == null || (!featureDefinition.Variants?.Any() ?? false))
             {
                 return null;
             }
 
             VariantDefinition variantDefinition = null;
 
-            bool isFeatureEnabled = await IsEnabledAsync(feature, context, useContext, featureDefinition, cancellationToken).ConfigureAwait(false);
+            bool isFeatureEnabled = await IsEnabledAsync(featureDefinition, context, useContext, cancellationToken).ConfigureAwait(false);
 
             if (!isFeatureEnabled)
             {
