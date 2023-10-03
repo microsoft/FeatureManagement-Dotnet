@@ -4,6 +4,7 @@
 using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.FeatureManagement.FeatureFilters;
+using System.Collections.Generic;
 
 namespace Microsoft.FeatureManagement
 {
@@ -12,6 +13,12 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     public interface IVariantFeatureManager
     {
+        /// <summary>
+        /// Retrieves a list of feature names registered in the feature manager.
+        /// </summary>
+        /// <returns>An enumerator which provides asynchronous iteration over the feature names registered in the feature manager.</returns>
+        IAsyncEnumerable<string> GetFeatureNamesAsync(CancellationToken cancellationToken);
+
         /// <summary>
         /// Checks whether a given feature is enabled.
         /// </summary>
@@ -30,7 +37,7 @@ namespace Microsoft.FeatureManagement
         Task<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Gets the assigned variant for a specfic feature.
+        /// Gets the assigned variant for a specific feature.
         /// </summary>
         /// <param name="feature">The name of the feature to evaluate.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
@@ -38,7 +45,7 @@ namespace Microsoft.FeatureManagement
         ValueTask<Variant> GetVariantAsync(string feature, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Gets the assigned variant for a specfic feature.
+        /// Gets the assigned variant for a specific feature.
         /// </summary>
         /// <param name="feature">The name of the feature to evaluate.</param>
         /// <param name="context">An instance of <see cref="TargetingContext"/> used to evaluate which variant the user will be assigned.</param>
