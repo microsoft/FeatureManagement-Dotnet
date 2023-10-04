@@ -1034,6 +1034,20 @@ namespace Tests.FeatureManagement
             Assert.False(testPublisher.evaluationEventCache.IsEnabled);
             Assert.Equal(variantFeatureStatusDisabled, testPublisher.evaluationEventCache.FeatureDefinition.Name);
             Assert.Equal(variantResult.Name, testPublisher.evaluationEventCache.Variant.Name);
+
+            TargetingContext targetingContext = new TargetingContext
+            {
+                UserId = "Jeff"
+            };
+            variantResult = await featureManager.GetVariantAsync(
+                variantDefaultEnabledFeature,
+                targetingContext,
+                CancellationToken.None);
+
+            Assert.True(testPublisher.evaluationEventCache.IsEnabled);
+            Assert.Equal(testPublisher.evaluationEventCache.TargetingContext.UserId, targetingContext.UserId);
+            Assert.Equal(variantDefaultEnabledFeature, testPublisher.evaluationEventCache.FeatureDefinition.Name);
+            Assert.Equal(variantResult.Name, testPublisher.evaluationEventCache.Variant.Name);
         }
 
         [Fact]

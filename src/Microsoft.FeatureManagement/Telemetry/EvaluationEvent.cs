@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.FeatureManagement.FeatureFilters;
+
 namespace Microsoft.FeatureManagement.Telemetry
 {
     /// <summary>
@@ -12,7 +14,12 @@ namespace Microsoft.FeatureManagement.Telemetry
         /// The definition of the feature that was evaluated.
         /// </summary>
         public FeatureDefinition FeatureDefinition { get; set; }
-        
+
+        /// <summary>
+        /// The targeting context used for the evaluation.
+        /// </summary>
+        public ITargetingContext TargetingContext { get; set; }
+
         /// <summary>
         /// The enabled state of the feature after evaluation.
         /// </summary>

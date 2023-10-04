@@ -95,6 +95,7 @@ namespace Microsoft.FeatureManagement
             FeatureDefinition featureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false);
 
             VariantDefinition variantDefinition = null;
+            TargetingContext targetingContext = null;
 
             if (featureDefinition != null)
             {
@@ -108,8 +109,6 @@ namespace Microsoft.FeatureManagement
                     }
                     else
                     {
-                        TargetingContext targetingContext;
-
                         if (useAppContext)
                         {
                             targetingContext = appContext as TargetingContext;
@@ -148,6 +147,7 @@ namespace Microsoft.FeatureManagement
             PublishTelemetry(new EvaluationEvent
             {
                 FeatureDefinition = featureDefinition,
+                TargetingContext = targetingContext,
                 IsEnabled = isFeatureEnabled,
                 Variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null
             }, cancellationToken);
@@ -348,6 +348,7 @@ namespace Microsoft.FeatureManagement
             PublishTelemetry(new EvaluationEvent
             {
                 FeatureDefinition = featureDefinition,
+                TargetingContext = context,
                 IsEnabled = isFeatureEnabled,
                 Variant = variant
             }, cancellationToken);
