@@ -1036,6 +1036,30 @@ namespace Tests.FeatureManagement
             Assert.Equal(variantResult.Name, testPublisher.evaluationEventCache.Variant.Name);
         }
 
+        [Fact]
+        public async Task TelemetryPublishingNullPublisher()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TimeWindowFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            FeatureManager featureManager = (FeatureManager)serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            // Test telemetry enabled feature with no telemetry publisher
+            string onFeature = "AlwaysOnTestFeature";
+
+            bool result = await featureManager.IsEnabledAsync(onFeature, CancellationToken.None);
+
+            Assert.True(result);
+        }
+
         public async Task UsesVariants()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();

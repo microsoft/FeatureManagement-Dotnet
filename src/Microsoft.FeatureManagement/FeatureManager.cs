@@ -150,7 +150,7 @@ namespace Microsoft.FeatureManagement
                 FeatureDefinition = featureDefinition,
                 IsEnabled = isFeatureEnabled,
                 Variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null
-            });
+            }, cancellationToken);
 
             return isFeatureEnabled;
         }
@@ -350,7 +350,7 @@ namespace Microsoft.FeatureManagement
                 FeatureDefinition = featureDefinition,
                 IsEnabled = isFeatureEnabled,
                 Variant = variant
-            });
+            }, cancellationToken);
 
             return variant;
         }
@@ -620,11 +620,11 @@ namespace Microsoft.FeatureManagement
             return filter;
         }
 
-        private async void PublishTelemetry(EvaluationEvent evaluationEvent)
+        private async void PublishTelemetry(EvaluationEvent evaluationEvent, CancellationToken cancellationToken)
         {
             if (evaluationEvent.FeatureDefinition.TelemetryEnabled)
             {
-                if (!TelemetryPublishers.Any())
+                if (TelemetryPublishers == null || !TelemetryPublishers.Any())
                 {
                     _logger.LogWarning("The feature declaration enabled telemetry but no telemetry publisher was registered.");
                 }
@@ -634,7 +634,7 @@ namespace Microsoft.FeatureManagement
                     {
                         await telemetryPublisher.PublishEvent(
                             evaluationEvent,
-                            CancellationToken.None);
+                            cancellationToken);
                     }
                 }
             }
