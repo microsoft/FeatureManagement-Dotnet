@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using System;
 
 namespace Microsoft.FeatureManagement
@@ -48,7 +49,7 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            services.AddSingleton<IFeatureDefinitionProvider>(new ConfigurationFeatureDefinitionProvider(configuration));
+            services.AddSingleton<IFeatureDefinitionProvider>(sp => new ConfigurationFeatureDefinitionProvider(configuration, sp.GetRequiredService<ILoggerFactory>()));
 
             return services.AddFeatureManagement();
         }
