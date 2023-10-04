@@ -691,7 +691,7 @@ IConfigurationSection variantConfiguration = variant.Configuration;
 
 ### Setting a Variant's Configuration
 
-For each of the variants in the `Variants` property of a feature, there is a specified configuration. This can be set using either the `ConfigurationReference` or `ConfigurationValue` properties. `ConfigurationReference` is a string path that references a section of the current configuration that contains the feature flag declaration. `ConfigurationValue` is an inline configuration that can be a string, number, boolean, or configuration object. If both are specified, `ConfigurationValue` is used.
+For each of the variants in the `Variants` property of a feature, there is a specified configuration. This can be set using either the `ConfigurationReference` or `ConfigurationValue` properties. `ConfigurationReference` is a string path that references a section of the current configuration that contains the feature flag declaration. `ConfigurationValue` is an inline configuration that can be a string, number, boolean, or configuration object. If both are specified, `ConfigurationValue` is used. If neither are specified, the returned variant's `Configuration` property will be null.
 
 ```
 "Variants": [
@@ -775,17 +775,23 @@ Allocation logic is similar to the [Microsoft.Targeting](./README.md#MicrosoftTa
 You can use variants to override the enabled or disabled state of a feature flag. This gives variants an opportunity to extend the evaluation of a feature flag. If a caller is checking whether a flag that has variants is enabled, then variant allocation will be performed to see if an allocated variant is set up to override the result. This is done using the optional variant property `StatusOverride`. By default, this property is set to `None`, which means the variant doesn't affect whether the flag is considered enabled or disabled. Setting `StatusOverride` to `Enabled` allows the variant, when chosen, to override a flag to be enabled. Setting `StatusOverride` to `Disabled` provides the opposite functionality, therefore disabling the flag when the variant is chosen. A feature with a `Status` of `Disabled` cannot be overridden.
 
 ```
-"Allocation": { 
-    "DefaultWhenEnabled": "OffVariant"
+"Allocation": {
+    "Percentile": [{
+        "Variant": "On",
+        "From": 10,
+        "To": 20
+    }],
+    "DefaultWhenEnabled":  "Off",
+    "Seed": "Black-Friday-Feature-Group"
 },
 "Variants": [
     { 
-        "Name": "OffVariant", 
-        "ConfigurationValue": {
-            "Size": 300
-        },
+        "Name": "On"
+    },
+    { 
+        "Name": "Off",
         "StatusOverride": "Disabled"
-    }
+    }    
 ],
 "EnabledFor": [ 
     { 
@@ -794,7 +800,7 @@ You can use variants to override the enabled or disabled state of a feature flag
 ] 
 ```
 
-In the above example, the feature is enabled by the `AlwaysOn` filter and assigns the variant set for `DefaultWhenEnabled`, which is the `OffVariant` variant. The `OffVariant` variant has the `StatusOverride` property set to `Disabled`, so calling `IsEnabledAsync` for this feature will return disabled, even though the feature would otherwise be enabled by its filters.
+In the above example, the feature is enabled by the `AlwaysOn` filter. If the current user is in the calculated percentile range of 10 to 20, then the `On` variant is returned. Otherwise, the `Off` variant is returned and because `StatusOverride` is equal to `Disabled`, the feature will now be considered disabled.
 
 ## Caching
 
