@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc;
 
-namespace Tests.FeatureManagement
+namespace Tests.FeatureManagement.AspNetCore
 {
     [Route("")]
     public class TestController : Controller
