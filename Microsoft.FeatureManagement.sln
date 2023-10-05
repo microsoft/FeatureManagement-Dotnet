@@ -19,7 +19,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp", "examples\Cons
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TargetingConsoleApp", "examples\TargetingConsoleApp\TargetingConsoleApp.csproj", "{6558C21E-CF20-4278-AA08-EB9D1DF29D66}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RazorPages", "examples\RazorPages\RazorPages.csproj", "{BA29A1BB-81D5-4EB1-AF37-6ECF64AF27E2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RazorPages", "examples\RazorPages\RazorPages.csproj", "{BA29A1BB-81D5-4EB1-AF37-6ECF64AF27E2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests.FeatureManagement.AspNetCore", "tests\Tests.FeatureManagement.AspNetCore\Tests.FeatureManagement.AspNetCore.csproj", "{FC0DC3E2-5646-4AEC-A7DB-2D6167BC3BB4}"
 EndProject
