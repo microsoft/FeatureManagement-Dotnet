@@ -261,6 +261,18 @@ The `<feature>` tag requires a tag helper to work. This can be done by adding th
 @addTagHelper *, Microsoft.FeatureManagement.AspNetCore
 ```
 
+### Negating Feature Tag Evaluation
+
+When using the `<feature>` tag to conditionally render content in MVC views, you can negate the tag helper evaluation to display content when a feature or set of features are disabled.
+
+``` HTML+Razor
+<feature negate="true" name=@nameof(MyFeatureFlags.FeatureX)>
+  <p>This can only be seen if 'FeatureX' is disabled.</p>
+</feature>
+```
+
+In the above example, the content is only rendered if `FeatureX` is disabled.
+
 ### MVC Filters
 
 MVC action filters can be set up to conditionally execute based on the state of a feature. This is done by registering MVC filters in a feature aware manner.
