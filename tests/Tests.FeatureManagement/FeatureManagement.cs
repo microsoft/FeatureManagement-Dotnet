@@ -1,20 +1,15 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -44,9 +39,9 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            Assert.True(await featureManager.IsEnabledAsync(OnFeature));
+            Assert.True(await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.OnTestFeature)));
 
-            Assert.False(await featureManager.IsEnabledAsync(OffFeature));
+            Assert.False(await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.OffTestFeature)));
 
             IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
 
@@ -62,115 +57,38 @@ namespace Tests.FeatureManagement
 
                 Assert.Equal("V1", evaluationContext.Parameters["P1"]);
 
-                Assert.Equal(ConditionalFeature, evaluationContext.FeatureName);
+                Assert.Equal(Enum.GetName(typeof(Features), Features.ConditionalFeature), evaluationContext.FeatureName);
 
                 return Task.FromResult(true);
             };
 
-            await featureManager.IsEnabledAsync(ConditionalFeature);
+            await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.ConditionalFeature));
 
             Assert.True(called);
         }
 
         [Fact]
-        public async Task Integrates()
+        public async Task ReadsOnlyFeatureManagementSection()
         {
-            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+            MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes("{\"AllowedHosts\": \"*\"}"));
+            IConfiguration config = new ConfigurationBuilder().AddJsonStream(stream).Build();
 
-            TestServer testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
-                {
-                    services
-                        .AddSingleton(config)
-                        .AddFeatureManagement()
-                        .AddFeatureFilter<TestFilter>();
+            var services = new ServiceCollection();
 
-                    services.AddMvcCore(o =>
-                    {
-                        DisableEndpointRouting(o);
-                        o.Filters.AddForFeature<MvcFilter>(ConditionalFeature);
-                    });
-                })
-            .Configure(app =>
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            await foreach (string featureName in featureManager.GetFeatureNamesAsync())
             {
-
-                app.UseForFeature(ConditionalFeature, a => a.Use(async (ctx, next) =>
-                {
-                    ctx.Response.Headers[nameof(RouterMiddleware)] = bool.TrueString;
-
-                    await next();
-                }));
-
-                app.UseMvc();
-            }));
-
-            IEnumerable<IFeatureFilterMetadata> featureFilters = testServer.Host.Services.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
-
-            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
-
-            testFeatureFilter.Callback = _ => Task.FromResult(true);
-
-            HttpResponseMessage res = await testServer.CreateClient().GetAsync("");
-
-            Assert.True(res.Headers.Contains(nameof(MvcFilter)));
-            Assert.True(res.Headers.Contains(nameof(RouterMiddleware)));
-
-            testFeatureFilter.Callback = _ => Task.FromResult(false);
-
-            res = await testServer.CreateClient().GetAsync("");
-
-            Assert.False(res.Headers.Contains(nameof(MvcFilter)));
-            Assert.False(res.Headers.Contains(nameof(RouterMiddleware)));
-        }
-
-        [Fact]
-        public async Task GatesFeatures()
-        {
-            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-
-            TestServer testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
-                {
-                    services
-                        .AddSingleton(config)
-                        .AddFeatureManagement()
-                        .AddFeatureFilter<TestFilter>();
-
-                    services.AddMvcCore(o => DisableEndpointRouting(o));
-                })
-            .Configure(app => app.UseMvc()));
-
-            IEnumerable<IFeatureFilterMetadata> featureFilters = testServer.Host.Services.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
-
-            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
-
-            //
-            // Enable all features
-            testFeatureFilter.Callback = ctx => Task.FromResult(true);
-
-            HttpResponseMessage gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
-            HttpResponseMessage gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
-
-            Assert.Equal(HttpStatusCode.OK, gateAllResponse.StatusCode);
-            Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
-
-            //
-            // Enable 1/2 features
-            testFeatureFilter.Callback = ctx => Task.FromResult(ctx.FeatureName == Enum.GetName(typeof(Features), Features.ConditionalFeature));
-
-            gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
-            gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
-
-            Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
-            Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
-
-            //
-            // Enable no
-            testFeatureFilter.Callback = ctx => Task.FromResult(false);
-
-            gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
-            gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
-
-            Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
-            Assert.Equal(HttpStatusCode.NotFound, gateAnyResponse.StatusCode);
+                // Fail, as no features should be found
+                Assert.True(false);
+            }
         }
 
         [Fact]
@@ -193,60 +111,6 @@ namespace Tests.FeatureManagement
             IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
 
             Assert.True(await featureManager.IsEnabledAsync("CustomFilterFeature"));
-        }
-
-        [Fact]
-        public async Task GatesRazorPageFeatures()
-        {
-            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-
-            TestServer testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
-            {
-                services
-                    .AddSingleton(config)
-                    .AddFeatureManagement()
-                    .AddFeatureFilter<TestFilter>();
-
-                services.AddMvc(o => DisableEndpointRouting(o));
-            })
-            .Configure(app => 
-            {
-                app.UseMvc();
-            }));
-
-            IEnumerable<IFeatureFilterMetadata> featureFilters = testServer.Host.Services.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
-
-            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
-
-            //
-            // Enable all features
-            testFeatureFilter.Callback = ctx => Task.FromResult(true);
-
-            HttpResponseMessage gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
-            HttpResponseMessage gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
-
-            Assert.Equal(HttpStatusCode.OK, gateAllResponse.StatusCode);
-            Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
-
-            //
-            // Enable 1/2 features
-            testFeatureFilter.Callback = ctx => Task.FromResult(ctx.FeatureName == Enum.GetName(typeof(Features), Features.ConditionalFeature));
-
-            gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
-            gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
-
-            Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
-            Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
-
-            //
-            // Enable no
-            testFeatureFilter.Callback = ctx => Task.FromResult(false);
-
-            gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
-            gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
-
-            Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
-            Assert.Equal(HttpStatusCode.NotFound, gateAnyResponse.StatusCode);
         }
 
         [Fact]
@@ -459,11 +323,11 @@ namespace Tests.FeatureManagement
 
             context.AccountId = "NotEnabledAccount";
 
-            Assert.False(await featureManager.IsEnabledAsync(ContextualFeature, context));
+            Assert.False(await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.ContextualFeature), context));
 
             context.AccountId = "abc";
 
-            Assert.True(await featureManager.IsEnabledAsync(ContextualFeature, context));
+            Assert.True(await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.ContextualFeature), context));
         }
 
         [Fact]
@@ -531,7 +395,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.IsEnabledAsync(ConditionalFeature));
+            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.ConditionalFeature)));
 
             Assert.Equal(FeatureManagementError.MissingFeatureFilter, e.Error);
         }
@@ -557,7 +421,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            var isEnabled = await featureManager.IsEnabledAsync(ConditionalFeature);
+            var isEnabled = await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.ConditionalFeature));
 
             Assert.False(isEnabled);
         }
@@ -592,7 +456,7 @@ namespace Tests.FeatureManagement
         {
             FeatureDefinition testFeature = new FeatureDefinition
             {
-                Name = ConditionalFeature,
+                Name = Enum.GetName(typeof(Features), Features.ConditionalFeature),
                 EnabledFor = new List<FeatureFilterConfiguration>()
                 {
                     new FeatureFilterConfiguration
@@ -630,12 +494,12 @@ namespace Tests.FeatureManagement
 
                 Assert.Equal("V1", evaluationContext.Parameters["P1"]);
 
-                Assert.Equal(ConditionalFeature, evaluationContext.FeatureName);
+                Assert.Equal(Enum.GetName(typeof(Features), Features.ConditionalFeature), evaluationContext.FeatureName);
 
                 return Task.FromResult(true);
             };
 
-            await featureManager.IsEnabledAsync(ConditionalFeature);
+            await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.ConditionalFeature));
 
             Assert.True(called);
         }
@@ -677,7 +541,7 @@ namespace Tests.FeatureManagement
 
             for (int i = 0; i < 1000; i++)
             {
-                tasks.Add(featureManager.IsEnabledAsync(ConditionalFeature));
+                tasks.Add(featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.ConditionalFeature)));
             }
 
             Assert.True(called);
@@ -844,8 +708,6 @@ namespace Tests.FeatureManagement
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
-            string filterOneId = "1";
-
             var services = new ServiceCollection();
 
             services
@@ -889,7 +751,7 @@ namespace Tests.FeatureManagement
                 {
                     new FeatureDefinition
                     {
-                        Name = ConditionalFeature,
+                        Name = Enum.GetName(typeof(Features), Features.ConditionalFeature),
                         EnabledFor = new List<FeatureFilterConfiguration>()
                         {
                             testFilterConfiguration
@@ -930,7 +792,7 @@ namespace Tests.FeatureManagement
                 return Task.FromResult(true);
             };
 
-            await featureManager.IsEnabledAsync(ConditionalFeature);
+            await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.ConditionalFeature));
 
             Assert.True(binderCalled);
 
@@ -940,7 +802,7 @@ namespace Tests.FeatureManagement
 
             called = false;
 
-            await featureManager.IsEnabledAsync(ConditionalFeature);
+            await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.ConditionalFeature));
 
             Assert.False(binderCalled);
 
@@ -954,7 +816,7 @@ namespace Tests.FeatureManagement
 
             called = false;
 
-            await featureManager.IsEnabledAsync(ConditionalFeature);
+            await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.ConditionalFeature));
 
             Assert.True(binderCalled);
 
@@ -1079,15 +941,6 @@ namespace Tests.FeatureManagement
 
             Assert.Equal(FeatureManagementError.InvalidConfigurationSetting, e.Error);
             Assert.Contains(ConfigurationFields.PercentileAllocationFrom, e.Message);
-        }
-
-        private static void DisableEndpointRouting(MvcOptions options)
-        {
-#if  NET6_0 || NET5_0 || NETCOREAPP3_1
-            //
-            // Endpoint routing is disabled by default in .NET Core 2.1 since it didn't exist.
-            options.EnableEndpointRouting = false;
-#endif
         }
     }
 }
