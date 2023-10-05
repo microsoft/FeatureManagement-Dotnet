@@ -6,7 +6,7 @@
 // This class is used to compile .NET frameworks that don't support C# 9.0 or later while still using the init accessor for a property.
 // The code referenced for this file can be found here: https://github.com/dotnet/roslyn/issues/45510#issuecomment-725091019
 
-#if NETSTANDARD2_0 || NETCOREAPP2_1 || NETCOREAPP3_1
+#if NETSTANDARD2_0 || NETSTANDARD2_1
 
 using System.ComponentModel;
 
