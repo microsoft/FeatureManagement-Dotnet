@@ -96,17 +96,6 @@ namespace Microsoft.FeatureManagement
 
             VariantDefinition variantDefinition = null;
 
-            TargetingContext targetingContext = null;
-
-            if (useAppContext)
-            {
-                targetingContext = appContext as TargetingContext;
-            }
-            else
-            {
-                targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
-            }
-
             if (featureDefinition != null)
             {
                 isFeatureEnabled = await IsEnabledAsync(featureDefinition, appContext, useAppContext, cancellationToken).ConfigureAwait(false);
@@ -119,6 +108,17 @@ namespace Microsoft.FeatureManagement
                     }
                     else
                     {
+                        TargetingContext targetingContext;
+
+                        if (useAppContext)
+                        {
+                            targetingContext = appContext as TargetingContext;
+                        }
+                        else
+                        {
+                            targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
+                        }
+
                         variantDefinition = await GetAssignedVariantAsync(
                             featureDefinition,
                             targetingContext,
@@ -150,7 +150,6 @@ namespace Microsoft.FeatureManagement
                 PublishTelemetry(new EvaluationEvent
                 {
                     FeatureDefinition = featureDefinition,
-                    TargetingContext = targetingContext,
                     IsEnabled = isFeatureEnabled,
                     Variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null
                 }, cancellationToken);
@@ -356,7 +355,6 @@ namespace Microsoft.FeatureManagement
                 PublishTelemetry(new EvaluationEvent
                 {
                     FeatureDefinition = featureDefinition,
-                    TargetingContext = context,
                     IsEnabled = isFeatureEnabled,
                     Variant = variant
                 }, cancellationToken);
