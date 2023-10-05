@@ -4,7 +4,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Filters;
 
-namespace Tests.FeatureManagement
+namespace Tests.FeatureManagement.AspNetCore
 {
     public class MvcFilter : IAsyncActionFilter
     {
