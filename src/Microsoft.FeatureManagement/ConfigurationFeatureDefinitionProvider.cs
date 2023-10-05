@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Concurrent;
@@ -25,13 +26,15 @@ namespace Microsoft.FeatureManagement
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
+        private readonly ILogger _logger;
         private int _stale = 0;
 
         const string ParseValueErrorString = "Invalid setting '{0}' with value '{1}' for feature '{2}'.";
 
-        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration)
+        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration, ILoggerFactory loggerFactory)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _logger = loggerFactory?.CreateLogger<ConfigurationFeatureDefinitionProvider>() ?? throw new ArgumentNullException(nameof(loggerFactory));
             _definitions = new ConcurrentDictionary<string, FeatureDefinition>();
 
             _changeSubscription = ChangeToken.OnChange(
@@ -316,16 +319,18 @@ namespace Microsoft.FeatureManagement
 
         private IEnumerable<IConfigurationSection> GetFeatureDefinitionSections()
         {
-            if (_configuration.GetChildren().Any(s => s.Key.Equals(ConfigurationFields.FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase)))
+            //
+            // Look for feature definitions under the "FeatureManagement" section
+            IConfigurationSection featureManagementConfigurationSection = _configuration.GetSection(ConfigurationFields.FeatureManagementSectionName);
+
+            if (featureManagementConfigurationSection.Exists())
             {
-                //
-                // Look for feature definitions under the "FeatureManagement" section
-                return _configuration.GetSection(ConfigurationFields.FeatureManagementSectionName).GetChildren();
+                return featureManagementConfigurationSection.GetChildren();
             }
-            else
-            {
-                return _configuration.GetChildren();
-            }
+
+            _logger.LogDebug($"No configuration section named '{ConfigurationFields.FeatureManagementSectionName}' was found.");
+
+            return Enumerable.Empty<IConfigurationSection>();
         }
 
         private T ParseEnum<T>(string feature, string rawValue, string fieldKeyword)

@@ -13,6 +13,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -158,11 +159,18 @@ namespace Microsoft.FeatureManagement
             return isFeatureEnabled;
         }
 
-        public async IAsyncEnumerable<string> GetFeatureNamesAsync()
+        public IAsyncEnumerable<string> GetFeatureNamesAsync()
         {
-            await foreach (FeatureDefinition featureDefintion in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
+            return GetFeatureNamesAsync(CancellationToken.None);
+        }
+
+        public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            await foreach (FeatureDefinition featureDefinition in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
             {
-                yield return featureDefintion.Name;
+                cancellationToken.ThrowIfCancellationRequested();
+
+                yield return featureDefinition.Name;
             }
         }
 
