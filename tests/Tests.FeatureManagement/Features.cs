@@ -11,7 +11,6 @@ namespace Tests.FeatureManagement
         OffTestFeature,
         ConditionalFeature,
         ConditionalFeature2,
-        ContextualFeature,
         AnyFilterFeature,
         AllFilterFeature
     }
