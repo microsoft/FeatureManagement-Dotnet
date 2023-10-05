@@ -95,7 +95,17 @@ namespace Microsoft.FeatureManagement
             FeatureDefinition featureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false);
 
             VariantDefinition variantDefinition = null;
+
             TargetingContext targetingContext = null;
+
+            if (useAppContext)
+            {
+                targetingContext = appContext as TargetingContext;
+            }
+            else
+            {
+                targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
+            }
 
             if (featureDefinition != null)
             {
@@ -109,15 +119,6 @@ namespace Microsoft.FeatureManagement
                     }
                     else
                     {
-                        if (useAppContext)
-                        {
-                            targetingContext = appContext as TargetingContext;
-                        }
-                        else
-                        {
-                            targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
-                        }
-
                         variantDefinition = await GetAssignedVariantAsync(
                             featureDefinition,
                             targetingContext,
@@ -144,13 +145,16 @@ namespace Microsoft.FeatureManagement
                 await sessionManager.SetAsync(feature, isFeatureEnabled).ConfigureAwait(false);
             }
 
-            PublishTelemetry(new EvaluationEvent
+            if (featureDefinition.TelemetryEnabled)
             {
-                FeatureDefinition = featureDefinition,
-                TargetingContext = targetingContext,
-                IsEnabled = isFeatureEnabled,
-                Variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null
-            }, cancellationToken);
+                PublishTelemetry(new EvaluationEvent
+                {
+                    FeatureDefinition = featureDefinition,
+                    TargetingContext = targetingContext,
+                    IsEnabled = isFeatureEnabled,
+                    Variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null
+                }, cancellationToken);
+            }
 
             return isFeatureEnabled;
         }
@@ -170,6 +174,8 @@ namespace Microsoft.FeatureManagement
 
         private async Task<bool> IsEnabledAsync<TContext>(FeatureDefinition featureDefinition, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
+            Debug.Assert(featureDefinition != null);
+
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
                 bool? readSessionResult = await sessionManager.GetAsync(featureDefinition.Name).ConfigureAwait(false);
@@ -345,13 +351,16 @@ namespace Microsoft.FeatureManagement
 
             Variant variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null;
 
-            PublishTelemetry(new EvaluationEvent
+            if (featureDefinition.TelemetryEnabled)
             {
-                FeatureDefinition = featureDefinition,
-                TargetingContext = context,
-                IsEnabled = isFeatureEnabled,
-                Variant = variant
-            }, cancellationToken);
+                PublishTelemetry(new EvaluationEvent
+                {
+                    FeatureDefinition = featureDefinition,
+                    TargetingContext = context,
+                    IsEnabled = isFeatureEnabled,
+                    Variant = variant
+                }, cancellationToken);
+            }
 
             return variant;
         }
@@ -623,31 +632,23 @@ namespace Microsoft.FeatureManagement
 
         private async void PublishTelemetry(EvaluationEvent evaluationEvent, CancellationToken cancellationToken)
         {
-            if (evaluationEvent.FeatureDefinition.TelemetryEnabled)
+            if (TelemetryPublishers == null || !TelemetryPublishers.Any())
             {
-                if (TelemetryPublishers == null || !TelemetryPublishers.Any())
+                _logger.LogWarning("The feature declaration enabled telemetry but no telemetry publisher was registered.");
+            }
+            else
+            {
+                foreach (ITelemetryPublisher telemetryPublisher in TelemetryPublishers)
                 {
-                    _logger.LogWarning("The feature declaration enabled telemetry but no telemetry publisher was registered.");
-                }
-                else
-                {
-                    foreach (ITelemetryPublisher telemetryPublisher in TelemetryPublishers)
-                    {
-                        await telemetryPublisher.PublishEvent(
-                            evaluationEvent,
-                            cancellationToken);
-                    }
+                    await telemetryPublisher.PublishEvent(
+                        evaluationEvent,
+                        cancellationToken);
                 }
             }
         }
 
         private Variant GetVariantFromVariantDefinition(VariantDefinition variantDefinition)
         {
-            if (variantDefinition == null)
-            {
-                return null;
-            }
-
             IConfigurationSection variantConfiguration = null;
 
             if (variantDefinition.ConfigurationValue.Exists())

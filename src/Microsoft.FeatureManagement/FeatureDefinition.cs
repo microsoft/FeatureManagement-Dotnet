@@ -44,19 +44,17 @@ namespace Microsoft.FeatureManagement
         public IEnumerable<VariantDefinition> Variants { get; set; } = Enumerable.Empty<VariantDefinition>();
 
         /// <summary>
-        /// A value used to group feature flags.
-        /// A <see cref="Label"/> is used together with a <see cref="Name"/> to uniquely identify a feature.
+        /// Metadata that can be used to group feature flags.
         /// </summary>
         public string Label { get; set; }
 
         /// <summary>
-        /// An ETag indicating the state of a feature. This value is used to determine whether a feature has changed.
+        /// An ETag that is used to track when the feature definiton has changed.
         /// </summary>
         public string ETag { get; set; }
 
         /// <summary>
-        /// A dictionary of tags used to assign additional properties to a feature.
-        /// These can be used to indicate how a feature may be applied.
+        /// A dictionary of tags used to assign additional metadata to a feature.
         /// </summary>
         public IReadOnlyDictionary<string, string> Tags { get; set; }
 
