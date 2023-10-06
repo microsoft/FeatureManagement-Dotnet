@@ -271,7 +271,7 @@ When using the `<feature>` tag to conditionally render content in MVC views, you
 </feature>
 ```
 
-In the above example, the content is only rendered if `FeatureX` is disabled.
+By setting `negate="true"`, the content is only rendered if `FeatureX` is disabled.
 
 ### MVC Filters
 
