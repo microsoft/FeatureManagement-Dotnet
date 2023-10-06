@@ -52,6 +52,6 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// A container for metadata relevant to telemetry.
         /// </summary>
-        public TelemetryMetadata TelemetryMetadata { get; set; }
+        public IReadOnlyDictionary<string, string> TelemetryMetadata { get; set; }
     }
 }

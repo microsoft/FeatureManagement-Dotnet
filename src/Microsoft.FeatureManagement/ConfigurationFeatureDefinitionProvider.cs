@@ -4,7 +4,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
-using Microsoft.FeatureManagement.Telemetry;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -140,10 +139,6 @@ namespace Microsoft.FeatureManagement
             */
 
             RequirementType requirementType = RequirementType.Any;
-            string label = null;
-            string eTag = null;
-            bool telemetryEnabled = false;
-            Dictionary<string, string> tags = new Dictionary<string, string>();
 
             FeatureStatus featureStatus = FeatureStatus.Conditional;
 
@@ -152,6 +147,10 @@ namespace Microsoft.FeatureManagement
             List<VariantDefinition> variants = null;
 
             var enabledFor = new List<FeatureFilterConfiguration>();
+
+            bool telemetryEnabled = false;
+
+            Dictionary<string, string> telemetryMetadata = null;
 
             string val = configurationSection.Value; // configuration[$"{featureName}"];
 
@@ -292,19 +291,12 @@ namespace Microsoft.FeatureManagement
                 telemetryEnabled = configurationSection.GetValue<bool>("TelemetryEnabled");
 
                 IConfigurationSection telemetryMetadataSection = configurationSection.GetSection("TelemetryMetadata");
+
                 if (telemetryMetadataSection.Exists())
                 {
-                    IConfigurationSection tagsSection = telemetryMetadataSection.GetSection("Tags");
-                    if (tagsSection.Exists())
-                    {
-                        foreach (IConfigurationSection tag in tagsSection.GetChildren())
-                        {
-                            tags.Add(tag.Key, tag.Value);
-                        }
-                    }
+                    telemetryMetadata = new Dictionary<string, string>();
 
-                    label = telemetryMetadataSection["Label"];
-                    eTag = telemetryMetadataSection["ETag"];
+                    telemetryMetadataSection.Bind(telemetryMetadata);
                 }
             }
 
@@ -317,12 +309,7 @@ namespace Microsoft.FeatureManagement
                 Allocation = allocation,
                 Variants = variants,
                 TelemetryEnabled = telemetryEnabled,
-                TelemetryMetadata = new TelemetryMetadata()
-                {
-                    Label = label,
-                    ETag = eTag,
-                    Tags = tags
-                }
+                TelemetryMetadata = telemetryMetadata
             };
         }
 
