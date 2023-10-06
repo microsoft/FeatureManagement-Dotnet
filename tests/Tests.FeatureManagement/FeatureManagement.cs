@@ -856,6 +856,9 @@ namespace Tests.FeatureManagement
             Assert.True(result);
             Assert.Equal(onFeature, testPublisher.evaluationEventCache.FeatureDefinition.Name);
             Assert.Equal(result, testPublisher.evaluationEventCache.IsEnabled);
+            Assert.Equal("EtagValue", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata.ETag);
+            Assert.Equal("LabelValue", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata.Label);
+            Assert.Equal("Tag1Value", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata.Tags["Tag1"]);
 
             string offFeature = "OffTimeTestFeature";
 

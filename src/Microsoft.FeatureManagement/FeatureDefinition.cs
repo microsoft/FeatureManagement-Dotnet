@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.FeatureManagement.Telemetry;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -44,23 +45,13 @@ namespace Microsoft.FeatureManagement
         public IEnumerable<VariantDefinition> Variants { get; set; } = Enumerable.Empty<VariantDefinition>();
 
         /// <summary>
-        /// Metadata that can be used to group feature flags.
-        /// </summary>
-        public string Label { get; set; }
-
-        /// <summary>
-        /// An ETag that is used to track when the feature definiton has changed.
-        /// </summary>
-        public string ETag { get; set; }
-
-        /// <summary>
-        /// A dictionary of tags used to assign additional metadata to a feature.
-        /// </summary>
-        public IReadOnlyDictionary<string, string> Tags { get; set; }
-
-        /// <summary>
         /// A flag to enable or disable sending telemetry events to the registered <see cref="ITelemetryPublisher">.
         /// </summary>
         public bool TelemetryEnabled { get; set; }
+
+        /// <summary>
+        /// A container for metadata relevant to telemetry.
+        /// </summary>
+        public TelemetryMetadata TelemetryMetadata { get; set; }
     }
 }

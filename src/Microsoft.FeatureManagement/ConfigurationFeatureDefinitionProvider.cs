@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
+using Microsoft.FeatureManagement.Telemetry;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -288,18 +289,23 @@ namespace Microsoft.FeatureManagement
                     }
                 }
 
-                IConfigurationSection tagsSection = configurationSection.GetSection("Tags");
-                if (tagsSection.Exists())
-                {
-                    foreach (IConfigurationSection tag in tagsSection.GetChildren())
-                    {
-                        tags.Add(tag.Key, tag.Value);
-                    }
-                }
-
-                label = configurationSection["Label"];
-                eTag = configurationSection["ETag"];
                 telemetryEnabled = configurationSection.GetValue<bool>("TelemetryEnabled");
+
+                IConfigurationSection telemetryMetadataSection = configurationSection.GetSection("TelemetryMetadata");
+                if (telemetryMetadataSection.Exists())
+                {
+                    IConfigurationSection tagsSection = telemetryMetadataSection.GetSection("Tags");
+                    if (tagsSection.Exists())
+                    {
+                        foreach (IConfigurationSection tag in tagsSection.GetChildren())
+                        {
+                            tags.Add(tag.Key, tag.Value);
+                        }
+                    }
+
+                    label = telemetryMetadataSection["Label"];
+                    eTag = telemetryMetadataSection["ETag"];
+                }
             }
 
             return new FeatureDefinition()
@@ -310,10 +316,13 @@ namespace Microsoft.FeatureManagement
                 Status = featureStatus,
                 Allocation = allocation,
                 Variants = variants,
-                Label = label,
-                ETag = eTag,
                 TelemetryEnabled = telemetryEnabled,
-                Tags = tags
+                TelemetryMetadata = new TelemetryMetadata()
+                {
+                    Label = label,
+                    ETag = eTag,
+                    Tags = tags
+                }
             };
         }
 
