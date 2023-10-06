@@ -256,14 +256,7 @@ In MVC views `<feature>` tags can be used to conditionally render content based 
 </feature>
 ```
 
-The `<feature>` tag requires a tag helper to work. This can be done by adding the feature management tag helper to the _ViewImports.cshtml_ file.
-``` HTML+Razor
-@addTagHelper *, Microsoft.FeatureManagement.AspNetCore
-```
-
-### Negating Feature Tag Evaluation
-
-When using the `<feature>` tag to conditionally render content in MVC views, you can negate the tag helper evaluation to display content when a feature or set of features are disabled.
+You can also negate the tag helper evaluation to display content when a feature or set of features are disabled. By setting `negate="true"` in the example below, the content is only rendered if `FeatureX` is disabled.
 
 ``` HTML+Razor
 <feature negate="true" name=@nameof(MyFeatureFlags.FeatureX)>
@@ -271,7 +264,10 @@ When using the `<feature>` tag to conditionally render content in MVC views, you
 </feature>
 ```
 
-By setting `negate="true"`, the content is only rendered if `FeatureX` is disabled.
+The `<feature>` tag requires a tag helper to work. This can be done by adding the feature management tag helper to the _ViewImports.cshtml_ file.
+``` HTML+Razor
+@addTagHelper *, Microsoft.FeatureManagement.AspNetCore
+```
 
 ### MVC Filters
 
