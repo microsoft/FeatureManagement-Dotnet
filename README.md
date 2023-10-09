@@ -144,12 +144,12 @@ In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning
 To make it easier to reference these feature flags in code, we recommend to define feature flag variables like below.
 
 ``` C#
-// Define feature flags in an enum
-public enum MyFeatureFlags
+// Define feature flags using const strings
+public static class MyFeatureFlags
 {
-    FeatureT,
-    FeatureU,
-    FeatureV
+    public const string FeatureT = "FeatureT";
+    public const string FeatureU = "FeatureU";
+    public const string FeatureV = "FeatureV";
 }
 ```
     
