@@ -296,7 +296,7 @@ namespace Microsoft.FeatureManagement
                 {
                     telemetryMetadata = new Dictionary<string, string>();
 
-                    telemetryMetadataSection.Bind(telemetryMetadata);
+                    telemetryMetadata = telemetryMetadataSection.GetChildren().ToDictionary(x => x.Key, x => x.Value);
                 }
             }
 
