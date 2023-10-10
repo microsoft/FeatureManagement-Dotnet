@@ -42,5 +42,15 @@ namespace Microsoft.FeatureManagement
         /// A list of variant definitions that specify a configuration to return when assigned.
         /// </summary>
         public IEnumerable<VariantDefinition> Variants { get; set; } = Enumerable.Empty<VariantDefinition>();
+
+        /// <summary>
+        /// A flag to enable or disable sending telemetry events to the registered <see cref="ITelemetryPublisher">.
+        /// </summary>
+        public bool TelemetryEnabled { get; set; }
+
+        /// <summary>
+        /// A container for metadata relevant to telemetry.
+        /// </summary>
+        public IReadOnlyDictionary<string, string> TelemetryMetadata { get; set; }
     }
 }

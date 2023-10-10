@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.FeatureManagement
 {
@@ -30,25 +31,7 @@ namespace Microsoft.FeatureManagement
             // Add required services
             services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
 
-            services.AddSingleton<FeatureManager>();
-
-            services.TryAddSingleton<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
-
-            services.TryAddSingleton<IFeatureManager>(sp =>
-            new FeatureManager(
-                sp.GetRequiredService<IFeatureDefinitionProvider>(),
-                sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
-                sp.GetRequiredService<IEnumerable<ISessionManager>>(),
-                sp.GetRequiredService<ILoggerFactory>(),
-                sp.GetRequiredService<IOptions<FeatureManagementOptions>>(),
-                sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>())
-                {
-                    Configuration = sp.GetService<IConfiguration>(),
-                    TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>()
-                });
-
-            services.TryAddSingleton<IVariantFeatureManager>(sp =>
-            new FeatureManager(
+            services.AddSingleton(sp => new FeatureManager(
                 sp.GetRequiredService<IFeatureDefinitionProvider>(),
                 sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
                 sp.GetRequiredService<IEnumerable<ISessionManager>>(),
@@ -57,8 +40,16 @@ namespace Microsoft.FeatureManagement
                 sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>())
             {
                 Configuration = sp.GetService<IConfiguration>(),
-                TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>()
+                TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
+                TelemetryPublishers = sp.GetService<IOptions<FeatureManagementOptions>>()?.Value.TelemetryPublisherFactories?
+                    .Select(factory => factory(sp))
+                    .ToList()
             });
+
+            services.TryAddSingleton<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
+
+            services.TryAddSingleton<IVariantFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
+
             services.AddSingleton<ISessionManager, EmptySessionManager>();
 
             services.AddScoped<FeatureManagerSnapshot>();

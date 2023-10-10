@@ -1,10 +1,11 @@
-﻿// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement.Telemetry;
 using Microsoft.FeatureManagement.FeatureFilters;
 using Microsoft.FeatureManagement.Targeting;
 using System;
@@ -62,6 +63,8 @@ namespace Microsoft.FeatureManagement
             _parametersCache = new MemoryCache(new MemoryCacheOptions());
         }
 
+        public IEnumerable<ITelemetryPublisher> TelemetryPublishers { get; init; }
+
         public IConfiguration Configuration { get; init; }
 
         public ITargetingContextAccessor TargetingContextAccessor { get; init; }
@@ -88,51 +91,52 @@ namespace Microsoft.FeatureManagement
 
         private async Task<bool> IsEnabledWithVariantsAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
-            bool isFeatureEnabled = await IsEnabledAsync(feature, appContext, useAppContext, cancellationToken).ConfigureAwait(false);
+            bool isFeatureEnabled = false;
 
-            FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
+            FeatureDefinition featureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false);
 
-            if (featureDefinition == null || featureDefinition.Status == FeatureStatus.Disabled)
+            VariantDefinition variantDefinition = null;
+
+            if (featureDefinition != null)
             {
-                isFeatureEnabled = false;
-            }
-            else if ((featureDefinition.Variants?.Any() ?? false) && featureDefinition.Allocation != null)
-            {
-                VariantDefinition variantDefinition;
+                isFeatureEnabled = await IsEnabledAsync(featureDefinition, appContext, useAppContext, cancellationToken).ConfigureAwait(false);
 
-                if (!isFeatureEnabled)
+                if (featureDefinition.Variants != null && featureDefinition.Variants.Any() && featureDefinition.Allocation != null)
                 {
-                    variantDefinition = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == featureDefinition.Allocation.DefaultWhenDisabled);
-                }
-                else
-                {
-                    TargetingContext targetingContext;
-
-                    if (useAppContext)
+                    if (!isFeatureEnabled)
                     {
-                        targetingContext = appContext as TargetingContext;
+                        variantDefinition = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == featureDefinition.Allocation.DefaultWhenDisabled);
                     }
                     else
                     {
-                        targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
+                        TargetingContext targetingContext;
+
+                        if (useAppContext)
+                        {
+                            targetingContext = appContext as TargetingContext;
+                        }
+                        else
+                        {
+                            targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
+                        }
+
+                        variantDefinition = await GetAssignedVariantAsync(
+                            featureDefinition,
+                            targetingContext,
+                            cancellationToken)
+                            .ConfigureAwait(false);
                     }
 
-                    variantDefinition = await GetAssignedVariantAsync(
-                        featureDefinition,
-                        targetingContext,
-                        cancellationToken)
-                        .ConfigureAwait(false);
-                }
-
-                if (variantDefinition != null)
-                {
-                    if (variantDefinition.StatusOverride == StatusOverride.Enabled)
+                    if (variantDefinition != null && featureDefinition.Status != FeatureStatus.Disabled)
                     {
-                        isFeatureEnabled = true;
-                    }
-                    else if (variantDefinition.StatusOverride == StatusOverride.Disabled)
-                    {
-                        isFeatureEnabled = false;
+                        if (variantDefinition.StatusOverride == StatusOverride.Enabled)
+                        {
+                            isFeatureEnabled = true;
+                        }
+                        else if (variantDefinition.StatusOverride == StatusOverride.Disabled)
+                        {
+                            isFeatureEnabled = false;
+                        }
                     }
                 }
             }
@@ -140,6 +144,16 @@ namespace Microsoft.FeatureManagement
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
                 await sessionManager.SetAsync(feature, isFeatureEnabled).ConfigureAwait(false);
+            }
+
+            if (featureDefinition.TelemetryEnabled)
+            {
+                PublishTelemetry(new EvaluationEvent
+                {
+                    FeatureDefinition = featureDefinition,
+                    IsEnabled = isFeatureEnabled,
+                    Variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null
+                }, cancellationToken);
             }
 
             return isFeatureEnabled;
@@ -165,11 +179,13 @@ namespace Microsoft.FeatureManagement
             _parametersCache.Dispose();
         }
 
-        private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
+        private async Task<bool> IsEnabledAsync<TContext>(FeatureDefinition featureDefinition, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
+            Debug.Assert(featureDefinition != null);
+
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                bool? readSessionResult = await sessionManager.GetAsync(feature).ConfigureAwait(false);
+                bool? readSessionResult = await sessionManager.GetAsync(featureDefinition.Name).ConfigureAwait(false);
 
                 if (readSessionResult.HasValue)
                 {
@@ -179,124 +195,110 @@ namespace Microsoft.FeatureManagement
 
             bool enabled;
 
-            FeatureDefinition featureDefinition = await _featureDefinitionProvider.GetFeatureDefinitionAsync(feature).ConfigureAwait(false);
-
-            if (featureDefinition != null)
+            //
+            // Treat an empty or status disabled feature as disabled
+            if (featureDefinition.EnabledFor == null || 
+                !featureDefinition.EnabledFor.Any() || 
+                featureDefinition.Status == FeatureStatus.Disabled)
             {
-                if (featureDefinition.RequirementType == RequirementType.All && _options.IgnoreMissingFeatureFilters)
-                {
-                    throw new FeatureManagementException(
-                        FeatureManagementError.Conflict, 
-                        $"The 'IgnoreMissingFeatureFilters' flag cannot use used in combination with a feature of requirement type 'All'.");
-                }
-
-                //
-                // Treat an empty list of enabled filters or if status is disabled as a disabled feature
-                if (featureDefinition.EnabledFor == null || !featureDefinition.EnabledFor.Any() || featureDefinition.Status == FeatureStatus.Disabled)
-                {
-                    enabled = false;
-                }
-                else
-                {
-                    //
-                    // If the requirement type is all, we default to true. Requirement type All will end on a false
-                    enabled = featureDefinition.RequirementType == RequirementType.All;
-
-                    //
-                    // We iterate until we hit our target evaluation
-                    bool targetEvaluation = !enabled;
-
-                    //
-                    // Keep track of the index of the filter we are evaluating
-                    int filterIndex = -1;
-
-                    //
-                    // For all enabling filters listed in the feature's state, evaluate them according to requirement type
-                    foreach (FeatureFilterConfiguration featureFilterConfiguration in featureDefinition.EnabledFor)
-                    {
-                        filterIndex++;
-
-                        //
-                        // Handle AlwaysOn and On filters
-                        if (string.Equals(featureFilterConfiguration.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase) ||
-                                string.Equals(featureFilterConfiguration.Name, "On", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (featureDefinition.RequirementType == RequirementType.Any)
-                            {
-                                enabled = true;
-                                break;
-                            }
-
-                            continue;
-                        }
-
-                        IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
-
-                        if (filter == null)
-                        {
-                            string errorMessage = $"The feature filter '{featureFilterConfiguration.Name}' specified for feature '{feature}' was not found.";
-
-                            if (!_options.IgnoreMissingFeatureFilters)
-                            {
-                                throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
-                            }
-
-                            _logger.LogWarning(errorMessage);
-
-                            continue;
-                        }
-
-                        var context = new FeatureFilterEvaluationContext()
-                        {
-                            FeatureName = feature,
-                            Parameters = featureFilterConfiguration.Parameters
-                        };
-
-                        //
-                        // IContextualFeatureFilter
-                        if (useAppContext)
-                        {
-                            ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
-
-                            BindSettings(filter, context, filterIndex);
-
-                            if (contextualFilter != null &&
-                                await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation)
-                            {
-                                enabled = targetEvaluation;
-
-                                break;
-                            }
-                        }
-
-                        //
-                        // IFeatureFilter
-                        if (filter is IFeatureFilter featureFilter)
-                        {
-                            BindSettings(filter, context, filterIndex);
-
-                            if (await featureFilter.EvaluateAsync(context).ConfigureAwait(false) == targetEvaluation)
-                            {
-                                enabled = targetEvaluation;
-
-                                break;
-                            }
-                        }
-                    }
-                }
+                enabled = false;
             }
             else
             {
-                enabled = false;
-
-                string errorMessage = $"The feature declaration for the feature '{feature}' was not found.";
-
-                if (!_options.IgnoreMissingFeatures)
+                //
+                // Ensure no conflicts in the feature definition
+                if (featureDefinition.RequirementType == RequirementType.All && _options.IgnoreMissingFeatureFilters)
                 {
-                    throw new FeatureManagementException(FeatureManagementError.MissingFeature, errorMessage);
+                    throw new FeatureManagementException(
+                        FeatureManagementError.Conflict,
+                        $"The 'IgnoreMissingFeatureFilters' flag cannot be used in combination with a feature of requirement type 'All'.");
                 }
-                
-                _logger.LogWarning(errorMessage);
+
+                //
+                // If the requirement type is all, we default to true. Requirement type All will end on a false
+                enabled = featureDefinition.RequirementType == RequirementType.All;
+
+                //
+                // We iterate until we hit our target evaluation
+                bool targetEvaluation = !enabled;
+
+                //
+                // Keep track of the index of the filter we are evaluating
+                int filterIndex = -1;
+
+                //
+                // For all enabling filters listed in the feature's state, evaluate them according to requirement type
+                foreach (FeatureFilterConfiguration featureFilterConfiguration in featureDefinition.EnabledFor)
+                {
+                    filterIndex++;
+
+                    //
+                    // Handle AlwaysOn and On filters
+                    if (string.Equals(featureFilterConfiguration.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(featureFilterConfiguration.Name, "On", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (featureDefinition.RequirementType == RequirementType.Any)
+                        {
+                            enabled = true;
+                            break;
+                        }
+
+                        continue;
+                    }
+
+                    IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
+
+                    if (filter == null)
+                    {
+                        string errorMessage = $"The feature filter '{featureFilterConfiguration.Name}' specified for feature '{featureDefinition.Name}' was not found.";
+
+                        if (!_options.IgnoreMissingFeatureFilters)
+                        {
+                            throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
+                        }
+
+                        _logger.LogWarning(errorMessage);
+
+                        continue;
+                    }
+
+                    var context = new FeatureFilterEvaluationContext()
+                    {
+                        FeatureName = featureDefinition.Name,
+                        Parameters = featureFilterConfiguration.Parameters
+                    };
+
+                    //
+                    // IContextualFeatureFilter
+                    if (useAppContext)
+                    {
+                        ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
+
+                        BindSettings(filter, context, filterIndex);
+
+                        if (contextualFilter != null &&
+                            await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation)
+                        {
+                            enabled = targetEvaluation;
+
+                            break;
+                        }
+                    }
+
+                    //
+                    // IFeatureFilter
+                    if (filter is IFeatureFilter featureFilter)
+                    {
+                        BindSettings(filter, context, filterIndex);
+
+                        if (await featureFilter.EvaluateAsync(context).ConfigureAwait(false) == targetEvaluation)
+                        {
+                            enabled = targetEvaluation;
+
+                            break;
+                        }
+                    }
+                }
             }
 
             return enabled;
@@ -329,6 +331,48 @@ namespace Microsoft.FeatureManagement
 
         private async ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, bool useContext, CancellationToken cancellationToken)
         {
+            FeatureDefinition featureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false);
+
+            if (featureDefinition == null || featureDefinition.Allocation == null || (!featureDefinition.Variants?.Any() ?? false))
+            {
+                return null;
+            }
+
+            VariantDefinition variantDefinition = null;
+
+            bool isFeatureEnabled = await IsEnabledAsync(featureDefinition, context, useContext, cancellationToken).ConfigureAwait(false);
+
+            if (!isFeatureEnabled)
+            {
+                variantDefinition = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == featureDefinition.Allocation.DefaultWhenDisabled);
+            }
+            else
+            {
+                if (!useContext)
+                {
+                    context = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+                variantDefinition = await GetAssignedVariantAsync(featureDefinition, context, cancellationToken).ConfigureAwait(false);
+            }
+
+            Variant variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null;
+
+            if (featureDefinition.TelemetryEnabled)
+            {
+                PublishTelemetry(new EvaluationEvent
+                {
+                    FeatureDefinition = featureDefinition,
+                    IsEnabled = isFeatureEnabled,
+                    Variant = variant
+                }, cancellationToken);
+            }
+
+            return variant;
+        }
+
+        private async ValueTask<FeatureDefinition> GetFeatureDefinition(string feature)
+        {
             FeatureDefinition featureDefinition = await _featureDefinitionProvider
                 .GetFeatureDefinitionAsync(feature)
                 .ConfigureAwait(false);
@@ -345,62 +389,7 @@ namespace Microsoft.FeatureManagement
                 _logger.LogWarning(errorMessage);
             }
 
-            if (featureDefinition?.Allocation == null || (!featureDefinition.Variants?.Any() ?? false))
-            {
-                return null;
-            }
-
-            VariantDefinition variantDefinition = null;
-
-            bool isFeatureEnabled = await IsEnabledAsync(feature, context, useContext, cancellationToken).ConfigureAwait(false);
-
-            if (!isFeatureEnabled)
-            {
-                variantDefinition = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == featureDefinition.Allocation.DefaultWhenDisabled);
-            }
-            else
-            {
-                if (!useContext)
-                {
-                    context = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
-                }
-
-                variantDefinition = await GetAssignedVariantAsync(featureDefinition, context, cancellationToken).ConfigureAwait(false);
-            }
-
-            if (variantDefinition == null)
-            {
-                return null;
-            }
-
-            IConfigurationSection variantConfiguration = null;
-
-            bool configValueSet = variantDefinition.ConfigurationValue.Exists();
-            bool configReferenceSet = !string.IsNullOrEmpty(variantDefinition.ConfigurationReference);
-
-            if (configValueSet)
-            {
-                variantConfiguration = variantDefinition.ConfigurationValue;
-            }
-            else if (configReferenceSet)
-            {
-                if (Configuration == null)
-                {
-                    _logger.LogWarning($"Cannot use {nameof(variantDefinition.ConfigurationReference)} as no instance of {nameof(IConfiguration)} is present.");
-
-                    return null;
-                }
-                else
-                {
-                    variantConfiguration = Configuration.GetSection(variantDefinition.ConfigurationReference);
-                }
-            }
-
-            return new Variant()
-            {
-                Name = variantDefinition.Name,
-                Configuration = variantConfiguration
-            };
+            return featureDefinition;
         }
 
         private async ValueTask<TargetingContext> ResolveTargetingContextAsync(CancellationToken cancellationToken)
@@ -645,6 +634,52 @@ namespace Microsoft.FeatureManagement
             );
 
             return filter;
+        }
+
+        private async void PublishTelemetry(EvaluationEvent evaluationEvent, CancellationToken cancellationToken)
+        {
+            if (TelemetryPublishers == null || !TelemetryPublishers.Any())
+            {
+                _logger.LogWarning("The feature declaration enabled telemetry but no telemetry publisher was registered.");
+            }
+            else
+            {
+                foreach (ITelemetryPublisher telemetryPublisher in TelemetryPublishers)
+                {
+                    await telemetryPublisher.PublishEvent(
+                        evaluationEvent,
+                        cancellationToken);
+                }
+            }
+        }
+
+        private Variant GetVariantFromVariantDefinition(VariantDefinition variantDefinition)
+        {
+            IConfigurationSection variantConfiguration = null;
+
+            if (variantDefinition.ConfigurationValue.Exists())
+            {
+                variantConfiguration = variantDefinition.ConfigurationValue;
+            }
+            else if (!string.IsNullOrEmpty(variantDefinition.ConfigurationReference))
+            {
+                if (Configuration == null)
+                {
+                    _logger.LogWarning($"Cannot use {nameof(variantDefinition.ConfigurationReference)} as no instance of {nameof(IConfiguration)} is present.");
+
+                    return null;
+                }
+                else
+                {
+                    variantConfiguration = Configuration.GetSection(variantDefinition.ConfigurationReference);
+                }
+            }
+
+            return new Variant()
+            {
+                Name = variantDefinition.Name,
+                Configuration = variantConfiguration
+            };
         }
     }
 }

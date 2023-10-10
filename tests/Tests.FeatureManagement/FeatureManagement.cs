@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
+using Microsoft.FeatureManagement.Tests;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -824,6 +825,105 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task TelemetryPublishing()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddTelemetryPublisher<TestTelemetryPublisher>()
+                .AddFeatureFilter<TimeWindowFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            FeatureManager featureManager = (FeatureManager) serviceProvider.GetRequiredService<IVariantFeatureManager>();
+            TestTelemetryPublisher testPublisher = (TestTelemetryPublisher) featureManager.TelemetryPublishers.First();
+
+            // Test a feature with telemetry disabled
+            bool result = await featureManager.IsEnabledAsync(OnFeature, CancellationToken.None);
+
+            Assert.True(result);
+            Assert.Null(testPublisher.evaluationEventCache);
+
+            // Test telemetry cases
+            string onFeature = "AlwaysOnTestFeature";
+
+            result = await featureManager.IsEnabledAsync(onFeature, CancellationToken.None);
+
+            Assert.True(result);
+            Assert.Equal(onFeature, testPublisher.evaluationEventCache.FeatureDefinition.Name);
+            Assert.Equal(result, testPublisher.evaluationEventCache.IsEnabled);
+            Assert.Equal("EtagValue", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata["Etag"]);
+            Assert.Equal("LabelValue", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata["Label"]);
+            Assert.Equal("Tag1Value", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata["Tags.Tag1"]);
+
+            string offFeature = "OffTimeTestFeature";
+
+            result = await featureManager.IsEnabledAsync(offFeature, CancellationToken.None);
+
+            Assert.False(result);
+            Assert.Equal(offFeature, testPublisher.evaluationEventCache.FeatureDefinition.Name);
+            Assert.Equal(result, testPublisher.evaluationEventCache.IsEnabled);
+
+            // Test variant cases
+            string variantDefaultEnabledFeature = "VariantFeatureDefaultEnabled";
+
+            result = await featureManager.IsEnabledAsync(variantDefaultEnabledFeature, CancellationToken.None);
+
+            Assert.True(result);
+            Assert.Equal(variantDefaultEnabledFeature, testPublisher.evaluationEventCache.FeatureDefinition.Name);
+            Assert.Equal(result, testPublisher.evaluationEventCache.IsEnabled);
+            Assert.Equal("Medium", testPublisher.evaluationEventCache.Variant.Name);
+
+            Variant variantResult = await featureManager.GetVariantAsync(variantDefaultEnabledFeature, CancellationToken.None);
+
+            Assert.True(testPublisher.evaluationEventCache.IsEnabled);
+            Assert.Equal(variantDefaultEnabledFeature, testPublisher.evaluationEventCache.FeatureDefinition.Name);
+            Assert.Equal(variantResult.Name, testPublisher.evaluationEventCache.Variant.Name);
+
+            string variantFeatureStatusDisabled = "VariantFeatureStatusDisabled";
+
+            result = await featureManager.IsEnabledAsync(variantFeatureStatusDisabled, CancellationToken.None);
+
+            Assert.False(result);
+            Assert.Equal(variantFeatureStatusDisabled, testPublisher.evaluationEventCache.FeatureDefinition.Name);
+            Assert.Equal(result, testPublisher.evaluationEventCache.IsEnabled);
+            Assert.Equal("Small", testPublisher.evaluationEventCache.Variant.Name);
+
+            variantResult = await featureManager.GetVariantAsync(variantFeatureStatusDisabled, CancellationToken.None);
+
+            Assert.False(testPublisher.evaluationEventCache.IsEnabled);
+            Assert.Equal(variantFeatureStatusDisabled, testPublisher.evaluationEventCache.FeatureDefinition.Name);
+            Assert.Equal(variantResult.Name, testPublisher.evaluationEventCache.Variant.Name);
+        }
+
+        [Fact]
+        public async Task TelemetryPublishingNullPublisher()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TimeWindowFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            FeatureManager featureManager = (FeatureManager)serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            // Test telemetry enabled feature with no telemetry publisher
+            string onFeature = "AlwaysOnTestFeature";
+
+            bool result = await featureManager.IsEnabledAsync(onFeature, CancellationToken.None);
+
+            Assert.True(result);
+        }
+
         public async Task UsesVariants()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();

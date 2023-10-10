@@ -148,6 +148,10 @@ namespace Microsoft.FeatureManagement
 
             var enabledFor = new List<FeatureFilterConfiguration>();
 
+            bool telemetryEnabled = false;
+
+            Dictionary<string, string> telemetryMetadata = null;
+
             string val = configurationSection.Value; // configuration[$"{featureName}"];
 
             if (string.IsNullOrEmpty(val))
@@ -283,6 +287,17 @@ namespace Microsoft.FeatureManagement
                         variants.Add(variant);
                     }
                 }
+
+                telemetryEnabled = configurationSection.GetValue<bool>("TelemetryEnabled");
+
+                IConfigurationSection telemetryMetadataSection = configurationSection.GetSection("TelemetryMetadata");
+
+                if (telemetryMetadataSection.Exists())
+                {
+                    telemetryMetadata = new Dictionary<string, string>();
+
+                    telemetryMetadata = telemetryMetadataSection.GetChildren().ToDictionary(x => x.Key, x => x.Value);
+                }
             }
 
             return new FeatureDefinition()
@@ -292,7 +307,9 @@ namespace Microsoft.FeatureManagement
                 RequirementType = requirementType,
                 Status = featureStatus,
                 Allocation = allocation,
-                Variants = variants
+                Variants = variants,
+                TelemetryEnabled = telemetryEnabled,
+                TelemetryMetadata = telemetryMetadata
             };
         }
 

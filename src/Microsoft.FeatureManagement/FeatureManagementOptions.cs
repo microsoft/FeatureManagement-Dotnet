@@ -1,6 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.FeatureManagement.Telemetry;
+using System;
+using System.Collections.Generic;
+
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
@@ -22,5 +26,11 @@ namespace Microsoft.FeatureManagement
         /// The default value is true.
         /// </summary>
         public bool IgnoreMissingFeatures { get; set; } = true;
+
+        /// <summary>
+        /// Holds a collection of factories that can be used to create <see cref="ITelemetryPublisher"/> instances.
+        /// This avoids the need to add the publishers to the service collection.
+        /// </summary>
+        internal ICollection<Func<IServiceProvider, ITelemetryPublisher>> TelemetryPublisherFactories { get; set; }
     }
 }
