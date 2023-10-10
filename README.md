@@ -187,7 +187,7 @@ The basic form of feature management is checking if a feature is enabled and the
 …
 IFeatureManager featureManager;
 …
-if (await featureManager.IsEnabledAsync(nameof(MyFeatureFlags.FeatureU)))
+if (await featureManager.IsEnabledAsync(MyFeatureFlags.FeatureU))
 {
     // Do something
 }
@@ -251,7 +251,7 @@ public interface IDisabledFeaturesHandler
 In MVC views `<feature>` tags can be used to conditionally render content based on whether a feature is enabled or not.
 
 ``` HTML+Razor
-<feature name=@nameof(MyFeatureFlags.FeatureX)>
+<feature name=@MyFeatureFlags.FeatureX>
   <p>This can only be seen if 'FeatureX' is enabled.</p>
 </feature>
 ```
@@ -269,7 +269,7 @@ The feature management pipeline supports async MVC Action filters, which impleme
 ``` C#
 services.AddMvc(o => 
 {
-    o.Filters.AddForFeature<SomeMvcFilter>(nameof(MyFeatureFlags.FeatureV));
+    o.Filters.AddForFeature<SomeMvcFilter>(MyFeatureFlags.FeatureV);
 });
 ```
 
@@ -297,7 +297,7 @@ When used on Razor pages, the `FeatureGateAttribute` must be placed on the page 
 The feature management library can be used to add application branches and middleware that execute conditionally based on feature state.
 
 ``` C#
-app.UseMiddlewareForFeature<ThirdPartyMiddleware>(nameof(MyFeatureFlags.FeatureU));
+app.UseMiddlewareForFeature<ThirdPartyMiddleware>(MyFeatureFlags.FeatureU);
 ```
 
 With the above call, the application adds a middleware component that only appears in the request pipeline if the feature "FeatureU" is enabled. If the feature is enabled/disabled during runtime, the middleware pipeline can be changed dynamically.
