@@ -782,14 +782,16 @@ You can use variants to override the enabled or disabled state of a feature flag
         "To": 20
     }],
     "DefaultWhenEnabled":  "Off",
-    "Seed": "Black-Friday-Feature-Group"
+    "Seed": "Enhanced-Feature-Group"
 },
 "Variants": [
     { 
-        "Name": "On"
+        "Name": "On",
+        "ConfigurationValue": true
     },
     { 
         "Name": "Off",
+        "ConfigurationValue": false,
         "StatusOverride": "Disabled"
     }    
 ],
