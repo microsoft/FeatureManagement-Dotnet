@@ -141,17 +141,7 @@ In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning
 
 ### Referencing
 
-To make it easier to reference these feature flags in code, we recommend to define feature flag variables like below.
-
-``` C#
-// Define feature flags using const strings
-public static class MyFeatureFlags
-{
-    public const string FeatureT = "FeatureT";
-    public const string FeatureU = "FeatureU";
-    public const string FeatureV = "FeatureV";
-}
-```
+In the following code examples, MyFeatureFlags.FeatureX which is a const string property of the MyFeatureFlags class, is used for referencing the name of feature flag "FeatureX".
     
 ### Service Registration
 
@@ -187,7 +177,7 @@ The basic form of feature management is checking if a feature is enabled and the
 …
 IFeatureManager featureManager;
 …
-if (await featureManager.IsEnabledAsync(MyFeatureFlags.FeatureU))
+if (await featureManager.IsEnabledAsync(MyFeatureFlags.FeatureX))
 {
     // Do something
 }
@@ -226,14 +216,14 @@ public class HomeController : Controller
 The `HomeController` above is gated by "FeatureX". "FeatureX" must be enabled before any action the `HomeController` contains can be executed. 
 
 ``` C#
-[FeatureGate(MyFeatureFlags.FeatureY)]
+[FeatureGate(MyFeatureFlags.FeatureX)]
 public IActionResult Index()
 {
     return View();
 }
 ```
 
-The `Index` MVC action above requires "FeatureY" to be enabled before it can execute. 
+The `Index` MVC action above requires "FeatureX" to be enabled before it can execute. 
 
 ### Disabled Action Handling
 
@@ -269,17 +259,17 @@ The feature management pipeline supports async MVC Action filters, which impleme
 ``` C#
 services.AddMvc(o => 
 {
-    o.Filters.AddForFeature<SomeMvcFilter>(MyFeatureFlags.FeatureV);
+    o.Filters.AddForFeature<SomeMvcFilter>(MyFeatureFlags.FeatureX);
 });
 ```
 
-The code above adds an MVC filter named `SomeMvcFilter`. This filter is only triggered within the MVC pipeline if the feature it specifies, "FeatureV", is enabled.
+The code above adds an MVC filter named `SomeMvcFilter`. This filter is only triggered within the MVC pipeline if the feature it specifies, "FeatureX", is enabled.
 
 ### Razor Pages
 MVC Razor pages can require that a given feature, or one of any list of features, be enabled in order to execute. This can be done by using a `FeatureGateAttribute`, which can be found in the `Microsoft.FeatureManagement.Mvc` namespace. 
 
 ``` C#
-[FeatureGate(MyFeatureFlags.FeatureU)]
+[FeatureGate(MyFeatureFlags.FeatureX)]
 public class IndexModel : PageModel
 {
     public void OnGet()
@@ -288,7 +278,7 @@ public class IndexModel : PageModel
 }
 ```
 
-The code above sets up a Razor page to require the "FeatureU" to be enabled. If the feature is not enabled, the page will generate an HTTP 404 (NotFound) result.
+The code above sets up a Razor page to require the "FeatureX" to be enabled. If the feature is not enabled, the page will generate an HTTP 404 (NotFound) result.
 
 When used on Razor pages, the `FeatureGateAttribute` must be placed on the page handler type. It cannot be placed on individual handler methods.
 
@@ -297,10 +287,10 @@ When used on Razor pages, the `FeatureGateAttribute` must be placed on the page 
 The feature management library can be used to add application branches and middleware that execute conditionally based on feature state.
 
 ``` C#
-app.UseMiddlewareForFeature<ThirdPartyMiddleware>(MyFeatureFlags.FeatureU);
+app.UseMiddlewareForFeature<ThirdPartyMiddleware>(MyFeatureFlags.FeatureX);
 ```
 
-With the above call, the application adds a middleware component that only appears in the request pipeline if the feature "FeatureU" is enabled. If the feature is enabled/disabled during runtime, the middleware pipeline can be changed dynamically.
+With the above call, the application adds a middleware component that only appears in the request pipeline if the feature "FeatureX" is enabled. If the feature is enabled/disabled during runtime, the middleware pipeline can be changed dynamically.
 
 This builds off the more generic capability to branch the entire application based on a feature.
 
