@@ -12,6 +12,8 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     public class FeatureManagementOptions
     {
+        public bool IsFeatureManagerScoped { get; set; }
+
         /// <summary>
         /// Controls the behavior of feature evaluation when dependent feature filters are missing.
         /// If missing feature filters are not ignored an exception will be thrown when attempting to evaluate a feature that depends on a missing feature filter.

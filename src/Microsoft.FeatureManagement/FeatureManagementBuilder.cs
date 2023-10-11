@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.FeatureManagement
 {
@@ -13,9 +14,14 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     class FeatureManagementBuilder : IFeatureManagementBuilder
     {
-        public FeatureManagementBuilder(IServiceCollection services)
+        private readonly bool _isFeatureManagerScoped;
+
+        public FeatureManagementBuilder(
+            IServiceCollection services,
+            bool isFeatureManagerScoped)
         {
             Services = services ?? throw new ArgumentNullException(nameof(services));
+            _isFeatureManagerScoped = isFeatureManagerScoped;
         }
 
         public IServiceCollection Services { get; }
@@ -37,7 +43,14 @@ namespace Microsoft.FeatureManagement
 
             if (!Services.Any(descriptor => descriptor.ServiceType == serviceType && descriptor.ImplementationType == implementationType))
             {
-                Services.AddSingleton(typeof(IFeatureFilterMetadata), typeof(T));
+                if (!_isFeatureManagerScoped)
+                {
+                    Services.AddSingleton(typeof(IFeatureFilterMetadata), typeof(T));
+                }
+                else
+                {
+                    Services.AddScoped(typeof(IFeatureFilterMetadata), typeof(T));
+                }
             }
 
             return this;
@@ -45,7 +58,14 @@ namespace Microsoft.FeatureManagement
 
         public IFeatureManagementBuilder AddSessionManager<T>() where T : ISessionManager
         {
-            Services.AddSingleton(typeof(ISessionManager), typeof(T));
+            if (!_isFeatureManagerScoped)
+            {
+                Services.AddSingleton(typeof(ISessionManager), typeof(T));
+            }
+            else
+            {
+                Services.AddScoped(typeof(ISessionManager), typeof(T));
+            }
 
             return this;
         }

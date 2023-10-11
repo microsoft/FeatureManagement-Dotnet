@@ -22,12 +22,10 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Used to evaluate whether a feature is enabled or disabled.
     /// </summary>
-    class FeatureManager : IFeatureManager, IDisposable, IVariantFeatureManager
+    class FeatureManager : IFeatureManager, IVariantFeatureManager
     {
-        private readonly TimeSpan ParametersCacheSlidingExpiration = TimeSpan.FromMinutes(5);
-        private readonly TimeSpan ParametersCacheAbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
-
         private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
+        private readonly IFilterParametersCache _filterParametersCache;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
         private readonly ILogger _logger;
@@ -35,17 +33,10 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
         private readonly FeatureManagementOptions _options;
         private readonly TargetingEvaluationOptions _assignerOptions;
-        private readonly IMemoryCache _parametersCache;
-
-        private class ConfigurationCacheItem
-        {
-            public IConfiguration Parameters { get; set; }
-
-            public object Settings { get; set; }
-        }
 
         public FeatureManager(
             IFeatureDefinitionProvider featureDefinitionProvider,
+            IFilterParametersCache filterParametersCache,
             IEnumerable<IFeatureFilterMetadata> featureFilters,
             IEnumerable<ISessionManager> sessionManagers,
             ILoggerFactory loggerFactory,
@@ -53,6 +44,7 @@ namespace Microsoft.FeatureManagement
             IOptions<TargetingEvaluationOptions> assignerOptions)
         {
             _featureDefinitionProvider = featureDefinitionProvider;
+            _filterParametersCache = filterParametersCache;
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
             _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
             _logger = loggerFactory.CreateLogger<FeatureManager>();
@@ -60,7 +52,6 @@ namespace Microsoft.FeatureManagement
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
-            _parametersCache = new MemoryCache(new MemoryCacheOptions());
         }
 
         public IEnumerable<ITelemetryPublisher> TelemetryPublishers { get; init; }
@@ -172,11 +163,6 @@ namespace Microsoft.FeatureManagement
 
                 yield return featureDefinition.Name;
             }
-        }
-
-        public void Dispose()
-        {
-            _parametersCache.Dispose();
         }
 
         private async Task<bool> IsEnabledAsync<TContext>(FeatureDefinition featureDefinition, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
@@ -531,29 +517,23 @@ namespace Microsoft.FeatureManagement
 
             object settings;
 
-            ConfigurationCacheItem cacheItem;
-
             string cacheKey = $"{context.FeatureName}.{filterIndex}";
+
+            FilterParametersCacheItem cacheItem = _filterParametersCache.Get(cacheKey);
 
             //
             // Check if settings already bound from configuration or the parameters have changed
-            if (!_parametersCache.TryGetValue(cacheKey, out cacheItem) ||
-                cacheItem.Parameters != context.Parameters)
+            if (cacheItem == null || cacheItem.Parameters != context.Parameters)
             {
                 settings = binder.BindParameters(context.Parameters);
 
-                _parametersCache.Set(
-                    cacheKey,
-                    new ConfigurationCacheItem
-                    {
-                        Settings = settings,
-                        Parameters = context.Parameters
-                    },
-                    new MemoryCacheEntryOptions
-                    {
-                        SlidingExpiration = ParametersCacheSlidingExpiration,
-                        AbsoluteExpirationRelativeToNow = ParametersCacheAbsoluteExpirationRelativeToNow
-                    });
+                cacheItem = new FilterParametersCacheItem
+                {
+                    Settings = settings,
+                    Parameters = context.Parameters
+                };
+
+                _filterParametersCache.Set(cacheKey, cacheItem);
             }
             else
             {
