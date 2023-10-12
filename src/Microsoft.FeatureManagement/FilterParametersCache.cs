@@ -6,7 +6,11 @@ using System;
 
 namespace Microsoft.FeatureManagement
 {
-    internal class FilterParametersCache : IFilterParametersCache, IDisposable
+
+    /// <summary>
+    /// Provides a cache for feature filter parameters and bound settings.
+    /// </summary>
+    class FilterParametersCache : IFilterParametersCache, IDisposable
     {
         private readonly TimeSpan ParametersCacheSlidingExpiration = TimeSpan.FromMinutes(5);
         private readonly TimeSpan ParametersCacheAbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
