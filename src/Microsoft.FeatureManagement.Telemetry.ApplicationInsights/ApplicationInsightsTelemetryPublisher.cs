@@ -43,7 +43,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 
             if (featureDefinition.TelemetryMetadata != null)
             {
-                foreach(KeyValuePair<string, string> kvp in featureDefinition.TelemetryMetadata)
+                foreach (KeyValuePair<string, string> kvp in featureDefinition.TelemetryMetadata)
                 {
                     properties[kvp.Key] = kvp.Value;
                 }
