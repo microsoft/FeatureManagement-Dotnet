@@ -3,7 +3,7 @@
 //
 using System.Collections.Generic;
 
-namespace Consoto.Banking.AccountService.Identity
+namespace TargetingConsoleApp.Identity
 {
     class User
     {

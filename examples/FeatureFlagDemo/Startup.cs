@@ -4,14 +4,8 @@
 using FeatureFlagDemo.Authentication;
 using FeatureFlagDemo.FeatureManagement;
 using FeatureFlagDemo.FeatureManagement.FeatureFilters;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
 
@@ -65,7 +59,7 @@ namespace FeatureFlagDemo
             {
                 o.Filters.AddForFeature<ThirdPartyActionFilter>(nameof(MyFeatureFlags.EnhancedPipeline));
 
-            }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
+            });
         }
 
         public void Configure(IApplicationBuilder app, IHostEnvironment env)

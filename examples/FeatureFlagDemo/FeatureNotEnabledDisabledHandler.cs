@@ -17,7 +17,7 @@ namespace FeatureFlagDemo.FeatureManagement
         {
             var result = new ViewResult()
             {
-                ViewName = "Views/Shared/FeatureNotEnabled.cshtml",
+                ViewName = "Pages/Shared/FeatureNotEnabled.cshtml",
                 ViewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
             };
 
