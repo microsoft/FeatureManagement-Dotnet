@@ -10,7 +10,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
     /// </summary>
     public class ApplicationInsightsTelemetryPublisher : ITelemetryPublisher
     {
-        private readonly string _eventName = "FeatureEvaluation";
+        private const string _eventName = "FeatureEvaluation";
         private readonly TelemetryClient _telemetryClient;
 
         public ApplicationInsightsTelemetryPublisher(TelemetryClient telemetryClient)
