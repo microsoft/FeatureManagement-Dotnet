@@ -33,7 +33,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
             Dictionary<string, string> properties = new Dictionary<string, string>()
             {
                 { "FeatureName", featureDefinition.Name },
-                { "IsEnabled", evaluationEvent.IsEnabled.ToString() },
+                { "IsEnabled", evaluationEvent.IsEnabled.ToString() }
             };
 
             if (evaluationEvent.Variant != null)
