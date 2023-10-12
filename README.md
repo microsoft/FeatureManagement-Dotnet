@@ -143,7 +143,8 @@ In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning
 ### Status
 
 
-`Status` is an optional property of a feature flag that controls how a flags enabled state is evaluated. By default, the status of a flag is `Conditional`, meaning that feature filters should be evaluated to determine if the flag is enabled. If the `Status` of a flag is set to `Disabled` then feature filters are not evaluated and the flag is always considered to be disabled.
+`Status` is an optional property of a feature flag that controls how a flag's enabled state is evaluated. By default, the status of a flag is `Conditional`, meaning that feature filters should be evaluated to determine if the flag is enabled. If the `Status` of a flag is set to `Disabled` then feature filters are not evaluated and the flag is always considered to be disabled.
+
 
 ```
 "FeatureX": {
@@ -758,7 +759,8 @@ The `Allocation` setting of a feature flag has the following properties:
 | Property | Description |
 | ---------------- | ---------------- |
 | `DefaultWhenDisabled` | Specifies which variant should be used when a variant is requested while the feature is considered disabled. |
-| `DefaultWhenEnabled` | Specifies which variant should be used when a variant is requested while the feature is considered enabled and no other allocation properties matched the current user. |
+| `DefaultWhenEnabled` | Specifies which variant should be used when a variant is requested while the feature is considered enabled and no variant was allocated to the user. |
+
 | `User` | Specifies a variant and a list of users for which that variant should be used. | 
 | `Group` | Specifies a variant and a list of groups the current user has to be in for that variant to be used. |
 | `Percentile` | Specifies a variant and a percentage range the user's calculated percentage has to fit into for that variant to be used. |
