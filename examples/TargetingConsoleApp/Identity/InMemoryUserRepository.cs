@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Consoto.Banking.AccountService.Identity
+namespace TargetingConsoleApp.Identity
 {
     class InMemoryUserRepository : IUserRepository
     {
