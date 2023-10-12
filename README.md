@@ -658,6 +658,8 @@ In the above example, the feature will be enabled for users named `Jeff` and `Al
 
 ## Variants
 
+When new features are added to an application, there may come a time when a feature has multiple different proposed design options. A common solution for deciding on a design is some form of A/B testing, which involves providing a different version of the feature to different segments of the user base and choosing a version based on user interaction. In this library, this functionality is enabled by representing different configurations of a feature with variants.
+
 Variants enable a feature flag to become more than a simple on/off flag. A variant represents a value of a feature flag that can be a string, a number, a boolean, or even a configuration object. A feature flag that declares variants should define under what circumstances each variant should be used, which is covered in greater detail in the [Allocating a Variant](./README.md#allocating-a-variant) section.
 
 ``` C#
@@ -677,7 +679,7 @@ public class Variant
 
 ### Getting a Feature's Variant
 
-Variants expand on the basic flow of feature management and enable getting a feature's variant to later perform actions based on the name or configuration. This is done through the `IVariantFeatureManager`'s `GetVariantAsync` method.
+A feature's variant can be retrieved using the `IVariantFeatureManager`'s `GetVariantAsync` method.
 
 ``` C#
 …
@@ -760,7 +762,6 @@ The `Allocation` setting of a feature flag has the following properties:
 | ---------------- | ---------------- |
 | `DefaultWhenDisabled` | Specifies which variant should be used when a variant is requested while the feature is considered disabled. |
 | `DefaultWhenEnabled` | Specifies which variant should be used when a variant is requested while the feature is considered enabled and no variant was allocated to the user. |
-
 | `User` | Specifies a variant and a list of users for which that variant should be used. | 
 | `Group` | Specifies a variant and a list of groups the current user has to be in for that variant to be used. |
 | `Percentile` | Specifies a variant and a percentage range the user's calculated percentage has to fit into for that variant to be used. |
@@ -768,13 +769,13 @@ The `Allocation` setting of a feature flag has the following properties:
 
 In the above example, if the feature is not enabled, `GetVariantAsync` would return the variant allocated by `DefaultWhenDisabled`, which is `Small` in this case. 
 
-If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to allocate a variant for this feature. If the user being evaluated is named `Marsha`, in the group named `Ring1`, or the user happens to fall between the 0 and 10th percentile calculated with the given `Seed`, then the specified variant is returned for that allocation. In this case, all of these would return the `Big` variant. If none of these allocations match the targeting context, the `DefaultWhenEnabled` variant is returned, which is `Small`.
+If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to allocate a variant for this feature. If the user being evaluated is named `Marsha`, in the group named `Ring1`, or the user happens to fall between the 0 and 10th percentile calculated with the given `Seed`, then the specified variant is returned for that allocation. In this case, all of these would return the `Big` variant. If none of these allocations match, the `DefaultWhenEnabled` variant is returned, which is `Small`.
 
 Allocation logic is similar to the [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter, but there are some parameters that are present in targeting that aren't in allocation, and vice versa. The outcomes of targeting and allocation are not related.
 
 ### Overriding Enabled State with a Variant
 
-You can use variants to override the enabled or disabled state of a feature flag. This gives variants an opportunity to extend the evaluation of a feature flag. If a caller is checking whether a flag that has variants is enabled, then variant allocation will be performed to see if an allocated variant is set up to override the result. This is done using the optional variant property `StatusOverride`. By default, this property is set to `None`, which means the variant doesn't affect whether the flag is considered enabled or disabled. Setting `StatusOverride` to `Enabled` allows the variant, when chosen, to override a flag to be enabled. Setting `StatusOverride` to `Disabled` provides the opposite functionality, therefore disabling the flag when the variant is chosen. A feature with a `Status` of `Disabled` cannot be overridden.
+You can use variants to override the enabled state of a feature flag. This gives variants an opportunity to extend the evaluation of a feature flag. If a caller is checking whether a flag that has variants is enabled, then variant allocation will be performed to see if an allocated variant is set up to override the result. This is done using the optional variant property `StatusOverride`. By default, this property is set to `None`, which means the variant doesn't affect whether the flag is considered enabled or disabled. Setting `StatusOverride` to `Enabled` allows the variant, when chosen, to override a flag to be enabled. Setting `StatusOverride` to `Disabled` provides the opposite functionality, therefore disabling the flag when the variant is chosen. A feature with a `Status` of `Disabled` cannot be overridden.
 
 ```
 "Allocation": {
