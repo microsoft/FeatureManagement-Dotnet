@@ -138,10 +138,6 @@ A `RequirementType` of `All` changes the traversal. First, if there are no filte
 ```
 
 In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning all of it's filters must evaluate to true for the feature to be enabled. In this case, the feature will be enabled for 50% of users during the specified time window.
-
-### Referencing
-
-In the following code examples, MyFeatureFlags.FeatureX which is a const string property of the MyFeatureFlags class, is used for referencing the name of feature flag "FeatureX".
     
 ### Service Registration
 
@@ -177,7 +173,7 @@ The basic form of feature management is checking if a feature is enabled and the
 …
 IFeatureManager featureManager;
 …
-if (await featureManager.IsEnabledAsync(MyFeatureFlags.FeatureX))
+if (await featureManager.IsEnabledAsync("FeatureX"))
 {
     // Do something
 }
@@ -206,7 +202,7 @@ The feature management library provides functionality in ASP.NET Core and MVC to
 MVC controller and actions can require that a given feature, or one of any list of features, be enabled in order to execute. This can be done by using a `FeatureGateAttribute`, which can be found in the `Microsoft.FeatureManagement.Mvc` namespace. 
 
 ``` C#
-[FeatureGate(MyFeatureFlags.FeatureX)]
+[FeatureGate("FeatureX")]
 public class HomeController : Controller
 {
     …
@@ -216,7 +212,7 @@ public class HomeController : Controller
 The `HomeController` above is gated by "FeatureX". "FeatureX" must be enabled before any action the `HomeController` contains can be executed. 
 
 ``` C#
-[FeatureGate(MyFeatureFlags.FeatureX)]
+[FeatureGate("FeatureX")]
 public IActionResult Index()
 {
     return View();
@@ -241,7 +237,7 @@ public interface IDisabledFeaturesHandler
 In MVC views `<feature>` tags can be used to conditionally render content based on whether a feature is enabled or not.
 
 ``` HTML+Razor
-<feature name=@MyFeatureFlags.FeatureX>
+<feature name="FeatureX">
   <p>This can only be seen if 'FeatureX' is enabled.</p>
 </feature>
 ```
@@ -259,7 +255,7 @@ The feature management pipeline supports async MVC Action filters, which impleme
 ``` C#
 services.AddMvc(o => 
 {
-    o.Filters.AddForFeature<SomeMvcFilter>(MyFeatureFlags.FeatureX);
+    o.Filters.AddForFeature<SomeMvcFilter>("FeatureX");
 });
 ```
 
@@ -269,7 +265,7 @@ The code above adds an MVC filter named `SomeMvcFilter`. This filter is only tri
 MVC Razor pages can require that a given feature, or one of any list of features, be enabled in order to execute. This can be done by using a `FeatureGateAttribute`, which can be found in the `Microsoft.FeatureManagement.Mvc` namespace. 
 
 ``` C#
-[FeatureGate(MyFeatureFlags.FeatureX)]
+[FeatureGate("FeatureX")]
 public class IndexModel : PageModel
 {
     public void OnGet()
@@ -287,7 +283,7 @@ When used on Razor pages, the `FeatureGateAttribute` must be placed on the page 
 The feature management library can be used to add application branches and middleware that execute conditionally based on feature state.
 
 ``` C#
-app.UseMiddlewareForFeature<ThirdPartyMiddleware>(MyFeatureFlags.FeatureX);
+app.UseMiddlewareForFeature<ThirdPartyMiddleware>("FeatureX");
 ```
 
 With the above call, the application adds a middleware component that only appears in the request pipeline if the feature "FeatureX" is enabled. If the feature is enabled/disabled during runtime, the middleware pipeline can be changed dynamically.
