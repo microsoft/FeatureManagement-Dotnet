@@ -14,14 +14,14 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     class FeatureManagementBuilder : IFeatureManagementBuilder
     {
-        private readonly bool _isFeatureManagerScoped;
+        private readonly bool IsFeatureManagerScoped;
 
         public FeatureManagementBuilder(
             IServiceCollection services,
             bool isFeatureManagerScoped)
         {
             Services = services ?? throw new ArgumentNullException(nameof(services));
-            _isFeatureManagerScoped = isFeatureManagerScoped;
+            IsFeatureManagerScoped = isFeatureManagerScoped;
         }
 
         public IServiceCollection Services { get; }
@@ -43,7 +43,7 @@ namespace Microsoft.FeatureManagement
 
             if (!Services.Any(descriptor => descriptor.ServiceType == serviceType && descriptor.ImplementationType == implementationType))
             {
-                if (!_isFeatureManagerScoped)
+                if (!IsFeatureManagerScoped)
                 {
                     Services.AddSingleton(typeof(IFeatureFilterMetadata), typeof(T));
                 }
@@ -58,7 +58,7 @@ namespace Microsoft.FeatureManagement
 
         public IFeatureManagementBuilder AddSessionManager<T>() where T : ISessionManager
         {
-            if (!_isFeatureManagerScoped)
+            if (!IsFeatureManagerScoped)
             {
                 Services.AddSingleton(typeof(ISessionManager), typeof(T));
             }

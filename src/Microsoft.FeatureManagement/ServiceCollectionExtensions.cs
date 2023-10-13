@@ -23,7 +23,7 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="services">The service collection that feature management services are added to.</param>
         /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
-        public static IFeatureManagementBuilder AddFeatureManagement(this IServiceCollection services, bool isFeatureManagerScoped = false)
+        public static IFeatureManagementBuilder AddFeatureManagement(this IServiceCollection services)
         {
             services.AddLogging();
 
@@ -33,9 +33,7 @@ namespace Microsoft.FeatureManagement
 
             services.TryAddSingleton<IFilterParametersCache, FilterParametersCache>();
 
-            if (!isFeatureManagerScoped)
-            {
-                services.AddSingleton(sp => new FeatureManager(
+            services.AddSingleton(sp => new FeatureManager(
                 sp.GetRequiredService<IFeatureDefinitionProvider>(),
                 sp.GetRequiredService<IFilterParametersCache>(),
                 sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
@@ -43,50 +41,77 @@ namespace Microsoft.FeatureManagement
                 sp.GetRequiredService<ILoggerFactory>(),
                 sp.GetRequiredService<IOptions<FeatureManagementOptions>>(),
                 sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>())
-                {
-                    Configuration = sp.GetService<IConfiguration>(),
-                    TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
-                    TelemetryPublishers = sp.GetService<IOptions<FeatureManagementOptions>>()?.Value.TelemetryPublisherFactories?
-                    .Select(factory => factory(sp))
-                    .ToList()
-                });
-
-                services.TryAddSingleton<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
-
-                services.TryAddSingleton<IVariantFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
-
-                services.AddSingleton<ISessionManager, EmptySessionManager>();
-            }
-            else
             {
-                services.AddScoped(sp => new FeatureManager(
-                sp.GetRequiredService<IFeatureDefinitionProvider>(),
-                sp.GetRequiredService<IFilterParametersCache>(),
-                sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
-                sp.GetRequiredService<IEnumerable<ISessionManager>>(),
-                sp.GetRequiredService<ILoggerFactory>(),
-                sp.GetRequiredService<IOptions<FeatureManagementOptions>>(),
-                sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>())
-                {
-                    Configuration = sp.GetService<IConfiguration>(),
-                    TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
-                    TelemetryPublishers = sp.GetService<IOptions<FeatureManagementOptions>>()?.Value.TelemetryPublisherFactories?
-                    .Select(factory => factory(sp))
-                    .ToList()
-                });
+                Configuration = sp.GetService<IConfiguration>(),
+                TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
+                TelemetryPublishers = sp.GetService<IOptions<FeatureManagementOptions>>()?.Value.TelemetryPublisherFactories?
+                .Select(factory => factory(sp))
+                .ToList()
+            });
 
-                services.TryAddScoped<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
+            services.TryAddSingleton<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 
-                services.TryAddScoped<IVariantFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
+            services.TryAddSingleton<IVariantFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 
-                services.AddScoped<ISessionManager, EmptySessionManager>();
-            }
+            services.AddSingleton<ISessionManager, EmptySessionManager>();
+
 
             services.AddScoped<FeatureManagerSnapshot>();
 
             services.TryAddScoped<IFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
 
             services.TryAddScoped<IVariantFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
+
+            bool isFeatureManagerScoped = false;
+
+            return new FeatureManagementBuilder(services, isFeatureManagerScoped);
+        }
+
+        /// <summary>
+        /// Adds required feature management services.
+        /// </summary>
+        /// <param name="services">The service collection that feature management services are added to.</param>
+        /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
+        public static IFeatureManagementBuilder AddScopedFeatureManagement(this IServiceCollection services)
+        {
+            services.AddLogging();
+
+            //
+            // Add required services
+            services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
+
+            services.TryAddSingleton<IFilterParametersCache, FilterParametersCache>();
+
+            services.AddScoped(sp => new FeatureManager(
+                sp.GetRequiredService<IFeatureDefinitionProvider>(),
+                sp.GetRequiredService<IFilterParametersCache>(),
+                sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                sp.GetRequiredService<IEnumerable<ISessionManager>>(),
+                sp.GetRequiredService<ILoggerFactory>(),
+                sp.GetRequiredService<IOptions<FeatureManagementOptions>>(),
+                sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>())
+            {
+                Configuration = sp.GetService<IConfiguration>(),
+                TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
+                TelemetryPublishers = sp.GetService<IOptions<FeatureManagementOptions>>()?.Value.TelemetryPublisherFactories?
+                .Select(factory => factory(sp))
+                .ToList()
+            });
+
+            services.TryAddScoped<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
+
+            services.TryAddScoped<IVariantFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
+
+            services.AddScoped<ISessionManager, EmptySessionManager>();
+            
+
+            services.AddScoped<FeatureManagerSnapshot>();
+
+            services.TryAddScoped<IFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
+
+            services.TryAddScoped<IVariantFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
+
+            bool isFeatureManagerScoped = true;
 
             return new FeatureManagementBuilder(services, isFeatureManagerScoped);
         }
