@@ -21,7 +21,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TargetingConsoleApp", "exam
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RazorPages", "examples\RazorPages\RazorPages.csproj", "{BA29A1BB-81D5-4EB1-AF37-6ECF64AF27E2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests.FeatureManagement.AspNetCore", "tests\Tests.FeatureManagement.AspNetCore\Tests.FeatureManagement.AspNetCore.csproj", "{FC0DC3E2-5646-4AEC-A7DB-2D6167BC3BB4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests.FeatureManagement.AspNetCore", "tests\Tests.FeatureManagement.AspNetCore\Tests.FeatureManagement.AspNetCore.csproj", "{FC0DC3E2-5646-4AEC-A7DB-2D6167BC3BB4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvaluationDataToApplicationInsights", "examples\EvaluationDataToApplicationInsights\EvaluationDataToApplicationInsights.csproj", "{FCB6725E-E150-411F-9363-DA9D5B938552}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.FeatureManagement.Telemetry.ApplicationInsights", "src\Microsoft.FeatureManagement.Telemetry.ApplicationInsights\Microsoft.FeatureManagement.Telemetry.ApplicationInsights.csproj", "{175590FB-3DEA-44A4-A50B-447AB2C84DB5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -61,6 +65,14 @@ Global
 		{FC0DC3E2-5646-4AEC-A7DB-2D6167BC3BB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FC0DC3E2-5646-4AEC-A7DB-2D6167BC3BB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FC0DC3E2-5646-4AEC-A7DB-2D6167BC3BB4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FCB6725E-E150-411F-9363-DA9D5B938552}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCB6725E-E150-411F-9363-DA9D5B938552}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCB6725E-E150-411F-9363-DA9D5B938552}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCB6725E-E150-411F-9363-DA9D5B938552}.Release|Any CPU.Build.0 = Release|Any CPU
+		{175590FB-3DEA-44A4-A50B-447AB2C84DB5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{175590FB-3DEA-44A4-A50B-447AB2C84DB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{175590FB-3DEA-44A4-A50B-447AB2C84DB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{175590FB-3DEA-44A4-A50B-447AB2C84DB5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -72,6 +84,7 @@ Global
 		{6558C21E-CF20-4278-AA08-EB9D1DF29D66} = {FB5C34DF-695C-4DF9-8AED-B3EA2516EA72}
 		{BA29A1BB-81D5-4EB1-AF37-6ECF64AF27E2} = {FB5C34DF-695C-4DF9-8AED-B3EA2516EA72}
 		{FC0DC3E2-5646-4AEC-A7DB-2D6167BC3BB4} = {8ED6FFEE-4037-49A2-9709-BC519C104A90}
+		{FCB6725E-E150-411F-9363-DA9D5B938552} = {FB5C34DF-695C-4DF9-8AED-B3EA2516EA72}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {84DA6C54-F140-4518-A1B4-E4CF42117FBD}
