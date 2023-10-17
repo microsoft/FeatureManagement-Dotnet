@@ -73,4 +73,7 @@ Sample steps to try out the app:
 1. When the page is loaded, feature flags are evaluated for FeatureA and FeatureB. Events can be seen in the Output window. (There may be a small delay as events are batched)
 1. Click around the app and watch the logs. More events will be emitted.
 1. Go to Checkout and click "Check Out", which emits a custom event and a custom metric. This event and metric will be shown in the logs as well.
-1. If connected to Application Insights, head to the resource in the portal. Events and metrics will be there as well. Try going to Logs > New Query and run the query "customEvents". This should show the custom events emitted.
+1. If connected to Application Insights, head to the resource in the portal. Events and metrics will be there as well. 	
+    1. Try going to Logs > New Query and run the query "customEvents". This should show the custom events emitted.
+	1. Try going to Metrics. Under Metric find Custom > checkoutAmount. Change the time range to a small period of time that encompasses your events for a clearer graph.
+	1. From the Metrics window, out-of-the-box metrics like Page Views and Server Requests can be viewed.
