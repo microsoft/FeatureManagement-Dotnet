@@ -86,6 +86,115 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task AllowDuplicatedFilterAlias()
+        {
+            const string duplicatedFilterName = "DuplicatedFilterName";
+
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<DuplicatedAliasFeatureFilter1>()
+                .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithAccountContext>()
+                .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithDummyContext1>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            AppContext appContext = new AppContext();
+
+            DummyContext dummyContext = new DummyContext();
+
+            Assert.True(await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias)));
+
+            Assert.True(await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias), appContext));
+
+            Assert.True(await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias), dummyContext));
+
+            services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<DuplicatedAliasFeatureFilter1>()
+                .AddFeatureFilter<DuplicatedAliasFeatureFilter2>();
+
+            serviceProvider = services.BuildServiceProvider();
+
+            featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            FeatureManagementException ex = await Assert.ThrowsAsync<FeatureManagementException>(
+                async () =>
+                {
+                    await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias));
+                });
+
+            Assert.Equal($"Multiple feature filters match the configured filter named '{duplicatedFilterName}'.", ex.Message);
+
+            services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithDummyContext1>()
+                .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithDummyContext2>();
+
+            serviceProvider = services.BuildServiceProvider();
+
+            featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            ex = await Assert.ThrowsAsync<FeatureManagementException>(
+                async () =>
+                {
+                    await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias), dummyContext);
+                });
+
+            Assert.Equal($"Multiple contextual feature filters match the configured filter named '{duplicatedFilterName}' and context type '{dummyContext.GetType()}'.", ex.Message);
+
+            services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithDummyContext1>();
+
+            serviceProvider = services.BuildServiceProvider();
+
+            featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            ex = await Assert.ThrowsAsync<FeatureManagementException>(
+                async () =>
+                {
+                    await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias));
+                });
+
+            Assert.Equal($"The feature filter '{duplicatedFilterName}' specified for feature '{Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias)}' was not found.", ex.Message);
+
+            services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<DuplicatedAliasFeatureFilter1>();
+
+            serviceProvider = services.BuildServiceProvider();
+
+            featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            ex = await Assert.ThrowsAsync<FeatureManagementException>(
+                async () =>
+                {
+                    await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias), dummyContext);
+                });
+
+            Assert.Equal($"The contextual feature filter '{duplicatedFilterName}' with context type '{dummyContext.GetType()}', specified for feature '{Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias)}' was not found.", ex.Message);
+        }
+
+        [Fact]
         public async Task CustomFilterContextualTargetingWithNullSetting()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();

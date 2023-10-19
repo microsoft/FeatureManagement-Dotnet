@@ -25,8 +25,8 @@ namespace Microsoft.FeatureManagement
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
         private readonly ILogger _logger;
-        private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
-        private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
+        private readonly ConcurrentDictionary<ValueTuple<string, Type>, IFeatureFilterMetadata> _filterMetadataCache;
+        private readonly ConcurrentDictionary<ValueTuple<string, Type>, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
         private readonly FeatureManagementOptions _options;
         private readonly IMemoryCache _parametersCache;
         
@@ -48,8 +48,8 @@ namespace Microsoft.FeatureManagement
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
             _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
             _logger = loggerFactory.CreateLogger<FeatureManager>();
-            _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
-            _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
+            _filterMetadataCache = new ConcurrentDictionary<ValueTuple<string, Type>, IFeatureFilterMetadata>();
+            _contextualFeatureFilterCache = new ConcurrentDictionary<ValueTuple<string, Type>, ContextualFeatureFilterEvaluator>();
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _parametersCache = new MemoryCache(new MemoryCacheOptions());
         }
@@ -141,11 +141,13 @@ namespace Microsoft.FeatureManagement
                             continue;
                         }
 
-                        IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
+                        IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, appContext?.GetType());
 
                         if (filter == null)
                         {
-                            string errorMessage = $"The feature filter '{featureFilterConfiguration.Name}' specified for feature '{feature}' was not found.";
+                            string errorMessage = appContext == null
+                                                ? $"The feature filter '{featureFilterConfiguration.Name}' specified for feature '{featureDefinition.Name}' was not found."
+                                                : $"The contextual feature filter '{featureFilterConfiguration.Name}' with context type '{appContext.GetType()}', specified for feature '{featureDefinition.Name}' was not found.";
 
                             if (!_options.IgnoreMissingFeatureFilters)
                             {
@@ -267,48 +269,72 @@ namespace Microsoft.FeatureManagement
             context.Settings = settings;
         }
 
-        private IFeatureFilterMetadata GetFeatureFilterMetadata(string filterName)
+        private bool IsFilterNameMatched(Type filterType, string filterName)
         {
             const string filterSuffix = "filter";
 
+            string name = ((FilterAliasAttribute)Attribute.GetCustomAttribute(filterType, typeof(FilterAliasAttribute)))?.Alias;
+
+            if (name == null)
+            {
+                name = filterType.Name.EndsWith(filterSuffix, StringComparison.OrdinalIgnoreCase) ? filterType.Name.Substring(0, filterType.Name.Length - filterSuffix.Length) : filterType.Name;
+            }
+
+            //
+            // Feature filters can have namespaces in their alias
+            // If a feature is configured to use a filter without a namespace such as 'MyFilter', then it can match 'MyOrg.MyProduct.MyFilter' or simply 'MyFilter'
+            // If a feature is configured to use a filter with a namespace such as 'MyOrg.MyProduct.MyFilter' then it can only match 'MyOrg.MyProduct.MyFilter' 
+            if (filterName.Contains('.'))
+            {
+                //
+                // The configured filter name is namespaced. It must be an exact match.
+                return string.Equals(name, filterName, StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                //
+                // We take the simple name of a filter, E.g. 'MyFilter' for 'MyOrg.MyProduct.MyFilter'
+                string simpleName = name.Contains('.') ? name.Split('.').Last() : name;
+
+                return string.Equals(simpleName, filterName, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        private IFeatureFilterMetadata GetFeatureFilterMetadata(string filterName, Type appContextType)
+        {
             IFeatureFilterMetadata filter = _filterMetadataCache.GetOrAdd(
-                filterName,
+                (filterName, appContextType),
                 (_) => {
 
                     IEnumerable<IFeatureFilterMetadata> matchingFilters = _featureFilters.Where(f =>
                     {
-                        Type t = f.GetType();
+                        Type filterType = f.GetType();
 
-                        string name = ((FilterAliasAttribute)Attribute.GetCustomAttribute(t, typeof(FilterAliasAttribute)))?.Alias;
-
-                        if (name == null)
+                        if (appContextType == null)
                         {
-                            name = t.Name.EndsWith(filterSuffix, StringComparison.OrdinalIgnoreCase) ? t.Name.Substring(0, t.Name.Length - filterSuffix.Length) : t.Name;
-                        }
-
-                        //
-                        // Feature filters can have namespaces in their alias
-                        // If a feature is configured to use a filter without a namespace such as 'MyFilter', then it can match 'MyOrg.MyProduct.MyFilter' or simply 'MyFilter'
-                        // If a feature is configured to use a filter with a namespace such as 'MyOrg.MyProduct.MyFilter' then it can only match 'MyOrg.MyProduct.MyFilter' 
-                        if (filterName.Contains('.'))
-                        {
-                            //
-                            // The configured filter name is namespaced. It must be an exact match.
-                            return string.Equals(name, filterName, StringComparison.OrdinalIgnoreCase);
+                            return (f is IFeatureFilter) && IsFilterNameMatched(filterType, filterName);
                         }
                         else
                         {
-                            //
-                            // We take the simple name of a filter, E.g. 'MyFilter' for 'MyOrg.MyProduct.MyFilter'
-                            string simpleName = name.Contains('.') ? name.Split('.').Last() : name;
+                            IEnumerable<Type> contextualFilterInterfaces = filterType.GetInterfaces().Where(
+                                i => i.IsGenericType &&
+                                     i.GetGenericTypeDefinition().IsAssignableFrom(typeof(IContextualFeatureFilter<>)) &&
+                                     i.GetGenericArguments()[0].IsAssignableFrom(appContextType));
 
-                            return string.Equals(simpleName, filterName, StringComparison.OrdinalIgnoreCase);
+                            return contextualFilterInterfaces.Any() && IsFilterNameMatched(filterType, filterName);
                         }
                     });
 
                     if (matchingFilters.Count() > 1)
                     {
-                        throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureFilter, $"Multiple feature filters match the configured filter named '{filterName}'.");
+                        if (appContextType == null)
+                        {
+                            throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureFilter, $"Multiple feature filters match the configured filter named '{filterName}'.");
+                        }
+                        else
+                        {
+                            throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureFilter, $"Multiple contextual feature filters match the configured filter named '{filterName}' and context type '{appContextType}'.");
+                        }
                     }
 
                     return matchingFilters.FirstOrDefault();
@@ -326,14 +352,12 @@ namespace Microsoft.FeatureManagement
             }
 
             ContextualFeatureFilterEvaluator filter = _contextualFeatureFilterCache.GetOrAdd(
-                $"{filterName}{Environment.NewLine}{appContextType.FullName}",
+                (filterName, appContextType),
                 (_) => {
 
-                    IFeatureFilterMetadata metadata = GetFeatureFilterMetadata(filterName);
+                    IFeatureFilterMetadata metadata = GetFeatureFilterMetadata(filterName, appContextType);
 
-                    return ContextualFeatureFilterEvaluator.IsContextualFilter(metadata, appContextType) ?
-                        new ContextualFeatureFilterEvaluator(metadata, appContextType) :
-                        null;
+                    return new ContextualFeatureFilterEvaluator(metadata, appContextType);
                 }
             );
 
