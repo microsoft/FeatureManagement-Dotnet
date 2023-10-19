@@ -777,8 +777,7 @@ Allocation logic is similar to the [Microsoft.Targeting](./README.md#MicrosoftTa
 
 You can use variants to override the enabled state of a feature flag. This gives variants an opportunity to extend the evaluation of a feature flag. If a caller is checking whether a flag that has variants is enabled, then variant allocation will be performed to see if an allocated variant is set up to override the result. This is done using the optional variant property `StatusOverride`. By default, this property is set to `None`, which means the variant doesn't affect whether the flag is considered enabled or disabled. Setting `StatusOverride` to `Enabled` allows the variant, when chosen, to override a flag to be enabled. Setting `StatusOverride` to `Disabled` provides the opposite functionality, therefore disabling the flag when the variant is chosen. A feature with a `Status` of `Disabled` cannot be overridden.
 
-The `StatusOverride` property allows translating the outcome of variant allocation into the enabled state of a feature flag. This allows you to continue using APIs like `IsEnabledAsync` and `FeatureGateAttribute` in your application, all while benefiting from the new features that come with variants, such as percentile allocation and seed.
-
+If you are using a feature flag with binary variants, the `StatusOverride` property can be very helpful. It allows you to continue using APIs like `IsEnabledAsync` and `FeatureGateAttribute` in your application, all while benefiting from the new features that come with variants, such as percentile allocation and seed.
 
 ```
 "Allocation": {
