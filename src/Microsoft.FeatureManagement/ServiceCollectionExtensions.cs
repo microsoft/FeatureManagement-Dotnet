@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 
 namespace Microsoft.FeatureManagement
@@ -33,7 +34,17 @@ namespace Microsoft.FeatureManagement
 
             services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
 
-            return new FeatureManagementBuilder(services);
+            services.TryAddSingleton<ITargetingContextAccessor, EmptyTargetingContextAccessor>();
+
+            var builder = new FeatureManagementBuilder(services);
+
+            builder.AddFeatureFilter<PercentageFilter>();
+
+            builder.AddFeatureFilter<TimeWindowFilter>();
+
+            builder.AddFeatureFilter<TargetingFilter>();
+
+            return builder;
         }
 
         /// <summary>
