@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
 {
-    internal class EmptyTargetingContextAccessor : ITargetingContextAccessor
+    class EmptyTargetingContextAccessor : ITargetingContextAccessor
     {
         public ValueTask<TargetingContext> GetContextAsync()
         {
