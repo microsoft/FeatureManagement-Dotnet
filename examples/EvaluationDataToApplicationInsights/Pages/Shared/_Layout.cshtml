@@ -1,4 +1,12 @@
-﻿<!DOCTYPE html>
+﻿@using System.Security.Claims
+@using Microsoft.AspNetCore.Http
+
+@inject IHttpContextAccessor httpContextAccessor
+@{
+    string username = httpContextAccessor.HttpContext.Request.Cookies["username"];
+}
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -13,32 +21,7 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script>
-        function getCookie(cname) {
-            let name = cname + "=";
-            let decodedCookie = decodeURIComponent(document.cookie);
-            let ca = decodedCookie.split(';');
-            for (let i = 0; i < ca.length; i++) {
-                let c = ca[i];
-                while (c.charAt(0) == ' ') {
-                    c = c.substring(1);
-                }
-                if (c.indexOf(name) == 0) {
-                    return c.substring(name.length, c.length);
-                }
-            }
-            return "";
-        }
-
-        function deleteCookie(name, path, domain) {
-            if (getCookie(name)) {
-                document.cookie = name + "=" +
-                    ((path) ? ";path=" + path : "") +
-                    ((domain) ? ";domain=" + domain : "") +
-                    ";expires=Thu, 01 Jan 1970 00:00:01 GMT";
-            }
-        }
-
-        appInsights.setAuthenticatedUserContext(getCookie("username"));
+        appInsights.setAuthenticatedUserContext(@username);
     </script>
 </head>
 <body>
@@ -60,18 +43,18 @@
                         </li>
                         <feature name="FeatureA">
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-page="/Home">Feature A</a>
+                                <span class="nav-link text-muted">Feature A</span>
                             </li>
                         </feature>
                         <feature name="FeatureB">
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-page="/Home">Feature B</a>
+                                <span class="nav-link text-muted">Feature B</span>
                             </li>
                         </feature>
                         <li style="display: flex;">
-                            <button onclick="document.cookie = ' username=' + Math.floor(Math.random() * 100000);deleteCookie('ai_user');deleteCookie('ai_session');window.location=window.location.origin;">
-                                Randomize User
-                            </button>
+                            <form method="get" asp-page="/RandomizeUser">
+                                <button style="height:100%" type="submit">Randomize User</button>
+                            </form>
                         </li>
                     </ul>
                 </div>
