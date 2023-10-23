@@ -143,14 +143,14 @@ namespace Microsoft.FeatureManagement
 
                         IFeatureFilterMetadata filter;
 
-                        if (appContext == null)
+                        if (useAppContext)
                         {
-                            filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, null);
+                            filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, typeof(TContext)) ??
+                                     GetFeatureFilterMetadata(featureFilterConfiguration.Name, null);
                         }
                         else
                         {
-                            filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, appContext.GetType()) ??
-                                     GetFeatureFilterMetadata(featureFilterConfiguration.Name, null);
+                            filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, null);
                         }
 
                         if (filter == null)
