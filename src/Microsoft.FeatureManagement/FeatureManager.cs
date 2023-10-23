@@ -175,7 +175,7 @@ namespace Microsoft.FeatureManagement
 
                         //
                         // IContextualFeatureFilter
-                        if (useAppContext && !(filter is IFeatureFilter))
+                        if (useAppContext && ContextualFeatureFilterEvaluator.IsContextualFilter(filter, typeof(TContext)))
                         {
                             ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
 

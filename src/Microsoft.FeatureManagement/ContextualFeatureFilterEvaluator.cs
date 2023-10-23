@@ -53,6 +53,11 @@ namespace Microsoft.FeatureManagement
             return _evaluateFunc(_filter, evaluationContext, context);
         }
 
+        public static bool IsContextualFilter(IFeatureFilterMetadata filter, Type appContextType)
+        {
+            return GetContextualFilterInterface(filter, appContextType) != null;
+        }
+
         private static Type GetContextualFilterInterface(IFeatureFilterMetadata filter, Type appContextType)
         {
             IEnumerable<Type> contextualFilterInterfaces = filter.GetType().GetInterfaces().Where(i => i.IsGenericType && i.GetGenericTypeDefinition().IsAssignableFrom(typeof(IContextualFeatureFilter<>)));
