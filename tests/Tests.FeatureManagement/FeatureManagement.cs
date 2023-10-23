@@ -90,6 +90,8 @@ namespace Tests.FeatureManagement
         {
             const string duplicatedFilterName = "DuplicatedFilterName";
 
+            string featureName = Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias);
+
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             var services = new ServiceCollection();
@@ -110,11 +112,11 @@ namespace Tests.FeatureManagement
 
             DummyContext dummyContext = new DummyContext();
 
-            Assert.True(await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias)));
+            Assert.True(await featureManager.IsEnabledAsync(featureName));
 
-            Assert.True(await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias), appContext));
+            Assert.True(await featureManager.IsEnabledAsync(featureName, appContext));
 
-            Assert.True(await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias), dummyContext));
+            Assert.True(await featureManager.IsEnabledAsync(featureName, dummyContext));
 
             services = new ServiceCollection();
 
@@ -128,7 +130,7 @@ namespace Tests.FeatureManagement
 
             featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            Assert.True(await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias), dummyContext));
+            Assert.True(await featureManager.IsEnabledAsync(featureName, dummyContext));
 
             services = new ServiceCollection();
 
@@ -146,7 +148,7 @@ namespace Tests.FeatureManagement
             FeatureManagementException ex = await Assert.ThrowsAsync<FeatureManagementException>(
                 async () =>
                 {
-                    await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias));
+                    await featureManager.IsEnabledAsync(featureName);
                 });
 
             Assert.Equal($"Multiple feature filters match the configured filter named '{duplicatedFilterName}'.", ex.Message);
@@ -167,10 +169,10 @@ namespace Tests.FeatureManagement
             ex = await Assert.ThrowsAsync<FeatureManagementException>(
                 async () =>
                 {
-                    await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias), dummyContext);
+                    await featureManager.IsEnabledAsync(featureName, dummyContext);
                 });
 
-            Assert.Equal($"Multiple contextual feature filters match the configured filter named '{duplicatedFilterName}' and context type '{dummyContext.GetType()}'.", ex.Message);
+            Assert.Equal($"Multiple contextual feature filters match the configured filter named '{duplicatedFilterName}' and context type '{typeof(DummyContext)}'.", ex.Message);
 
             services = new ServiceCollection();
 
@@ -187,10 +189,10 @@ namespace Tests.FeatureManagement
             ex = await Assert.ThrowsAsync<FeatureManagementException>(
                 async () =>
                 {
-                    await featureManager.IsEnabledAsync(Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias));
+                    await featureManager.IsEnabledAsync(featureName);
                 });
 
-            Assert.Equal($"The feature filter '{duplicatedFilterName}' specified for feature '{Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias)}' was not found.", ex.Message);
+            Assert.Equal($"The feature filter '{duplicatedFilterName}' specified for feature '{featureName}' was not found.", ex.Message);
         }
 
         [Fact]
