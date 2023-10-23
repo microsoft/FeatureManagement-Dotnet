@@ -8,7 +8,7 @@ namespace Tests.FeatureManagement
 {
     interface IDummyContext
     {
-        string DummyProperty { get; }
+        string DummyProperty { get; set; }
     }
 
     class DummyContext : IDummyContext

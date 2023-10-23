@@ -141,13 +141,21 @@ namespace Microsoft.FeatureManagement
                             continue;
                         }
 
-                        IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, appContext?.GetType());
+                        IFeatureFilterMetadata filter;
+
+                        if (appContext == null)
+                        {
+                            filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, null);
+                        }
+                        else
+                        {
+                            filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, appContext.GetType()) ??
+                                     GetFeatureFilterMetadata(featureFilterConfiguration.Name, null);
+                        }
 
                         if (filter == null)
                         {
-                            string errorMessage = appContext == null
-                                                ? $"The feature filter '{featureFilterConfiguration.Name}' specified for feature '{featureDefinition.Name}' was not found."
-                                                : $"The contextual feature filter '{featureFilterConfiguration.Name}' with context type '{appContext.GetType()}', specified for feature '{featureDefinition.Name}' was not found.";
+                            string errorMessage = $"The feature filter '{featureFilterConfiguration.Name}' specified for feature '{feature}' was not found.";
 
                             if (!_options.IgnoreMissingFeatureFilters)
                             {
@@ -167,7 +175,7 @@ namespace Microsoft.FeatureManagement
 
                         //
                         // IContextualFeatureFilter
-                        if (useAppContext)
+                        if (useAppContext && !(filter is IFeatureFilter))
                         {
                             ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
 
