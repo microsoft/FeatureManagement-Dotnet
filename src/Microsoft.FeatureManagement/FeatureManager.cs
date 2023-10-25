@@ -25,8 +25,8 @@ namespace Microsoft.FeatureManagement
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
         private readonly ILogger _logger;
-        private readonly ConcurrentDictionary<ValueTuple<string, Type>, IFeatureFilterMetadata> _filterMetadataCache;
-        private readonly ConcurrentDictionary<ValueTuple<string, Type>, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
+        private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
+        private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
         private readonly FeatureManagementOptions _options;
         private readonly IMemoryCache _parametersCache;
         
@@ -48,8 +48,8 @@ namespace Microsoft.FeatureManagement
             _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
             _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
             _logger = loggerFactory.CreateLogger<FeatureManager>();
-            _filterMetadataCache = new ConcurrentDictionary<ValueTuple<string, Type>, IFeatureFilterMetadata>();
-            _contextualFeatureFilterCache = new ConcurrentDictionary<ValueTuple<string, Type>, ContextualFeatureFilterEvaluator>();
+            _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
+            _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _parametersCache = new MemoryCache(new MemoryCacheOptions());
         }
@@ -146,11 +146,11 @@ namespace Microsoft.FeatureManagement
                         if (useAppContext)
                         {
                             filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, typeof(TContext)) ??
-                                     GetFeatureFilterMetadata(featureFilterConfiguration.Name, null);
+                                     GetFeatureFilterMetadata(featureFilterConfiguration.Name);
                         }
                         else
                         {
-                            filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, null);
+                            filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
                         }
 
                         if (filter == null)
@@ -173,9 +173,17 @@ namespace Microsoft.FeatureManagement
                             Parameters = featureFilterConfiguration.Parameters
                         };
 
-                        //
-                        // IContextualFeatureFilter
-                        if (useAppContext && ContextualFeatureFilterEvaluator.IsContextualFilter(filter, typeof(TContext)))
+                        if (filter is IFeatureFilter featureFilter)
+                        {
+                            BindSettings(filter, context, filterIndex);
+
+                            if (await featureFilter.EvaluateAsync(context).ConfigureAwait(false) == targetEvaluation) {
+                                enabled = targetEvaluation;
+
+                                break;
+                            }
+                        }
+                        else
                         {
                             ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
 
@@ -184,19 +192,6 @@ namespace Microsoft.FeatureManagement
                             if (contextualFilter != null &&
                                 await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation)
                             {
-                                enabled = targetEvaluation;
-
-                                break;
-                            }
-                        }
-
-                        //
-                        // IFeatureFilter
-                        if (filter is IFeatureFilter featureFilter)
-                        {
-                            BindSettings(filter, context, filterIndex);
-
-                            if (await featureFilter.EvaluateAsync(context).ConfigureAwait(false) == targetEvaluation) {
                                 enabled = targetEvaluation;
 
                                 break;
@@ -277,7 +272,49 @@ namespace Microsoft.FeatureManagement
             context.Settings = settings;
         }
 
-        private bool IsFilterNameMatched(Type filterType, string filterName)
+        private IFeatureFilterMetadata GetFeatureFilterMetadata(string filterName, Type appContextType = null)
+        {
+            IFeatureFilterMetadata filter = _filterMetadataCache.GetOrAdd(
+                $"{filterName}{Environment.NewLine}{appContextType?.FullName}",
+                (_) => {
+
+                    IEnumerable<IFeatureFilterMetadata> matchingFilters = _featureFilters.Where(f =>
+                    {
+                        Type filterType = f.GetType();
+
+                        if (!IsMatchingName(filterType, filterName))
+                        {
+                            return false;
+                        }
+
+                        if (appContextType == null)
+                        {
+                            return (f is IFeatureFilter);
+                        }
+
+                        return ContextualFeatureFilterEvaluator.IsContextualFilter(f, appContextType);
+                    });
+
+                    if (matchingFilters.Count() > 1)
+                    {
+                        if (appContextType == null)
+                        {
+                            throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureFilter, $"Multiple feature filters match the configured filter named '{filterName}'.");
+                        }
+                        else
+                        {
+                            throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureFilter, $"Multiple contextual feature filters match the configured filter named '{filterName}' and context type '{appContextType}'.");
+                        }
+                    }
+
+                    return matchingFilters.FirstOrDefault();
+                }
+            );
+
+            return filter;
+        }
+
+        private bool IsMatchingName(Type filterType, string filterName)
         {
             const string filterSuffix = "filter";
 
@@ -308,50 +345,6 @@ namespace Microsoft.FeatureManagement
             }
         }
 
-        private IFeatureFilterMetadata GetFeatureFilterMetadata(string filterName, Type appContextType)
-        {
-            IFeatureFilterMetadata filter = _filterMetadataCache.GetOrAdd(
-                (filterName, appContextType),
-                (_) => {
-
-                    IEnumerable<IFeatureFilterMetadata> matchingFilters = _featureFilters.Where(f =>
-                    {
-                        Type filterType = f.GetType();
-
-                        if (appContextType == null)
-                        {
-                            return (f is IFeatureFilter) && IsFilterNameMatched(filterType, filterName);
-                        }
-                        else
-                        {
-                            IEnumerable<Type> contextualFilterInterfaces = filterType.GetInterfaces().Where(
-                                i => i.IsGenericType &&
-                                     i.GetGenericTypeDefinition().IsAssignableFrom(typeof(IContextualFeatureFilter<>)) &&
-                                     i.GetGenericArguments()[0].IsAssignableFrom(appContextType));
-
-                            return contextualFilterInterfaces.Any() && IsFilterNameMatched(filterType, filterName);
-                        }
-                    });
-
-                    if (matchingFilters.Count() > 1)
-                    {
-                        if (appContextType == null)
-                        {
-                            throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureFilter, $"Multiple feature filters match the configured filter named '{filterName}'.");
-                        }
-                        else
-                        {
-                            throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureFilter, $"Multiple contextual feature filters match the configured filter named '{filterName}' and context type '{appContextType}'.");
-                        }
-                    }
-
-                    return matchingFilters.FirstOrDefault();
-                }
-            );
-
-            return filter;
-        }
-
         private ContextualFeatureFilterEvaluator GetContextualFeatureFilter(string filterName, Type appContextType)
         {
             if (appContextType == null)
@@ -360,7 +353,7 @@ namespace Microsoft.FeatureManagement
             }
 
             ContextualFeatureFilterEvaluator filter = _contextualFeatureFilterCache.GetOrAdd(
-                (filterName, appContextType),
+                $"{filterName}{Environment.NewLine}{appContextType?.FullName}",
                 (_) => {
 
                     IFeatureFilterMetadata metadata = GetFeatureFilterMetadata(filterName, appContextType);

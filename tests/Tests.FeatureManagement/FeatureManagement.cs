@@ -108,15 +108,19 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            AppContext appContext = new AppContext();
+            var appContext = new AppContext();
 
-            DummyContext dummyContext = new DummyContext();
+            var dummyContext = new DummyContext();
+            
+            var targetingContext = new TargetingContext();
 
             Assert.True(await featureManager.IsEnabledAsync(featureName));
 
             Assert.True(await featureManager.IsEnabledAsync(featureName, appContext));
 
             Assert.True(await featureManager.IsEnabledAsync(featureName, dummyContext));
+
+            Assert.True(await featureManager.IsEnabledAsync(featureName, targetingContext));
 
             services = new ServiceCollection();
 
