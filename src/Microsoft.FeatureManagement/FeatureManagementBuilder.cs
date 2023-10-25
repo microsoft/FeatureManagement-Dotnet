@@ -38,7 +38,7 @@ namespace Microsoft.FeatureManagement
 
             if (!Services.Any(descriptor => descriptor.ServiceType == serviceType && descriptor.ImplementationType == implementationType))
             {
-                Services.AddSingleton(typeof(IFeatureFilterMetadata), typeof(T));
+                Services.AddSingleton(serviceType, implementationType);
             }
 
             return this;
@@ -53,7 +53,14 @@ namespace Microsoft.FeatureManagement
 
         public IFeatureManagementBuilder WithTargeting<T>() where T : ITargetingContextAccessor
         {
-            Services.AddSingleton(typeof(ITargetingContextAccessor), typeof(T));
+            Type serviceType = typeof(ITargetingContextAccessor);
+
+            Type implementationType = typeof(T);
+
+            if (!Services.Any(descriptor => descriptor.ServiceType == serviceType && descriptor.ImplementationType != implementationType))
+            {
+                Services.AddSingleton(serviceType, implementationType);
+            }
 
             AddFeatureFilter<TargetingFilter>();
 
