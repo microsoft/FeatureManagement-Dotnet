@@ -2,8 +2,6 @@
 // Licensed under the MIT license.
 //
 using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.AzureAppConfiguration;
 
 namespace FeatureFlagDemo

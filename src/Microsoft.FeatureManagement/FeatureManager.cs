@@ -199,14 +199,14 @@ namespace Microsoft.FeatureManagement
             {
                 enabled = false;
 
-                string errorMessage = $"The feature declaration for the feature '{feature}' was not found.";
+                string errorMessage = $"The feature definition for the feature '{feature}' was not found.";
 
                 if (!_options.IgnoreMissingFeatures)
                 {
                     throw new FeatureManagementException(FeatureManagementError.MissingFeature, errorMessage);
                 }
                 
-                _logger.LogWarning(errorMessage);
+                _logger.LogDebug(errorMessage);
             }
 
             foreach (ISessionManager sessionManager in _sessionManagers)
