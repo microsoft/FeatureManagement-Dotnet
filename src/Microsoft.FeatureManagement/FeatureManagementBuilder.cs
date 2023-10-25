@@ -57,7 +57,7 @@ namespace Microsoft.FeatureManagement
 
             Type implementationType = typeof(T);
 
-            if (!Services.Any(descriptor => descriptor.ServiceType == serviceType && descriptor.ImplementationType != implementationType))
+            if (!Services.Any(descriptor => descriptor.ServiceType == serviceType && descriptor.ImplementationType == implementationType))
             {
                 Services.AddSingleton(serviceType, implementationType);
             }
