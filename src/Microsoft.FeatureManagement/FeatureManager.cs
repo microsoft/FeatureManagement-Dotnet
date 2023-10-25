@@ -173,24 +173,28 @@ namespace Microsoft.FeatureManagement
                             Parameters = featureFilterConfiguration.Parameters
                         };
 
-                        if (filter is IFeatureFilter featureFilter)
-                        {
-                            BindSettings(filter, context, filterIndex);
+                        BindSettings(filter, context, filterIndex);
 
-                            if (await featureFilter.EvaluateAsync(context).ConfigureAwait(false) == targetEvaluation) {
+                        //
+                        // IContextualFeatureFilter
+                        if (useAppContext)
+                        {
+                            ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
+
+                            if (contextualFilter != null &&
+                                await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation)
+                            {
                                 enabled = targetEvaluation;
 
                                 break;
                             }
                         }
-                        else
+
+                        //
+                        // IFeatureFilter
+                        if (filter is IFeatureFilter featureFilter)
                         {
-                            ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
-
-                            BindSettings(filter, context, filterIndex);
-
-                            if (contextualFilter != null &&
-                                await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation)
+                            if (await featureFilter.EvaluateAsync(context).ConfigureAwait(false) == targetEvaluation)
                             {
                                 enabled = targetEvaluation;
 
@@ -357,6 +361,11 @@ namespace Microsoft.FeatureManagement
                 (_) => {
 
                     IFeatureFilterMetadata metadata = GetFeatureFilterMetadata(filterName, appContextType);
+
+                    if (metadata == null)
+                    {
+                        return null;
+                    }
 
                     return new ContextualFeatureFilterEvaluator(metadata, appContextType);
                 }
