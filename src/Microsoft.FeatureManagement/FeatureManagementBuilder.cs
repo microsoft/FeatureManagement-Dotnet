@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace Microsoft.FeatureManagement
 {
@@ -46,6 +47,15 @@ namespace Microsoft.FeatureManagement
         public IFeatureManagementBuilder AddSessionManager<T>() where T : ISessionManager
         {
             Services.AddSingleton(typeof(ISessionManager), typeof(T));
+
+            return this;
+        }
+
+        public IFeatureManagementBuilder WithTargeting<T>() where T : ITargetingContextAccessor
+        {
+            Services.AddSingleton(typeof(ITargetingContextAccessor), typeof(T));
+
+            AddFeatureFilter<TargetingFilter>();
 
             return this;
         }

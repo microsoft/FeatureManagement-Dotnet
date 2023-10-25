@@ -34,15 +34,13 @@ namespace Microsoft.FeatureManagement
 
             services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
 
-            services.TryAddSingleton<ITargetingContextAccessor, EmptyTargetingContextAccessor>();
-
             var builder = new FeatureManagementBuilder(services);
 
             builder.AddFeatureFilter<PercentageFilter>();
 
             builder.AddFeatureFilter<TimeWindowFilter>();
 
-            builder.AddFeatureFilter<TargetingFilter>();
+            builder.AddFeatureFilter<ContextualTargetingFilter>();
 
             return builder;
         }
