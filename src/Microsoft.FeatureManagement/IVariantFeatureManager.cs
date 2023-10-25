@@ -25,7 +25,7 @@ namespace Microsoft.FeatureManagement
         /// <param name="feature">The name of the feature to check.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>True if the feature is enabled, otherwise false.</returns>
-        Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken);
+        ValueTask<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken);
 
         /// <summary>
         /// Checks whether a given feature is enabled.
@@ -34,7 +34,7 @@ namespace Microsoft.FeatureManagement
         /// <param name="context">A context providing information that can be used to evaluate whether a feature should be on or off.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>True if the feature is enabled, otherwise false.</returns>
-        Task<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken);
+        ValueTask<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken);
 
         /// <summary>
         /// Gets the assigned variant for a specific feature.

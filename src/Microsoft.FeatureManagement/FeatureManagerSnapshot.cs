@@ -17,7 +17,7 @@ namespace Microsoft.FeatureManagement
     class FeatureManagerSnapshot : IFeatureManagerSnapshot, IVariantFeatureManagerSnapshot
     {
         private readonly IVariantFeatureManager _featureManager;
-        private readonly ConcurrentDictionary<string, Task<bool>> _flagCache = new ConcurrentDictionary<string, Task<bool>>();
+        private readonly ConcurrentDictionary<string, ValueTask<bool>> _flagCache = new ConcurrentDictionary<string, ValueTask<bool>>();
         private readonly ConcurrentDictionary<string, Variant> _variantCache = new ConcurrentDictionary<string, Variant>();
         private IEnumerable<string> _featureNames;
 
@@ -55,24 +55,24 @@ namespace Microsoft.FeatureManagement
         {
             return _flagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key, CancellationToken.None));
+                (key) => _featureManager.IsEnabledAsync(key, CancellationToken.None)).AsTask();
         }
 
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
         {
             return _flagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key, context, CancellationToken.None));
+                (key) => _featureManager.IsEnabledAsync(key, context, CancellationToken.None)).AsTask();
         }
 
-        public Task<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
+        public ValueTask<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
         {
             return _flagCache.GetOrAdd(
                 feature,
                 (key) => _featureManager.IsEnabledAsync(key, cancellationToken));
         }
 
-        public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
+        public ValueTask<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
         {
             return _flagCache.GetOrAdd(
                 feature,
