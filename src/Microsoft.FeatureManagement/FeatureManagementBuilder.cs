@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace Microsoft.FeatureManagement
@@ -53,14 +54,7 @@ namespace Microsoft.FeatureManagement
 
         public IFeatureManagementBuilder WithTargeting<T>() where T : ITargetingContextAccessor
         {
-            Type serviceType = typeof(ITargetingContextAccessor);
-
-            Type implementationType = typeof(T);
-
-            if (!Services.Any(descriptor => descriptor.ServiceType == serviceType && descriptor.ImplementationType == implementationType))
-            {
-                Services.AddSingleton(serviceType, implementationType);
-            }
+            Services.TryAddSingleton(typeof(ITargetingContextAccessor), typeof(T));
 
             AddFeatureFilter<TargetingFilter>();
 

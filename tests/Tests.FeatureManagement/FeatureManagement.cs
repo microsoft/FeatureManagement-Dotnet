@@ -101,8 +101,7 @@ namespace Tests.FeatureManagement
                 .AddFeatureManagement()
                 .AddFeatureFilter<DuplicatedAliasFeatureFilter1>()
                 .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithAccountContext>()
-                .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithDummyContext1>()
-                .AddFeatureFilter<PercentageFilter>();
+                .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithDummyContext1>();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
@@ -127,8 +126,7 @@ namespace Tests.FeatureManagement
             services
                 .AddSingleton(config)
                 .AddFeatureManagement()
-                .AddFeatureFilter<DuplicatedAliasFeatureFilter1>()
-                .AddFeatureFilter<PercentageFilter>();
+                .AddFeatureFilter<DuplicatedAliasFeatureFilter1>();
 
             serviceProvider = services.BuildServiceProvider();
 
@@ -142,8 +140,7 @@ namespace Tests.FeatureManagement
                 .AddSingleton(config)
                 .AddFeatureManagement()
                 .AddFeatureFilter<DuplicatedAliasFeatureFilter1>()
-                .AddFeatureFilter<DuplicatedAliasFeatureFilter2>()
-                .AddFeatureFilter<PercentageFilter>();
+                .AddFeatureFilter<DuplicatedAliasFeatureFilter2>();
 
             serviceProvider = services.BuildServiceProvider();
 
@@ -163,8 +160,7 @@ namespace Tests.FeatureManagement
                 .AddSingleton(config)
                 .AddFeatureManagement()
                 .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithDummyContext1>()
-                .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithDummyContext2>()
-                .AddFeatureFilter<PercentageFilter>();
+                .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithDummyContext2>();
 
             serviceProvider = services.BuildServiceProvider();
 
@@ -183,8 +179,7 @@ namespace Tests.FeatureManagement
             services
                 .AddSingleton(config)
                 .AddFeatureManagement()
-                .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithAccountContext>()
-                .AddFeatureFilter<PercentageFilter>();
+                .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithAccountContext>();
 
             serviceProvider = services.BuildServiceProvider();
 
@@ -246,8 +241,7 @@ namespace Tests.FeatureManagement
             var serviceCollection = new ServiceCollection();
 
             serviceCollection.AddSingleton(config)
-                .AddFeatureManagement()
-                .AddFeatureFilter<TimeWindowFilter>();
+                .AddFeatureManagement();
 
             ServiceProvider provider = serviceCollection.BuildServiceProvider();
 
@@ -272,8 +266,7 @@ namespace Tests.FeatureManagement
             var serviceCollection = new ServiceCollection();
 
             serviceCollection.AddSingleton(config)
-                .AddFeatureManagement()
-                .AddFeatureFilter<PercentageFilter>();
+                .AddFeatureManagement();
 
             ServiceProvider provider = serviceCollection.BuildServiceProvider();
 
@@ -307,8 +300,7 @@ namespace Tests.FeatureManagement
 
             services
                 .AddSingleton(config)
-                .AddFeatureManagement()
-                .AddFeatureFilter<ContextualTargetingFilter>();
+                .AddFeatureManagement();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
@@ -374,7 +366,7 @@ namespace Tests.FeatureManagement
             services
                 .AddSingleton(config)
                 .AddFeatureManagement()
-                .AddFeatureFilter<TargetingFilter>();
+                .WithTargeting<OnDemandTargetingContextAccessor>();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
