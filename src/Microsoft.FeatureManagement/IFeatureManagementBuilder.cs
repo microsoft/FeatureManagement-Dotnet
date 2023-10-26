@@ -2,7 +2,6 @@
 // Licensed under the MIT license.
 //
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace Microsoft.FeatureManagement
 {
@@ -31,12 +30,5 @@ namespace Microsoft.FeatureManagement
         /// <typeparam name="T">An implementation of <see cref="ISessionManager"/></typeparam>
         /// <returns>The feature management builder.</returns>
         IFeatureManagementBuilder AddSessionManager<T>() where T : ISessionManager;
-
-        /// <summary>
-        /// Adds an <see cref="ITargetingContextAccessor"/> to be used for targeting.
-        /// </summary>
-        /// <typeparam name="T">An implementation of <see cref="ITargetingContextAccessor"/></typeparam>
-        /// <returns>The feature management builder.</returns>
-        IFeatureManagementBuilder WithTargeting<T>() where T : ITargetingContextAccessor;
     }
 }

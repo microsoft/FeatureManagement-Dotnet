@@ -16,7 +16,7 @@ namespace Microsoft.FeatureManagement
     public static class ServiceCollectionExtensions
     {
         /// <summary>
-        /// Adds required feature management services.
+        /// Adds required feature management services and built-in feature filters.
         /// </summary>
         /// <param name="services">The service collection that feature management services are added to.</param>
         /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
@@ -35,7 +35,9 @@ namespace Microsoft.FeatureManagement
             services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
 
             var builder = new FeatureManagementBuilder(services);
-
+            
+            //
+            // Add built-in feature filters
             builder.AddFeatureFilter<PercentageFilter>();
 
             builder.AddFeatureFilter<TimeWindowFilter>();
