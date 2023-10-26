@@ -357,7 +357,7 @@ namespace Microsoft.FeatureManagement
             }
 
             ContextualFeatureFilterEvaluator filter = _contextualFeatureFilterCache.GetOrAdd(
-                $"{filterName}{Environment.NewLine}{appContextType?.FullName}",
+                $"{filterName}{Environment.NewLine}{appContextType.FullName}",
                 (_) => {
 
                     IFeatureFilterMetadata metadata = GetFeatureFilterMetadata(filterName, appContextType);
