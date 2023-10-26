@@ -71,49 +71,106 @@ namespace Microsoft.FeatureManagement
 
         public Task<bool> IsEnabledAsync(string feature)
         {
-            return IsEnabledWithVariantsAsync<object>(feature, appContext: null, useAppContext: false, CancellationToken.None).AsTask();
+            return IsEnabledEvaluation<object>(feature, appContext: null, useAppContext: false, CancellationToken.None).AsTask();
         }
 
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
         {
-            return IsEnabledWithVariantsAsync(feature, appContext, useAppContext: true, CancellationToken.None).AsTask();
+            return IsEnabledEvaluation(feature, appContext, useAppContext: true, CancellationToken.None).AsTask();
         }
 
         public ValueTask<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
         {
-            return IsEnabledWithVariantsAsync<object>(feature, appContext: null, useAppContext: false, cancellationToken);
+            return IsEnabledEvaluation<object>(feature, appContext: null, useAppContext: false, cancellationToken);
         }
 
         public ValueTask<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, CancellationToken cancellationToken)
         {
-            return IsEnabledWithVariantsAsync(feature, appContext, useAppContext: true, cancellationToken);
+            return IsEnabledEvaluation(feature, appContext, useAppContext: true, cancellationToken);
         }
 
-        private async ValueTask<bool> IsEnabledWithVariantsAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
+        private async ValueTask<bool> IsEnabledEvaluation<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
-            bool isFeatureEnabled = false;
-
-            FeatureDefinition featureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false);
-
-            VariantDefinition variantDefinition = null;
-
-            if (featureDefinition != null)
+            EvaluationEvent evaluationEvent = new EvaluationEvent
             {
-                isFeatureEnabled = await IsEnabledAsync(featureDefinition, appContext, useAppContext, cancellationToken).ConfigureAwait(false);
+                FeatureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false)
+            };
 
-                if (featureDefinition.Variants != null && featureDefinition.Variants.Any() && featureDefinition.Allocation != null)
+            await EvaluateFeature(evaluationEvent, appContext, useAppContext, cancellationToken);
+
+            return evaluationEvent.IsEnabled;
+        }
+
+        public ValueTask<Variant> GetVariantAsync(string feature, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(feature))
+            {
+                throw new ArgumentNullException(nameof(feature));
+            }
+
+            return GetVariantEvaluation(feature, context: null, useContext: false, cancellationToken);
+        }
+
+        public ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(feature))
+            {
+                throw new ArgumentNullException(nameof(feature));
+            }
+
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            return GetVariantEvaluation(feature, context, useContext: true, cancellationToken);
+        }
+
+        private async ValueTask<Variant> GetVariantEvaluation(string feature, TargetingContext context, bool useContext, CancellationToken cancellationToken)
+        {
+            EvaluationEvent evaluationEvent = new EvaluationEvent
+            {
+                FeatureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false)
+            };
+
+            await EvaluateFeature(evaluationEvent, context, useContext, cancellationToken);
+
+            return evaluationEvent.Variant;
+        }
+
+        private async Task<EvaluationEvent> EvaluateFeature<TContext>(EvaluationEvent evaluationEvent, TContext context, bool useContext, CancellationToken cancellationToken)
+        {
+            if (evaluationEvent.FeatureDefinition != null)
+            {
+                //
+                // Determine IsEnabled
+                evaluationEvent.IsEnabled = await IsEnabledAsync(evaluationEvent.FeatureDefinition, context, useContext, cancellationToken).ConfigureAwait(false);
+
+                //
+                // Determine Variant
+                VariantDefinition variantDefinition;
+
+                if (evaluationEvent.FeatureDefinition.Allocation == null || (!evaluationEvent.FeatureDefinition.Variants?.Any() ?? false))
                 {
-                    if (!isFeatureEnabled)
+                    variantDefinition = null;
+
+                    evaluationEvent.VariantReason = "No Allocation or Variants";
+                }
+                else
+                {
+                    if (!evaluationEvent.IsEnabled)
                     {
-                        variantDefinition = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == featureDefinition.Allocation.DefaultWhenDisabled);
+                        variantDefinition = evaluationEvent.FeatureDefinition.Variants.FirstOrDefault((variant) => variant.Name == evaluationEvent.FeatureDefinition.Allocation.DefaultWhenDisabled);
+
+                        evaluationEvent.VariantReason = "Disabled Default";
                     }
                     else
                     {
                         TargetingContext targetingContext;
 
-                        if (useAppContext)
+                        if (useContext)
                         {
-                            targetingContext = appContext as TargetingContext;
+                            targetingContext = context as TargetingContext;
                         }
                         else
                         {
@@ -121,21 +178,25 @@ namespace Microsoft.FeatureManagement
                         }
 
                         variantDefinition = await GetAssignedVariantAsync(
-                            featureDefinition,
+                            evaluationEvent,
                             targetingContext,
                             cancellationToken)
                             .ConfigureAwait(false);
                     }
 
-                    if (variantDefinition != null && featureDefinition.Status != FeatureStatus.Disabled)
+                    evaluationEvent.Variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null;
+
+                    //
+                    // Override IsEnabled if variant has an override
+                    if (variantDefinition != null && evaluationEvent.FeatureDefinition.Status != FeatureStatus.Disabled)
                     {
                         if (variantDefinition.StatusOverride == StatusOverride.Enabled)
                         {
-                            isFeatureEnabled = true;
+                            evaluationEvent.IsEnabled = true;
                         }
                         else if (variantDefinition.StatusOverride == StatusOverride.Disabled)
                         {
-                            isFeatureEnabled = false;
+                            evaluationEvent.IsEnabled = false;
                         }
                     }
                 }
@@ -143,20 +204,15 @@ namespace Microsoft.FeatureManagement
 
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                await sessionManager.SetAsync(feature, isFeatureEnabled).ConfigureAwait(false);
+                await sessionManager.SetAsync(evaluationEvent.FeatureDefinition.Name, evaluationEvent.IsEnabled).ConfigureAwait(false);
             }
 
-            if (featureDefinition.TelemetryEnabled)
+            if (evaluationEvent.FeatureDefinition.TelemetryEnabled)
             {
-                PublishTelemetry(new EvaluationEvent
-                {
-                    FeatureDefinition = featureDefinition,
-                    IsEnabled = isFeatureEnabled,
-                    Variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null
-                }, cancellationToken);
+                PublishTelemetry(evaluationEvent, cancellationToken);
             }
 
-            return isFeatureEnabled;
+            return evaluationEvent;
         }
 
         public IAsyncEnumerable<string> GetFeatureNamesAsync()
@@ -304,73 +360,6 @@ namespace Microsoft.FeatureManagement
             return enabled;
         }
 
-        public ValueTask<Variant> GetVariantAsync(string feature, CancellationToken cancellationToken)
-        {
-            if (string.IsNullOrEmpty(feature))
-            {
-                throw new ArgumentNullException(nameof(feature));
-            }
-
-            return GetVariantAsync(feature, context: null, useContext: false, cancellationToken);
-        }
-
-        public ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, CancellationToken cancellationToken)
-        {
-            if (string.IsNullOrEmpty(feature))
-            {
-                throw new ArgumentNullException(nameof(feature));
-            }
-
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
-            return GetVariantAsync(feature, context, useContext: true, cancellationToken);
-        }
-
-        private async ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, bool useContext, CancellationToken cancellationToken)
-        {
-            FeatureDefinition featureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false);
-
-            if (featureDefinition == null || featureDefinition.Allocation == null || (!featureDefinition.Variants?.Any() ?? false))
-            {
-                return null;
-            }
-
-            VariantDefinition variantDefinition = null;
-
-            bool isFeatureEnabled = await IsEnabledAsync(featureDefinition, context, useContext, cancellationToken).ConfigureAwait(false);
-
-            if (!isFeatureEnabled)
-            {
-                variantDefinition = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == featureDefinition.Allocation.DefaultWhenDisabled);
-            }
-            else
-            {
-                if (!useContext)
-                {
-                    context = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
-                }
-
-                variantDefinition = await GetAssignedVariantAsync(featureDefinition, context, cancellationToken).ConfigureAwait(false);
-            }
-
-            Variant variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null;
-
-            if (featureDefinition.TelemetryEnabled)
-            {
-                PublishTelemetry(new EvaluationEvent
-                {
-                    FeatureDefinition = featureDefinition,
-                    IsEnabled = isFeatureEnabled,
-                    Variant = variant
-                }, cancellationToken);
-            }
-
-            return variant;
-        }
-
         private async ValueTask<FeatureDefinition> GetFeatureDefinition(string feature)
         {
             FeatureDefinition featureDefinition = await _featureDefinitionProvider
@@ -415,95 +404,103 @@ namespace Microsoft.FeatureManagement
             return context;
         }
 
-        private async ValueTask<VariantDefinition> GetAssignedVariantAsync(FeatureDefinition featureDefinition, TargetingContext context, CancellationToken cancellationToken)
+        private async ValueTask<VariantDefinition> GetAssignedVariantAsync(EvaluationEvent evaluationEvent, TargetingContext context, CancellationToken cancellationToken)
         {
             VariantDefinition variantDefinition = null;
 
             if (context != null)
             {
-                variantDefinition = await AssignVariantAsync(featureDefinition, context, cancellationToken).ConfigureAwait(false);
+                variantDefinition = await AssignVariantAsync(evaluationEvent, context, cancellationToken).ConfigureAwait(false);
             }
 
             if (variantDefinition == null)
             {
-                variantDefinition = featureDefinition.Variants.FirstOrDefault((variant) => variant.Name == featureDefinition.Allocation.DefaultWhenEnabled);
+                variantDefinition = evaluationEvent.FeatureDefinition.Variants.FirstOrDefault((variant) => variant.Name == evaluationEvent.FeatureDefinition.Allocation.DefaultWhenEnabled);
+
+                evaluationEvent.VariantReason = "Enabled Default";
             }
 
             return variantDefinition;
         }
 
-        private ValueTask<VariantDefinition> AssignVariantAsync(FeatureDefinition featureDefinition, TargetingContext targetingContext, CancellationToken cancellationToken)
+        private ValueTask<VariantDefinition> AssignVariantAsync(EvaluationEvent evaluationEvent, TargetingContext targetingContext, CancellationToken cancellationToken)
         {
             VariantDefinition variant = null;
 
-            if (featureDefinition.Allocation.User != null)
+            if (evaluationEvent.FeatureDefinition.Allocation.User != null)
             {
-                foreach (UserAllocation user in featureDefinition.Allocation.User)
+                foreach (UserAllocation user in evaluationEvent.FeatureDefinition.Allocation.User)
                 {
                     if (TargetingEvaluator.IsTargeted(targetingContext.UserId, user.Users, _assignerOptions.IgnoreCase))
                     {
                         if (string.IsNullOrEmpty(user.Variant))
                         {
-                            _logger.LogWarning($"Missing variant name for user allocation in feature {featureDefinition.Name}");
+                            _logger.LogWarning($"Missing variant name for user allocation in feature {evaluationEvent.FeatureDefinition.Name}");
 
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
 
-                        Debug.Assert(featureDefinition.Variants != null);
+                        Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
+
+                        evaluationEvent.VariantReason = "User Allocated";
 
                         return new ValueTask<VariantDefinition>(
-                            featureDefinition
+                            evaluationEvent.FeatureDefinition
                                 .Variants
                                 .FirstOrDefault((variant) => variant.Name == user.Variant));
                     }
                 }
             }
 
-            if (featureDefinition.Allocation.Group != null)
+            if (evaluationEvent.FeatureDefinition.Allocation.Group != null)
             {
-                foreach (GroupAllocation group in featureDefinition.Allocation.Group)
+                foreach (GroupAllocation group in evaluationEvent.FeatureDefinition.Allocation.Group)
                 {
                     if (TargetingEvaluator.IsTargeted(targetingContext.Groups, group.Groups, _assignerOptions.IgnoreCase))
                     {
                         if (string.IsNullOrEmpty(group.Variant))
                         {
-                            _logger.LogWarning($"Missing variant name for group allocation in feature {featureDefinition.Name}");
+                            _logger.LogWarning($"Missing variant name for group allocation in feature {evaluationEvent.FeatureDefinition.Name}");
 
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
 
-                        Debug.Assert(featureDefinition.Variants != null);
+                        Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
+
+                        evaluationEvent.VariantReason = "Group Allocated";
 
                         return new ValueTask<VariantDefinition>(
-                            featureDefinition
+                            evaluationEvent.FeatureDefinition
                                 .Variants
                                 .FirstOrDefault((variant) => variant.Name == group.Variant));
                     }
                 }
             }
 
-            if (featureDefinition.Allocation.Percentile != null)
+            if (evaluationEvent.FeatureDefinition.Allocation.Percentile != null)
             {
-                foreach (PercentileAllocation percentile in featureDefinition.Allocation.Percentile)
+                foreach (PercentileAllocation percentile in evaluationEvent.FeatureDefinition.Allocation.Percentile)
                 {
                     if (TargetingEvaluator.IsTargeted(
                         targetingContext,
                         percentile.From,
                         percentile.To,
                         _assignerOptions.IgnoreCase,
-                        featureDefinition.Allocation.Seed ?? $"allocation\n{featureDefinition.Name}"))
+                        evaluationEvent.FeatureDefinition.Allocation.Seed ?? $"allocation\n{evaluationEvent.FeatureDefinition.Name}"))
                     {
                         if (string.IsNullOrEmpty(percentile.Variant))
                         {
-                            _logger.LogWarning($"Missing variant name for percentile allocation in feature {featureDefinition.Name}");
+                            _logger.LogWarning($"Missing variant name for percentile allocation in feature {evaluationEvent.FeatureDefinition.Name}");
 
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
 
-                        Debug.Assert(featureDefinition.Variants != null);
+                        Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
+
+                        evaluationEvent.VariantReason = "Percentile Allocated";
 
                         return new ValueTask<VariantDefinition>(
-                            featureDefinition
+                            evaluationEvent.FeatureDefinition
                                 .Variants
                                 .FirstOrDefault((variant) => variant.Name == percentile.Variant));
                     }

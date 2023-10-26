@@ -859,6 +859,7 @@ namespace Tests.FeatureManagement
             Assert.Equal("EtagValue", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata["Etag"]);
             Assert.Equal("LabelValue", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata["Label"]);
             Assert.Equal("Tag1Value", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata["Tags.Tag1"]);
+            Assert.Equal("No Allocation or Variants", testPublisher.evaluationEventCache.VariantReason);
 
             string offFeature = "OffTimeTestFeature";
 
@@ -867,6 +868,7 @@ namespace Tests.FeatureManagement
             Assert.False(result);
             Assert.Equal(offFeature, testPublisher.evaluationEventCache.FeatureDefinition.Name);
             Assert.Equal(result, testPublisher.evaluationEventCache.IsEnabled);
+            Assert.Equal("No Allocation or Variants", testPublisher.evaluationEventCache.VariantReason);
 
             // Test variant cases
             string variantDefaultEnabledFeature = "VariantFeatureDefaultEnabled";
@@ -892,12 +894,23 @@ namespace Tests.FeatureManagement
             Assert.Equal(variantFeatureStatusDisabled, testPublisher.evaluationEventCache.FeatureDefinition.Name);
             Assert.Equal(result, testPublisher.evaluationEventCache.IsEnabled);
             Assert.Equal("Small", testPublisher.evaluationEventCache.Variant.Name);
+            Assert.Equal("Disabled Default", testPublisher.evaluationEventCache.VariantReason);
 
             variantResult = await featureManager.GetVariantAsync(variantFeatureStatusDisabled, CancellationToken.None);
 
             Assert.False(testPublisher.evaluationEventCache.IsEnabled);
             Assert.Equal(variantFeatureStatusDisabled, testPublisher.evaluationEventCache.FeatureDefinition.Name);
             Assert.Equal(variantResult.Name, testPublisher.evaluationEventCache.Variant.Name);
+            Assert.Equal("Disabled Default", testPublisher.evaluationEventCache.VariantReason);
+
+            string variantFeatureDefaultEnabled = "VariantFeatureDefaultEnabled";
+
+            variantResult = await featureManager.GetVariantAsync(variantFeatureDefaultEnabled, CancellationToken.None);
+
+            Assert.True(testPublisher.evaluationEventCache.IsEnabled);
+            Assert.Equal(variantFeatureDefaultEnabled, testPublisher.evaluationEventCache.FeatureDefinition.Name);
+            Assert.Equal(variantResult.Name, testPublisher.evaluationEventCache.Variant.Name);
+            Assert.Equal("Enabled Default", testPublisher.evaluationEventCache.VariantReason);
         }
 
         [Fact]
