@@ -149,7 +149,7 @@ namespace Tests.FeatureManagement
 
             featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            FeatureManagementException ex = await Assert.ThrowsAsync<FeatureManagementException>(
+            var ex = await Assert.ThrowsAsync<FeatureManagementException>(
                 async () =>
                 {
                     await featureManager.IsEnabledAsync(featureName);
