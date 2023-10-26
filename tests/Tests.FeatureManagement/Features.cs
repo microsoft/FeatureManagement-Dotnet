@@ -13,6 +13,7 @@ namespace Tests.FeatureManagement
         ConditionalFeature2,
         ContextualFeature,
         AnyFilterFeature,
-        AllFilterFeature
+        AllFilterFeature,
+        FeatureUsesFiltersWithDuplicatedAlias
     }
 }
