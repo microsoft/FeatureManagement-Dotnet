@@ -86,7 +86,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task AllowDuplicatedFilterAlias()
+        public async Task AllowsDuplicatedFilterAlias()
         {
             const string duplicatedFilterName = "DuplicatedFilterName";
 
