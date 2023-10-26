@@ -37,7 +37,7 @@ namespace Microsoft.FeatureManagement
 
             if (!Services.Any(descriptor => descriptor.ServiceType == serviceType && descriptor.ImplementationType == implementationType))
             {
-                Services.AddSingleton(typeof(IFeatureFilterMetadata), typeof(T));
+                Services.AddSingleton(serviceType, implementationType);
             }
 
             return this;
