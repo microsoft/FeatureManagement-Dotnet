@@ -1,4 +1,9 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.FeatureManagement.FeatureFilters;
 using Microsoft.FeatureManagement.Telemetry;
 using System;
 using System.Collections.Generic;
@@ -33,6 +38,19 @@ namespace Microsoft.FeatureManagement
 
                 options.TelemetryPublisherFactories.Add(factory);
             });
+
+            return builder;
+        }
+
+        /// Adds an <see cref="ITargetingContextAccessor"/> to be used for targeting and registers the targeting filter to the feature management system.
+        /// </summary>
+        /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
+        /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
+        public static IFeatureManagementBuilder WithTargeting<T>(this IFeatureManagementBuilder builder) where T : ITargetingContextAccessor
+        {
+            builder.Services.TryAddSingleton(typeof(ITargetingContextAccessor), typeof(T));
+
+            builder.AddFeatureFilter<TargetingFilter>();
 
             return builder;
         }

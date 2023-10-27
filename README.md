@@ -139,9 +139,9 @@ A `RequirementType` of `All` changes the traversal. First, if there are no filte
 ```
 
 In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning all of it's filters must evaluate to true for the feature to be enabled. In this case, the feature will be enabled for 50% of users during the specified time window.
+<<<<<<< HEAD
 
 ### Status
-
 
 `Status` is an optional property of a feature flag that controls how a flag's enabled state is evaluated. By default, the status of a flag is `Conditional`, meaning that feature filters should be evaluated to determine if the flag is enabled. If the `Status` of a flag is set to `Disabled` then feature filters are not evaluated and the flag is always considered to be disabled.
 
@@ -158,21 +158,7 @@ In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning
 ```
 
 In this example, even though the `AlwaysOn` filter would normally always make the feature enabled, the `Status` property is set to `Disabled`, so this feature will always be disabled. 
-
-### Referencing
-
-To make it easier to reference these feature flags in code, we recommend to define feature flag variables like below.
-
-``` C#
-// Define feature flags in an enum
-public enum MyFeatureFlags
-{
-    FeatureT,
-    FeatureU,
-    FeatureV
-}
-```
-    
+   
 ### Service Registration
 
 Feature flags rely on .NET Core dependency injection. We can register the feature management services using standard conventions.
@@ -194,7 +180,6 @@ public class Startup
 
 This tells the feature manager to use the "FeatureManagement" section from the configuration for feature flag settings. It also registers two built-in feature filters named `PercentageFilter` and `TimeWindowFilter`. When filters are referenced in feature flag settings (appsettings.json) the _Filter_ part of the type name can be omitted.
 
-
 **Advanced:** The feature manager looks for feature definitions in a configuration section named "FeatureManagement". If the "FeatureManagement" section does not exist, it falls back to the root of the provided configuration.
 
 ## Consumption
@@ -207,7 +192,7 @@ The basic form of feature management is checking if a feature is enabled and the
 …
 IFeatureManager featureManager;
 …
-if (await featureManager.IsEnabledAsync(nameof(MyFeatureFlags.FeatureU)))
+if (await featureManager.IsEnabledAsync("FeatureX"))
 {
     // Do something
 }
@@ -236,7 +221,7 @@ The feature management library provides functionality in ASP.NET Core and MVC to
 MVC controller and actions can require that a given feature, or one of any list of features, be enabled in order to execute. This can be done by using a `FeatureGateAttribute`, which can be found in the `Microsoft.FeatureManagement.Mvc` namespace. 
 
 ``` C#
-[FeatureGate(MyFeatureFlags.FeatureX)]
+[FeatureGate("FeatureX")]
 public class HomeController : Controller
 {
     …
@@ -246,14 +231,14 @@ public class HomeController : Controller
 The `HomeController` above is gated by "FeatureX". "FeatureX" must be enabled before any action the `HomeController` contains can be executed. 
 
 ``` C#
-[FeatureGate(MyFeatureFlags.FeatureY)]
+[FeatureGate("FeatureX")]
 public IActionResult Index()
 {
     return View();
 }
 ```
 
-The `Index` MVC action above requires "FeatureY" to be enabled before it can execute. 
+The `Index` MVC action above requires "FeatureX" to be enabled before it can execute. 
 
 ### Disabled Action Handling
 
@@ -271,8 +256,16 @@ public interface IDisabledFeaturesHandler
 In MVC views `<feature>` tags can be used to conditionally render content based on whether a feature is enabled or not.
 
 ``` HTML+Razor
-<feature name=@nameof(MyFeatureFlags.FeatureX)>
+<feature name="FeatureX">
   <p>This can only be seen if 'FeatureX' is enabled.</p>
+</feature>
+```
+
+You can also negate the tag helper evaluation to display content when a feature or set of features are disabled. By setting `negate="true"` in the example below, the content is only rendered if `FeatureX` is disabled.
+
+``` HTML+Razor
+<feature negate="true" name="FeatureX">
+  <p>This can only be seen if 'FeatureX' is disabled.</p>
 </feature>
 ```
 
@@ -289,17 +282,17 @@ The feature management pipeline supports async MVC Action filters, which impleme
 ``` C#
 services.AddMvc(o => 
 {
-    o.Filters.AddForFeature<SomeMvcFilter>(nameof(MyFeatureFlags.FeatureV));
+    o.Filters.AddForFeature<SomeMvcFilter>("FeatureX");
 });
 ```
 
-The code above adds an MVC filter named `SomeMvcFilter`. This filter is only triggered within the MVC pipeline if the feature it specifies, "FeatureV", is enabled.
+The code above adds an MVC filter named `SomeMvcFilter`. This filter is only triggered within the MVC pipeline if the feature it specifies, "FeatureX", is enabled.
 
 ### Razor Pages
 MVC Razor pages can require that a given feature, or one of any list of features, be enabled in order to execute. This can be done by using a `FeatureGateAttribute`, which can be found in the `Microsoft.FeatureManagement.Mvc` namespace. 
 
 ``` C#
-[FeatureGate(MyFeatureFlags.FeatureU)]
+[FeatureGate("FeatureX")]
 public class IndexModel : PageModel
 {
     public void OnGet()
@@ -308,7 +301,7 @@ public class IndexModel : PageModel
 }
 ```
 
-The code above sets up a Razor page to require the "FeatureU" to be enabled. If the feature is not enabled, the page will generate an HTTP 404 (NotFound) result.
+The code above sets up a Razor page to require the "FeatureX" to be enabled. If the feature is not enabled, the page will generate an HTTP 404 (NotFound) result.
 
 When used on Razor pages, the `FeatureGateAttribute` must be placed on the page handler type. It cannot be placed on individual handler methods.
 
@@ -317,10 +310,10 @@ When used on Razor pages, the `FeatureGateAttribute` must be placed on the page 
 The feature management library can be used to add application branches and middleware that execute conditionally based on feature state.
 
 ``` C#
-app.UseMiddlewareForFeature<ThirdPartyMiddleware>(nameof(MyFeatureFlags.FeatureU));
+app.UseMiddlewareForFeature<ThirdPartyMiddleware>("FeatureX");
 ```
 
-With the above call, the application adds a middleware component that only appears in the request pipeline if the feature "FeatureU" is enabled. If the feature is enabled/disabled during runtime, the middleware pipeline can be changed dynamically.
+With the above call, the application adds a middleware component that only appears in the request pipeline if the feature "FeatureX" is enabled. If the feature is enabled/disabled during runtime, the middleware pipeline can be changed dynamically.
 
 This builds off the more generic capability to branch the entire application based on a feature.
 

@@ -246,7 +246,17 @@ namespace Microsoft.FeatureManagement
                         continue;
                     }
 
-                    IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
+                    IFeatureFilterMetadata filter;
+
+                    if (useAppContext)
+                    {
+                        filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, typeof(TContext)) ??
+                                    GetFeatureFilterMetadata(featureFilterConfiguration.Name);
+                    }
+                    else
+                    {
+                        filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name);
+                    }
 
                     if (filter == null)
                     {
@@ -268,13 +278,13 @@ namespace Microsoft.FeatureManagement
                         Parameters = featureFilterConfiguration.Parameters
                     };
 
+                    BindSettings(filter, context, filterIndex);
+
                     //
                     // IContextualFeatureFilter
                     if (useAppContext)
                     {
                         ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
-
-                        BindSettings(filter, context, filterIndex);
 
                         if (contextualFilter != null &&
                             await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation)
@@ -289,8 +299,6 @@ namespace Microsoft.FeatureManagement
                     // IFeatureFilter
                     if (filter is IFeatureFilter featureFilter)
                     {
-                        BindSettings(filter, context, filterIndex);
-
                         if (await featureFilter.EvaluateAsync(context).ConfigureAwait(false) == targetEvaluation)
                         {
                             enabled = targetEvaluation;
@@ -379,14 +387,14 @@ namespace Microsoft.FeatureManagement
 
             if (featureDefinition == null)
             {
-                string errorMessage = $"The feature declaration for the feature '{feature}' was not found.";
+                string errorMessage = $"The feature definition for the feature '{feature}' was not found.";
 
                 if (!_options.IgnoreMissingFeatures)
                 {
                     throw new FeatureManagementException(FeatureManagementError.MissingFeature, errorMessage);
                 }
-
-                _logger.LogWarning(errorMessage);
+                
+                _logger.LogDebug(errorMessage);
             }
 
             return featureDefinition;
@@ -563,48 +571,39 @@ namespace Microsoft.FeatureManagement
             context.Settings = settings;
         }
 
-        private IFeatureFilterMetadata GetFeatureFilterMetadata(string filterName)
+        private IFeatureFilterMetadata GetFeatureFilterMetadata(string filterName, Type appContextType = null)
         {
-            const string filterSuffix = "filter";
-
             IFeatureFilterMetadata filter = _filterMetadataCache.GetOrAdd(
-                filterName,
+                $"{filterName}{Environment.NewLine}{appContextType?.FullName}",
                 (_) => {
 
                     IEnumerable<IFeatureFilterMetadata> matchingFilters = _featureFilters.Where(f =>
                     {
-                        Type t = f.GetType();
+                        Type filterType = f.GetType();
 
-                        string name = ((FilterAliasAttribute)Attribute.GetCustomAttribute(t, typeof(FilterAliasAttribute)))?.Alias;
-
-                        if (name == null)
+                        if (!IsMatchingName(filterType, filterName))
                         {
-                            name = t.Name.EndsWith(filterSuffix, StringComparison.OrdinalIgnoreCase) ? t.Name.Substring(0, t.Name.Length - filterSuffix.Length) : t.Name;
+                            return false;
                         }
 
-                        //
-                        // Feature filters can have namespaces in their alias
-                        // If a feature is configured to use a filter without a namespace such as 'MyFilter', then it can match 'MyOrg.MyProduct.MyFilter' or simply 'MyFilter'
-                        // If a feature is configured to use a filter with a namespace such as 'MyOrg.MyProduct.MyFilter' then it can only match 'MyOrg.MyProduct.MyFilter' 
-                        if (filterName.Contains('.'))
+                        if (appContextType == null)
                         {
-                            //
-                            // The configured filter name is namespaced. It must be an exact match.
-                            return string.Equals(name, filterName, StringComparison.OrdinalIgnoreCase);
+                            return (f is IFeatureFilter);
                         }
-                        else
-                        {
-                            //
-                            // We take the simple name of a filter, E.g. 'MyFilter' for 'MyOrg.MyProduct.MyFilter'
-                            string simpleName = name.Contains('.') ? name.Split('.').Last() : name;
 
-                            return string.Equals(simpleName, filterName, StringComparison.OrdinalIgnoreCase);
-                        }
+                        return ContextualFeatureFilterEvaluator.IsContextualFilter(f, appContextType);
                     });
 
                     if (matchingFilters.Count() > 1)
                     {
-                        throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureFilter, $"Multiple feature filters match the configured filter named '{filterName}'.");
+                        if (appContextType == null)
+                        {
+                            throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureFilter, $"Multiple feature filters match the configured filter named '{filterName}'.");
+                        }
+                        else
+                        {
+                            throw new FeatureManagementException(FeatureManagementError.AmbiguousFeatureFilter, $"Multiple contextual feature filters match the configured filter named '{filterName}' and context type '{appContextType}'.");
+                        }
                     }
 
                     return matchingFilters.FirstOrDefault();
@@ -612,6 +611,37 @@ namespace Microsoft.FeatureManagement
             );
 
             return filter;
+        }
+
+        private bool IsMatchingName(Type filterType, string filterName)
+        {
+            const string filterSuffix = "filter";
+
+            string name = ((FilterAliasAttribute)Attribute.GetCustomAttribute(filterType, typeof(FilterAliasAttribute)))?.Alias;
+
+            if (name == null)
+            {
+                name = filterType.Name.EndsWith(filterSuffix, StringComparison.OrdinalIgnoreCase) ? filterType.Name.Substring(0, filterType.Name.Length - filterSuffix.Length) : filterType.Name;
+            }
+
+            //
+            // Feature filters can have namespaces in their alias
+            // If a feature is configured to use a filter without a namespace such as 'MyFilter', then it can match 'MyOrg.MyProduct.MyFilter' or simply 'MyFilter'
+            // If a feature is configured to use a filter with a namespace such as 'MyOrg.MyProduct.MyFilter' then it can only match 'MyOrg.MyProduct.MyFilter' 
+            if (filterName.Contains('.'))
+            {
+                //
+                // The configured filter name is namespaced. It must be an exact match.
+                return string.Equals(name, filterName, StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                //
+                // We take the simple name of a filter, E.g. 'MyFilter' for 'MyOrg.MyProduct.MyFilter'
+                string simpleName = name.Contains('.') ? name.Split('.').Last() : name;
+
+                return string.Equals(simpleName, filterName, StringComparison.OrdinalIgnoreCase);
+            }
         }
 
         private ContextualFeatureFilterEvaluator GetContextualFeatureFilter(string filterName, Type appContextType)
@@ -625,11 +655,14 @@ namespace Microsoft.FeatureManagement
                 $"{filterName}{Environment.NewLine}{appContextType.FullName}",
                 (_) => {
 
-                    IFeatureFilterMetadata metadata = GetFeatureFilterMetadata(filterName);
+                    IFeatureFilterMetadata metadata = GetFeatureFilterMetadata(filterName, appContextType);
 
-                    return ContextualFeatureFilterEvaluator.IsContextualFilter(metadata, appContextType) ?
-                        new ContextualFeatureFilterEvaluator(metadata, appContextType) :
-                        null;
+                    if (metadata == null)
+                    {
+                        return null;
+                    }
+
+                    return new ContextualFeatureFilterEvaluator(metadata, appContextType);
                 }
             );
 
