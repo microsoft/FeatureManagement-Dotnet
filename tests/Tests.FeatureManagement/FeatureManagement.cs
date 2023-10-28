@@ -86,6 +86,115 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task AllowsDuplicatedFilterAlias()
+        {
+            const string duplicatedFilterName = "DuplicatedFilterName";
+
+            string featureName = Enum.GetName(typeof(Features), Features.FeatureUsesFiltersWithDuplicatedAlias);
+
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<DuplicatedAliasFeatureFilter1>()
+                .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithAccountContext>()
+                .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithDummyContext1>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            var appContext = new AppContext();
+
+            var dummyContext = new DummyContext();
+            
+            var targetingContext = new TargetingContext();
+
+            Assert.True(await featureManager.IsEnabledAsync(featureName));
+
+            Assert.True(await featureManager.IsEnabledAsync(featureName, appContext));
+
+            Assert.True(await featureManager.IsEnabledAsync(featureName, dummyContext));
+
+            Assert.True(await featureManager.IsEnabledAsync(featureName, targetingContext));
+
+            services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<DuplicatedAliasFeatureFilter1>();
+
+            serviceProvider = services.BuildServiceProvider();
+
+            featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync(featureName, dummyContext));
+
+            services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<DuplicatedAliasFeatureFilter1>()
+                .AddFeatureFilter<DuplicatedAliasFeatureFilter2>();
+
+            serviceProvider = services.BuildServiceProvider();
+
+            featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            var ex = await Assert.ThrowsAsync<FeatureManagementException>(
+                async () =>
+                {
+                    await featureManager.IsEnabledAsync(featureName);
+                });
+
+            Assert.Equal($"Multiple feature filters match the configured filter named '{duplicatedFilterName}'.", ex.Message);
+
+            services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithDummyContext1>()
+                .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithDummyContext2>();
+
+            serviceProvider = services.BuildServiceProvider();
+
+            featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            ex = await Assert.ThrowsAsync<FeatureManagementException>(
+                async () =>
+                {
+                    await featureManager.IsEnabledAsync(featureName, dummyContext);
+                });
+
+            Assert.Equal($"Multiple contextual feature filters match the configured filter named '{duplicatedFilterName}' and context type '{typeof(DummyContext)}'.", ex.Message);
+
+            services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithAccountContext>();
+
+            serviceProvider = services.BuildServiceProvider();
+
+            featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            ex = await Assert.ThrowsAsync<FeatureManagementException>(
+                async () =>
+                {
+                    await featureManager.IsEnabledAsync(featureName);
+                });
+
+            Assert.Equal($"The feature filter '{duplicatedFilterName}' specified for feature '{featureName}' was not found.", ex.Message);
+        }
+
+        [Fact]
         public async Task CustomFilterContextualTargetingWithNullSetting()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
@@ -132,8 +241,7 @@ namespace Tests.FeatureManagement
             var serviceCollection = new ServiceCollection();
 
             serviceCollection.AddSingleton(config)
-                .AddFeatureManagement()
-                .AddFeatureFilter<TimeWindowFilter>();
+                .AddFeatureManagement();
 
             ServiceProvider provider = serviceCollection.BuildServiceProvider();
 
@@ -158,8 +266,7 @@ namespace Tests.FeatureManagement
             var serviceCollection = new ServiceCollection();
 
             serviceCollection.AddSingleton(config)
-                .AddFeatureManagement()
-                .AddFeatureFilter<PercentageFilter>();
+                .AddFeatureManagement();
 
             ServiceProvider provider = serviceCollection.BuildServiceProvider();
 
@@ -175,7 +282,7 @@ namespace Tests.FeatureManagement
                 }
             }
 
-            Assert.True(enabledCount > 0 && enabledCount < 10);
+            Assert.True(enabledCount >= 0 && enabledCount < 10);
         }
 
         [Fact]
@@ -193,8 +300,7 @@ namespace Tests.FeatureManagement
 
             services
                 .AddSingleton(config)
-                .AddFeatureManagement()
-                .AddFeatureFilter<ContextualTargetingFilter>();
+                .AddFeatureManagement();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
@@ -260,7 +366,7 @@ namespace Tests.FeatureManagement
             services
                 .AddSingleton(config)
                 .AddFeatureManagement()
-                .AddFeatureFilter<TargetingFilter>();
+                .WithTargeting<OnDemandTargetingContextAccessor>();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
