@@ -22,20 +22,20 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Used to evaluate whether a feature is enabled or disabled.
     /// </summary>
-    class FeatureManager : IFeatureManager, IDisposable, IVariantFeatureManager
+    public sealed class FeatureManager : IFeatureManager, IVariantFeatureManager
     {
         private readonly TimeSpan ParametersCacheSlidingExpiration = TimeSpan.FromMinutes(5);
         private readonly TimeSpan ParametersCacheAbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
 
         private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
-        private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
-        private readonly IEnumerable<ISessionManager> _sessionManagers;
-        private readonly ILogger _logger;
+        private readonly FeatureManagementOptions _options;
         private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
-        private readonly FeatureManagementOptions _options;
+
+        private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
+        private readonly IEnumerable<ISessionManager> _sessionManagers;
+        private readonly IEnumerable<ITelemetryPublisher> _telemetryPublishers;
         private readonly TargetingEvaluationOptions _assignerOptions;
-        private readonly IMemoryCache _parametersCache;
 
         private class ConfigurationCacheItem
         {
@@ -46,28 +46,56 @@ namespace Microsoft.FeatureManagement
 
         public FeatureManager(
             IFeatureDefinitionProvider featureDefinitionProvider,
-            IEnumerable<IFeatureFilterMetadata> featureFilters,
-            IEnumerable<ISessionManager> sessionManagers,
-            ILoggerFactory loggerFactory,
-            IOptions<FeatureManagementOptions> options,
-            IOptions<TargetingEvaluationOptions> assignerOptions)
+            FeatureManagementOptions options)
         {
-            _featureDefinitionProvider = featureDefinitionProvider;
-            _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
-            _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
-            _logger = loggerFactory.CreateLogger<FeatureManager>();
-            _assignerOptions = assignerOptions?.Value ?? throw new ArgumentNullException(nameof(assignerOptions));
+            _featureDefinitionProvider = featureDefinitionProvider ?? throw new ArgumentNullException(nameof(featureDefinitionProvider));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
-            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
-            _parametersCache = new MemoryCache(new MemoryCacheOptions());
+            _featureFilters = Enumerable.Empty<IFeatureFilterMetadata>();
+            _sessionManagers = Enumerable.Empty<ISessionManager>();
+            _assignerOptions = new TargetingEvaluationOptions();
         }
+
+        public IEnumerable<IFeatureFilterMetadata> FeatureFilters
+        {
+            get => _featureFilters;
+
+            init
+            {
+                _featureFilters = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
+
+        public IEnumerable<ISessionManager> SessionManagers
+        {
+            get => _sessionManagers;
+
+            init
+            {
+                _sessionManagers = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
+
+        public IMemoryCache Cache { get; init; }
+
+        public ILogger Logger { get; init; }
 
         public IEnumerable<ITelemetryPublisher> TelemetryPublishers { get; init; }
 
         public IConfiguration Configuration { get; init; }
 
         public ITargetingContextAccessor TargetingContextAccessor { get; init; }
+
+        public TargetingEvaluationOptions AssignerOptions
+        {
+            get => _assignerOptions;
+
+            init
+            {
+                _assignerOptions = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
 
         public Task<bool> IsEnabledAsync(string feature)
         {
@@ -174,11 +202,6 @@ namespace Microsoft.FeatureManagement
             }
         }
 
-        public void Dispose()
-        {
-            _parametersCache.Dispose();
-        }
-
         private async Task<bool> IsEnabledAsync<TContext>(FeatureDefinition featureDefinition, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
             Debug.Assert(featureDefinition != null);
@@ -267,7 +290,7 @@ namespace Microsoft.FeatureManagement
                             throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
                         }
 
-                        _logger.LogWarning(errorMessage);
+                        Logger?.LogWarning(errorMessage);
 
                         continue;
                     }
@@ -394,7 +417,7 @@ namespace Microsoft.FeatureManagement
                     throw new FeatureManagementException(FeatureManagementError.MissingFeature, errorMessage);
                 }
                 
-                _logger.LogDebug(errorMessage);
+                Logger?.LogDebug(errorMessage);
             }
 
             return featureDefinition;
@@ -404,7 +427,7 @@ namespace Microsoft.FeatureManagement
         {
             if (TargetingContextAccessor == null)
             {
-                _logger.LogWarning($"No instance of {nameof(ITargetingContextAccessor)} is available for variant assignment.");
+                Logger?.LogWarning($"No instance of {nameof(ITargetingContextAccessor)} is available for variant assignment.");
 
                 return null;
             }
@@ -417,7 +440,7 @@ namespace Microsoft.FeatureManagement
             // Ensure targeting can be performed
             if (context == null)
             {
-                _logger.LogWarning($"No instance of {nameof(TargetingContext)} could be found using {nameof(ITargetingContextAccessor)} for variant assignment.");
+                Logger?.LogWarning($"No instance of {nameof(TargetingContext)} could be found using {nameof(ITargetingContextAccessor)} for variant assignment.");
             }
 
             return context;
@@ -452,7 +475,7 @@ namespace Microsoft.FeatureManagement
                     {
                         if (string.IsNullOrEmpty(user.Variant))
                         {
-                            _logger.LogWarning($"Missing variant name for user allocation in feature {featureDefinition.Name}");
+                            Logger?.LogWarning($"Missing variant name for user allocation in feature {featureDefinition.Name}");
 
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
@@ -475,7 +498,7 @@ namespace Microsoft.FeatureManagement
                     {
                         if (string.IsNullOrEmpty(group.Variant))
                         {
-                            _logger.LogWarning($"Missing variant name for group allocation in feature {featureDefinition.Name}");
+                            Logger?.LogWarning($"Missing variant name for group allocation in feature {featureDefinition.Name}");
 
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
@@ -503,7 +526,7 @@ namespace Microsoft.FeatureManagement
                     {
                         if (string.IsNullOrEmpty(percentile.Variant))
                         {
-                            _logger.LogWarning($"Missing variant name for percentile allocation in feature {featureDefinition.Name}");
+                            Logger?.LogWarning($"Missing variant name for percentile allocation in feature {featureDefinition.Name}");
 
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
@@ -530,7 +553,7 @@ namespace Microsoft.FeatureManagement
                 return;
             }
 
-            if (!(_featureDefinitionProvider is IFeatureDefinitionProviderCacheable))
+            if (!(_featureDefinitionProvider is IFeatureDefinitionProviderCacheable) || Cache == null)
             {
                 context.Settings = binder.BindParameters(context.Parameters);
 
@@ -541,16 +564,16 @@ namespace Microsoft.FeatureManagement
 
             ConfigurationCacheItem cacheItem;
 
-            string cacheKey = $"{context.FeatureName}.{filterIndex}";
+            string cacheKey = $"Microsoft.FeatureManagement{Environment.NewLine}{context.FeatureName}{Environment.NewLine}{filterIndex}";
 
             //
             // Check if settings already bound from configuration or the parameters have changed
-            if (!_parametersCache.TryGetValue(cacheKey, out cacheItem) ||
+            if (!Cache.TryGetValue(cacheKey, out cacheItem) ||
                 cacheItem.Parameters != context.Parameters)
             {
                 settings = binder.BindParameters(context.Parameters);
 
-                _parametersCache.Set(
+                Cache.Set(
                     cacheKey,
                     new ConfigurationCacheItem
                     {
@@ -673,7 +696,7 @@ namespace Microsoft.FeatureManagement
         {
             if (TelemetryPublishers == null || !TelemetryPublishers.Any())
             {
-                _logger.LogWarning("The feature declaration enabled telemetry but no telemetry publisher was registered.");
+                Logger?.LogWarning("The feature declaration enabled telemetry but no telemetry publisher was registered.");
             }
             else
             {
@@ -698,7 +721,7 @@ namespace Microsoft.FeatureManagement
             {
                 if (Configuration == null)
                 {
-                    _logger.LogWarning($"Cannot use {nameof(variantDefinition.ConfigurationReference)} as no instance of {nameof(IConfiguration)} is present.");
+                    Logger?.LogWarning($"Cannot use {nameof(variantDefinition.ConfigurationReference)} as no instance of {nameof(IConfiguration)} is present.");
 
                     return null;
                 }

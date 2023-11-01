@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -27,23 +28,26 @@ namespace Microsoft.FeatureManagement
         {
             services.AddLogging();
 
+            services.AddMemoryCache();
+
             //
             // Add required services
             services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
 
             services.AddSingleton(sp => new FeatureManager(
                 sp.GetRequiredService<IFeatureDefinitionProvider>(),
-                sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
-                sp.GetRequiredService<IEnumerable<ISessionManager>>(),
-                sp.GetRequiredService<ILoggerFactory>(),
-                sp.GetRequiredService<IOptions<FeatureManagementOptions>>(),
-                sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>())
+                sp.GetRequiredService<IOptions<FeatureManagementOptions>>()?.Value)
             {
-                Configuration = sp.GetService<IConfiguration>(),
-                TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
+                FeatureFilters = sp.GetService<IEnumerable<IFeatureFilterMetadata>>(),
+                SessionManagers = sp.GetService<IEnumerable<ISessionManager>>(),
                 TelemetryPublishers = sp.GetService<IOptions<FeatureManagementOptions>>()?.Value.TelemetryPublisherFactories?
                     .Select(factory => factory(sp))
-                    .ToList()
+                    .ToList(),
+                Cache = sp.GetService<IMemoryCache>(),
+                Logger = sp.GetService<ILoggerFactory>().CreateLogger<FeatureManager>(),
+                Configuration = sp.GetService<IConfiguration>(),
+                TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
+                AssignerOptions = sp.GetService<IOptions<TargetingEvaluationOptions>>()?.Value
             });
 
             services.TryAddSingleton<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
