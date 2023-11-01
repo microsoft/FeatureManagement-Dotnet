@@ -54,8 +54,6 @@ namespace Microsoft.FeatureManagement
 
             services.TryAddSingleton<IVariantFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 
-            services.AddSingleton<ISessionManager, EmptySessionManager>();
-
             services.AddScoped<FeatureManagerSnapshot>();
 
             services.TryAddScoped<IFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
