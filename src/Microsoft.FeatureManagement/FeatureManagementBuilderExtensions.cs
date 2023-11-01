@@ -42,6 +42,7 @@ namespace Microsoft.FeatureManagement
             return builder;
         }
 
+        /// <summary>
         /// Adds an <see cref="ITargetingContextAccessor"/> to be used for targeting and registers the targeting filter to the feature management system.
         /// </summary>
         /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>

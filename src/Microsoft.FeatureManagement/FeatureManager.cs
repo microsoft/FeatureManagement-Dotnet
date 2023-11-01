@@ -34,7 +34,6 @@ namespace Microsoft.FeatureManagement
 
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
-        private readonly IEnumerable<ITelemetryPublisher> _telemetryPublishers;
         private readonly TargetingEvaluationOptions _assignerOptions;
 
         private class ConfigurationCacheItem
@@ -44,6 +43,11 @@ namespace Microsoft.FeatureManagement
             public object Settings { get; set; }
         }
 
+        /// <summary>
+        /// Create a feature manager
+        /// </summary>
+        /// <param name="featureDefinitionProvider">The provider of feature flag definitions.</param>
+        /// <param name="options">Options controlling the behavior of the feature manager.</param>
         public FeatureManager(
             IFeatureDefinitionProvider featureDefinitionProvider,
             FeatureManagementOptions options)
@@ -57,6 +61,9 @@ namespace Microsoft.FeatureManagement
             _assignerOptions = new TargetingEvaluationOptions();
         }
 
+        /// <summary>
+        /// The collection of feature filter metadata
+        /// </summary>
         public IEnumerable<IFeatureFilterMetadata> FeatureFilters
         {
             get => _featureFilters;
@@ -67,6 +74,9 @@ namespace Microsoft.FeatureManagement
             }
         }
 
+        /// <summary>
+        /// The collection of session managers
+        /// </summary>
         public IEnumerable<ISessionManager> SessionManagers
         {
             get => _sessionManagers;
@@ -77,16 +87,34 @@ namespace Microsoft.FeatureManagement
             }
         }
 
+        /// <summary>
+        /// Application memory cache to store feature filter settings
+        /// </summary>
         public IMemoryCache Cache { get; init; }
 
+        /// <summary>
+        /// The logger for the feature manager
+        /// </summary>
         public ILogger Logger { get; init; }
 
+        /// <summary>
+        /// The collection of telemetry publishers
+        /// </summary>
         public IEnumerable<ITelemetryPublisher> TelemetryPublishers { get; init; }
 
+        /// <summary>
+        /// Configuration reference for feature variants
+        /// </summary>
         public IConfiguration Configuration { get; init; }
 
+        /// <summary>
+        /// The targeting context accessor for feature variant allocation
+        /// </summary>
         public ITargetingContextAccessor TargetingContextAccessor { get; init; }
 
+        /// <summary>
+        /// Options controlling the targeting behavior for feature variant allocation
+        /// </summary>
         public TargetingEvaluationOptions AssignerOptions
         {
             get => _assignerOptions;
@@ -97,21 +125,45 @@ namespace Microsoft.FeatureManagement
             }
         }
 
+        /// <summary>
+        /// Checks whether a given feature is enabled.
+        /// </summary>
+        /// <param name="feature">The name of the feature to check.</param>
+        /// <returns>True if the feature is enabled, otherwise false.</returns>
         public Task<bool> IsEnabledAsync(string feature)
         {
             return IsEnabledWithVariantsAsync<object>(feature, appContext: null, useAppContext: false, CancellationToken.None).AsTask();
         }
 
+        /// <summary>
+        /// Checks whether a given feature is enabled.
+        /// </summary>
+        /// <param name="feature">The name of the feature to check.</param>
+        /// <param name="appContext">A context providing information that can be used to evaluate whether a feature should be on or off.</param>
+        /// <returns>True if the feature is enabled, otherwise false.</returns>
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
         {
             return IsEnabledWithVariantsAsync(feature, appContext, useAppContext: true, CancellationToken.None).AsTask();
         }
 
+        /// <summary>
+        /// Checks whether a given feature is enabled.
+        /// </summary>
+        /// <param name="feature">The name of the feature to check.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>True if the feature is enabled, otherwise false.</returns>
         public ValueTask<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
         {
             return IsEnabledWithVariantsAsync<object>(feature, appContext: null, useAppContext: false, cancellationToken);
         }
 
+        /// <summary>
+        /// Checks whether a given feature is enabled.
+        /// </summary>
+        /// <param name="feature">The name of the feature to check.</param>
+        /// <param name="appContext">A context providing information that can be used to evaluate whether a feature should be on or off.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>True if the feature is enabled, otherwise false.</returns>
         public ValueTask<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, CancellationToken cancellationToken)
         {
             return IsEnabledWithVariantsAsync(feature, appContext, useAppContext: true, cancellationToken);
@@ -187,11 +239,19 @@ namespace Microsoft.FeatureManagement
             return isFeatureEnabled;
         }
 
+        /// <summary>
+        /// Retrieves a list of feature names registered in the feature manager.
+        /// </summary>
+        /// <returns>An enumerator which provides asynchronous iteration over the feature names registered in the feature manager.</returns>
         public IAsyncEnumerable<string> GetFeatureNamesAsync()
         {
             return GetFeatureNamesAsync(CancellationToken.None);
         }
 
+        /// <summary>
+        /// Retrieves a list of feature names registered in the feature manager.
+        /// </summary>
+        /// <returns>An enumerator which provides asynchronous iteration over the feature names registered in the feature manager.</returns>
         public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
         {
             await foreach (FeatureDefinition featureDefinition in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
@@ -335,6 +395,12 @@ namespace Microsoft.FeatureManagement
             return enabled;
         }
 
+        /// <summary>
+        /// Gets the assigned variant for a specific feature.
+        /// </summary>
+        /// <param name="feature">The name of the feature to evaluate.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>A variant assigned to the user based on the feature's configured allocation.</returns>
         public ValueTask<Variant> GetVariantAsync(string feature, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(feature))
@@ -345,6 +411,13 @@ namespace Microsoft.FeatureManagement
             return GetVariantAsync(feature, context: null, useContext: false, cancellationToken);
         }
 
+        /// <summary>
+        /// Gets the assigned variant for a specific feature.
+        /// </summary>
+        /// <param name="feature">The name of the feature to evaluate.</param>
+        /// <param name="context">An instance of <see cref="TargetingContext"/> used to evaluate which variant the user will be assigned.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>A variant assigned to the user based on the feature's configured allocation.</returns>
         public ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(feature))
