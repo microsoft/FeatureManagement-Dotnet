@@ -44,7 +44,7 @@ namespace Microsoft.FeatureManagement
         public IEnumerable<VariantDefinition> Variants { get; set; } = Enumerable.Empty<VariantDefinition>();
 
         /// <summary>
-        /// A flag to enable or disable sending telemetry events to the registered <see cref="ITelemetryPublisher">.
+        /// A flag to enable or disable sending telemetry events to the registered <see cref="Telemetry.ITelemetryPublisher"/>.
         /// </summary>
         public bool TelemetryEnabled { get; set; }
 
