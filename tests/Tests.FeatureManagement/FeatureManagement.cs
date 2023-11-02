@@ -1030,6 +1030,7 @@ namespace Tests.FeatureManagement
             Assert.True(result);
         }
 
+        [Fact]
         public async Task UsesVariants()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
