@@ -65,6 +65,7 @@ namespace Microsoft.FeatureManagement
 
         /// <summary>
         /// The collection of feature filter metadata.
+        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
         /// </summary>
         public IEnumerable<IFeatureFilterMetadata> FeatureFilters
         {
@@ -78,6 +79,7 @@ namespace Microsoft.FeatureManagement
 
         /// <summary>
         /// The collection of session managers.
+        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
         /// </summary>
         public IEnumerable<ISessionManager> SessionManagers
         {
@@ -116,6 +118,7 @@ namespace Microsoft.FeatureManagement
 
         /// <summary>
         /// Options controlling the targeting behavior for feature variant allocation.
+        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
         /// </summary>
         public TargetingEvaluationOptions AssignerOptions
         {
