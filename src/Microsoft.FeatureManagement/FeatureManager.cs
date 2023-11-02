@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// Used to evaluate whether a feature is enabled or disabled.
+    /// Used to evaluate the enabled state of a feature and/or get the assigned variant of a feature, if any.
     /// </summary>
     public sealed class FeatureManager : IFeatureManager, IVariantFeatureManager
     {
@@ -44,10 +44,12 @@ namespace Microsoft.FeatureManagement
         }
 
         /// <summary>
-        /// Create a feature manager
+        /// Creates a feature manager.
         /// </summary>
         /// <param name="featureDefinitionProvider">The provider of feature flag definitions.</param>
         /// <param name="options">Options controlling the behavior of the feature manager.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureDefinitionProvider"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="options"/> is null.</exception>
         public FeatureManager(
             IFeatureDefinitionProvider featureDefinitionProvider,
             FeatureManagementOptions options)
@@ -62,7 +64,7 @@ namespace Microsoft.FeatureManagement
         }
 
         /// <summary>
-        /// The collection of feature filter metadata
+        /// The collection of feature filter metadata.
         /// </summary>
         public IEnumerable<IFeatureFilterMetadata> FeatureFilters
         {
@@ -75,7 +77,7 @@ namespace Microsoft.FeatureManagement
         }
 
         /// <summary>
-        /// The collection of session managers
+        /// The collection of session managers.
         /// </summary>
         public IEnumerable<ISessionManager> SessionManagers
         {
@@ -88,32 +90,32 @@ namespace Microsoft.FeatureManagement
         }
 
         /// <summary>
-        /// Application memory cache to store feature filter settings
+        /// The application memory cache to store feature filter settings.
         /// </summary>
         public IMemoryCache Cache { get; init; }
 
         /// <summary>
-        /// The logger for the feature manager
+        /// The logger for the feature manager.
         /// </summary>
         public ILogger Logger { get; init; }
 
         /// <summary>
-        /// The collection of telemetry publishers
+        /// The collection of telemetry publishers.
         /// </summary>
         public IEnumerable<ITelemetryPublisher> TelemetryPublishers { get; init; }
 
         /// <summary>
-        /// Configuration reference for feature variants
+        /// The configuration reference for feature variants.
         /// </summary>
         public IConfiguration Configuration { get; init; }
 
         /// <summary>
-        /// The targeting context accessor for feature variant allocation
+        /// The targeting context accessor for feature variant allocation.
         /// </summary>
         public ITargetingContextAccessor TargetingContextAccessor { get; init; }
 
         /// <summary>
-        /// Options controlling the targeting behavior for feature variant allocation
+        /// Options controlling the targeting behavior for feature variant allocation.
         /// </summary>
         public TargetingEvaluationOptions AssignerOptions
         {
