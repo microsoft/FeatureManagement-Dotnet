@@ -36,10 +36,10 @@ namespace Microsoft.FeatureManagement
 
             services.AddSingleton(sp => new FeatureManager(
                 sp.GetRequiredService<IFeatureDefinitionProvider>(),
-                sp.GetRequiredService<IOptions<FeatureManagementOptions>>()?.Value)
+                sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
             {
-                FeatureFilters = sp.GetService<IEnumerable<IFeatureFilterMetadata>>(),
-                SessionManagers = sp.GetService<IEnumerable<ISessionManager>>(),
+                FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
                 TelemetryPublishers = sp.GetService<IOptions<FeatureManagementOptions>>()?.Value.TelemetryPublisherFactories?
                     .Select(factory => factory(sp))
                     .ToList(),

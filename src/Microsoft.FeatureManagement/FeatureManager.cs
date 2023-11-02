@@ -174,6 +174,67 @@ namespace Microsoft.FeatureManagement
             return IsEnabledWithVariantsAsync(feature, appContext, useAppContext: true, cancellationToken);
         }
 
+        /// <summary>
+        /// Retrieves a list of feature names registered in the feature manager.
+        /// </summary>
+        /// <returns>An enumerator which provides asynchronous iteration over the feature names registered in the feature manager.</returns>
+        public IAsyncEnumerable<string> GetFeatureNamesAsync()
+        {
+            return GetFeatureNamesAsync(CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Retrieves a list of feature names registered in the feature manager.
+        /// </summary>
+        /// <returns>An enumerator which provides asynchronous iteration over the feature names registered in the feature manager.</returns>
+        public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            await foreach (FeatureDefinition featureDefinition in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                yield return featureDefinition.Name;
+            }
+        }
+
+        /// <summary>
+        /// Gets the assigned variant for a specific feature.
+        /// </summary>
+        /// <param name="feature">The name of the feature to evaluate.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>A variant assigned to the user based on the feature's configured allocation.</returns>
+        public ValueTask<Variant> GetVariantAsync(string feature, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(feature))
+            {
+                throw new ArgumentNullException(nameof(feature));
+            }
+
+            return GetVariantAsync(feature, context: null, useContext: false, cancellationToken);
+        }
+
+        /// <summary>
+        /// Gets the assigned variant for a specific feature.
+        /// </summary>
+        /// <param name="feature">The name of the feature to evaluate.</param>
+        /// <param name="context">An instance of <see cref="TargetingContext"/> used to evaluate which variant the user will be assigned.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>A variant assigned to the user based on the feature's configured allocation.</returns>
+        public ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(feature))
+            {
+                throw new ArgumentNullException(nameof(feature));
+            }
+
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            return GetVariantAsync(feature, context, useContext: true, cancellationToken);
+        }
+
         private async ValueTask<bool> IsEnabledWithVariantsAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
             bool isFeatureEnabled = false;
@@ -242,29 +303,6 @@ namespace Microsoft.FeatureManagement
             }
 
             return isFeatureEnabled;
-        }
-
-        /// <summary>
-        /// Retrieves a list of feature names registered in the feature manager.
-        /// </summary>
-        /// <returns>An enumerator which provides asynchronous iteration over the feature names registered in the feature manager.</returns>
-        public IAsyncEnumerable<string> GetFeatureNamesAsync()
-        {
-            return GetFeatureNamesAsync(CancellationToken.None);
-        }
-
-        /// <summary>
-        /// Retrieves a list of feature names registered in the feature manager.
-        /// </summary>
-        /// <returns>An enumerator which provides asynchronous iteration over the feature names registered in the feature manager.</returns>
-        public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
-        {
-            await foreach (FeatureDefinition featureDefinition in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                yield return featureDefinition.Name;
-            }
         }
 
         private async Task<bool> IsEnabledAsync<TContext>(FeatureDefinition featureDefinition, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
@@ -398,44 +436,6 @@ namespace Microsoft.FeatureManagement
             }
 
             return enabled;
-        }
-
-        /// <summary>
-        /// Gets the assigned variant for a specific feature.
-        /// </summary>
-        /// <param name="feature">The name of the feature to evaluate.</param>
-        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
-        /// <returns>A variant assigned to the user based on the feature's configured allocation.</returns>
-        public ValueTask<Variant> GetVariantAsync(string feature, CancellationToken cancellationToken)
-        {
-            if (string.IsNullOrEmpty(feature))
-            {
-                throw new ArgumentNullException(nameof(feature));
-            }
-
-            return GetVariantAsync(feature, context: null, useContext: false, cancellationToken);
-        }
-
-        /// <summary>
-        /// Gets the assigned variant for a specific feature.
-        /// </summary>
-        /// <param name="feature">The name of the feature to evaluate.</param>
-        /// <param name="context">An instance of <see cref="TargetingContext"/> used to evaluate which variant the user will be assigned.</param>
-        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
-        /// <returns>A variant assigned to the user based on the feature's configured allocation.</returns>
-        public ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, CancellationToken cancellationToken)
-        {
-            if (string.IsNullOrEmpty(feature))
-            {
-                throw new ArgumentNullException(nameof(feature));
-            }
-
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
-            return GetVariantAsync(feature, context, useContext: true, cancellationToken);
         }
 
         private async ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, bool useContext, CancellationToken cancellationToken)
