@@ -21,7 +21,7 @@ namespace Microsoft.FeatureManagement
     public static class ServiceCollectionExtensions
     {
         /// <summary>
-        /// Adds required feature management services and built-in feature filters.
+        /// Adds singleton <see cref="FeatureManager"/>, other required feature management services and built-in feature filters.
         /// </summary>
         /// <param name="services">The service collection that feature management services are added to.</param>
         /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
@@ -83,7 +83,7 @@ namespace Microsoft.FeatureManagement
         }
 
         /// <summary>
-        /// Adds required feature management services.
+        /// Adds singleton <see cref="FeatureManager"/>, other required feature management services.
         /// </summary>
         /// <param name="services">The service collection that feature management services are added to.</param>
         /// <param name="configuration">A specific <see cref="IConfiguration"/> instance that will be used to obtain feature settings.</param>
@@ -100,6 +100,11 @@ namespace Microsoft.FeatureManagement
             return services.AddFeatureManagement();
         }
 
+        /// <summary>
+        /// Adds scoped <see cref="FeatureManager"/>, other required feature management services and built-in feature filters.
+        /// </summary>
+        /// <param name="services">The service collection that feature management services are added to.</param>
+        /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
         public static IFeatureManagementBuilder AddScopedFeatureManagement(this IServiceCollection services)
         {
             if (services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Singleton))
@@ -125,7 +130,8 @@ namespace Microsoft.FeatureManagement
                 SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
                 TelemetryPublishers = sp.GetService<IOptions<FeatureManagementOptions>>()?.Value.TelemetryPublisherFactories?
                     .Select(factory => factory(sp))
-                    .ToList(),
+                    .ToList() ??
+                    Enumerable.Empty<ITelemetryPublisher>(),
                 Cache = sp.GetService<IMemoryCache>(),
                 Logger = sp.GetService<ILoggerFactory>().CreateLogger<FeatureManager>(),
                 Configuration = sp.GetService<IConfiguration>(),
@@ -156,6 +162,12 @@ namespace Microsoft.FeatureManagement
             return builder;
         }
 
+        /// <summary>
+        /// Adds scoped <see cref="FeatureManager"/>, other required feature management services.
+        /// </summary>
+        /// <param name="services">The service collection that feature management services are added to.</param>
+        /// <param name="configuration">A specific <see cref="IConfiguration"/> instance that will be used to obtain feature settings.</param>
+        /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
         public static IFeatureManagementBuilder AddScopedFeatureManagement(this IServiceCollection services, IConfiguration configuration)
         {
             if (configuration == null)
