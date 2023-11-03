@@ -21,7 +21,7 @@ namespace Microsoft.FeatureManagement
     public static class ServiceCollectionExtensions
     {
         /// <summary>
-        /// Adds singleton <see cref="FeatureManager"/>, other required feature management services and built-in feature filters.
+        /// Adds singleton <see cref="FeatureManager"/> and other required feature management services.
         /// </summary>
         /// <param name="services">The service collection that feature management services are added to.</param>
         /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
@@ -83,7 +83,7 @@ namespace Microsoft.FeatureManagement
         }
 
         /// <summary>
-        /// Adds singleton <see cref="FeatureManager"/>, other required feature management services.
+        /// Adds singleton <see cref="FeatureManager"/> and other required feature management services.
         /// </summary>
         /// <param name="services">The service collection that feature management services are added to.</param>
         /// <param name="configuration">A specific <see cref="IConfiguration"/> instance that will be used to obtain feature settings.</param>
@@ -101,7 +101,7 @@ namespace Microsoft.FeatureManagement
         }
 
         /// <summary>
-        /// Adds scoped <see cref="FeatureManager"/>, other required feature management services and built-in feature filters.
+        /// Adds scoped <see cref="FeatureManager"/> and other required feature management services.
         /// </summary>
         /// <param name="services">The service collection that feature management services are added to.</param>
         /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
@@ -163,7 +163,7 @@ namespace Microsoft.FeatureManagement
         }
 
         /// <summary>
-        /// Adds scoped <see cref="FeatureManager"/>, other required feature management services.
+        /// Adds scoped <see cref="FeatureManager"/> and other required feature management services.
         /// </summary>
         /// <param name="services">The service collection that feature management services are added to.</param>
         /// <param name="configuration">A specific <see cref="IConfiguration"/> instance that will be used to obtain feature settings.</param>
