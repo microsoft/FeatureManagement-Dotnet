@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.FeatureFilters;
+using Microsoft.FeatureManagement.Telemetry;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -42,7 +43,8 @@ namespace Microsoft.FeatureManagement
                 SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
                 TelemetryPublishers = sp.GetService<IOptions<FeatureManagementOptions>>()?.Value.TelemetryPublisherFactories?
                     .Select(factory => factory(sp))
-                    .ToList(),
+                    .ToList() ??
+                    Enumerable.Empty<ITelemetryPublisher>(),
                 Cache = sp.GetService<IMemoryCache>(),
                 Logger = sp.GetService<ILoggerFactory>().CreateLogger<FeatureManager>(),
                 Configuration = sp.GetService<IConfiguration>(),

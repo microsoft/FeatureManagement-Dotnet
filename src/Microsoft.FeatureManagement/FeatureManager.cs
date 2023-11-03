@@ -4,7 +4,6 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.Telemetry;
 using Microsoft.FeatureManagement.FeatureFilters;
 using Microsoft.FeatureManagement.Targeting;
@@ -34,6 +33,7 @@ namespace Microsoft.FeatureManagement
 
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
+        private readonly IEnumerable<ITelemetryPublisher> _telemetryPublishers;
         private readonly TargetingEvaluationOptions _assignerOptions;
 
         private class ConfigurationCacheItem
@@ -60,6 +60,7 @@ namespace Microsoft.FeatureManagement
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
             _featureFilters = Enumerable.Empty<IFeatureFilterMetadata>();
             _sessionManagers = Enumerable.Empty<ISessionManager>();
+            _telemetryPublishers = Enumerable.Empty<ITelemetryPublisher>();
             _assignerOptions = new TargetingEvaluationOptions();
         }
 
@@ -104,7 +105,15 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The collection of telemetry publishers.
         /// </summary>
-        public IEnumerable<ITelemetryPublisher> TelemetryPublishers { get; init; }
+        public IEnumerable<ITelemetryPublisher> TelemetryPublishers
+        {
+            get => _telemetryPublishers;
+
+            init
+            {
+                _telemetryPublishers = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
 
         /// <summary>
         /// The configuration reference for feature variants.
@@ -772,13 +781,13 @@ namespace Microsoft.FeatureManagement
 
         private async void PublishTelemetry(EvaluationEvent evaluationEvent, CancellationToken cancellationToken)
         {
-            if (TelemetryPublishers == null || !TelemetryPublishers.Any())
+            if (!_telemetryPublishers.Any())
             {
                 Logger?.LogWarning("The feature declaration enabled telemetry but no telemetry publisher was registered.");
             }
             else
             {
-                foreach (ITelemetryPublisher telemetryPublisher in TelemetryPublishers)
+                foreach (ITelemetryPublisher telemetryPublisher in _telemetryPublishers)
                 {
                     await telemetryPublisher.PublishEvent(
                         evaluationEvent,
