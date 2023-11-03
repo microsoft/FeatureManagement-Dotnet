@@ -37,7 +37,16 @@ namespace Microsoft.FeatureManagement
 
             if (!Services.Any(descriptor => descriptor.ServiceType == serviceType && descriptor.ImplementationType == implementationType))
             {
-                Services.AddSingleton(serviceType, implementationType);
+                //
+                // Register the feature filter with the same lifetime as the feature manager
+                if (!Services.Any(descriptor => descriptor.ServiceType == typeof(FeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
+                {
+                    Services.AddSingleton(serviceType, implementationType);
+                }
+                else
+                {
+                    Services.AddScoped(serviceType, implementationType);
+                }
             }
 
             return this;
