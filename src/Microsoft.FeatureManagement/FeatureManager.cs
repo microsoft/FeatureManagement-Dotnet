@@ -104,6 +104,7 @@ namespace Microsoft.FeatureManagement
 
         /// <summary>
         /// The collection of telemetry publishers.
+        /// /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
         /// </summary>
         public IEnumerable<ITelemetryPublisher> TelemetryPublishers
         {
