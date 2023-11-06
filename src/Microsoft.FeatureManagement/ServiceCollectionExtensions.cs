@@ -48,15 +48,15 @@ namespace Microsoft.FeatureManagement
             {
                 FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
                 SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
-                TelemetryPublishers = sp.GetService<IOptions<FeatureManagementOptions>>()?.Value.TelemetryPublisherFactories?
+                TelemetryPublishers = sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value?.TelemetryPublisherFactories?
                     .Select(factory => factory(sp))
                     .ToList() ??
                     Enumerable.Empty<ITelemetryPublisher>(),
-                Cache = sp.GetService<IMemoryCache>(),
-                Logger = sp.GetService<ILoggerFactory>().CreateLogger<FeatureManager>(),
+                Cache = sp.GetRequiredService<IMemoryCache>(),
+                Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>(),
                 Configuration = sp.GetService<IConfiguration>(),
                 TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
-                AssignerOptions = sp.GetService<IOptions<TargetingEvaluationOptions>>()?.Value
+                AssignerOptions = sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>().Value
             });
 
             services.TryAddSingleton<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());

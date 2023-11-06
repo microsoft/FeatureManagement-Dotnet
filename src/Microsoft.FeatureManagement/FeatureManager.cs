@@ -66,8 +66,8 @@ namespace Microsoft.FeatureManagement
 
         /// <summary>
         /// The collection of feature filter metadata.
-        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
         /// </summary>
+        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
         public IEnumerable<IFeatureFilterMetadata> FeatureFilters
         {
             get => _featureFilters;
@@ -80,8 +80,8 @@ namespace Microsoft.FeatureManagement
 
         /// <summary>
         /// The collection of session managers.
-        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
         /// </summary>
+        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
         public IEnumerable<ISessionManager> SessionManagers
         {
             get => _sessionManagers;
@@ -104,8 +104,8 @@ namespace Microsoft.FeatureManagement
 
         /// <summary>
         /// The collection of telemetry publishers.
-        /// /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
         /// </summary>
+        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
         public IEnumerable<ITelemetryPublisher> TelemetryPublishers
         {
             get => _telemetryPublishers;
@@ -128,8 +128,8 @@ namespace Microsoft.FeatureManagement
 
         /// <summary>
         /// Options controlling the targeting behavior for feature variant allocation.
-        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
         /// </summary>
+        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
         public TargetingEvaluationOptions AssignerOptions
         {
             get => _assignerOptions;
