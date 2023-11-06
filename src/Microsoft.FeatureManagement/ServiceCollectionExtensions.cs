@@ -41,7 +41,7 @@ namespace Microsoft.FeatureManagement
             {
                 FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
                 SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
-                TelemetryPublishers = sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value.TelemetryPublisherFactories?
+                TelemetryPublishers = sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value?.TelemetryPublisherFactories?
                     .Select(factory => factory(sp))
                     .ToList() ??
                     Enumerable.Empty<ITelemetryPublisher>(),
