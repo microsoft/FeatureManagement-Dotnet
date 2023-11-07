@@ -25,6 +25,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TargetingConsoleApp", "exam
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvaluationDataToApplicationInsights", "examples\EvaluationDataToApplicationInsights\EvaluationDataToApplicationInsights.csproj", "{1502529E-47E9-4306-98C4-BF6CF7C7C275}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.FeatureManagement.Telemetry.ApplicationInsights", "src\Microsoft.FeatureManagement.Telemetry.ApplicationInsights\Microsoft.FeatureManagement.Telemetry.ApplicationInsights.csproj", "{3448BDE1-5145-49D4-936A-757B68387439}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -67,6 +69,10 @@ Global
 		{1502529E-47E9-4306-98C4-BF6CF7C7C275}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1502529E-47E9-4306-98C4-BF6CF7C7C275}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1502529E-47E9-4306-98C4-BF6CF7C7C275}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3448BDE1-5145-49D4-936A-757B68387439}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3448BDE1-5145-49D4-936A-757B68387439}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3448BDE1-5145-49D4-936A-757B68387439}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3448BDE1-5145-49D4-936A-757B68387439}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -68,7 +68,7 @@ telemetry.Context.User.AuthenticatedUserId = username;
 Sample steps to try out the app:
 
 1. Run the app. When the app is first started a User Id and Session Id will be generated. The username cookie will be set to a random integer, and the ai_user and ai_session cookies will be expired.
-1. When the page is loaded, the "ImageRating" feature is evaluated which defines three variants. Events can be seen in the Output window. (There may be a small delay as events are batched)
+1. When the page is loaded, the "ImageRating" feature is evaluated which [defines three variants](./appsettings.json). Events can be seen in the Output window. (There may be a small delay as events are batched)
 1. Select a rating for the loaded image and click vote. A 'Vote' event will be emitted.
 1. Go to Checkout and click "Check Out", which emits a custom event and a custom metric. This event and metric will be shown in the logs as well.
 1. If connected to Application Insights, head to the resource in the portal. Events and metrics will be there as well. 	
