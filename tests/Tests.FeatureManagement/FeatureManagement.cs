@@ -86,6 +86,49 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public void AddsScopedFeatureManagement()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddScopedFeatureManagement()
+                .WithTargeting<OnDemandTargetingContextAccessor>()
+                .AddFeatureFilter<TestFilter>();
+
+            Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(IFeatureDefinitionProvider) && descriptor.Lifetime == ServiceLifetime.Singleton);
+            Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IFeatureDefinitionProvider) && descriptor.Lifetime == ServiceLifetime.Scoped);
+
+            Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped);
+            Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Singleton);
+
+            Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(IFeatureFilterMetadata) && descriptor.Lifetime == ServiceLifetime.Scoped);
+            Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IFeatureFilterMetadata) && descriptor.Lifetime == ServiceLifetime.Singleton);
+
+            var ex = Assert.Throws<FeatureManagementException>(
+                () =>
+                {
+                    services.AddFeatureManagement();
+                });
+
+            Assert.Equal($"Scoped feature management has been registered.", ex.Message);
+
+            services = new ServiceCollection();
+
+            services.AddFeatureManagement();
+
+            ex = Assert.Throws<FeatureManagementException>(
+                () =>
+                {
+                    services.AddScopedFeatureManagement();
+                });
+
+            Assert.Equal($"Singleton feature management has been registered.", ex.Message);
+        }
+
+        [Fact]
         public async Task AllowsDuplicatedFilterAlias()
         {
             const string duplicatedFilterName = "DuplicatedFilterName";
