@@ -32,6 +32,7 @@ Here are some of the benefits of using this library:
     * [Built-in Feature Filters](#built-in-Feature-Filters)
 * [Targeting](#targeting)
   * [Targeting Exclusion](#targeting-exclusion)
+* [Variants](#variants)
 * [Caching](#caching)
 * [Custom Feature Providers](#custom-feature-providers)
 
@@ -139,20 +140,24 @@ A `RequirementType` of `All` changes the traversal. First, if there are no filte
 
 In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning all of it's filters must evaluate to true for the feature to be enabled. In this case, the feature will be enabled for 50% of users during the specified time window.
 
-### Referencing
+### Status
 
-To make it easier to reference these feature flags in code, we recommend to define feature flag variables like below.
+`Status` is an optional property of a feature flag that controls how a flag's enabled state is evaluated. By default, the status of a flag is `Conditional`, meaning that feature filters should be evaluated to determine if the flag is enabled. If the `Status` of a flag is set to `Disabled` then feature filters are not evaluated and the flag is always considered to be disabled.
 
-``` C#
-// Define feature flags in an enum
-public enum MyFeatureFlags
-{
-    FeatureT,
-    FeatureU,
-    FeatureV
+
+```
+"FeatureX": {
+    "Status": "Disabled",
+    "EnabledFor": [
+        {
+            "Name": "AlwaysOn"
+        }
+    ]
 }
 ```
-    
+
+In this example, even though the `AlwaysOn` filter would normally always make the feature enabled, the `Status` property is set to `Disabled`, so this feature will always be disabled. 
+   
 ### Service Registration
 
 Feature flags rely on .NET Core dependency injection. We can register the feature management services using standard conventions.
@@ -174,7 +179,6 @@ public class Startup
 
 This tells the feature manager to use the "FeatureManagement" section from the configuration for feature flag settings. It also registers two built-in feature filters named `PercentageFilter` and `TimeWindowFilter`. When filters are referenced in feature flag settings (appsettings.json) the _Filter_ part of the type name can be omitted.
 
-
 **Advanced:** The feature manager looks for feature definitions in a configuration section named "FeatureManagement". If the "FeatureManagement" section does not exist, it falls back to the root of the provided configuration.
 
 ## Consumption
@@ -187,7 +191,7 @@ The basic form of feature management is checking if a feature is enabled and the
 …
 IFeatureManager featureManager;
 …
-if (await featureManager.IsEnabledAsync(nameof(MyFeatureFlags.FeatureU)))
+if (await featureManager.IsEnabledAsync("FeatureX"))
 {
     // Do something
 }
@@ -216,7 +220,7 @@ The feature management library provides functionality in ASP.NET Core and MVC to
 MVC controller and actions can require that a given feature, or one of any list of features, be enabled in order to execute. This can be done by using a `FeatureGateAttribute`, which can be found in the `Microsoft.FeatureManagement.Mvc` namespace. 
 
 ``` C#
-[FeatureGate(MyFeatureFlags.FeatureX)]
+[FeatureGate("FeatureX")]
 public class HomeController : Controller
 {
     …
@@ -226,14 +230,14 @@ public class HomeController : Controller
 The `HomeController` above is gated by "FeatureX". "FeatureX" must be enabled before any action the `HomeController` contains can be executed. 
 
 ``` C#
-[FeatureGate(MyFeatureFlags.FeatureY)]
+[FeatureGate("FeatureX")]
 public IActionResult Index()
 {
     return View();
 }
 ```
 
-The `Index` MVC action above requires "FeatureY" to be enabled before it can execute. 
+The `Index` MVC action above requires "FeatureX" to be enabled before it can execute. 
 
 ### Disabled Action Handling
 
@@ -251,8 +255,16 @@ public interface IDisabledFeaturesHandler
 In MVC views `<feature>` tags can be used to conditionally render content based on whether a feature is enabled or not.
 
 ``` HTML+Razor
-<feature name=@nameof(MyFeatureFlags.FeatureX)>
+<feature name="FeatureX">
   <p>This can only be seen if 'FeatureX' is enabled.</p>
+</feature>
+```
+
+You can also negate the tag helper evaluation to display content when a feature or set of features are disabled. By setting `negate="true"` in the example below, the content is only rendered if `FeatureX` is disabled.
+
+``` HTML+Razor
+<feature negate="true" name="FeatureX">
+  <p>This can only be seen if 'FeatureX' is disabled.</p>
 </feature>
 ```
 
@@ -269,17 +281,17 @@ The feature management pipeline supports async MVC Action filters, which impleme
 ``` C#
 services.AddMvc(o => 
 {
-    o.Filters.AddForFeature<SomeMvcFilter>(nameof(MyFeatureFlags.FeatureV));
+    o.Filters.AddForFeature<SomeMvcFilter>("FeatureX");
 });
 ```
 
-The code above adds an MVC filter named `SomeMvcFilter`. This filter is only triggered within the MVC pipeline if the feature it specifies, "FeatureV", is enabled.
+The code above adds an MVC filter named `SomeMvcFilter`. This filter is only triggered within the MVC pipeline if the feature it specifies, "FeatureX", is enabled.
 
 ### Razor Pages
 MVC Razor pages can require that a given feature, or one of any list of features, be enabled in order to execute. This can be done by using a `FeatureGateAttribute`, which can be found in the `Microsoft.FeatureManagement.Mvc` namespace. 
 
 ``` C#
-[FeatureGate(MyFeatureFlags.FeatureU)]
+[FeatureGate("FeatureX")]
 public class IndexModel : PageModel
 {
     public void OnGet()
@@ -288,7 +300,7 @@ public class IndexModel : PageModel
 }
 ```
 
-The code above sets up a Razor page to require the "FeatureU" to be enabled. If the feature is not enabled, the page will generate an HTTP 404 (NotFound) result.
+The code above sets up a Razor page to require the "FeatureX" to be enabled. If the feature is not enabled, the page will generate an HTTP 404 (NotFound) result.
 
 When used on Razor pages, the `FeatureGateAttribute` must be placed on the page handler type. It cannot be placed on individual handler methods.
 
@@ -297,10 +309,10 @@ When used on Razor pages, the `FeatureGateAttribute` must be placed on the page 
 The feature management library can be used to add application branches and middleware that execute conditionally based on feature state.
 
 ``` C#
-app.UseMiddlewareForFeature<ThirdPartyMiddleware>(nameof(MyFeatureFlags.FeatureU));
+app.UseMiddlewareForFeature<ThirdPartyMiddleware>("FeatureX");
 ```
 
-With the above call, the application adds a middleware component that only appears in the request pipeline if the feature "FeatureU" is enabled. If the feature is enabled/disabled during runtime, the middleware pipeline can be changed dynamically.
+With the above call, the application adds a middleware component that only appears in the request pipeline if the feature "FeatureX" is enabled. If the feature is enabled/disabled during runtime, the middleware pipeline can be changed dynamically.
 
 This builds off the more generic capability to branch the entire application based on a feature.
 
@@ -635,6 +647,157 @@ When defining an Audience, users and groups can be excluded from the audience. T
 ```
 
 In the above example, the feature will be enabled for users named `Jeff` and `Alicia`. It will also be enabled for users in the group named `Ring0`. However, if the user is named `Mark`, the feature will be disabled, regardless if they are in the group `Ring0` or not. Exclusions take priority over the rest of the targeting filter.
+
+## Variants
+
+When new features are added to an application, there may come a time when a feature has multiple different proposed design options. A common solution for deciding on a design is some form of A/B testing, which involves providing a different version of the feature to different segments of the user base and choosing a version based on user interaction. In this library, this functionality is enabled by representing different configurations of a feature with variants.
+
+Variants enable a feature flag to become more than a simple on/off flag. A variant represents a value of a feature flag that can be a string, a number, a boolean, or even a configuration object. A feature flag that declares variants should define under what circumstances each variant should be used, which is covered in greater detail in the [Allocating a Variant](./README.md#allocating-a-variant) section.
+
+``` C#
+public class Variant
+{
+    /// <summary>
+    /// The name of the variant.
+    /// </summary>
+    public string Name { get; set; }
+
+    /// <summary>
+    /// The configuration of the variant.
+    /// </summary>
+    public IConfigurationSection Configuration { get; set; }
+}
+```
+
+### Getting a Feature's Variant
+
+A feature's variant can be retrieved using the `IVariantFeatureManager`'s `GetVariantAsync` method.
+
+``` C#
+…
+IVariantFeatureManager featureManager;
+…
+Variant variant = await featureManager.GetVariantAsync(MyFeatureFlags.FeatureU);
+
+IConfigurationSection variantConfiguration = variant.Configuration;
+
+// Do something with the resulting variant and its configuration
+```
+
+### Setting a Variant's Configuration
+
+For each of the variants in the `Variants` property of a feature, there is a specified configuration. This can be set using either the `ConfigurationReference` or `ConfigurationValue` properties. `ConfigurationReference` is a string path that references a section of the current configuration that contains the feature flag declaration. `ConfigurationValue` is an inline configuration that can be a string, number, boolean, or configuration object. If both are specified, `ConfigurationValue` is used. If neither are specified, the returned variant's `Configuration` property will be null.
+
+```
+"Variants": [
+    { 
+        "Name": "Big", 
+        "ConfigurationReference": "ShoppingCart:Big" 
+    },  
+    { 
+        "Name": "Small", 
+        "ConfigurationValue": {
+            "Size": 300
+        }
+    } 
+]
+```
+
+### Allocating a Variant
+
+The process of allocating a variant to a specific feature is determined by the `Allocation` property of the feature.
+
+```
+"Allocation": { 
+    "DefaultWhenEnabled": "Small", 
+    "DefaultWhenDisabled": "Small",  
+    "User": [ 
+        { 
+            "Variant": "Big", 
+            "Users": [ 
+                "Marsha" 
+            ] 
+        } 
+    ], 
+    "Group": [ 
+        { 
+            "Variant": "Big", 
+            "Groups": [ 
+                "Ring1" 
+            ] 
+        } 
+    ],
+    "Percentile": [ 
+        { 
+            "Variant": "Big", 
+            "From": 0, 
+            "To": 10 
+        } 
+    ], 
+    "Seed": "13973240" 
+},
+"Variants": [
+    { 
+        "Name": "Big", 
+        "ConfigurationReference": "ShoppingCart:Big" 
+    },  
+    { 
+        "Name": "Small", 
+        "ConfigurationValue": "300px"
+    } 
+]
+```
+
+The `Allocation` setting of a feature flag has the following properties:
+
+| Property | Description |
+| ---------------- | ---------------- |
+| `DefaultWhenDisabled` | Specifies which variant should be used when a variant is requested while the feature is considered disabled. |
+| `DefaultWhenEnabled` | Specifies which variant should be used when a variant is requested while the feature is considered enabled and no variant was allocated to the user. |
+| `User` | Specifies a variant and a list of users for which that variant should be used. | 
+| `Group` | Specifies a variant and a list of groups the current user has to be in for that variant to be used. |
+| `Percentile` | Specifies a variant and a percentage range the user's calculated percentage has to fit into for that variant to be used. |
+| `Seed` | The value which percentage calculations for `Percentile` are based on. The percentage calculation for a specific user will be the same across all features if the same `Seed` value is used. If no `Seed` is specified, then a default seed is created based on the feature name. |
+
+In the above example, if the feature is not enabled, `GetVariantAsync` would return the variant allocated by `DefaultWhenDisabled`, which is `Small` in this case. 
+
+If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to allocate a variant for this feature. If the user being evaluated is named `Marsha`, in the group named `Ring1`, or the user happens to fall between the 0 and 10th percentile calculated with the given `Seed`, then the specified variant is returned for that allocation. In this case, all of these would return the `Big` variant. If none of these allocations match, the `DefaultWhenEnabled` variant is returned, which is `Small`.
+
+Allocation logic is similar to the [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter, but there are some parameters that are present in targeting that aren't in allocation, and vice versa. The outcomes of targeting and allocation are not related.
+
+### Overriding Enabled State with a Variant
+
+You can use variants to override the enabled state of a feature flag. This gives variants an opportunity to extend the evaluation of a feature flag. If a caller is checking whether a flag that has variants is enabled, then variant allocation will be performed to see if an allocated variant is set up to override the result. This is done using the optional variant property `StatusOverride`. By default, this property is set to `None`, which means the variant doesn't affect whether the flag is considered enabled or disabled. Setting `StatusOverride` to `Enabled` allows the variant, when chosen, to override a flag to be enabled. Setting `StatusOverride` to `Disabled` provides the opposite functionality, therefore disabling the flag when the variant is chosen. A feature with a `Status` of `Disabled` cannot be overridden.
+
+If you are using a feature flag with binary variants, the `StatusOverride` property can be very helpful. It allows you to continue using APIs like `IsEnabledAsync` and `FeatureGateAttribute` in your application, all while benefiting from the new features that come with variants, such as percentile allocation and seed.
+
+```
+"Allocation": {
+    "Percentile": [{
+        "Variant": "On",
+        "From": 10,
+        "To": 20
+    }],
+    "DefaultWhenEnabled":  "Off",
+    "Seed": "Enhanced-Feature-Group"
+},
+"Variants": [
+    { 
+        "Name": "On"
+    },
+    { 
+        "Name": "Off",
+        "StatusOverride": "Disabled"
+    }    
+],
+"EnabledFor": [ 
+    { 
+        "Name": "AlwaysOn" 
+    } 
+] 
+```
+
+In the above example, the feature is enabled by the `AlwaysOn` filter. If the current user is in the calculated percentile range of 10 to 20, then the `On` variant is returned. Otherwise, the `Off` variant is returned and because `StatusOverride` is equal to `Disabled`, the feature will now be considered disabled.
 
 ## Caching
 
