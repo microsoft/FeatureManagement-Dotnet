@@ -16,3 +16,15 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+img {
+    width: 100%;
+}
+
+.mb-5 {
+    margin-bottom: 5px!important;
+}
+
+.mb-40 {
+    margin-bottom: 40px!important;
+}
