@@ -1,12 +1,15 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.FeatureManagement
 {
@@ -16,7 +19,7 @@ namespace Microsoft.FeatureManagement
     public static class ServiceCollectionExtensions
     {
         /// <summary>
-        /// Adds required feature management services and built-in feature filters.
+        /// Adds required feature management services.
         /// </summary>
         /// <param name="services">The service collection that feature management services are added to.</param>
         /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
@@ -24,15 +27,27 @@ namespace Microsoft.FeatureManagement
         {
             services.AddLogging();
 
+            services.AddMemoryCache();
+
             //
             // Add required services
             services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
 
-            services.AddSingleton<IFeatureManager, FeatureManager>();
+            services.AddSingleton(sp => new FeatureManager(
+                sp.GetRequiredService<IFeatureDefinitionProvider>(),
+                sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
+            {
+                FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
+                Cache = sp.GetRequiredService<IMemoryCache>(),
+                Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>()
+            });
 
-            services.AddSingleton<ISessionManager, EmptySessionManager>();
+            services.TryAddSingleton<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 
-            services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
+            services.AddScoped<FeatureManagerSnapshot>();
+
+            services.TryAddScoped<IFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
 
             var builder = new FeatureManagementBuilder(services);
             
