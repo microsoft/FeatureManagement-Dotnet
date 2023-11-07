@@ -13,8 +13,8 @@ To run this sample, follow these steps:
 Example Output:
 
 ```
-Application Insights Telemetry: {"name":"AppEvents","time":"2023-11-07T19:14:54.3549353Z","iKey":"2a1bf276-0821-49f5-bf35-580ebf995cbf","tags":{"ai.application.ver":"1.0.0.0"},"data":{"baseType":"EventData","baseData":{"ver":2,"name":"Vote","properties":{"AspNetCoreEnvironment":"Development","DeveloperMode":"true"},"measurements":{"ImageRating":3}}}}
-Application Insights Telemetry: {"name":"AppEvents","time":"2023-11-07T19:14:54.4143414Z","iKey":"2a1bf276-0821-49f5-bf35-580ebf995cbf","tags":{"ai.application.ver":"1.0.0.0"},"data":{"baseType":"EventData","baseData":{"ver":2,"name":"FeatureEvaluation","properties":{"Label":"A Label","Etag":"An etag","AspNetCoreEnvironment":"Development","DeveloperMode":"true","Variant":"WithColor","FeatureName":"ImageRating","Tags.A":"Tag A value","IsEnabled":"True"}}}}
+Application Insights Telemetry: {"name":"AppEvents","time":"2023-11-07T19:14:54.3549353Z","tags":{"ai.application.ver":"1.0.0.0"},"data":{"baseType":"EventData","baseData":{"ver":2,"name":"Vote","properties":{"AspNetCoreEnvironment":"Development","DeveloperMode":"true"},"measurements":{"ImageRating":3}}}}
+Application Insights Telemetry: {"name":"AppEvents","time":"2023-11-07T19:14:54.4143414Z","tags":{"ai.application.ver":"1.0.0.0"},"data":{"baseType":"EventData","baseData":{"ver":2,"name":"FeatureEvaluation","properties":{"Label":"A Label","Etag":"An etag","AspNetCoreEnvironment":"Development","DeveloperMode":"true","Variant":"WithColor","FeatureName":"ImageRating","Tags.A":"Tag A value","IsEnabled":"True"}}}}
 ```
 
 These logs show what would be emitted to a connected Application Insights resource, even if one is not yet connected.
@@ -36,7 +36,6 @@ For ASP.NET, this is added to _ViewImports.cshtml
 and then in the _Layout.cshtml `<head>`:
 ```html
 @Html.Raw(JavaScriptSnippet.FullScript)
-</head>
 ```
 
 The Javascript SDK will collect telemetry from the browser and send it to the Application Insights resource. Some examples are Page Views and Browser Timings. The Javascript SDK also automatically generates useful cookies like:
