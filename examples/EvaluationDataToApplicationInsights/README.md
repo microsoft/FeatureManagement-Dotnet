@@ -13,8 +13,8 @@ To run this sample, follow these steps:
 Example Output:
 
 ```
-Application Insights Telemetry (unconfigured): {"name":"AppEvents","time":"2023-10-16T21:38:54.1357063Z","tags":{"ai.cloud.roleInstance":"abc-123","ai.operation.id":"5a1ad3252d6bac6b05c026d76157f77e","ai.operation.parentId":"a0f0ea8cb5a45b8d","ai.internal.sdkVersion":"dotnetc:2.21.0-429"},"data":{"baseType":"EventData","baseData":{"ver":2,"name":"FeatureEvaluation","properties":{"DeveloperMode":"true","IsEnabled":"True","FeatureName":"FeatureA"}}}}
-Application Insights Telemetry (unconfigured): {"name":"AppEvents","time":"2023-10-16T21:38:54.1869228Z","tags":{"ai.cloud.roleInstance":"abc-123","ai.operation.id":"5a1ad3252d6bac6b05c026d76157f77e","ai.operation.parentId":"a0f0ea8cb5a45b8d","ai.internal.sdkVersion":"dotnetc:2.21.0-429"},"data":{"baseType":"EventData","baseData":{"ver":2,"name":"FeatureEvaluation","properties":{"DeveloperMode":"true","IsEnabled":"False","FeatureName":"FeatureB"}}}}
+Application Insights Telemetry: {"name":"AppEvents","time":"2023-11-07T19:14:54.3549353Z","iKey":"2a1bf276-0821-49f5-bf35-580ebf995cbf","tags":{"ai.application.ver":"1.0.0.0"},"data":{"baseType":"EventData","baseData":{"ver":2,"name":"Vote","properties":{"AspNetCoreEnvironment":"Development","DeveloperMode":"true"},"measurements":{"ImageRating":3}}}}
+Application Insights Telemetry: {"name":"AppEvents","time":"2023-11-07T19:14:54.4143414Z","iKey":"2a1bf276-0821-49f5-bf35-580ebf995cbf","tags":{"ai.application.ver":"1.0.0.0"},"data":{"baseType":"EventData","baseData":{"ver":2,"name":"FeatureEvaluation","properties":{"Label":"A Label","Etag":"An etag","AspNetCoreEnvironment":"Development","DeveloperMode":"true","Variant":"WithColor","FeatureName":"ImageRating","Tags.A":"Tag A value","IsEnabled":"True"}}}}
 ```
 
 These logs show what would be emitted to a connected Application Insights resource, even if one is not yet connected.
@@ -48,7 +48,7 @@ These cookies are used to correlate telemetry from the browser with telemetry fr
 *The Javascript SDK is not required, but is useful for collecting browser telemetry and generating these cookies out of the box.*
 
 ### Authenticated User ID
-In order to connect metrics for the user between multiple services, a Authenticated User Id needs to be emitted. When a user clicks "Randomize User", a login is simulated by setting a "username" cookie to a random integer. Additionally, the "ai_user" and "ai_session" cookies are expired, to simulate a new browser.
+In order to connect metrics for the user between multiple services, a Authenticated User Id needs to be emitted. When the application is loaded, a login is simulated by setting a "username" cookie to a random integer. Additionally, the "ai_user" and "ai_session" cookies are expired, to simulate a new browser.
 
 To include the authenticated user id on metrics emitted from the Javascript SDK, this app adds the following to _Layout.cshtml:
 ```html
@@ -68,10 +68,9 @@ telemetry.Context.User.AuthenticatedUserId = username;
 ## Sample App Usage
 Sample steps to try out the app:
 
-1. Run the app. When the app is first started, it is in the un-logged in state. User Id and Session Id will still be generated, but Authenticated User Id will be null. 
-1. Click Randomize User to simulate a login on a new browser. The username cookie will be set to a random integer, and the ai_user and ai_session cookies will be expired.
-1. When the page is loaded, feature flags are evaluated for FeatureA and FeatureB. Events can be seen in the Output window. (There may be a small delay as events are batched)
-1. Click around the app and watch the logs. More events will be emitted.
+1. Run the app. When the app is first started a User Id and Session Id will be generated. The username cookie will be set to a random integer, and the ai_user and ai_session cookies will be expired.
+1. When the page is loaded, the "ImageRating" feature is evaluated which defines three variants. Events can be seen in the Output window. (There may be a small delay as events are batched)
+1. Select a rating for the loaded image and click vote. A 'Vote' event will be emitted.
 1. Go to Checkout and click "Check Out", which emits a custom event and a custom metric. This event and metric will be shown in the logs as well.
 1. If connected to Application Insights, head to the resource in the portal. Events and metrics will be there as well. 	
     1. Try going to Logs > New Query and run the query "customEvents". This should show the custom events emitted.

@@ -1,4 +1,4 @@
-﻿﻿
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31825.309
@@ -15,13 +15,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{FB
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests.FeatureManagement.AspNetCore", "tests\Tests.FeatureManagement.AspNetCore\Tests.FeatureManagement.AspNetCore.csproj", "{FC0DC3E2-5646-4AEC-A7DB-2D6167BC3BB4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp", "examples\ConsoleApp\ConsoleApp.csproj", "{7B98D293-F270-423E-A9A6-0D388E903AE9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp", "examples\ConsoleApp\ConsoleApp.csproj", "{7B98D293-F270-423E-A9A6-0D388E903AE9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RazorPages", "examples\RazorPages\RazorPages.csproj", "{36DBB413-D9CA-4C56-AE5B-EAEA4C344DB3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RazorPages", "examples\RazorPages\RazorPages.csproj", "{36DBB413-D9CA-4C56-AE5B-EAEA4C344DB3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeatureFlagDemo", "examples\FeatureFlagDemo\FeatureFlagDemo.csproj", "{DACAB624-4611-42E8-844C-529F93A54980}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FeatureFlagDemo", "examples\FeatureFlagDemo\FeatureFlagDemo.csproj", "{DACAB624-4611-42E8-844C-529F93A54980}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TargetingConsoleApp", "examples\TargetingConsoleApp\TargetingConsoleApp.csproj", "{283D3EBB-4716-4F1D-BA51-A435F7E2AB82}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TargetingConsoleApp", "examples\TargetingConsoleApp\TargetingConsoleApp.csproj", "{283D3EBB-4716-4F1D-BA51-A435F7E2AB82}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvaluationDataToApplicationInsights", "examples\EvaluationDataToApplicationInsights\EvaluationDataToApplicationInsights.csproj", "{1502529E-47E9-4306-98C4-BF6CF7C7C275}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -61,6 +63,10 @@ Global
 		{283D3EBB-4716-4F1D-BA51-A435F7E2AB82}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{283D3EBB-4716-4F1D-BA51-A435F7E2AB82}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{283D3EBB-4716-4F1D-BA51-A435F7E2AB82}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1502529E-47E9-4306-98C4-BF6CF7C7C275}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1502529E-47E9-4306-98C4-BF6CF7C7C275}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1502529E-47E9-4306-98C4-BF6CF7C7C275}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1502529E-47E9-4306-98C4-BF6CF7C7C275}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -72,6 +78,7 @@ Global
 		{36DBB413-D9CA-4C56-AE5B-EAEA4C344DB3} = {FB5C34DF-695C-4DF9-8AED-B3EA2516EA72}
 		{DACAB624-4611-42E8-844C-529F93A54980} = {FB5C34DF-695C-4DF9-8AED-B3EA2516EA72}
 		{283D3EBB-4716-4F1D-BA51-A435F7E2AB82} = {FB5C34DF-695C-4DF9-8AED-B3EA2516EA72}
+		{1502529E-47E9-4306-98C4-BF6CF7C7C275} = {FB5C34DF-695C-4DF9-8AED-B3EA2516EA72}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {84DA6C54-F140-4518-A1B4-E4CF42117FBD}
