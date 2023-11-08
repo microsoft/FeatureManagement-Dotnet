@@ -10,16 +10,6 @@ using Microsoft.ApplicationInsights.Extensibility;
 var builder = WebApplication.CreateBuilder(args);
 
 //
-// Use Azure App Configuration as an application configuration provider
-//
-builder
-    .Configuration
-    .AddAzureAppConfiguration((options) =>
-    {
-        options.Connect(builder.Configuration["AzureAppConfigurationConnectionString"]);
-    });
-
-//
 // What a web app using app insights looks like
 //
 // Add services to the container.

@@ -10,7 +10,7 @@ namespace EvaluationDataToApplicationInsights.Pages
         private readonly IVariantFeatureManager _featureManager;
         private readonly TelemetryClient _telemetry;
 
-        public string? Username { get; set; }
+        public string Username { get; set; }
 
         public IndexModel(
             IVariantFeatureManager featureManager,
@@ -31,7 +31,6 @@ namespace EvaluationDataToApplicationInsights.Pages
 
             //
             // Use application's feature manager to get assigned variant for current user
-            //
             Variant variant = await _featureManager
                 .GetVariantAsync("ImageRating", HttpContext.RequestAborted);
 

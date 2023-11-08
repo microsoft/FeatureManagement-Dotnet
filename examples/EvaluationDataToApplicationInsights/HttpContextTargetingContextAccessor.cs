@@ -31,11 +31,11 @@ namespace EvaluationDataToApplicationInsights
 
             string username = httpContext.Request.Cookies["username"];
 
-            List<string> groups = new List<string>();
+            var groups = new List<string>();
 
             //
-            // Build targeting context based off user info
-            TargetingContext targetingContext = new TargetingContext
+            // Build targeting context based on user info
+            var targetingContext = new TargetingContext
             {
                 UserId = username,
                 Groups = groups

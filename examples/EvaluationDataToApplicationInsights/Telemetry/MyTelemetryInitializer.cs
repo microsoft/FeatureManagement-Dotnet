@@ -17,14 +17,14 @@ namespace EvaluationDataToApplicationInsights.Telemetry
 
         public void Initialize(ITelemetry telemetry)
         {
-            HttpContext? httpContext = _httpContextAccessor.HttpContext;
+            HttpContext httpContext = _httpContextAccessor.HttpContext;
 
             if (httpContext == null)
             {
                 return;
             }
 
-            string? username = httpContext.Request.Cookies["username"];
+            string username = httpContext.Request.Cookies["username"];
 
             if (username != null)
             {

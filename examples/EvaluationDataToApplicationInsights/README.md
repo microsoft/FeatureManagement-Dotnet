@@ -21,7 +21,7 @@ These logs show what would be emitted to a connected Application Insights resour
 
 ## Connecting to Application Insights
 
-To flow these events to Application Insights, [setup a new Application Insights resource in Azure](https://learn.microsoft.com/en-us/azure/azure-monitor/app/create-workspace-resource). Once setup, from `Overview` copy the `Connection String` and place it in `appsettings.json` at ApplicationInsights > ConnectionString. After restarting the app, events should now flow to Application Insights.
+To flow these events to Application Insights, [setup a new Application Insights resource in Azure](https://learn.microsoft.com/en-us/azure/azure-monitor/app/create-workspace-resource). Once setup, from `Overview` copy the `Connection String` and place it in `appsettings.json` at ApplicationInsights > ConnectionString. After restarting the app, events should now flow to Application Insights. This [document](https://learn.microsoft.com/en-us/azure/azure-monitor/app/asp-net-core?tabs=netcorenew%2Cnetcore6#enable-application-insights-server-side-telemetry-no-visual-studio) provides more details on connecting a .NET application to Application Insights.
 
 ## About the App
 This app uses [Application Insights for ASP.NET Core](https://learn.microsoft.com/en-us/azure/azure-monitor/app/asp-net-core?tabs=netcorenew%2Cnetcore6). This means there is an App Insights SDK in the C# code and a separate App Insights SDK the Javascript. Lets cover what they're doing:
@@ -69,7 +69,7 @@ Sample steps to try out the app:
 
 1. Run the app. When the app is first started a User Id and Session Id will be generated. The username cookie will be set to a random integer, and the ai_user and ai_session cookies will be expired.
 1. When the page is loaded, the "ImageRating" feature is evaluated which [defines three variants](./appsettings.json). Events can be seen in the Output window. (There may be a small delay as events are batched)
-1. Select a rating for the loaded image and click vote. A 'Vote' event will be emitted.
+1. Select a rating for the loaded image and click vote. A "Vote" event will be emitted.
 1. Go to Checkout and click "Check Out", which emits a custom event and a custom metric. This event and metric will be shown in the logs as well.
 1. If connected to Application Insights, head to the resource in the portal. Events and metrics will be there as well. 	
     1. Try going to Logs > New Query and run the query "customEvents". This should show the custom events emitted.
