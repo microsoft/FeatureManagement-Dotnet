@@ -15,8 +15,7 @@ namespace BlazorServerApp
             builder.Services.AddServerSideBlazor();
             builder.Services.AddSingleton<WeatherForecastService>();
 
-            builder.Services.AddAuthentication(
-                CookieAuthenticationDefaults.AuthenticationScheme)
+            builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie();
 
             IConfiguration configuration = new ConfigurationBuilder()
