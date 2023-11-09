@@ -12,7 +12,7 @@ To run this sample, follow these steps:
 
 ### About the App
 
-This app demonstrates how to use Feature Management in Blazor apps. 
+This app demonstrates how to use Feature Management in Blazor apps. It will display some enhanced contents for vip users.
 It follows [this document](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/server/threat-mitigation?view=aspnetcore-7.0#ihttpcontextaccessorhttpcontext-in-razor-components) to mitigate security threats while using HttpContext.
 This app uses [cookie authentication](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/cookie?view=aspnetcore-6.0) for user login.
 
