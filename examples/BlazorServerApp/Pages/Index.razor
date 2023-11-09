@@ -1,0 +1,25 @@
+﻿@page "/"
+
+<PageTitle>Index</PageTitle>
+
+@if (isFeatureEnabled)
+{
+    <h1>Welcome, VIP user!</h1>
+}
+else
+{
+    <h3>Welcome.</h3>
+}
+
+<SurveyPrompt Title="How is Blazor working for you?" />
+
+@inject IFeatureManagerSnapshot FeatureManager
+
+@code {
+    private bool isFeatureEnabled;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isFeatureEnabled = await FeatureManager.IsEnabledAsync(Features.VipContentEnhancement);
+    }
+}

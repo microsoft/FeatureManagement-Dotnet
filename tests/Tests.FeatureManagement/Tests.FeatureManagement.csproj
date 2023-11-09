@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net48;net6.0;net7.0</TargetFrameworks>
     <IsPackable>false</IsPackable>
-    <LangVersion>9.0</LangVersion>
+    <LangVersion>8.0</LangVersion>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\build\Microsoft.FeatureManagement.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>

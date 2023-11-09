@@ -1,0 +1,16 @@
+﻿<AuthorizeView>
+    <Authorized>
+        <b>Hello, @ContextProvider.Username!</b>
+        <a class="ml-md-auto btn btn-primary" href="/logout">Logout</a>
+    </Authorized>
+    <NotAuthorized>
+        <input type="text" placeholder="User Name" @bind="@Username" />
+        <a class="ml-md-auto btn btn-primary" href="/login?paramUsername=@Username">Login</a>
+    </NotAuthorized>
+</AuthorizeView>
+
+@inject HttpContextProvider ContextProvider
+
+@code {
+    string Username = string.Empty;
+}

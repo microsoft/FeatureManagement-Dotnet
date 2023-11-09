@@ -1,0 +1,31 @@
+﻿@page "/profile"
+<h1>Profile</h1>
+
+<style>
+    .username-container {
+        display: inline-block;
+        margin-right: 10px;
+    }
+</style>
+
+<h2 class="username-container">Username: </h2>
+<h2 style="color: @FontColor; display: inline-block;">@(ContextProvider.Username)</h2>
+
+@inject NavigationManager NavigationManager
+@inject HttpContextProvider ContextProvider
+@inject IFeatureManagerSnapshot FeatureManager
+
+@code {
+    private bool isFeatureEnabled;
+    private string FontColor => isFeatureEnabled ? "gold" : "black";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (await FeatureManager.IsEnabledAsync(Features.UserProfilePage) == false)
+        {
+            NavigationManager.NavigateTo("/error");
+        }
+
+        isFeatureEnabled = await FeatureManager.IsEnabledAsync(Features.VipContentEnhancement);
+    }
+}

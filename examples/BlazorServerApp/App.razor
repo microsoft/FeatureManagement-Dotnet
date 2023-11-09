@@ -1,0 +1,28 @@
+﻿<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <PageTitle>Not found</PageTitle>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <p role="alert">Sorry, there's nothing at this address.</p>
+            </LayoutView>
+        </NotFound>
+    </Router>
+ </CascadingAuthenticationState>
+
+@inject HttpContextProvider _context
+
+@code {
+
+    [Parameter]
+    public InitialApplicationState InitialState { get; set; }
+
+    protected override void OnInitialized()
+    {
+        _context.IsAuthenticated = InitialState.IsAuthenticated;
+        _context.Username = InitialState.Username;
+    }
+}

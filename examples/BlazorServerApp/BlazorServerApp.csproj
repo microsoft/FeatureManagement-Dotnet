@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="6.0.23" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<ProjectReference Include="..\..\src\Microsoft.FeatureManagement\Microsoft.FeatureManagement.csproj" />
+  </ItemGroup>
+</Project>
