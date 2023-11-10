@@ -27,7 +27,7 @@ namespace Microsoft.FeatureManagement
         /// <exception cref="FeatureManagementException">Thrown if <see cref="FeatureManager"/> has been registered as scoped.</exception>
         public static IFeatureManagementBuilder AddFeatureManagement(this IServiceCollection services)
         {
-            if (services.Any(descriptor => descriptor.ServiceType == typeof(FeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
+            if (services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
             {
                 throw new FeatureManagementException(
                     FeatureManagementError.Conflict,
@@ -93,7 +93,7 @@ namespace Microsoft.FeatureManagement
         /// <exception cref="FeatureManagementException">Thrown if <see cref="FeatureManager"/> has been registered as singleton.</exception>
         public static IFeatureManagementBuilder AddScopedFeatureManagement(this IServiceCollection services)
         {
-            if (services.Any(descriptor => descriptor.ServiceType == typeof(FeatureManager) && descriptor.Lifetime == ServiceLifetime.Singleton))
+            if (services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Singleton))
             {
                 throw new FeatureManagementException(
                     FeatureManagementError.Conflict,
@@ -108,7 +108,7 @@ namespace Microsoft.FeatureManagement
             // Add required services
             services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
 
-            services.AddScoped(sp => new FeatureManager(
+            services.AddScoped<IFeatureManager>(sp => new FeatureManager(
                 sp.GetRequiredService<IFeatureDefinitionProvider>(),
                 sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
             {
@@ -118,11 +118,7 @@ namespace Microsoft.FeatureManagement
                 Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>()
             });
 
-            services.TryAddScoped<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
-
-            services.AddScoped<FeatureManagerSnapshot>();
-
-            services.TryAddScoped<IFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
+            services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
 
             var builder = new FeatureManagementBuilder(services);
 

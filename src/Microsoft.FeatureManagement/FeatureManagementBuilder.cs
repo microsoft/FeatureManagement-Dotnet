@@ -39,13 +39,13 @@ namespace Microsoft.FeatureManagement
             {
                 //
                 // Register the feature filter with the same lifetime as the feature manager
-                if (!Services.Any(descriptor => descriptor.ServiceType == typeof(FeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
+                if (Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
                 {
-                    Services.AddSingleton(serviceType, implementationType);
+                    Services.AddScoped(serviceType, implementationType);
                 }
                 else
                 {
-                    Services.AddScoped(serviceType, implementationType);
+                    Services.AddSingleton(serviceType, implementationType);
                 }
             }
 
@@ -56,13 +56,13 @@ namespace Microsoft.FeatureManagement
         {
             //
             // Register the session manager with the same lifetime as the feature manager
-            if (!Services.Any(descriptor => descriptor.ServiceType == typeof(FeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
+            if (Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
             {
-                Services.AddSingleton(typeof(ISessionManager), typeof(T));
+                Services.AddScoped(typeof(ISessionManager), typeof(T));
             }
             else
             {
-                Services.AddScoped(typeof(ISessionManager), typeof(T));
+                Services.AddSingleton(typeof(ISessionManager), typeof(T));
             }
 
             return this;

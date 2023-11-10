@@ -22,13 +22,13 @@ namespace Microsoft.FeatureManagement
         {
             //
             // Register the targeting context accessor with the same lifetime as the feature manager
-            if (!builder.Services.Any(descriptor => descriptor.ServiceType == typeof(FeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
+            if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
             {
-                builder.Services.TryAddSingleton(typeof(ITargetingContextAccessor), typeof(T));
+                builder.Services.TryAddScoped(typeof(ITargetingContextAccessor), typeof(T));
             }
             else
             {
-                builder.Services.TryAddScoped(typeof(ITargetingContextAccessor), typeof(T));
+                builder.Services.TryAddSingleton(typeof(ITargetingContextAccessor), typeof(T));
             }
 
             builder.AddFeatureFilter<TargetingFilter>();
