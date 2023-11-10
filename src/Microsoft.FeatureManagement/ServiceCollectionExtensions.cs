@@ -33,7 +33,7 @@ namespace Microsoft.FeatureManagement
             // Add required services
             services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
 
-            services.AddSingleton(sp => new FeatureManager(
+            services.AddSingleton<IFeatureManager>(sp => new FeatureManager(
                 sp.GetRequiredService<IFeatureDefinitionProvider>(),
                 sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
             {
@@ -43,11 +43,7 @@ namespace Microsoft.FeatureManagement
                 Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>()
             });
 
-            services.TryAddSingleton<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
-
-            services.AddScoped<FeatureManagerSnapshot>();
-
-            services.TryAddScoped<IFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
+            services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
 
             var builder = new FeatureManagementBuilder(services);
             
