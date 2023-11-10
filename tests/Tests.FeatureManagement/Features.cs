@@ -3,7 +3,7 @@
 //
 namespace Tests.FeatureManagement
 {
-    static class FeatureFlags
+    static class Features
     {
         public const string TargetingTestFeature = "TargetingTestFeature";
         public const string TargetingTestFeatureWithExclusion = "TargetingTestFeatureWithExclusion";

@@ -33,9 +33,9 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            Assert.True(await featureManager.IsEnabledAsync(FeatureFlags.OnTestFeature));
+            Assert.True(await featureManager.IsEnabledAsync(Features.OnTestFeature));
 
-            Assert.False(await featureManager.IsEnabledAsync(FeatureFlags.OffTestFeature));
+            Assert.False(await featureManager.IsEnabledAsync(Features.OffTestFeature));
 
             IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
 
@@ -51,12 +51,12 @@ namespace Tests.FeatureManagement
 
                 Assert.Equal("V1", evaluationContext.Parameters["P1"]);
 
-                Assert.Equal(FeatureFlags.ConditionalFeature, evaluationContext.FeatureName);
+                Assert.Equal(Features.ConditionalFeature, evaluationContext.FeatureName);
 
                 return Task.FromResult(true);
             };
 
-            await featureManager.IsEnabledAsync(FeatureFlags.ConditionalFeature);
+            await featureManager.IsEnabledAsync(Features.ConditionalFeature);
 
             Assert.True(called);
         }
@@ -81,6 +81,7 @@ namespace Tests.FeatureManagement
 
             await foreach (string featureName in featureManager.GetFeatureNamesAsync())
             {
+                //
                 // Fail, as no features should be found
                 Assert.True(false);
             }
@@ -91,7 +92,7 @@ namespace Tests.FeatureManagement
         {
             const string duplicatedFilterName = "DuplicatedFilterName";
 
-            string featureName = FeatureFlags.FeatureUsesFiltersWithDuplicatedAlias;
+            string featureName = Features.FeatureUsesFiltersWithDuplicatedAlias;
 
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
@@ -308,7 +309,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            string targetingTestFeature = FeatureFlags.TargetingTestFeature;
+            string targetingTestFeature = Features.TargetingTestFeature;
 
             //
             // Targeted by user id
@@ -374,7 +375,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            string beta = FeatureFlags.TargetingTestFeature;
+            string beta = Features.TargetingTestFeature;
 
             //
             // Targeted by user id
@@ -425,11 +426,11 @@ namespace Tests.FeatureManagement
 
             context.AccountId = "NotEnabledAccount";
 
-            Assert.False(await featureManager.IsEnabledAsync(FeatureFlags.ContextualFeature, context));
+            Assert.False(await featureManager.IsEnabledAsync(Features.ContextualFeature, context));
 
             context.AccountId = "abc";
 
-            Assert.True(await featureManager.IsEnabledAsync(FeatureFlags.ContextualFeature, context));
+            Assert.True(await featureManager.IsEnabledAsync(Features.ContextualFeature, context));
         }
 
         [Fact]
@@ -497,7 +498,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.IsEnabledAsync(FeatureFlags.ConditionalFeature));
+            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.IsEnabledAsync(Features.ConditionalFeature));
 
             Assert.Equal(FeatureManagementError.MissingFeatureFilter, e.Error);
         }
@@ -523,7 +524,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            var isEnabled = await featureManager.IsEnabledAsync(FeatureFlags.ConditionalFeature);
+            var isEnabled = await featureManager.IsEnabledAsync(Features.ConditionalFeature);
 
             Assert.False(isEnabled);
         }
@@ -558,7 +559,7 @@ namespace Tests.FeatureManagement
         {
             FeatureDefinition testFeature = new FeatureDefinition
             {
-                Name = FeatureFlags.ConditionalFeature,
+                Name = Features.ConditionalFeature,
                 EnabledFor = new List<FeatureFilterConfiguration>()
                 {
                     new FeatureFilterConfiguration
@@ -596,12 +597,12 @@ namespace Tests.FeatureManagement
 
                 Assert.Equal("V1", evaluationContext.Parameters["P1"]);
 
-                Assert.Equal(FeatureFlags.ConditionalFeature, evaluationContext.FeatureName);
+                Assert.Equal(Features.ConditionalFeature, evaluationContext.FeatureName);
 
                 return Task.FromResult(true);
             };
 
-            await featureManager.IsEnabledAsync(FeatureFlags.ConditionalFeature);
+            await featureManager.IsEnabledAsync(Features.ConditionalFeature);
 
             Assert.True(called);
         }
@@ -643,7 +644,7 @@ namespace Tests.FeatureManagement
 
             for (int i = 0; i < 1000; i++)
             {
-                tasks.Add(featureManager.IsEnabledAsync(FeatureFlags.ConditionalFeature));
+                tasks.Add(featureManager.IsEnabledAsync(Features.ConditionalFeature));
             }
 
             Assert.True(called);
@@ -680,7 +681,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            string targetingTestFeature = FeatureFlags.TargetingTestFeatureWithExclusion;
+            string targetingTestFeature = Features.TargetingTestFeatureWithExclusion;
 
             //
             // Targeted by user id
@@ -769,8 +770,8 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            string anyFilterFeature = FeatureFlags.AnyFilterFeature;
-            string allFilterFeature = FeatureFlags.AllFilterFeature;
+            string anyFilterFeature = Features.AnyFilterFeature;
+            string allFilterFeature = Features.AllFilterFeature;
 
             IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
 
@@ -827,7 +828,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            string allFilterFeature = FeatureFlags.AllFilterFeature;
+            string allFilterFeature = Features.AllFilterFeature;
 
             await Assert.ThrowsAsync<FeatureManagementException>(async () =>
             {
@@ -854,7 +855,7 @@ namespace Tests.FeatureManagement
                 {
                     new FeatureDefinition
                     {
-                        Name = FeatureFlags.ConditionalFeature,
+                        Name = Features.ConditionalFeature,
                         EnabledFor = new List<FeatureFilterConfiguration>()
                         {
                             testFilterConfiguration
@@ -895,7 +896,7 @@ namespace Tests.FeatureManagement
                 return Task.FromResult(true);
             };
 
-            await featureManager.IsEnabledAsync(FeatureFlags.ConditionalFeature);
+            await featureManager.IsEnabledAsync(Features.ConditionalFeature);
 
             Assert.True(binderCalled);
 
@@ -905,7 +906,7 @@ namespace Tests.FeatureManagement
 
             called = false;
 
-            await featureManager.IsEnabledAsync(FeatureFlags.ConditionalFeature);
+            await featureManager.IsEnabledAsync(Features.ConditionalFeature);
 
             Assert.False(binderCalled);
 
@@ -919,7 +920,7 @@ namespace Tests.FeatureManagement
 
             called = false;
 
-            await featureManager.IsEnabledAsync(FeatureFlags.ConditionalFeature);
+            await featureManager.IsEnabledAsync(Features.ConditionalFeature);
 
             Assert.True(binderCalled);
 
