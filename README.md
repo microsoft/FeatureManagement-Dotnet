@@ -242,6 +242,16 @@ In MVC views `<feature>` tags can be used to conditionally render content based 
 </feature>
 ```
 
+The tag helper can encompass multiple features. By listing all feature names, separated by commas, and specifing the `requirement` in the example below, the content is only rendered if `FeatureX` and `FeatureY` are both enabled.
+``` HTML+Razor
+<feature name="FeatureX,FeatureY" requirement="All">
+  <p>This can only be seen if 'FeatureX' and 'FeatureY' are enabled.</p>
+</feature>
+```
+The `requirement` can be `Any` or `All`. If the `requirement` is not specified, the default value is `All`.
+- `Any` means only one feature needs to evaluate to true for the content to be rendered. 
+- `All` means every features needs to evaluate to true for the content to be rendered.
+
 You can also negate the tag helper evaluation to display content when a feature or set of features are disabled. By setting `negate="true"` in the example below, the content is only rendered if `FeatureX` is disabled.
 
 ``` HTML+Razor
