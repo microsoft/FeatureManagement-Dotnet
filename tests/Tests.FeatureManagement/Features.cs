@@ -3,17 +3,17 @@
 //
 namespace Tests.FeatureManagement
 {
-    enum Features
+    static class Features
     {
-        TargetingTestFeature,
-        TargetingTestFeatureWithExclusion,
-        OnTestFeature,
-        OffTestFeature,
-        ConditionalFeature,
-        ConditionalFeature2,
-        ContextualFeature,
-        AnyFilterFeature,
-        AllFilterFeature,
-        FeatureUsesFiltersWithDuplicatedAlias
+        public const string TargetingTestFeature = "TargetingTestFeature";
+        public const string TargetingTestFeatureWithExclusion = "TargetingTestFeatureWithExclusion";
+        public const string OnTestFeature = "OnTestFeature";
+        public const string OffTestFeature = "OffTestFeature";
+        public const string ConditionalFeature = "ConditionalFeature";
+        public const string ConditionalFeature2 = "ConditionalFeature2";
+        public const string ContextualFeature = "ContextualFeature";
+        public const string AnyFilterFeature = "AnyFilterFeature";
+        public const string AllFilterFeature = "AllFilterFeature";
+        public const string FeatureUsesFiltersWithDuplicatedAlias = "FeatureUsesFiltersWithDuplicatedAlias";
     }
 }
