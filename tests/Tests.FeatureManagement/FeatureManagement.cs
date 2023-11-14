@@ -226,6 +226,8 @@ namespace Tests.FeatureManagement
             const string feature2 = "feature2";
             const string feature3 = "feature3";
             const string feature4 = "feature4";
+            const string feature5 = "feature5";
+            const string feature6 = "feature6";
 
             Environment.SetEnvironmentVariable($"FeatureManagement:{feature1}:EnabledFor:0:Name", "TimeWindow");
             Environment.SetEnvironmentVariable($"FeatureManagement:{feature1}:EnabledFor:0:Parameters:End", DateTimeOffset.UtcNow.AddDays(1).ToString("r"));
@@ -238,6 +240,19 @@ namespace Tests.FeatureManagement
 
             Environment.SetEnvironmentVariable($"FeatureManagement:{feature4}:EnabledFor:0:Name", "TimeWindow");
             Environment.SetEnvironmentVariable($"FeatureManagement:{feature4}:EnabledFor:0:Parameters:Start", DateTimeOffset.UtcNow.AddDays(1).ToString("r"));
+
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature5}:EnabledFor:0:Name", "TimeWindow");
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature5}:EnabledFor:0:Parameters:Start", DateTimeOffset.UtcNow.AddDays(-2).ToString("r"));
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature5}:EnabledFor:0:Parameters:End", DateTimeOffset.UtcNow.AddDays(-1).ToString("r"));
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature5}:EnabledFor:0:Parameters:Recurrence:Pattern:Type", "Daily");
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature5}:EnabledFor:0:Parameters:Recurrence:Range:Type", "NoEnd");
+
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature6}:EnabledFor:0:Name", "TimeWindow");
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature6}:EnabledFor:0:Parameters:Start", DateTimeOffset.UtcNow.AddDays(-2).ToString("r"));
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature6}:EnabledFor:0:Parameters:End", DateTimeOffset.UtcNow.AddDays(-1).ToString("r"));
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature6}:EnabledFor:0:Parameters:Recurrence:Pattern:Type", "Daily");
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature6}:EnabledFor:0:Parameters:Recurrence:Pattern:Interval", "3");
+            Environment.SetEnvironmentVariable($"FeatureManagement:{feature6}:EnabledFor:0:Parameters:Recurrence:Range:Type", "NoEnd");
 
             IConfiguration config = new ConfigurationBuilder().AddEnvironmentVariables().Build();
 
@@ -254,6 +269,8 @@ namespace Tests.FeatureManagement
             Assert.False(await featureManager.IsEnabledAsync(feature2));
             Assert.True(await featureManager.IsEnabledAsync(feature3));
             Assert.False(await featureManager.IsEnabledAsync(feature4));
+            Assert.True(await featureManager.IsEnabledAsync(feature5));
+            Assert.False(await featureManager.IsEnabledAsync(feature6));
         }
 
         [Fact]

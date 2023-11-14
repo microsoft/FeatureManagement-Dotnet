@@ -10,6 +10,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 {
     /// <summary>
     /// A feature filter that can be used to activate a feature based on a time window.
+    /// The time window filter supports recurrence settings. The time window can occur repeatedly.
     /// </summary>
     [FilterAlias(Alias)]
     public class TimeWindowFilter : IFeatureFilter, IFilterParametersBinder
@@ -23,7 +24,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <param name="loggerFactory">A logger factory for creating loggers.</param>
         public TimeWindowFilter(ILoggerFactory loggerFactory)
         {
-            _logger = loggerFactory.CreateLogger<TimeWindowFilter>();
+            _logger = loggerFactory?.CreateLogger<TimeWindowFilter>() ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
         /// <summary>
@@ -37,7 +38,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Evaluates whether a feature is enabled based on a configurable time window.
+        /// Evaluates whether a feature is enabled based on a configurable fixed time window or recurring time windows.
         /// </summary>
         /// <param name="context">The feature evaluation context.</param>
         /// <returns>True if the feature is enabled, false otherwise.</returns>
@@ -56,7 +57,19 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 return Task.FromResult(false);
             }
 
-            return Task.FromResult((!settings.Start.HasValue || now >= settings.Start.Value) && (!settings.End.HasValue || now < settings.End.Value));
+            //
+            // Hit the first occurrence of the time window
+            if ((!settings.Start.HasValue || now >= settings.Start.Value) && (!settings.End.HasValue || now < settings.End.Value))
+            {
+                return Task.FromResult(true);
+            }
+
+            if (settings.Recurrence != null)
+            {
+                return Task.FromResult(RecurrenceEvaluator.MatchRecurrence(now, settings));
+            }
+
+            return Task.FromResult(false);
         }
     }
 }
