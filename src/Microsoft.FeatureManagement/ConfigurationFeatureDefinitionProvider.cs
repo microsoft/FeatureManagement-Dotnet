@@ -3,6 +3,7 @@
 //
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Concurrent;
@@ -29,12 +30,14 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private readonly ILogger _logger;
+        private readonly FeatureManagementOptions _options;
         private int _stale = 0;
 
-        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration, ILoggerFactory loggerFactory)
+        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration, ILoggerFactory loggerFactory, IOptions<FeatureManagementOptions> options)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _logger = loggerFactory?.CreateLogger<ConfigurationFeatureDefinitionProvider>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _definitions = new ConcurrentDictionary<string, FeatureDefinition>();
 
             _changeSubscription = ChangeToken.OnChange(
@@ -217,9 +220,16 @@ namespace Microsoft.FeatureManagement
                 return featureManagementConfigurationSection.GetChildren();
             }
 
-            _logger.LogDebug($"No configuration section named '{FeatureManagementSectionName}' was found.");
+            //
+            // There is no "FeatureManagement" section in the configuration
+            if (_options.RequireFeatureManagementSection)
+            {
+                _logger.LogDebug($"No configuration section named '{FeatureManagementSectionName}' was found.");
 
-            return Enumerable.Empty<IConfigurationSection>();
+                return Enumerable.Empty<IConfigurationSection>();
+            }
+
+            return _configuration.GetChildren();
         }
     }
 }

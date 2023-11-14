@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 
@@ -60,7 +61,15 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            services.AddSingleton<IFeatureDefinitionProvider>(sp => new ConfigurationFeatureDefinitionProvider(configuration, sp.GetRequiredService<ILoggerFactory>()));
+            services.Configure<FeatureManagementOptions>(options =>
+            {
+                options.RequireFeatureManagementSection = false;
+            });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(sp => new ConfigurationFeatureDefinitionProvider(
+                configuration, 
+                sp.GetRequiredService<ILoggerFactory>(),
+                sp.GetRequiredService<IOptions<FeatureManagementOptions>>()));
 
             return services.AddFeatureManagement();
         }

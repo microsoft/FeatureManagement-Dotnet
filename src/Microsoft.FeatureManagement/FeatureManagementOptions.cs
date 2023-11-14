@@ -22,5 +22,12 @@ namespace Microsoft.FeatureManagement
         /// The default value is true.
         /// </summary>
         public bool IgnoreMissingFeatures { get; set; } = true;
+
+        /// <summary>
+        /// Controls the behavior of feature definition provider when "FeatureManagement" section in the configuration is missing.
+        /// If missing configuration section is not ignored, the feature definition provider will fall back to the root of the provided configuration.
+        /// The default value is false.
+        /// </summary>
+        public bool RequireFeatureManagementSection { get; set; } = true;
     }
 }
