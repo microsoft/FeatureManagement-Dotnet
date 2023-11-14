@@ -21,10 +21,10 @@
     <link href="css/site.css" rel="stylesheet" />
     <link href="BlazorServerApp.styles.css" rel="stylesheet" />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <component type="typeof(HeadOutlet)" render-mode="Server" />
+    <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
 </head>
 <body>
-    <component type="typeof(App)" param-InitialState="context" render-mode="Server" />
+    <component type="typeof(App)" param-InitialState="context" render-mode="ServerPrerendered" />
 
     <div id="blazor-error-ui">
         <environment include="Staging,Production">
