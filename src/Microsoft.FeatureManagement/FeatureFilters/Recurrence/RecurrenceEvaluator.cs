@@ -77,11 +77,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 return false;
             }
 
-            if (settings.Recurrence == null)
-            {
-                return false;
-            }
-
             if (!TryGetPreviousOccurrence(time, settings, out DateTimeOffset previousOccurrence))
             {
                 return false;
