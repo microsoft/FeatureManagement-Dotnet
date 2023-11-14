@@ -588,45 +588,27 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (string.Equals(patternType, Daily, StringComparison.OrdinalIgnoreCase))
             {
-                if (!TryValidateDailyRecurrencePattern(settings, out paramName, out reason))
-                {
-                    return false;
-                }
+                return TryValidateDailyRecurrencePattern(settings, out paramName, out reason);
             }
             else if (string.Equals(patternType, Weekly, StringComparison.OrdinalIgnoreCase))
             {
-                if (!TryValidateWeeklyRecurrencePattern(settings, out paramName, out reason))
-                {
-                    return false;
-                }
+                return TryValidateWeeklyRecurrencePattern(settings, out paramName, out reason);
             }
             else if (string.Equals(patternType, AbsoluteMonthly, StringComparison.OrdinalIgnoreCase))
             {
-                if (!TryValidateAbsoluteMonthlyRecurrencePattern(settings, out paramName, out reason))
-                {
-                    return false;
-                }
+                return TryValidateAbsoluteMonthlyRecurrencePattern(settings, out paramName, out reason);
             }
             else if (string.Equals(patternType, RelativeMonthly, StringComparison.OrdinalIgnoreCase))
             {
-                if (!TryValidateRelativeMonthlyRecurrencePattern(settings, out paramName, out reason))
-                {
-                    return false;
-                }
+                return TryValidateRelativeMonthlyRecurrencePattern(settings, out paramName, out reason);
             }
             else if (string.Equals(patternType, AbsoluteYearly, StringComparison.OrdinalIgnoreCase))
             {
-                if (!TryValidateAbsoluteYearlyRecurrencePattern(settings, out paramName, out reason))
-                {
-                    return false;
-                }
+                return TryValidateAbsoluteYearlyRecurrencePattern(settings, out paramName, out reason);
             }
             else if (string.Equals(patternType, RelativeYearly, StringComparison.OrdinalIgnoreCase))
             {
-                if (!TryValidateRelativeYearlyRecurrencePattern(settings, out paramName, out reason))
-                {
-                    return false;
-                }
+                return TryValidateRelativeYearlyRecurrencePattern(settings, out paramName, out reason);
             }
             else
             {
@@ -636,8 +618,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
                 return false;
             }
-
-            return true;
         }
 
         private static bool TryValidateDailyRecurrencePattern(TimeWindowFilterSettings settings, out string paramName, out string reason)
