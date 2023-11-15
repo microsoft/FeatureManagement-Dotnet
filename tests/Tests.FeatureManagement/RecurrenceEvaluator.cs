@@ -1734,7 +1734,8 @@ namespace Tests.FeatureManagement
                         Pattern = new RecurrencePattern()
                         {
                             Type = "RelativeMonthly",
-                            DaysOfWeek = new List<string>() { "Friday" }
+                            DaysOfWeek = new List<string>() { "Friday" },
+                            Index = "First"
                         },
                         Range = new RecurrenceRange()
                         {
@@ -1860,6 +1861,7 @@ namespace Tests.FeatureManagement
                         {
                             Type = "RelativeMonthly",
                             DaysOfWeek = new List<string>() { "Friday" },
+                            Index = "First",
                             Interval = 3
                         },
                         Range = new RecurrenceRange()
@@ -1901,7 +1903,8 @@ namespace Tests.FeatureManagement
                         Pattern = new RecurrencePattern()
                         {
                             Type = "RelativeMonthly",
-                            DaysOfWeek = new List<string>() { "Friday", "Monday" }
+                            DaysOfWeek = new List<string>() { "Friday", "Monday" },
+                            Index = "First"
                         },
                         Range = new RecurrenceRange()
                         {
@@ -1942,6 +1945,7 @@ namespace Tests.FeatureManagement
                         {
                             Type = "RelativeMonthly",
                             DaysOfWeek = new List<string>() { "Friday", "Monday" },
+                            Index = "First",
                             Interval = 2
                         },
                         Range = new RecurrenceRange()
@@ -1963,6 +1967,7 @@ namespace Tests.FeatureManagement
                         {
                             Type = "RelativeMonthly",
                             DaysOfWeek = new List<string>() { "Friday", "Monday" },
+                            Index = "First",
                             Interval = 2
                         },
                         Range = new RecurrenceRange()
@@ -1984,6 +1989,7 @@ namespace Tests.FeatureManagement
                         {
                             Type = "RelativeMonthly",
                             DaysOfWeek = new List<string>() { "Friday", "Monday" },
+                            Index = "First",
                             Interval = 2
                         },
                         Range = new RecurrenceRange()
@@ -1994,7 +2000,7 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
-                ( DateTimeOffset.Parse("2023-12-1T00:00:00+08:00"),
+                ( DateTimeOffset.Parse("2023-12-1T00:00:00+08:00"), // the first day of the month
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -2015,7 +2021,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2024-3-1T00:00:00+08:00"),
+                ( DateTimeOffset.Parse("2024-3-1T00:00:00+08:00"), // the first day of the month
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -2308,7 +2314,7 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
-                ( DateTimeOffset.Parse("2024-9-1T00:00:00+08:00"),
+                ( DateTimeOffset.Parse("2024-9-1T00:00:00+08:00"), // the first day of Sep
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -2372,7 +2378,7 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
-                ( DateTimeOffset.Parse("2026-9-1T00:00:00+08:00"),
+                ( DateTimeOffset.Parse("2026-9-1T00:00:00+08:00"), // the first day of Sep
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),

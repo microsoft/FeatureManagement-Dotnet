@@ -1251,11 +1251,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <returns>True if the duration is compliant with days of week, false otherwise.</returns>
         private static bool IsDurationCompliantWithDaysOfWeek(TimeSpan duration, int interval, IEnumerable<string> daysOfWeek, string firstDayOfWeek)
         {
-            if (daysOfWeek == null || !daysOfWeek.Any())
-            {
-                throw new ArgumentException(nameof(daysOfWeek));
-            }
-
             if (daysOfWeek.Count() == 1)
             {
                 return true;
