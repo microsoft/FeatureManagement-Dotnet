@@ -44,9 +44,8 @@ namespace Microsoft.FeatureManagement
         }
 
         /// <summary>
-        /// The collection of feature filter metadata.
+        /// The option that controls the behavior when "FeatureManagement" section in the configuration is missing.
         /// </summary>
-        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
         public bool UseTopLevelConfiguration
         {
             get => _useTopLevelConfiguration;
