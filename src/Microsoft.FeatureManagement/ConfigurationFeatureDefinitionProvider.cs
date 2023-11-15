@@ -3,7 +3,6 @@
 //
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Concurrent;
@@ -28,21 +27,34 @@ namespace Microsoft.FeatureManagement
         private const string FeatureManagementSectionName = "FeatureManagement";
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
-        private IDisposable _changeSubscription;
+        private readonly bool _useTopLevelConfiguration = false;
         private readonly ILogger _logger;
-        private readonly FeatureManagementOptions _options;
+        private IDisposable _changeSubscription;
         private int _stale = 0;
 
-        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration, ILoggerFactory loggerFactory, IOptions<FeatureManagementOptions> options)
+        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration, ILoggerFactory loggerFactory)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _logger = loggerFactory?.CreateLogger<ConfigurationFeatureDefinitionProvider>() ?? throw new ArgumentNullException(nameof(loggerFactory));
-            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _definitions = new ConcurrentDictionary<string, FeatureDefinition>();
 
             _changeSubscription = ChangeToken.OnChange(
                 () => _configuration.GetReloadToken(),
                 () => _stale = 1);
+        }
+
+        /// <summary>
+        /// The collection of feature filter metadata.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
+        public bool UseTopLevelConfiguration
+        {
+            get => _useTopLevelConfiguration;
+
+            init
+            {
+                _useTopLevelConfiguration = value;
+            }
         }
 
         public void Dispose()
@@ -222,14 +234,14 @@ namespace Microsoft.FeatureManagement
 
             //
             // There is no "FeatureManagement" section in the configuration
-            if (_options.RequireFeatureManagementSection)
+            if (_useTopLevelConfiguration)
             {
-                _logger.LogDebug($"No configuration section named '{FeatureManagementSectionName}' was found.");
-
-                return Enumerable.Empty<IConfigurationSection>();
+                return _configuration.GetChildren();
             }
 
-            return _configuration.GetChildren();
+            _logger.LogDebug($"No configuration section named '{FeatureManagementSectionName}' was found.");
+
+            return Enumerable.Empty<IConfigurationSection>();
         }
     }
 }

@@ -69,6 +69,7 @@ namespace Microsoft.FeatureManagement
 
         /// <summary>
         /// Adds singleton <see cref="FeatureManager"/> and other required feature management services.
+        /// The registered <see cref="ConfigurationFeatureDefinitionProvider"/> will use the provided configuration and read from the top level if no "FeatureManagement" section can be found.
         /// </summary>
         /// <param name="services">The service collection that feature management services are added to.</param>
         /// <param name="configuration">A specific <see cref="IConfiguration"/> instance that will be used to obtain feature settings.</param>
@@ -85,10 +86,13 @@ namespace Microsoft.FeatureManagement
                 options.RequireFeatureManagementSection = false;
             });
 
-            services.AddSingleton<IFeatureDefinitionProvider>(sp => new ConfigurationFeatureDefinitionProvider(
-                configuration, 
-                sp.GetRequiredService<ILoggerFactory>(),
-                sp.GetRequiredService<IOptions<FeatureManagementOptions>>()));
+            services.AddSingleton<IFeatureDefinitionProvider>(sp =>
+                new ConfigurationFeatureDefinitionProvider(
+                    configuration,
+                    sp.GetRequiredService<ILoggerFactory>())
+                {
+                    UseTopLevelConfiguration = true
+                });
 
             return services.AddFeatureManagement();
         }
@@ -143,6 +147,7 @@ namespace Microsoft.FeatureManagement
 
         /// <summary>
         /// Adds scoped <see cref="FeatureManager"/> and other required feature management services.
+        /// The registered <see cref="ConfigurationFeatureDefinitionProvider"/> will use the provided configuration and read from the top level if no "FeatureManagement" section can be found.
         /// </summary>
         /// <param name="services">The service collection that feature management services are added to.</param>
         /// <param name="configuration">A specific <see cref="IConfiguration"/> instance that will be used to obtain feature settings.</param>
@@ -154,7 +159,13 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            services.AddSingleton<IFeatureDefinitionProvider>(sp => new ConfigurationFeatureDefinitionProvider(configuration, sp.GetRequiredService<ILoggerFactory>()));
+            services.AddSingleton<IFeatureDefinitionProvider>(sp =>
+                new ConfigurationFeatureDefinitionProvider(
+                    configuration,
+                    sp.GetRequiredService<ILoggerFactory>())
+                {
+                    UseTopLevelConfiguration = true
+                });
 
             return services.AddScopedFeatureManagement();
         }
