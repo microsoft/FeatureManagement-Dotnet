@@ -1,0 +1,72 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center mb-40">
+    <h1 class="display-4">Welcome, @Model.Username !</h1>
+</div>
+
+<div class="text-center">
+    <div style="display:inline-block;width:500px;">
+        <img class="mb-40" src="@ViewData["ImageUri"]" />
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-arrow-right"></span>Rate the image on a scale of 1 - 5 !<span class="glyphicon glyphicon-new-window"></span></a>
+                </h3>
+            </div>
+            <form action="/" method="post">
+                <div class="panel-body mb-5">
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <div class="radio">
+                                <label>
+                                    <input type="radio" name="imageScore" value="5">
+                                    5
+                                </label>
+                            </div>
+                        </li>
+                        <li class="list-group-item">
+                            <div class="radio">
+                                <label>
+                                    <input type="radio" name="imageScore" value="4">
+                                    4
+                                </label>
+                            </div>
+                        </li>
+                        <li class="list-group-item">
+                            <div class="radio">
+                                <label>
+                                    <input type="radio" name="imageScore" value="3">
+                                    3
+                                </label>
+                            </div>
+                        </li>
+                        <li class="list-group-item">
+                            <div class="radio">
+                                <label>
+                                    <input type="radio" name="imageScore" value="2">
+                                    2
+                                </label>
+                            </div>
+                        </li>
+                        <li class="list-group-item">
+                            <div class="radio">
+                                <label>
+                                    <input type="radio" name="imageScore" value="1">
+                                    1
+                                </label>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                @Html.AntiForgeryToken()
+                <div class="panel-footer">
+                    <input type="submit" class="btn btn-primary btn-sm" value="Vote" />
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

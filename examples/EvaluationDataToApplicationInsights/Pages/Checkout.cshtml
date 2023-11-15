@@ -1,0 +1,12 @@
+﻿@page
+@model CheckoutModel
+@{
+    ViewData["Title"] = "Checkout";
+}
+<h1>@ViewData["Title"]</h1>
+
+<p>Click Below To Check Out!</p>
+
+<button id="checkout" name="checkout" onclick="appInsights.trackEvent({ name: 'checkout', properties: { 'success' : 'yes' } }); appInsights.trackMetric({ name: 'checkoutAmount', average: Math.floor(Math.random() * 100) }); alert('Checked Out!');">
+    Check Out
+</button>
