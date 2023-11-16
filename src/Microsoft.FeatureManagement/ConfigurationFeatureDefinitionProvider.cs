@@ -27,7 +27,6 @@ namespace Microsoft.FeatureManagement
         private const string FeatureManagementSectionName = "FeatureManagement";
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
-        private readonly bool _useTopLevelConfiguration = false;
         private readonly ILogger _logger;
         private IDisposable _changeSubscription;
         private int _stale = 0;
@@ -225,7 +224,7 @@ namespace Microsoft.FeatureManagement
 
             //
             // There is no "FeatureManagement" section in the configuration
-            if (_useTopLevelConfiguration)
+            if (UseTopLevelConfiguration)
             {
                 return _configuration.GetChildren();
             }
