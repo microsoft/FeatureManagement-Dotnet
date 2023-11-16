@@ -27,8 +27,8 @@ namespace Microsoft.FeatureManagement
         private const string FeatureManagementSectionName = "FeatureManagement";
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
-        private IDisposable _changeSubscription;
         private readonly ILogger _logger;
+        private IDisposable _changeSubscription;
         private int _stale = 0;
 
         public ConfigurationFeatureDefinitionProvider(IConfiguration configuration, ILoggerFactory loggerFactory)
@@ -41,6 +41,11 @@ namespace Microsoft.FeatureManagement
                 () => _configuration.GetReloadToken(),
                 () => _stale = 1);
         }
+
+        /// <summary>
+        /// The option that controls the behavior when "FeatureManagement" section in the configuration is missing.
+        /// </summary>
+        public bool UseTopLevelConfiguration { get; init; }
 
         public void Dispose()
         {
@@ -215,6 +220,13 @@ namespace Microsoft.FeatureManagement
             if (featureManagementConfigurationSection.Exists())
             {
                 return featureManagementConfigurationSection.GetChildren();
+            }
+
+            //
+            // There is no "FeatureManagement" section in the configuration
+            if (UseTopLevelConfiguration)
+            {
+                return _configuration.GetChildren();
             }
 
             _logger.LogDebug($"No configuration section named '{FeatureManagementSectionName}' was found.");
