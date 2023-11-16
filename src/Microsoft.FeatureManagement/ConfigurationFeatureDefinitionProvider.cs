@@ -46,15 +46,7 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The option that controls the behavior when "FeatureManagement" section in the configuration is missing.
         /// </summary>
-        public bool UseTopLevelConfiguration
-        {
-            get => _useTopLevelConfiguration;
-
-            init
-            {
-                _useTopLevelConfiguration = value;
-            }
-        }
+        public bool UseTopLevelConfiguration { get; init; }
 
         public void Dispose()
         {
