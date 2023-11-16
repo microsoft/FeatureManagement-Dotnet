@@ -72,8 +72,7 @@ namespace Tests.FeatureManagement
 
             services
                 .AddSingleton(config)
-                .AddFeatureManagement()
-                .AddFeatureFilter<TestFilter>();
+                .AddFeatureManagement();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
@@ -85,6 +84,26 @@ namespace Tests.FeatureManagement
                 // Fail, as no features should be found
                 Assert.True(false);
             }
+        }
+
+        [Fact]
+        public async Task ReadsTopLevelConfiguration()
+        {
+            const string feature = "FeatureX";
+
+            var stream = new MemoryStream(Encoding.UTF8.GetBytes($"{{\"AllowedHosts\": \"*\", \"FeatureFlags\": {{\"{feature}\": true}}}}"));
+
+            IConfiguration config = new ConfigurationBuilder().AddJsonStream(stream).Build();
+
+            var services = new ServiceCollection();
+
+            services.AddFeatureManagement(config.GetSection("FeatureFlags"));
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync(feature));
         }
 
         [Fact]
