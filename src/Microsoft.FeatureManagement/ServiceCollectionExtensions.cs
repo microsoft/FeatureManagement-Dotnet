@@ -81,11 +81,6 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            services.Configure<FeatureManagementOptions>(options =>
-            {
-                options.RequireFeatureManagementSection = false;
-            });
-
             services.AddSingleton<IFeatureDefinitionProvider>(sp =>
                 new ConfigurationFeatureDefinitionProvider(
                     configuration,
