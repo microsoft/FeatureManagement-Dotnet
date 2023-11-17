@@ -4,10 +4,9 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Microsoft.FeatureManagement.Telemetry;
 using Microsoft.FeatureManagement.FeatureFilters;
 using Microsoft.FeatureManagement.Targeting;
+using Microsoft.FeatureManagement.Telemetry;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -20,22 +19,22 @@ using System.Threading.Tasks;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// Used to evaluate whether a feature is enabled or disabled.
+    /// Used to evaluate the enabled state of a feature and/or get the assigned variant of a feature, if any.
     /// </summary>
-    class FeatureManager : IFeatureManager, IDisposable, IVariantFeatureManager
+    public sealed class FeatureManager : IFeatureManager, IVariantFeatureManager
     {
         private readonly TimeSpan ParametersCacheSlidingExpiration = TimeSpan.FromMinutes(5);
         private readonly TimeSpan ParametersCacheAbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
 
         private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
-        private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
-        private readonly IEnumerable<ISessionManager> _sessionManagers;
-        private readonly ILogger _logger;
+        private readonly FeatureManagementOptions _options;
         private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
-        private readonly FeatureManagementOptions _options;
+
+        private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
+        private readonly IEnumerable<ISessionManager> _sessionManagers;
+        private readonly IEnumerable<ITelemetryPublisher> _telemetryPublishers;
         private readonly TargetingEvaluationOptions _assignerOptions;
-        private readonly IMemoryCache _parametersCache;
 
         private class ConfigurationCacheItem
         {
@@ -44,49 +43,206 @@ namespace Microsoft.FeatureManagement
             public object Settings { get; set; }
         }
 
+        /// <summary>
+        /// Creates a feature manager.
+        /// </summary>
+        /// <param name="featureDefinitionProvider">The provider of feature flag definitions.</param>
+        /// <param name="options">Options controlling the behavior of the feature manager.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureDefinitionProvider"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="options"/> is null.</exception>
         public FeatureManager(
             IFeatureDefinitionProvider featureDefinitionProvider,
-            IEnumerable<IFeatureFilterMetadata> featureFilters,
-            IEnumerable<ISessionManager> sessionManagers,
-            ILoggerFactory loggerFactory,
-            IOptions<FeatureManagementOptions> options,
-            IOptions<TargetingEvaluationOptions> assignerOptions)
+            FeatureManagementOptions options)
         {
-            _featureDefinitionProvider = featureDefinitionProvider;
-            _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
-            _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
-            _logger = loggerFactory.CreateLogger<FeatureManager>();
-            _assignerOptions = assignerOptions?.Value ?? throw new ArgumentNullException(nameof(assignerOptions));
+            _featureDefinitionProvider = featureDefinitionProvider ?? throw new ArgumentNullException(nameof(featureDefinitionProvider));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
-            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
-            _parametersCache = new MemoryCache(new MemoryCacheOptions());
+            _featureFilters = Enumerable.Empty<IFeatureFilterMetadata>();
+            _sessionManagers = Enumerable.Empty<ISessionManager>();
+            _telemetryPublishers = Enumerable.Empty<ITelemetryPublisher>();
+            _assignerOptions = new TargetingEvaluationOptions();
         }
 
-        public IEnumerable<ITelemetryPublisher> TelemetryPublishers { get; init; }
+        /// <summary>
+        /// The collection of feature filter metadata.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
+        public IEnumerable<IFeatureFilterMetadata> FeatureFilters
+        {
+            get => _featureFilters;
 
+            init
+            {
+                _featureFilters = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
+
+        /// <summary>
+        /// The collection of session managers.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
+        public IEnumerable<ISessionManager> SessionManagers
+        {
+            get => _sessionManagers;
+
+            init
+            {
+                _sessionManagers = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
+
+        /// <summary>
+        /// The application memory cache to store feature filter settings.
+        /// </summary>
+        public IMemoryCache Cache { get; init; }
+
+        /// <summary>
+        /// The logger for the feature manager.
+        /// </summary>
+        public ILogger Logger { get; init; }
+
+        /// <summary>
+        /// The collection of telemetry publishers.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
+        public IEnumerable<ITelemetryPublisher> TelemetryPublishers
+        {
+            get => _telemetryPublishers;
+
+            init
+            {
+                _telemetryPublishers = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
+
+        /// <summary>
+        /// The configuration reference for feature variants.
+        /// </summary>
         public IConfiguration Configuration { get; init; }
 
+        /// <summary>
+        /// The targeting context accessor for feature variant allocation.
+        /// </summary>
         public ITargetingContextAccessor TargetingContextAccessor { get; init; }
 
+        /// <summary>
+        /// Options controlling the targeting behavior for feature variant allocation.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
+        public TargetingEvaluationOptions AssignerOptions
+        {
+            get => _assignerOptions;
+
+            init
+            {
+                _assignerOptions = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
+
+        /// <summary>
+        /// Checks whether a given feature is enabled.
+        /// </summary>
+        /// <param name="feature">The name of the feature to check.</param>
+        /// <returns>True if the feature is enabled, otherwise false.</returns>
         public Task<bool> IsEnabledAsync(string feature)
         {
             return IsEnabledWithVariantsAsync<object>(feature, appContext: null, useAppContext: false, CancellationToken.None).AsTask();
         }
 
+        /// <summary>
+        /// Checks whether a given feature is enabled.
+        /// </summary>
+        /// <param name="feature">The name of the feature to check.</param>
+        /// <param name="appContext">A context providing information that can be used to evaluate whether a feature should be on or off.</param>
+        /// <returns>True if the feature is enabled, otherwise false.</returns>
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
         {
             return IsEnabledWithVariantsAsync(feature, appContext, useAppContext: true, CancellationToken.None).AsTask();
         }
 
+        /// <summary>
+        /// Checks whether a given feature is enabled.
+        /// </summary>
+        /// <param name="feature">The name of the feature to check.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>True if the feature is enabled, otherwise false.</returns>
         public ValueTask<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
         {
             return IsEnabledWithVariantsAsync<object>(feature, appContext: null, useAppContext: false, cancellationToken);
         }
 
+        /// <summary>
+        /// Checks whether a given feature is enabled.
+        /// </summary>
+        /// <param name="feature">The name of the feature to check.</param>
+        /// <param name="appContext">A context providing information that can be used to evaluate whether a feature should be on or off.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>True if the feature is enabled, otherwise false.</returns>
         public ValueTask<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, CancellationToken cancellationToken)
         {
             return IsEnabledWithVariantsAsync(feature, appContext, useAppContext: true, cancellationToken);
+        }
+
+        /// <summary>
+        /// Retrieves a list of feature names registered in the feature manager.
+        /// </summary>
+        /// <returns>An enumerator which provides asynchronous iteration over the feature names registered in the feature manager.</returns>
+        public IAsyncEnumerable<string> GetFeatureNamesAsync()
+        {
+            return GetFeatureNamesAsync(CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Retrieves a list of feature names registered in the feature manager.
+        /// </summary>
+        /// <returns>An enumerator which provides asynchronous iteration over the feature names registered in the feature manager.</returns>
+        public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            await foreach (FeatureDefinition featureDefinition in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                yield return featureDefinition.Name;
+            }
+        }
+
+        /// <summary>
+        /// Gets the assigned variant for a specific feature.
+        /// </summary>
+        /// <param name="feature">The name of the feature to evaluate.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>A variant assigned to the user based on the feature's configured allocation.</returns>
+        public ValueTask<Variant> GetVariantAsync(string feature, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(feature))
+            {
+                throw new ArgumentNullException(nameof(feature));
+            }
+
+            return GetVariantAsync(feature, context: null, useContext: false, cancellationToken);
+        }
+
+        /// <summary>
+        /// Gets the assigned variant for a specific feature.
+        /// </summary>
+        /// <param name="feature">The name of the feature to evaluate.</param>
+        /// <param name="context">An instance of <see cref="TargetingContext"/> used to evaluate which variant the user will be assigned.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>A variant assigned to the user based on the feature's configured allocation.</returns>
+        public ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(feature))
+            {
+                throw new ArgumentNullException(nameof(feature));
+            }
+
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            return GetVariantAsync(feature, context, useContext: true, cancellationToken);
         }
 
         private async ValueTask<bool> IsEnabledWithVariantsAsync<TContext>(string feature, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
@@ -159,26 +315,6 @@ namespace Microsoft.FeatureManagement
             return isFeatureEnabled;
         }
 
-        public IAsyncEnumerable<string> GetFeatureNamesAsync()
-        {
-            return GetFeatureNamesAsync(CancellationToken.None);
-        }
-
-        public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
-        {
-            await foreach (FeatureDefinition featureDefinition in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                yield return featureDefinition.Name;
-            }
-        }
-
-        public void Dispose()
-        {
-            _parametersCache.Dispose();
-        }
-
         private async Task<bool> IsEnabledAsync<TContext>(FeatureDefinition featureDefinition, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
             Debug.Assert(featureDefinition != null);
@@ -197,8 +333,8 @@ namespace Microsoft.FeatureManagement
 
             //
             // Treat an empty or status disabled feature as disabled
-            if (featureDefinition.EnabledFor == null || 
-                !featureDefinition.EnabledFor.Any() || 
+            if (featureDefinition.EnabledFor == null ||
+                !featureDefinition.EnabledFor.Any() ||
                 featureDefinition.Status == FeatureStatus.Disabled)
             {
                 enabled = false;
@@ -235,7 +371,7 @@ namespace Microsoft.FeatureManagement
                     //
                     // Handle AlwaysOn and On filters
                     if (string.Equals(featureFilterConfiguration.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(featureFilterConfiguration.Name, "On", StringComparison.OrdinalIgnoreCase))
+                        string.Equals(featureFilterConfiguration.Name, "On", StringComparison.OrdinalIgnoreCase))
                     {
                         if (featureDefinition.RequirementType == RequirementType.Any)
                         {
@@ -251,7 +387,7 @@ namespace Microsoft.FeatureManagement
                     if (useAppContext)
                     {
                         filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, typeof(TContext)) ??
-                                    GetFeatureFilterMetadata(featureFilterConfiguration.Name);
+                                 GetFeatureFilterMetadata(featureFilterConfiguration.Name);
                     }
                     else
                     {
@@ -260,6 +396,14 @@ namespace Microsoft.FeatureManagement
 
                     if (filter == null)
                     {
+                        if (_featureFilters.Any(f => IsMatchingName(f.GetType(), featureFilterConfiguration.Name)))
+                        {
+                            //
+                            // Cannot find the appropriate registered feature filter which matches the filter name and the provided context type.
+                            // But there is a registered feature filter which matches the filter name.
+                            continue;
+                        }
+
                         string errorMessage = $"The feature filter '{featureFilterConfiguration.Name}' specified for feature '{featureDefinition.Name}' was not found.";
 
                         if (!_options.IgnoreMissingFeatureFilters)
@@ -267,7 +411,7 @@ namespace Microsoft.FeatureManagement
                             throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
                         }
 
-                        _logger.LogWarning(errorMessage);
+                        Logger?.LogWarning(errorMessage);
 
                         continue;
                     }
@@ -310,31 +454,6 @@ namespace Microsoft.FeatureManagement
             }
 
             return enabled;
-        }
-
-        public ValueTask<Variant> GetVariantAsync(string feature, CancellationToken cancellationToken)
-        {
-            if (string.IsNullOrEmpty(feature))
-            {
-                throw new ArgumentNullException(nameof(feature));
-            }
-
-            return GetVariantAsync(feature, context: null, useContext: false, cancellationToken);
-        }
-
-        public ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, CancellationToken cancellationToken)
-        {
-            if (string.IsNullOrEmpty(feature))
-            {
-                throw new ArgumentNullException(nameof(feature));
-            }
-
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
-            return GetVariantAsync(feature, context, useContext: true, cancellationToken);
         }
 
         private async ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, bool useContext, CancellationToken cancellationToken)
@@ -393,8 +512,8 @@ namespace Microsoft.FeatureManagement
                 {
                     throw new FeatureManagementException(FeatureManagementError.MissingFeature, errorMessage);
                 }
-                
-                _logger.LogDebug(errorMessage);
+
+                Logger?.LogDebug(errorMessage);
             }
 
             return featureDefinition;
@@ -404,7 +523,7 @@ namespace Microsoft.FeatureManagement
         {
             if (TargetingContextAccessor == null)
             {
-                _logger.LogWarning($"No instance of {nameof(ITargetingContextAccessor)} is available for variant assignment.");
+                Logger?.LogWarning($"No instance of {nameof(ITargetingContextAccessor)} is available for variant assignment.");
 
                 return null;
             }
@@ -417,7 +536,7 @@ namespace Microsoft.FeatureManagement
             // Ensure targeting can be performed
             if (context == null)
             {
-                _logger.LogWarning($"No instance of {nameof(TargetingContext)} could be found using {nameof(ITargetingContextAccessor)} for variant assignment.");
+                Logger?.LogWarning($"No instance of {nameof(TargetingContext)} could be found using {nameof(ITargetingContextAccessor)} for variant assignment.");
             }
 
             return context;
@@ -452,7 +571,7 @@ namespace Microsoft.FeatureManagement
                     {
                         if (string.IsNullOrEmpty(user.Variant))
                         {
-                            _logger.LogWarning($"Missing variant name for user allocation in feature {featureDefinition.Name}");
+                            Logger?.LogWarning($"Missing variant name for user allocation in feature {featureDefinition.Name}");
 
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
@@ -475,7 +594,7 @@ namespace Microsoft.FeatureManagement
                     {
                         if (string.IsNullOrEmpty(group.Variant))
                         {
-                            _logger.LogWarning($"Missing variant name for group allocation in feature {featureDefinition.Name}");
+                            Logger?.LogWarning($"Missing variant name for group allocation in feature {featureDefinition.Name}");
 
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
@@ -503,7 +622,7 @@ namespace Microsoft.FeatureManagement
                     {
                         if (string.IsNullOrEmpty(percentile.Variant))
                         {
-                            _logger.LogWarning($"Missing variant name for percentile allocation in feature {featureDefinition.Name}");
+                            Logger?.LogWarning($"Missing variant name for percentile allocation in feature {featureDefinition.Name}");
 
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
@@ -530,7 +649,7 @@ namespace Microsoft.FeatureManagement
                 return;
             }
 
-            if (!(_featureDefinitionProvider is IFeatureDefinitionProviderCacheable))
+            if (!(_featureDefinitionProvider is IFeatureDefinitionProviderCacheable) || Cache == null)
             {
                 context.Settings = binder.BindParameters(context.Parameters);
 
@@ -541,16 +660,16 @@ namespace Microsoft.FeatureManagement
 
             ConfigurationCacheItem cacheItem;
 
-            string cacheKey = $"{context.FeatureName}.{filterIndex}";
+            string cacheKey = $"Microsoft.FeatureManagement{Environment.NewLine}{context.FeatureName}{Environment.NewLine}{filterIndex}";
 
             //
             // Check if settings already bound from configuration or the parameters have changed
-            if (!_parametersCache.TryGetValue(cacheKey, out cacheItem) ||
+            if (!Cache.TryGetValue(cacheKey, out cacheItem) ||
                 cacheItem.Parameters != context.Parameters)
             {
                 settings = binder.BindParameters(context.Parameters);
 
-                _parametersCache.Set(
+                Cache.Set(
                     cacheKey,
                     new ConfigurationCacheItem
                     {
@@ -671,13 +790,13 @@ namespace Microsoft.FeatureManagement
 
         private async void PublishTelemetry(EvaluationEvent evaluationEvent, CancellationToken cancellationToken)
         {
-            if (TelemetryPublishers == null || !TelemetryPublishers.Any())
+            if (!_telemetryPublishers.Any())
             {
-                _logger.LogWarning("The feature declaration enabled telemetry but no telemetry publisher was registered.");
+                Logger?.LogWarning("The feature declaration enabled telemetry but no telemetry publisher was registered.");
             }
             else
             {
-                foreach (ITelemetryPublisher telemetryPublisher in TelemetryPublishers)
+                foreach (ITelemetryPublisher telemetryPublisher in _telemetryPublishers)
                 {
                     await telemetryPublisher.PublishEvent(
                         evaluationEvent,
@@ -698,7 +817,7 @@ namespace Microsoft.FeatureManagement
             {
                 if (Configuration == null)
                 {
-                    _logger.LogWarning($"Cannot use {nameof(variantDefinition.ConfigurationReference)} as no instance of {nameof(IConfiguration)} is present.");
+                    Logger?.LogWarning($"Cannot use {nameof(variantDefinition.ConfigurationReference)} as no instance of {nameof(IConfiguration)} is present.");
 
                     return null;
                 }

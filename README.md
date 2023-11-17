@@ -268,6 +268,22 @@ You can also negate the tag helper evaluation to display content when a feature 
 </feature>
 ```
 
+The `<feature>` tag can reference multiple features by specifying a comma separated list of features in the `name` attribute.
+
+``` HTML+Razor
+<feature name="FeatureX,FeatureY">
+  <p>This can only be seen if 'FeatureX' and 'FeatureY' are enabled.</p>
+</feature>
+```
+
+By default, all listed features must be enabled for the feature tag to be rendered. This behavior can be overidden by adding the `requirement` attribute as seen in the example below.
+
+``` HTML+Razor
+<feature name="FeatureX,FeatureY" requirement="Any">
+  <p>This can only be seen if either 'FeatureX' or 'FeatureY' or both are enabled.</p>
+</feature>
+```
+
 The `<feature>` tag requires a tag helper to work. This can be done by adding the feature management tag helper to the _ViewImports.cshtml_ file.
 ``` HTML+Razor
 @addTagHelper *, Microsoft.FeatureManagement.AspNetCore

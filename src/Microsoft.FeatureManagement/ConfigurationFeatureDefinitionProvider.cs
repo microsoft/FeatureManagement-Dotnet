@@ -25,8 +25,8 @@ namespace Microsoft.FeatureManagement
 
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
-        private IDisposable _changeSubscription;
         private readonly ILogger _logger;
+        private IDisposable _changeSubscription;
         private int _stale = 0;
 
         const string ParseValueErrorString = "Invalid setting '{0}' with value '{1}' for feature '{2}'.";
@@ -41,6 +41,11 @@ namespace Microsoft.FeatureManagement
                 () => _configuration.GetReloadToken(),
                 () => _stale = 1);
         }
+
+        /// <summary>
+        /// The option that controls the behavior when "FeatureManagement" section in the configuration is missing.
+        /// </summary>
+        public bool UseTopLevelConfiguration { get; init; }
 
         public void Dispose()
         {
@@ -327,6 +332,13 @@ namespace Microsoft.FeatureManagement
             if (featureManagementConfigurationSection.Exists())
             {
                 return featureManagementConfigurationSection.GetChildren();
+            }
+
+            //
+            // There is no "FeatureManagement" section in the configuration
+            if (UseTopLevelConfiguration)
+            {
+                return _configuration.GetChildren();
             }
 
             _logger.LogDebug($"No configuration section named '{ConfigurationFields.FeatureManagementSectionName}' was found.");
