@@ -237,25 +237,33 @@ namespace Tests.FeatureManagement
                 });
 
             Assert.Equal($"Multiple contextual feature filters match the configured filter named '{duplicatedFilterName}' and context type '{typeof(DummyContext)}'.", ex.Message);
+        }
 
-            services = new ServiceCollection();
+        [Fact]
+        public async Task SkipsContextualFilterEvaluationForUnrecognizedContext()
+        {
+            string featureName = Features.FeatureUsesFiltersWithDuplicatedAlias;
+
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
 
             services
                 .AddSingleton(config)
                 .AddFeatureManagement()
                 .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithAccountContext>();
 
-            serviceProvider = services.BuildServiceProvider();
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
 
-            featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            ex = await Assert.ThrowsAsync<FeatureManagementException>(
-                async () =>
-                {
-                    await featureManager.IsEnabledAsync(featureName);
-                });
+            var appContext = new AppContext();
 
-            Assert.Equal($"The feature filter '{duplicatedFilterName}' specified for feature '{featureName}' was not found.", ex.Message);
+            var dummyContext = new DummyContext();
+
+            Assert.True(await featureManager.IsEnabledAsync(featureName));
+
+            Assert.True(await featureManager.IsEnabledAsync(featureName, dummyContext));
         }
 
         [Fact]
