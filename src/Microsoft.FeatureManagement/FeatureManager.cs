@@ -30,7 +30,6 @@ namespace Microsoft.FeatureManagement
         private readonly FeatureManagementOptions _options;
         private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
-
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
         private readonly IEnumerable<ITelemetryPublisher> _telemetryPublishers;
