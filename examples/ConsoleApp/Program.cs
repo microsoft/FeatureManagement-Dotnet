@@ -15,7 +15,6 @@ IServiceCollection services = new ServiceCollection();
 
 services.AddSingleton(configuration)
         .AddFeatureManagement()
-        .AddFeatureFilter<PercentageFilter>()
         .AddFeatureFilter<AccountIdFilter>();
 
 //
