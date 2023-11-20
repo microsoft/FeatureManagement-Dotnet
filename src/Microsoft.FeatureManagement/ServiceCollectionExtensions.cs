@@ -86,7 +86,7 @@ namespace Microsoft.FeatureManagement
                     configuration,
                     sp.GetRequiredService<ILoggerFactory>())
                 {
-                    UseTopLevelConfiguration = true
+                    TopLevelConfigurationEnabled = true
                 });
 
             return services.AddFeatureManagement();
@@ -159,7 +159,7 @@ namespace Microsoft.FeatureManagement
                     configuration,
                     sp.GetRequiredService<ILoggerFactory>())
                 {
-                    UseTopLevelConfiguration = true
+                    TopLevelConfigurationEnabled = true
                 });
 
             return services.AddScopedFeatureManagement();
