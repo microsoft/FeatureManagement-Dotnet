@@ -7,7 +7,6 @@ using FeatureFlagDemo.FeatureManagement.FeatureFilters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.FeatureManagement;
-using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace FeatureFlagDemo
 {
@@ -44,20 +43,14 @@ namespace FeatureFlagDemo
             // Enable the use of IHttpContextAccessor
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
-            //
-            // Add required services for TargetingFilter
-            services.AddSingleton<ITargetingContextAccessor, HttpContextTargetingContextAccessor>();
-
             services.AddFeatureManagement()
                     .AddFeatureFilter<BrowserFilter>()
-                    .AddFeatureFilter<TimeWindowFilter>()
-                    .AddFeatureFilter<PercentageFilter>()
-                    .AddFeatureFilter<TargetingFilter>()
+                    .WithTargeting<HttpContextTargetingContextAccessor>()
                     .UseDisabledFeaturesHandler(new FeatureNotEnabledDisabledHandler());
 
             services.AddMvc(o =>
             {
-                o.Filters.AddForFeature<ThirdPartyActionFilter>(nameof(MyFeatureFlags.EnhancedPipeline));
+                o.Filters.AddForFeature<ThirdPartyActionFilter>(MyFeatureFlags.EnhancedPipeline);
 
             });
         }
@@ -81,7 +74,7 @@ namespace FeatureFlagDemo
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
-            app.UseMiddlewareForFeature<ThirdPartyMiddleware>(nameof(MyFeatureFlags.EnhancedPipeline));
+            app.UseMiddlewareForFeature<ThirdPartyMiddleware>(MyFeatureFlags.EnhancedPipeline);
 
             app.UseMvc(routes =>
             {

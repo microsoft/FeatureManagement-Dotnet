@@ -89,6 +89,8 @@ The feature management library supports appsettings.json as a feature flag sourc
 
 The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided three different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration so it only has the `Name` property. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
 
+**Advanced:** The usage of colon ':' in feature flag names is forbidden.
+
 ### On/Off Declaration
  
 The following snippet demonstrates an alternative way to define a feature that can be used for on/off features. 
@@ -164,22 +166,23 @@ Feature flags rely on .NET Core dependency injection. We can register the featur
 
 ``` C#
 using Microsoft.FeatureManagement;
-using Microsoft.FeatureManagement.FeatureFilters;
 
 public class Startup
 {
   public void ConfigureServices(IServiceCollection services)
   {
-      services.AddFeatureManagement()
-              .AddFeatureFilter<PercentageFilter>()
-              .AddFeatureFilter<TimeWindowFilter>();
+      services.AddFeatureManagement();
   }
 }
 ```
 
-This tells the feature manager to use the "FeatureManagement" section from the configuration for feature flag settings. It also registers two built-in feature filters named `PercentageFilter` and `TimeWindowFilter`. When filters are referenced in feature flag settings (appsettings.json) the _Filter_ part of the type name can be omitted.
+This tells the feature manager to use the "FeatureManagement" section from the configuration for feature flag settings.
 
+<<<<<<< HEAD
 **Advanced:** The feature manager looks for feature definitions in a configuration section named "FeatureManagement". If the "FeatureManagement" section does not exist, it falls back to the root of the provided configuration.
+=======
+**Advanced:** The feature manager looks for feature definitions in a configuration section named "FeatureManagement". If the "FeatureManagement" section does not exist, the configuration will be considered empty.
+>>>>>>> main
 
 ## Consumption
 The simplest use case for feature flags is to do a conditional check for whether a feature is enabled to take different paths in code. The uses cases grow from there as the feature flag API begins to offer extensions into ASP.NET Core.
@@ -343,7 +346,16 @@ app.UseForFeature(featureName, appBuilder =>
 
 Creating a feature filter provides a way to enable features based on criteria that you define. To implement a feature filter, the `IFeatureFilter` interface must be implemented. `IFeatureFilter` has a single method named `EvaluateAsync`. When a feature specifies that it can be enabled for a feature filter, the `EvaluateAsync` method is called. If `EvaluateAsync` returns `true` it means the feature should be enabled.
 
-Feature filters are registered by the `IFeatureManagementBuilder` when `AddFeatureManagement` is called. These feature filters have access to the services that exist within the service collection that was used to add feature flags. Dependency injection can be used to retrieve these services.
+The following snippet demonstrates how to add a customized feature filter `MyCriteriaFilter`.
+
+``` C#
+services.AddFeatureManagement()
+        .AddFeatureFilter<"MyCriteriaFilter">();
+```
+
+Feature filters are registered by calling `AddFeatureFilter<T>` on the `IFeatureManagementBuilder` returned from `AddFeatureManagement`. These feature filters have access to the services that exist within the service collection that was used to add feature flags. Dependency injection can be used to retrieve these services.
+
+**Note:** When filters are referenced in feature flag settings (e.g. appsettings.json), the _Filter_ part of the type name should be omitted. Please refer to the `Filter Alias Attribute` section below for more details.
 
 ### Parameterized Feature Filters
 
@@ -384,7 +396,7 @@ public class BrowserFilter : IFeatureFilter
 
 ### Filter Alias Attribute
 
-When a feature filter is registered to be used for a feature flag, the alias used in configuration is the name of the feature filter type with the _filter_ suffix, if any, removed. For example `MyCriteriaFilter` would be referred to as _MyCriteria_ in configuration.
+When a feature filter is registered to be used for a feature flag, the alias used in configuration is the name of the feature filter type with the _Filter_ suffix, if any, removed. For example `MyCriteriaFilter` would be referred to as _MyCriteria_ in configuration.
 
 ``` JavaScript
 "MyFeature": {
@@ -476,9 +488,23 @@ We can see that the `AccountIdFilter` requires an object that implements `IAccou
 
 **Note:** Only a single feature filter interface can be implemented by a single type. Trying to add a feature filter that implements more than a single feature filter interface will result in an `ArgumentException`.
 
+### Using Contextual and Non-contextual Filters With the Same Alias
+Filters of `IFeatureFilter` and `IContextualFeatureFilter` can share the same alias. Specifically, you can have one filter alias shared by 0 or 1 `IFeatureFilter` and 0 or N `IContextualFeatureFilter<ContextType>`, so long as there is at most one applicable filter for `ContextType`.
+
+The following passage describes the process of selecting a filter when contextual and non-contextual filters of the same name are registered in an application.
+
+Let's say you have a non-contextual filter called `FilterA` and two contextual filters `FilterB` and FilterC which accept `TypeB` and `TypeC` contexts respectively. All of three filters share the same alias `SharedFilterName`.
+
+You also have a feature flag `MyFeature` which uses the feature filter `SharedFilterName` in its configuration.
+
+If all of three filters are registered:
+* When you call IsEnabledAsync("MyFeature"), the `FilterA` will be used to evaluate the feature flag.
+* When you call IsEnabledAsync("MyFeature", context), if context's type is `TypeB`, `FilterB` will be used. If context's type is `TypeC`, `FilterC` will be used.
+* When you call IsEnabledAsync("MyFeature", context), if context's type is `TypeF`, `FilterA` will be used.
+
 ### Built-In Feature Filters
 
-There a few feature filters that come with the `Microsoft.FeatureManagement` package. These feature filters are not added automatically, but can be referenced and registered as soon as the package is registered.
+There a few feature filters that come with the `Microsoft.FeatureManagement` package: `PercentageFilter`, `TimeWindowFilter`, `ContextualTargetingFilter` and `TargetingFilter`. All filters, except for the `TargetingFilter`, are added automatically when feature management is registered. The `TargetingFilter` is added with the `WithTargeting` method that is detailed in the `Targeting` section below.
 
 Each of the built-in feature filters have their own parameters. Here is the list of feature filters along with examples.
 
@@ -586,11 +612,8 @@ To begin using the `TargetingFilter` in an application it must be added to the a
 The implementation type used for the `ITargetingContextAccessor` service must be implemented by the application that is using the targeting filter. Here is an example setting up feature management in a web application to use the `TargetingFilter` with an implementation of `ITargetingContextAccessor` called `HttpContextTargetingContextAccessor`.
 
 ```
-services.AddSingleton<ITargetingContextAccessor, HttpContextTargetingContextAccessor>();
-
 services.AddFeatureManagement();
-        .AddFeatureFilter<TargetingFilter>();
-
+        .WithTargeting<HttpContextTargetingContextAccessor>();
 ```
 
 #### ITargetingContextAccessor
@@ -602,11 +625,6 @@ An example that extracts targeting context information from the application's HT
 ### Targeting in a Console Application
 
 The targeting filter relies on a targeting context to evaluate whether a feature should be turned on. This targeting context contains information such as what user is currently being evaluated, and what groups the user in. In console applications there is typically no ambient context available to flow this information in to the targeting filter, thus it must be passed directly when `FeatureManager.IsEnabledAsync` is called. This is supported through the use of the `ContextualTargetingFilter`. Applications that need to float the targeting context into the feature manager should use this instead of the `TargetingFilter.`
-
-```
-services.AddFeatureManagement()
-        .AddFeatureFilter<ContextualTargetingFilter>();
-```
 
 Since `ContextualTargetingFilter` is an [`IContextualTargetingFilter<ITargetingContext>`](./README.md#Contextual-Feature-Filters), an implementation of `ITargetingContext` must be passed in to `IFeatureManager.IsEnabledAsync` for it to be able to evaluate and turn a feature on.
 

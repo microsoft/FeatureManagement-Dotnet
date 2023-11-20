@@ -471,6 +471,13 @@ namespace Tests.FeatureManagement
             };
 
             Assert.False(await featureManager.IsEnabledAsync(beta));
+
+            //
+            // Use contextual targeting filter which is registered by default
+            Assert.True(await featureManager.IsEnabledAsync(beta, new TargetingContext
+            {
+                UserId = "Jeff"
+            }));
         }
 
         [Fact]
