@@ -72,8 +72,7 @@ namespace Tests.FeatureManagement
 
             services
                 .AddSingleton(config)
-                .AddFeatureManagement()
-                .AddFeatureFilter<TestFilter>();
+                .AddFeatureManagement();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
@@ -85,6 +84,69 @@ namespace Tests.FeatureManagement
                 // Fail, as no features should be found
                 Assert.True(false);
             }
+        }
+
+        [Fact]
+        public async Task ReadsTopLevelConfiguration()
+        {
+            const string feature = "FeatureX";
+
+            var stream = new MemoryStream(Encoding.UTF8.GetBytes($"{{\"AllowedHosts\": \"*\", \"FeatureFlags\": {{\"{feature}\": true}}}}"));
+
+            IConfiguration config = new ConfigurationBuilder().AddJsonStream(stream).Build();
+
+            var services = new ServiceCollection();
+
+            services.AddFeatureManagement(config.GetSection("FeatureFlags"));
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync(feature));
+        }
+
+        [Fact]
+        public void AddsScopedFeatureManagement()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddScopedFeatureManagement()
+                .WithTargeting<OnDemandTargetingContextAccessor>()
+                .AddFeatureFilter<TestFilter>();
+
+            Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(IFeatureDefinitionProvider) && descriptor.Lifetime == ServiceLifetime.Singleton);
+            Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IFeatureDefinitionProvider) && descriptor.Lifetime == ServiceLifetime.Scoped);
+
+            Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped);
+            Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Singleton);
+
+            Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(IFeatureFilterMetadata) && descriptor.Lifetime == ServiceLifetime.Scoped);
+            Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IFeatureFilterMetadata) && descriptor.Lifetime == ServiceLifetime.Singleton);
+
+            var ex = Assert.Throws<FeatureManagementException>(
+                () =>
+                {
+                    services.AddFeatureManagement();
+                });
+
+            Assert.Equal($"Scoped feature management has been registered.", ex.Message);
+
+            services = new ServiceCollection();
+
+            services.AddFeatureManagement();
+
+            ex = Assert.Throws<FeatureManagementException>(
+                () =>
+                {
+                    services.AddScopedFeatureManagement();
+                });
+
+            Assert.Equal($"Singleton feature management has been registered.", ex.Message);
         }
 
         [Fact]
@@ -175,25 +237,33 @@ namespace Tests.FeatureManagement
                 });
 
             Assert.Equal($"Multiple contextual feature filters match the configured filter named '{duplicatedFilterName}' and context type '{typeof(DummyContext)}'.", ex.Message);
+        }
 
-            services = new ServiceCollection();
+        [Fact]
+        public async Task SkipsContextualFilterEvaluationForUnrecognizedContext()
+        {
+            string featureName = Features.FeatureUsesFiltersWithDuplicatedAlias;
+
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
 
             services
                 .AddSingleton(config)
                 .AddFeatureManagement()
                 .AddFeatureFilter<ContextualDuplicatedAliasFeatureFilterWithAccountContext>();
 
-            serviceProvider = services.BuildServiceProvider();
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
 
-            featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            ex = await Assert.ThrowsAsync<FeatureManagementException>(
-                async () =>
-                {
-                    await featureManager.IsEnabledAsync(featureName);
-                });
+            var appContext = new AppContext();
 
-            Assert.Equal($"The feature filter '{duplicatedFilterName}' specified for feature '{featureName}' was not found.", ex.Message);
+            var dummyContext = new DummyContext();
+
+            Assert.True(await featureManager.IsEnabledAsync(featureName));
+
+            Assert.True(await featureManager.IsEnabledAsync(featureName, dummyContext));
         }
 
         [Fact]
@@ -411,6 +481,13 @@ namespace Tests.FeatureManagement
             };
 
             Assert.False(await featureManager.IsEnabledAsync(beta));
+
+            //
+            // Use contextual targeting filter which is registered by default
+            Assert.True(await featureManager.IsEnabledAsync(beta, new TargetingContext
+            {
+                UserId = "Jeff"
+            }));
         }
 
         [Fact]

@@ -1,8 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.FeatureManagement.FeatureFilters;
+using System.Linq;
 
 namespace Microsoft.FeatureManagement
 {
@@ -18,7 +20,16 @@ namespace Microsoft.FeatureManagement
         /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
         public static IFeatureManagementBuilder WithTargeting<T>(this IFeatureManagementBuilder builder) where T : ITargetingContextAccessor
         {
-            builder.Services.TryAddSingleton(typeof(ITargetingContextAccessor), typeof(T));
+            //
+            // Register the targeting context accessor with the same lifetime as the feature manager
+            if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
+            {
+                builder.Services.TryAddScoped(typeof(ITargetingContextAccessor), typeof(T));
+            }
+            else
+            {
+                builder.Services.TryAddSingleton(typeof(ITargetingContextAccessor), typeof(T));
+            }
 
             builder.AddFeatureFilter<TargetingFilter>();
 
