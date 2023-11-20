@@ -330,7 +330,7 @@ services.AddFeatureManagement()
         .AddFeatureFilter<"MyCriteriaFilter">();
 ```
 
-Feature filters are registered through `AddFeatureFilter<T>` by the `IFeatureManagementBuilder` after `AddFeatureManagement` is called. These feature filters have access to the services that exist within the service collection that was used to add feature flags. Dependency injection can be used to retrieve these services.
+Feature filters are registered by calling `AddFeatureFilter<T>` on the `IFeatureManagementBuilder` returned from `AddFeatureManagement`. These feature filters have access to the services that exist within the service collection that was used to add feature flags. Dependency injection can be used to retrieve these services.
 
 **Note:** When filters are referenced in feature flag settings (e.g. appsettings.json), the _Filter_ part of the type name should be omitted. Please refer to the `Filter Alias Attribute` section below for more details.
 
