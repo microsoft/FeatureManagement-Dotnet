@@ -1260,7 +1260,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Shift to the first day of the week
             DateTime date = DateTime.Today;
 
-            int offset = RemainingDaysOfWeek((int)date.DayOfWeek, DayOfWeekNumber(firstDayOfWeek)) % 7;
+            int offset = RemainingDaysOfWeek((int)date.DayOfWeek, DayOfWeekNumber(firstDayOfWeek));
 
             date = date.AddDays(offset);
 
