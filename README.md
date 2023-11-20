@@ -178,11 +178,7 @@ public class Startup
 
 This tells the feature manager to use the "FeatureManagement" section from the configuration for feature flag settings.
 
-<<<<<<< HEAD
-**Advanced:** The feature manager looks for feature definitions in a configuration section named "FeatureManagement". If the "FeatureManagement" section does not exist, it falls back to the root of the provided configuration.
-=======
 **Advanced:** The feature manager looks for feature definitions in a configuration section named "FeatureManagement". If the "FeatureManagement" section does not exist, the configuration will be considered empty.
->>>>>>> main
 
 ## Consumption
 The simplest use case for feature flags is to do a conditional check for whether a feature is enabled to take different paths in code. The uses cases grow from there as the feature flag API begins to offer extensions into ASP.NET Core.
