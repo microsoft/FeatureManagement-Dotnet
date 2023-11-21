@@ -45,7 +45,7 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The option that controls the behavior when "FeatureManagement" section in the configuration is missing.
         /// </summary>
-        public bool RootConfigurationFallBackEnabled { get; init; }
+        public bool RootConfigurationFallbackEnabled { get; init; }
 
         public void Dispose()
         {
@@ -224,7 +224,7 @@ namespace Microsoft.FeatureManagement
 
             //
             // There is no "FeatureManagement" section in the configuration
-            if (RootConfigurationFallBackEnabled)
+            if (RootConfigurationFallbackEnabled)
             {
                 return _configuration.GetChildren();
             }
