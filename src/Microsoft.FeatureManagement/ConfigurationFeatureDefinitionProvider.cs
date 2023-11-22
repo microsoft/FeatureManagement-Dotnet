@@ -47,7 +47,7 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The option that controls the behavior when "FeatureManagement" section in the configuration is missing.
         /// </summary>
-        public bool UseTopLevelConfiguration { get; init; }
+        public bool RootConfigurationFallbackEnabled { get; init; }
 
         /// <summary>
         /// The logger for the configuration feature definition provider.
@@ -243,7 +243,7 @@ namespace Microsoft.FeatureManagement
 
             //
             // There is no "FeatureManagement" section in the configuration
-            if (UseTopLevelConfiguration)
+            if (RootConfigurationFallbackEnabled)
             {
                 return _configuration.GetChildren();
             }

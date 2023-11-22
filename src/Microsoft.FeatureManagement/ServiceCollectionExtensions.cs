@@ -84,7 +84,7 @@ namespace Microsoft.FeatureManagement
             services.AddSingleton<IFeatureDefinitionProvider>(sp =>
                 new ConfigurationFeatureDefinitionProvider(configuration)
                 {
-                    UseTopLevelConfiguration = true,
+                    RootConfigurationFallbackEnabled = true,
                     Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<ConfigurationFeatureDefinitionProvider>()
                 });
 
@@ -156,7 +156,7 @@ namespace Microsoft.FeatureManagement
             services.AddSingleton<IFeatureDefinitionProvider>(sp =>
                 new ConfigurationFeatureDefinitionProvider(configuration)
                 {
-                    UseTopLevelConfiguration = true,
+                    RootConfigurationFallbackEnabled = true,
                     Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<ConfigurationFeatureDefinitionProvider>()
                 });
 
