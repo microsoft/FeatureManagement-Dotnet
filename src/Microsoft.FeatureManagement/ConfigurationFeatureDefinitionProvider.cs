@@ -22,13 +22,11 @@ namespace Microsoft.FeatureManagement
         // IFeatureDefinitionProviderCacheable interface is only used to mark this provider as cacheable. This allows our test suite's
         // provider to be marked for caching as well.
 
-        private const string FeatureFiltersSectionName = "EnabledFor";
-        private const string RequirementTypeKeyword = "RequirementType";
-        private const string FeatureManagementSectionName = "FeatureManagement";
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
+        private bool _serverSideSchemaEnabled;
 
         /// <summary>
         /// Creates a configuration feature definition provider.
@@ -98,7 +96,7 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <returns>An enumerator which provides asynchronous iteration over feature definitions.</returns>
         //
-        // The async key word is necessary for creating IAsyncEnumerable.
+        // The async featureName word is necessary for creating IAsyncEnumerable.
         // The need to disable this warning occurs when implementaing async stream synchronously. 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
@@ -113,16 +111,38 @@ namespace Microsoft.FeatureManagement
             // Iterate over all features registered in the system at initial invocation time
             foreach (IConfigurationSection featureSection in GetFeatureDefinitionSections())
             {
+                string featureName = featureSection.Key;
+
+                if (_serverSideSchemaEnabled)
+                {
+                    featureName = featureSection[ConfigurationFields.ServerSideIdKeyword];
+
+                    if (string.IsNullOrEmpty(featureName))
+                    {
+                        continue;
+                    }
+                }
+
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                yield return  _definitions.GetOrAdd(featureSection.Key, (_) => ReadFeatureDefinition(featureSection));
+                yield return  _definitions.GetOrAdd(featureName, (_) => ReadFeatureDefinition(featureSection));
             }
         }
 
         private FeatureDefinition ReadFeatureDefinition(string featureName)
         {
             IConfigurationSection configuration = GetFeatureDefinitionSections()
-                                                    .FirstOrDefault(section => section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(section => 
+                {
+                    if (_serverSideSchemaEnabled)
+                    {
+                        string id = section[ConfigurationFields.ServerSideIdKeyword];
+
+                        return !string.IsNullOrEmpty(id) && id.Equals(featureName, StringComparison.OrdinalIgnoreCase);
+                    }
+
+                    return section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase);
+                });
 
             if (configuration == null)
             {
@@ -165,66 +185,148 @@ namespace Microsoft.FeatureManagement
                 enabledFor: [ "myFeatureFilter1", "myFeatureFilter2" ],
             },
 
+            If App Config server side schema is enabled, we support
+
+            FeatureFlags: [
+              {
+                id: "myFeature",
+                enabled: true,
+                conditions: {
+                  client_filters: ["myFeatureFilter1", "myFeatureFilter2"],
+                  requirement_type: "all",
+                }
+              },
+              {
+                id: "myAlwaysEnabledFeature",
+                enabled: true,
+                conditions: {
+                  client_filters: [],
+                }
+              },
+              {
+                id: "myAlwaysDisabledFeature",
+                enabled: false,
+              }
+            ]
+
             */
+
+            string featureName;
 
             RequirementType requirementType = RequirementType.Any;
 
             var enabledFor = new List<FeatureFilterConfiguration>();
 
-            string val = configurationSection.Value; // configuration[$"{featureName}"];
+            string rawRequirementType = string.Empty;
 
-            if (string.IsNullOrEmpty(val))
+            if (_serverSideSchemaEnabled)
             {
-                val = configurationSection[FeatureFiltersSectionName];
-            }
+                featureName = configurationSection[ConfigurationFields.ServerSideIdKeyword];
 
-            if (!string.IsNullOrEmpty(val) && bool.TryParse(val, out bool result) && result)
-            {
-                //
-                //myAlwaysEnabledFeature: true
-                // OR
-                //myAlwaysEnabledFeature: {
-                //  enabledFor: true
-                //}
-                enabledFor.Add(new FeatureFilterConfiguration
-                {
-                    Name = "AlwaysOn"
-                });
-            }
-            else
-            {
-                string rawRequirementType = configurationSection[RequirementTypeKeyword];
+                IConfigurationSection conditions = configurationSection.GetSection(ConfigurationFields.ServerSideConditionsKeyword);
 
-                //
-                // If requirement type is specified, parse it and set the requirementType variable
-                if (!string.IsNullOrEmpty(rawRequirementType) && !Enum.TryParse(rawRequirementType, ignoreCase: true, out requirementType))
+                rawRequirementType = conditions[ConfigurationFields.ServerSideRequirementType];
+
+                string rawEnabled = configurationSection[ConfigurationFields.ServerSideEnabledKeyword];
+
+                bool enabled = false;
+
+                if (!string.IsNullOrEmpty(rawEnabled) && !bool.TryParse(rawEnabled, out enabled))
                 {
                     throw new FeatureManagementException(
-                        FeatureManagementError.InvalidConfigurationSetting, 
-                        $"Invalid requirement type '{rawRequirementType}' for feature '{configurationSection.Key}'.");
+                            FeatureManagementError.InvalidConfigurationSetting,
+                            $"Invalid enabled '{rawEnabled}' for feature '{featureName}'.");
                 }
 
-                IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(FeatureFiltersSectionName).GetChildren();
-
-                foreach (IConfigurationSection section in filterSections)
+                if (enabled)
                 {
-                    //
-                    // Arrays in json such as "myKey": [ "some", "values" ]
-                    // Are accessed through the configuration system by using the array index as the property name, e.g. "myKey": { "0": "some", "1": "values" }
-                    if (int.TryParse(section.Key, out int i) && !string.IsNullOrEmpty(section[nameof(FeatureFilterConfiguration.Name)]))
+                    IEnumerable<IConfigurationSection> filterSections = conditions.GetSection(ConfigurationFields.ServerSideFeatureFiltersSectionName).GetChildren();
+
+                    if (filterSections.Any())
                     {
-                        enabledFor.Add(new FeatureFilterConfiguration()
+                        foreach (IConfigurationSection section in filterSections)
                         {
-                            Name = section[nameof(FeatureFilterConfiguration.Name)],
-                            Parameters = new ConfigurationWrapper(section.GetSection(nameof(FeatureFilterConfiguration.Parameters)))
+                            //
+                            // Arrays in json such as "myKey": [ "some", "values" ]
+                            // Are accessed through the configuration system by using the array index as the property name, e.g. "myKey": { "0": "some", "1": "values" }
+                            if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[ConfigurationFields.ServerSideNameKeyword]))
+                            {
+                                enabledFor.Add(new FeatureFilterConfiguration()
+                                {
+                                    Name = section[ConfigurationFields.ServerSideNameKeyword],
+                                    Parameters = new ConfigurationWrapper(section.GetSection(ConfigurationFields.ServerSideFeatureFilterConfigurationParameters))
+                                });
+                            }
+                        }
+                    }
+                    else
+                    {
+                        enabledFor.Add(new FeatureFilterConfiguration
+                        {
+                            Name = "AlwaysOn"
                         });
                     }
                 }
             }
+            else
+            {
+                featureName = configurationSection.Key;
+
+                string val = configurationSection.Value; // configuration[$"{featureName}"];
+
+                if (string.IsNullOrEmpty(val))
+                {
+                    val = configurationSection[ConfigurationFields.FeatureFiltersSectionName];
+                }
+
+                if (!string.IsNullOrEmpty(val) && bool.TryParse(val, out bool result) && result)
+                {
+                    //
+                    //myAlwaysEnabledFeature: true
+                    // OR
+                    //myAlwaysEnabledFeature: {
+                    //  enabledFor: true
+                    //}
+                    enabledFor.Add(new FeatureFilterConfiguration
+                    {
+                        Name = "AlwaysOn"
+                    });
+                }
+                else
+                {
+                    rawRequirementType = configurationSection[ConfigurationFields.RequirementType];
+
+                    IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(ConfigurationFields.FeatureFiltersSectionName).GetChildren();
+
+                    foreach (IConfigurationSection section in filterSections)
+                    {
+                        //
+                        // Arrays in json such as "myKey": [ "some", "values" ]
+                        // Are accessed through the configuration system by using the array index as the property name, e.g. "myKey": { "0": "some", "1": "values" }
+                        if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[ConfigurationFields.NameKeyword]))
+                        {
+                            enabledFor.Add(new FeatureFilterConfiguration()
+                            {
+                                Name = section[ConfigurationFields.NameKeyword],
+                                Parameters = new ConfigurationWrapper(section.GetSection(ConfigurationFields.FeatureFilterConfigurationParameters))
+                            });
+                        }
+                    }
+                }
+            }
+
+            //
+            // If requirement type is specified, parse it and set the requirementType variable
+            if (!string.IsNullOrEmpty(rawRequirementType) && !Enum.TryParse(rawRequirementType, ignoreCase: true, out requirementType))
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.InvalidConfigurationSetting,
+                    $"Invalid requirement type '{rawRequirementType}' for feature '{featureName}'.");
+            }
 
             return new FeatureDefinition()
             {
-                Name = configurationSection.Key,
+                Name = featureName,
                 EnabledFor = enabledFor,
                 RequirementType = requirementType
             };
@@ -232,25 +334,50 @@ namespace Microsoft.FeatureManagement
 
         private IEnumerable<IConfigurationSection> GetFeatureDefinitionSections()
         {
-            //
-            // Look for feature definitions under the "FeatureManagement" section
-            IConfigurationSection featureManagementConfigurationSection = _configuration.GetSection(FeatureManagementSectionName);
+            IConfigurationSection featureManagementConfigurationSection = _configuration.GetSection(ConfigurationFields.FeatureManagementSectionName);
 
-            if (featureManagementConfigurationSection.Exists())
+            IConfigurationSection featureFlagsConfigurationSection = featureManagementConfigurationSection.GetSection(ConfigurationFields.FeatureFlagsSectionName);
+
+            if (!featureManagementConfigurationSection.Exists())
             {
-                return featureManagementConfigurationSection.GetChildren();
+                //
+                // There is no "FeatureManagement" section in the configuration
+                if (RootConfigurationFallbackEnabled)
+                {
+                    _serverSideSchemaEnabled = featureFlagsConfigurationSection.Exists();
+
+                    if (_serverSideSchemaEnabled)
+                    {
+                        return featureFlagsConfigurationSection.GetChildren();
+                    }
+                    else
+                    {
+                        return _configuration.GetChildren();
+                    }
+                }
+                else
+                {
+                    Logger?.LogDebug($"No configuration section named '{ConfigurationFields.FeatureManagementSectionName}' was found.");
+
+                    return Enumerable.Empty<IConfigurationSection>();
+                }
             }
 
-            //
-            // There is no "FeatureManagement" section in the configuration
-            if (RootConfigurationFallbackEnabled)
+            featureFlagsConfigurationSection = featureManagementConfigurationSection.GetSection(ConfigurationFields.FeatureFlagsSectionName);
+
+            _serverSideSchemaEnabled = featureFlagsConfigurationSection.Exists();
+
+            if (_serverSideSchemaEnabled)
             {
-                return _configuration.GetChildren();
+                return featureFlagsConfigurationSection.GetChildren();
             }
 
-            Logger?.LogDebug($"No configuration section named '{FeatureManagementSectionName}' was found.");
+            foreach (IConfigurationSection sec in _configuration.GetChildren())
+            {
+                var test = sec.Key;
+            }
 
-            return Enumerable.Empty<IConfigurationSection>();
+            return featureManagementConfigurationSection.GetChildren();
         }
     }
 }
