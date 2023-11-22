@@ -257,8 +257,6 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            var appContext = new AppContext();
-
             var dummyContext = new DummyContext();
 
             Assert.True(await featureManager.IsEnabledAsync(featureName));
@@ -464,6 +462,13 @@ namespace Tests.FeatureManagement
             };
 
             Assert.False(await featureManager.IsEnabledAsync(beta));
+
+            //
+            // Use contextual targeting filter which is registered by default
+            Assert.True(await featureManager.IsEnabledAsync(beta, new TargetingContext
+            {
+                UserId = "Jeff"
+            }));
         }
 
         [Fact]
