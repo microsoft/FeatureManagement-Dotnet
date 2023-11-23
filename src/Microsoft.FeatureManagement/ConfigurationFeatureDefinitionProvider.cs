@@ -336,7 +336,7 @@ namespace Microsoft.FeatureManagement
         {
             IConfigurationSection featureManagementConfigurationSection = _configuration.GetSection(ConfigurationFields.FeatureManagementSectionName);
 
-            IConfigurationSection featureFlagsConfigurationSection = featureManagementConfigurationSection.GetSection(ConfigurationFields.FeatureFlagsSectionName);
+            IConfigurationSection featureFlagsConfigurationSection = _configuration.GetSection(ConfigurationFields.FeatureFlagsSectionName);
 
             if (!featureManagementConfigurationSection.Exists())
             {
@@ -350,17 +350,13 @@ namespace Microsoft.FeatureManagement
                     {
                         return featureFlagsConfigurationSection.GetChildren();
                     }
-                    else
-                    {
-                        return _configuration.GetChildren();
-                    }
+                    
+                    return _configuration.GetChildren();
                 }
-                else
-                {
-                    Logger?.LogDebug($"No configuration section named '{ConfigurationFields.FeatureManagementSectionName}' was found.");
 
-                    return Enumerable.Empty<IConfigurationSection>();
-                }
+                Logger?.LogDebug($"No configuration section named '{ConfigurationFields.FeatureManagementSectionName}' was found.");
+
+                return Enumerable.Empty<IConfigurationSection>();
             }
 
             featureFlagsConfigurationSection = featureManagementConfigurationSection.GetSection(ConfigurationFields.FeatureFlagsSectionName);
@@ -370,11 +366,6 @@ namespace Microsoft.FeatureManagement
             if (_featureFlagArraySchemaEnabled)
             {
                 return featureFlagsConfigurationSection.GetChildren();
-            }
-
-            foreach (IConfigurationSection sec in _configuration.GetChildren())
-            {
-                var test = sec.Key;
             }
 
             return featureManagementConfigurationSection.GetChildren();
