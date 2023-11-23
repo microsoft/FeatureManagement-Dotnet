@@ -26,7 +26,7 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
-        private bool _serverSideSchemaEnabled;
+        private bool _featureFlagArraySchemaEnabled;
 
         /// <summary>
         /// Creates a configuration feature definition provider.
@@ -113,9 +113,9 @@ namespace Microsoft.FeatureManagement
             {
                 string featureName = featureSection.Key;
 
-                if (_serverSideSchemaEnabled)
+                if (_featureFlagArraySchemaEnabled)
                 {
-                    featureName = featureSection[ConfigurationFields.ServerSideIdKeyword];
+                    featureName = featureSection[ConfigurationFields.IdKeyword];
 
                     if (string.IsNullOrEmpty(featureName))
                     {
@@ -134,9 +134,9 @@ namespace Microsoft.FeatureManagement
             IConfigurationSection configuration = GetFeatureDefinitionSections()
                 .FirstOrDefault(section => 
                 {
-                    if (_serverSideSchemaEnabled)
+                    if (_featureFlagArraySchemaEnabled)
                     {
-                        string id = section[ConfigurationFields.ServerSideIdKeyword];
+                        string id = section[ConfigurationFields.IdKeyword];
 
                         return !string.IsNullOrEmpty(id) && id.Equals(featureName, StringComparison.OrdinalIgnoreCase);
                     }
@@ -219,15 +219,15 @@ namespace Microsoft.FeatureManagement
 
             string rawRequirementType = string.Empty;
 
-            if (_serverSideSchemaEnabled)
+            if (_featureFlagArraySchemaEnabled)
             {
-                featureName = configurationSection[ConfigurationFields.ServerSideIdKeyword];
+                featureName = configurationSection[ConfigurationFields.IdKeyword];
 
-                IConfigurationSection conditions = configurationSection.GetSection(ConfigurationFields.ServerSideConditionsKeyword);
+                IConfigurationSection conditions = configurationSection.GetSection(ConfigurationFields.ConditionsKeyword);
 
-                rawRequirementType = conditions[ConfigurationFields.ServerSideRequirementType];
+                rawRequirementType = conditions[ConfigurationFields.LowercaseRequirementType];
 
-                string rawEnabled = configurationSection[ConfigurationFields.ServerSideEnabledKeyword];
+                string rawEnabled = configurationSection[ConfigurationFields.EnabledKeyword];
 
                 bool enabled = false;
 
@@ -240,7 +240,7 @@ namespace Microsoft.FeatureManagement
 
                 if (enabled)
                 {
-                    IEnumerable<IConfigurationSection> filterSections = conditions.GetSection(ConfigurationFields.ServerSideFeatureFiltersSectionName).GetChildren();
+                    IEnumerable<IConfigurationSection> filterSections = conditions.GetSection(ConfigurationFields.ClientFiltersSectionName).GetChildren();
 
                     if (filterSections.Any())
                     {
@@ -249,12 +249,12 @@ namespace Microsoft.FeatureManagement
                             //
                             // Arrays in json such as "myKey": [ "some", "values" ]
                             // Are accessed through the configuration system by using the array index as the property name, e.g. "myKey": { "0": "some", "1": "values" }
-                            if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[ConfigurationFields.ServerSideNameKeyword]))
+                            if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[ConfigurationFields.LowercaseName]))
                             {
                                 enabledFor.Add(new FeatureFilterConfiguration()
                                 {
-                                    Name = section[ConfigurationFields.ServerSideNameKeyword],
-                                    Parameters = new ConfigurationWrapper(section.GetSection(ConfigurationFields.ServerSideFeatureFilterConfigurationParameters))
+                                    Name = section[ConfigurationFields.LowercaseName],
+                                    Parameters = new ConfigurationWrapper(section.GetSection(ConfigurationFields.LowercaseParameters))
                                 });
                             }
                         }
@@ -344,9 +344,9 @@ namespace Microsoft.FeatureManagement
                 // There is no "FeatureManagement" section in the configuration
                 if (RootConfigurationFallbackEnabled)
                 {
-                    _serverSideSchemaEnabled = featureFlagsConfigurationSection.Exists();
+                    _featureFlagArraySchemaEnabled = featureFlagsConfigurationSection.Exists();
 
-                    if (_serverSideSchemaEnabled)
+                    if (_featureFlagArraySchemaEnabled)
                     {
                         return featureFlagsConfigurationSection.GetChildren();
                     }
@@ -365,9 +365,9 @@ namespace Microsoft.FeatureManagement
 
             featureFlagsConfigurationSection = featureManagementConfigurationSection.GetSection(ConfigurationFields.FeatureFlagsSectionName);
 
-            _serverSideSchemaEnabled = featureFlagsConfigurationSection.Exists();
+            _featureFlagArraySchemaEnabled = featureFlagsConfigurationSection.Exists();
 
-            if (_serverSideSchemaEnabled)
+            if (_featureFlagArraySchemaEnabled)
             {
                 return featureFlagsConfigurationSection.GetChildren();
             }

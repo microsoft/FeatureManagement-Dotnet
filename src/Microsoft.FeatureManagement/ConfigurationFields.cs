@@ -19,12 +19,12 @@ namespace Microsoft.FeatureManagement
         public const string FeatureFlagsSectionName = "FeatureFlags";
 
         // App Config server side schema keywords
-        public const string ServerSideIdKeyword = "id";
-        public const string ServerSideEnabledKeyword = "enabled";
-        public const string ServerSideConditionsKeyword = "conditions";
-        public const string ServerSideRequirementType = "requirement_type";
-        public const string ServerSideFeatureFiltersSectionName = "client_filters";
-        public const string ServerSideNameKeyword = "name";
-        public const string ServerSideFeatureFilterConfigurationParameters = "parameters";
+        public const string IdKeyword = "id";
+        public const string EnabledKeyword = "enabled";
+        public const string ConditionsKeyword = "conditions";
+        public const string ClientFiltersSectionName = "client_filters";
+        public const string LowercaseName = "name";
+        public const string LowercaseParameters = "parameters";
+        public const string LowercaseRequirementType = "requirement_type";
     }
 }
