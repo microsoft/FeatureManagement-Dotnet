@@ -202,6 +202,14 @@ namespace Microsoft.FeatureManagement
 
                         if (filter == null)
                         {
+                            if (_featureFilters.Any(f => IsMatchingName(f.GetType(), featureFilterConfiguration.Name)))
+                            {
+                                //
+                                // Cannot find the appropriate registered feature filter which matches the filter name and the provided context type.
+                                // But there is a registered feature filter which matches the filter name.
+                                continue;
+                            }
+
                             string errorMessage = $"The feature filter '{featureFilterConfiguration.Name}' specified for feature '{feature}' was not found.";
 
                             if (!_options.IgnoreMissingFeatureFilters)
