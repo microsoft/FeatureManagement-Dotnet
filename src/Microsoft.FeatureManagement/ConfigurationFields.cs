@@ -23,8 +23,8 @@ namespace Microsoft.FeatureManagement
         public const string EnabledKeyword = "enabled";
         public const string ConditionsKeyword = "conditions";
         public const string ClientFiltersSectionName = "client_filters";
-        public const string LowercaseName = "name";
-        public const string LowercaseParameters = "parameters";
+        public const string LowercaseFeatureManagementSectionName = "name";
+        public const string LowercaseFeatureManagementSectionParameters = "parameters";
         public const string LowercaseRequirementType = "requirement_type";
     }
 }
