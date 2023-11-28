@@ -96,7 +96,7 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <returns>An enumerator which provides asynchronous iteration over feature definitions.</returns>
         //
-        // The async featureName word is necessary for creating IAsyncEnumerable.
+        // The async key word is necessary for creating IAsyncEnumerable.
         // The need to disable this warning occurs when implementaing async stream synchronously. 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
