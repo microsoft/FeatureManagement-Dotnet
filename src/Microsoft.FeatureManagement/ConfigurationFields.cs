@@ -18,7 +18,7 @@ namespace Microsoft.FeatureManagement
         public const string FeatureManagementSectionName = "FeatureManagement";
         public const string FeatureFlagsSectionName = "FeatureFlags";
 
-        // App Config server side schema keywords
+        // Azure App Configuration feature flag schema keywords
         public const string IdKeyword = "id";
         public const string EnabledKeyword = "enabled";
         public const string ConditionsKeyword = "conditions";

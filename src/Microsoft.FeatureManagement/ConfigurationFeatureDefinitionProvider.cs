@@ -26,7 +26,7 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
-        private bool _featureFlagArraySchemaEnabled;
+        private bool _AzureAppConfigurationFeatureFlagSchemaEnabled;
 
         /// <summary>
         /// Creates a configuration feature definition provider.
@@ -113,7 +113,7 @@ namespace Microsoft.FeatureManagement
             {
                 string featureName = featureSection.Key;
 
-                if (_featureFlagArraySchemaEnabled)
+                if (_AzureAppConfigurationFeatureFlagSchemaEnabled)
                 {
                     featureName = featureSection[ConfigurationFields.IdKeyword];
 
@@ -134,7 +134,7 @@ namespace Microsoft.FeatureManagement
             IConfigurationSection configuration = GetFeatureDefinitionSections()
                 .FirstOrDefault(section => 
                 {
-                    if (_featureFlagArraySchemaEnabled)
+                    if (_AzureAppConfigurationFeatureFlagSchemaEnabled)
                     {
                         string id = section[ConfigurationFields.IdKeyword];
 
@@ -154,7 +154,7 @@ namespace Microsoft.FeatureManagement
 
         private FeatureDefinition ReadFeatureDefinition(IConfigurationSection configurationSection)
         {
-            if (_featureFlagArraySchemaEnabled)
+            if (_AzureAppConfigurationFeatureFlagSchemaEnabled)
             {
                 return ParseFeatureDefinitionInFeatureFlagsArray(configurationSection);
             }
@@ -266,7 +266,7 @@ namespace Microsoft.FeatureManagement
         {
             /*
             
-            If App Config server side schema is enabled, we support
+            If Azure App Configuration feature flag schema is enabled, we support
 
             FeatureFlags: [
               {
@@ -372,9 +372,9 @@ namespace Microsoft.FeatureManagement
                 // There is no "FeatureManagement" section in the configuration
                 if (RootConfigurationFallbackEnabled)
                 {
-                    _featureFlagArraySchemaEnabled = featureFlagsConfigurationSection.Exists();
+                    _AzureAppConfigurationFeatureFlagSchemaEnabled = featureFlagsConfigurationSection.Exists();
 
-                    if (_featureFlagArraySchemaEnabled)
+                    if (_AzureAppConfigurationFeatureFlagSchemaEnabled)
                     {
                         return featureFlagsConfigurationSection.GetChildren();
                     }
@@ -389,9 +389,9 @@ namespace Microsoft.FeatureManagement
 
             featureFlagsConfigurationSection = featureManagementConfigurationSection.GetSection(ConfigurationFields.FeatureFlagsSectionName);
 
-            _featureFlagArraySchemaEnabled = featureFlagsConfigurationSection.Exists();
+            _AzureAppConfigurationFeatureFlagSchemaEnabled = featureFlagsConfigurationSection.Exists();
 
-            if (_featureFlagArraySchemaEnabled)
+            if (_AzureAppConfigurationFeatureFlagSchemaEnabled)
             {
                 return featureFlagsConfigurationSection.GetChildren();
             }
