@@ -23,11 +23,11 @@ using (ServiceProvider serviceProvider = services.BuildServiceProvider())
     IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
     var accounts = new List<string>()
-                {
-                    "abc",
-                    "adef",
-                    "abcdefghijklmnopqrstuvwxyz"
-                };
+    {
+        "abc",
+        "adef",
+        "abcdefghijklmnopqrstuvwxyz"
+    };
 
     //
     // Mimic work items in a task-driven console application
