@@ -159,7 +159,12 @@ public class Startup
 
 This tells the feature manager to use the "FeatureManagement" section from the configuration for feature flag settings.
 
-**Advanced:** The feature manager looks for feature definitions in a configuration section named "FeatureManagement". If the "FeatureManagement" section does not exist, the configuration will be considered empty.
+You can also specify that feature management configuration should be retrieved from a different configuration section by calling configuration.GetSection and passing in the name of the desired section. The following example tells the feature manager to read from a different section called "MyFeatureFlags" instead:
+``` C#
+services.AddFeatureManagement(configuration.GetSection("MyFeatureFlags"));
+```
+
+**Advanced:** The feature manager looks for feature definitions in a configuration section named "FeatureManagement" by default. If the "FeatureManagement" section does not exist, the configuration will be considered empty. If a specific configuration section is provided to `AddFeatureManagement()`, the feature manager will fall back to the root of that configuration section to look for feature definitions. 
 
 ## Consumption
 The simplest use case for feature flags is to do a conditional check for whether a feature is enabled to take different paths in code. The uses cases grow from there as the feature flag API begins to offer extensions into ASP.NET Core.
