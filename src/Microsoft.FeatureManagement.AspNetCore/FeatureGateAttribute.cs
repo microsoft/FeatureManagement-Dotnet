@@ -105,7 +105,7 @@ namespace Microsoft.FeatureManagement.Mvc
             IFeatureManagerSnapshot fm = context.HttpContext.RequestServices.GetRequiredService<IFeatureManagerSnapshot>();
 
             //
-            // Enabled state is determined by either 'any' or 'all' features being enabled.
+            // FeatureFlagEnabled state is determined by either 'any' or 'all' features being enabled.
             bool enabled = RequirementType == RequirementType.All ?
                              await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false)) :
                              await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
@@ -133,7 +133,7 @@ namespace Microsoft.FeatureManagement.Mvc
             IFeatureManagerSnapshot fm = context.HttpContext.RequestServices.GetRequiredService<IFeatureManagerSnapshot>();
 
             //
-            // Enabled state is determined by either 'any' or 'all' features being enabled.
+            // FeatureFlagEnabled state is determined by either 'any' or 'all' features being enabled.
             bool enabled = RequirementType == RequirementType.All ?
                              await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false)) :
                              await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));

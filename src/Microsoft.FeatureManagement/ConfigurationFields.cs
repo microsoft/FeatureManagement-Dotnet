@@ -19,12 +19,12 @@ namespace Microsoft.FeatureManagement
         public const string FeatureFlagsSectionName = "FeatureFlags";
 
         // Azure App Configuration feature flag schema keywords
-        public const string IdKeyword = "id";
-        public const string EnabledKeyword = "enabled";
-        public const string ConditionsKeyword = "conditions";
-        public const string ClientFiltersSectionName = "client_filters";
-        public const string LowercaseFeatureManagementSectionName = "name";
-        public const string LowercaseFeatureManagementSectionParameters = "parameters";
+        public const string FeatureFlagId = "id";
+        public const string FeatureFlagEnabled = "enabled";
+        public const string FeatureFlagConditions = "conditions";
+        public const string FeatureFlagClientFilters = "client_filters";
+        public const string LowercaseNameKeyword = "name";
+        public const string LowercaseFeatureFilterConfigurationParameters = "parameters";
         public const string LowercaseRequirementType = "requirement_type";
     }
 }
