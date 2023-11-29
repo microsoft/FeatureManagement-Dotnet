@@ -15,7 +15,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
     public class TimeWindowFilter : IFeatureFilter, IFilterParametersBinder
     {
         private const string Alias = "Microsoft.TimeWindow";
-        private readonly ILogger _logger;
+
+        /// <summary>
+        /// Creates a time window based feature filter.
+        /// </summary>
+        public TimeWindowFilter() { }
 
         /// <summary>
         /// Creates a time window based feature filter.
@@ -23,8 +27,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <param name="loggerFactory">A logger factory for creating loggers.</param>
         public TimeWindowFilter(ILoggerFactory loggerFactory)
         {
-            _logger = loggerFactory.CreateLogger<TimeWindowFilter>();
+            Logger = loggerFactory?.CreateLogger<TimeWindowFilter>() ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
+
+        /// <summary>
+        /// The logger for the feature filter.
+        /// </summary>
+        public ILogger Logger { get; init; }
 
         /// <summary>
         /// Binds configuration representing filter parameters to <see cref="TimeWindowFilterSettings"/>.
@@ -51,7 +60,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (!settings.Start.HasValue && !settings.End.HasValue)
             {
-                _logger.LogWarning($"The '{Alias}' feature filter is not valid for feature '{context.FeatureName}'. It must have have specify either '{nameof(settings.Start)}', '{nameof(settings.End)}', or both.");
+                Logger?.LogWarning($"The '{Alias}' feature filter is not valid for feature '{context.FeatureName}'. It must have have specify either '{nameof(settings.Start)}', '{nameof(settings.End)}', or both.");
 
                 return Task.FromResult(false);
             }

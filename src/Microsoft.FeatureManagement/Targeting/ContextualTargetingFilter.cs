@@ -21,7 +21,18 @@ namespace Microsoft.FeatureManagement.FeatureFilters
     {
         private const string Alias = "Microsoft.Targeting";
         private readonly TargetingEvaluationOptions _options;
-        private readonly ILogger _logger;
+
+        private StringComparison ComparisonType => _options.IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        private StringComparer ComparerType => _options.IgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+
+        /// <summary>
+        /// Creates a targeting contextual feature filter.
+        /// </summary>
+        /// <param name="options">Options controlling the behavior of the targeting evaluation performed by the filter.</param>
+        public ContextualTargetingFilter(TargetingEvaluationOptions options)
+        {
+            _options = options ?? throw new ArgumentNullException(nameof(options)); ;
+        }
 
         /// <summary>
         /// Creates a targeting contextual feature filter.
@@ -31,11 +42,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         public ContextualTargetingFilter(IOptions<TargetingEvaluationOptions> options, ILoggerFactory loggerFactory)
         {
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
-            _logger = loggerFactory?.CreateLogger<ContextualTargetingFilter>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+            Logger = loggerFactory?.CreateLogger<ContextualTargetingFilter>() ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
-        private StringComparison ComparisonType => _options.IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-        private StringComparer ComparerType => _options.IgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        /// <summary>
+        /// The logger for the feature filter.
+        /// </summary>
+        public ILogger Logger { get; init; }
 
         /// <summary>
         /// Binds configuration representing filter parameters to <see cref="TargetingFilterSettings"/>.

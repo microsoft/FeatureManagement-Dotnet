@@ -18,7 +18,17 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         private const string Alias = "Microsoft.Targeting";
         private readonly ITargetingContextAccessor _contextAccessor;
         private readonly IContextualFeatureFilter<ITargetingContext> _contextualFilter;
-        private readonly ILogger _logger;
+
+        /// <summary>
+        /// Creates a targeting feature filter.
+        /// </summary>
+        /// <param name="options">Options controlling the behavior of the targeting evaluation performed by the filter.</param>
+        /// <param name="contextAccessor">An accessor used to acquire the targeting context for use in feature evaluation.</param>
+        public TargetingFilter(TargetingEvaluationOptions options, ITargetingContextAccessor contextAccessor)
+        {
+            _contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
+            _contextualFilter = new ContextualTargetingFilter(options);
+        }
 
         /// <summary>
         /// Creates a targeting feature filter.
@@ -30,8 +40,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         {
             _contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
             _contextualFilter = new ContextualTargetingFilter(options, loggerFactory);
-            _logger = loggerFactory?.CreateLogger<TargetingFilter>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+            Logger = loggerFactory?.CreateLogger<TargetingFilter>() ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
+
+        /// <summary>
+        /// The logger for the feature filter.
+        /// </summary>
+        public ILogger Logger { get; init; }
 
         /// <summary>
         /// Binds configuration representing filter parameters to <see cref="TargetingFilterSettings"/>.
@@ -64,7 +79,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Ensure targeting can be performed
             if (targetingContext == null)
             {
-                _logger.LogWarning("No targeting context available for targeting evaluation.");
+                Logger?.LogWarning("No targeting context available for targeting evaluation.");
 
                 return false;
             }
