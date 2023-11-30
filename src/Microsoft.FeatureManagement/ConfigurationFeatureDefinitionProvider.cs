@@ -126,14 +126,6 @@ namespace Microsoft.FeatureManagement
 
         private FeatureDefinition ReadFeatureDefinition(string featureName)
         {
-
-            var test = GetFeatureDefinitionSections();
-
-            foreach (var section in test)
-            {
-                var n = GetFeatureFlagSectionName(section);
-            }
-
             IConfigurationSection configuration = GetFeatureDefinitionSections()
                 .FirstOrDefault(section => string.Equals(GetFeatureFlagSectionName(section), featureName, StringComparison.OrdinalIgnoreCase));
 
@@ -190,9 +182,9 @@ namespace Microsoft.FeatureManagement
 
             */
 
-            string featureName = configurationSection[ConfigurationFields.FeatureFlagId];
+            string featureName = GetFeatureFlagSectionName(configurationSection);
 
-            List<FeatureFilterConfiguration> enabledFor = new List<FeatureFilterConfiguration>();
+            var enabledFor = new List<FeatureFilterConfiguration>();
 
             RequirementType requirementType = RequirementType.Any;
 
@@ -285,9 +277,9 @@ namespace Microsoft.FeatureManagement
 
             */
 
-            string featureName = configurationSection[ConfigurationFields.FeatureFlagId];
+            string featureName = GetFeatureFlagSectionName(configurationSection);
 
-            List<FeatureFilterConfiguration> enabledFor = new List<FeatureFilterConfiguration>();
+            var enabledFor = new List<FeatureFilterConfiguration>();
 
             RequirementType requirementType = RequirementType.Any;
 
