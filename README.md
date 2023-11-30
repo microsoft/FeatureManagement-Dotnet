@@ -141,9 +141,9 @@ A `RequirementType` of `All` changes the traversal. First, if there are no filte
 
 In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning all of it's filters must evaluate to true for the feature to be enabled. In this case, the feature will be enabled for 50% of users during the specified time window.
     
-### Service Registration
+## Service Registration
 
-Feature flags rely on .NET Core dependency injection. We can register the feature management services using standard conventions.
+Feature flags rely on .NET Core dependency injection. We can register the feature management services using standard conventions. By default, the feature manager and feature filters should be registered as singleton services by calling `AddFeatureManagement`.
 
 ``` C#
 using Microsoft.FeatureManagement;
@@ -152,19 +152,47 @@ public class Startup
 {
   public void ConfigureServices(IServiceCollection services)
   {
-      services.AddFeatureManagement();
+      services.AddFeatureManagement()
+              .AddFeatureFilter<MyCriteriaFilter>();
   }
 }
 ```
 
-This tells the feature manager to use the "FeatureManagement" section from the configuration for feature flag settings.
+This tells the feature manager to use the "FeatureManagement" section from the configuration for feature flag settings. It also registers a customized feature filter `MyCriteriaFilter`. Please refer to the `Implementing a Feature Filter` section below for more details.
 
 You can also specify that feature management configuration should be retrieved from a different configuration section by calling configuration.GetSection and passing in the name of the desired section. The following example tells the feature manager to read from a different section called "MyFeatureFlags" instead:
 ``` C#
+…
 services.AddFeatureManagement(configuration.GetSection("MyFeatureFlags"));
+…
 ```
 
-**Advanced:** The feature manager looks for feature definitions in a configuration section named "FeatureManagement" by default. If the "FeatureManagement" section does not exist, the configuration will be considered empty. If a specific configuration section is provided to `AddFeatureManagement()`, the feature manager will fall back to the root of that configuration section to look for feature definitions. 
+**Advanced:** By default, the feature manager retrieves feature flag configuration from the "FeatureManagement" section of the .NET Core configuration data. If the "FeatureManagement" section does not exist, the configuration will be considered empty. When a specific configuration section is provided to `AddFeatureManagement()`, the feature manager will fall back to the root of that configuration section to look for feature definitions, if there is no "FeatureManagement" section found. 
+
+### Scoped Feature Management Services
+There are scenarios that feature filters are not necessarily be singleton ([#15](https://github.com/microsoft/FeatureManagement-Dotnet/issues/15), [#258](https://github.com/microsoft/FeatureManagement-Dotnet/issues/258)). For example, users may want to use feature filters which consume scoped services for context information. In this case, the feature management should be registered as scoped by calling `AddScopedFeatureManagement`.
+
+This example demonstrates how to register feature manager and feature filters as scoped services to allow the feature filter `MyCriteriaFilter` to consume the scoped context provider service `MyContextProvider`.
+``` C#
+public class MyCriteriaFilter : IFeatureFilter
+{
+    private readonly IContextProvider _contextProvider;
+
+    public MyCriteriaFilter(IContextProvider contextProvider)
+    {
+        _contextProvider = contextProvider;
+    }
+}
+```
+
+``` C#
+…
+services.AddScopedFeatureManagement()
+        .AddFeatureFilter<MyCriteriaFilter>();
+
+services.AddScoped<IContextProvider, MyContextProvider>();
+…
+```
 
 ## Consumption
 The simplest use case for feature flags is to do a conditional check for whether a feature is enabled to take different paths in code. The uses cases grow from there as the feature flag API begins to offer extensions into ASP.NET Core.
@@ -328,14 +356,15 @@ app.UseForFeature(featureName, appBuilder =>
 
 Creating a feature filter provides a way to enable features based on criteria that you define. To implement a feature filter, the `IFeatureFilter` interface must be implemented. `IFeatureFilter` has a single method named `EvaluateAsync`. When a feature specifies that it can be enabled for a feature filter, the `EvaluateAsync` method is called. If `EvaluateAsync` returns `true` it means the feature should be enabled.
 
-The following snippet demonstrates how to add a customized feature filter `MyCriteriaFilter`.
+The following snippet demonstrates how to add customized feature filters `MyFirstCriteriaFilter` and `MySecondCriteriaFilter`.
 
 ``` C#
 services.AddFeatureManagement()
-        .AddFeatureFilter<"MyCriteriaFilter">();
+        .AddFeatureFilter<MyFirstCriteriaFilter>()
+        .AddFeatureFilter<MySecondCriteriaFilter>();
 ```
 
-Feature filters are registered by calling `AddFeatureFilter<T>` on the `IFeatureManagementBuilder` returned from `AddFeatureManagement`. These feature filters have access to the services that exist within the service collection that was used to add feature flags. Dependency injection can be used to retrieve these services.
+Feature filters are registered by calling `AddFeatureFilter<T>` on the `IFeatureManagementBuilder` returned from `AddFeatureManagement`/`AddScopedFeatureManagement`. The feature filters will be registered as the same type as the feature manager. For instance, if the feature manager is registered as a singleton, feature filters will also be registered as singletons. Feature filters have access to the services that exist within the service collection that was used to add feature flags. Dependency injection can be used to retrieve these services.
 
 **Note:** When filters are referenced in feature flag settings (e.g. appsettings.json), the _Filter_ part of the type name should be omitted. Please refer to the `Filter Alias Attribute` section below for more details.
 
@@ -364,7 +393,7 @@ public class FeatureFilterEvaluationContext
 [FilterAlias("Browser")]
 public class BrowserFilter : IFeatureFilter
 {
-    … Removed for example
+    …
 
     public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
     {
@@ -404,7 +433,7 @@ services.Configure<FeatureManagementOptions>(options =>
 
 ### Using HttpContext
 
-Feature filters can evaluate whether a feature should be enabled based off the properties of an HTTP Request. This is performed by inspecting the HTTP Context. A feature filter can get a reference to the HTTP Context by obtaining an `IHttpContextAccessor` through dependency injection.
+Feature filters can evaluate whether a feature should be enabled based on the properties of an HTTP Request. This is performed by inspecting the HTTP Context. A feature filter can get a reference to the HTTP Context by obtaining an `IHttpContextAccessor` through dependency injection.
 
 ``` C#
 public class BrowserFilter : IFeatureFilter
@@ -428,6 +457,9 @@ public void ConfigureServices(IServiceCollection services)
     …
 }
 ```
+
+**Advanced:** `IHttpContextAccessor`/`HttpContext` should not be used in the Razor components of server-side Blazor apps. [The recommended approach](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/server/interactive-server-side-rendering?view=aspnetcore-7.0#ihttpcontextaccessorhttpcontext-in-razor-components) for passing http context in Blazor apps is to copy the data into a scoped service. For Blazor apps, `AddScopedFeatureManagement` should be used to register the feature management services.
+Please refer to the `Scoped Feature Management Services` section for more details.
 
 ## Providing a Context For Feature Evaluation
 
@@ -486,7 +518,7 @@ If all of three filters are registered:
 
 ### Built-In Feature Filters
 
-There a few feature filters that come with the `Microsoft.FeatureManagement` package: `PercentageFilter`, `TimeWindowFilter`, `ContextualTargetingFilter` and `TargetingFilter`. All filters, except for the `TargetingFilter`, are added automatically when feature management is registered. The `TargetingFilter` is added with the `WithTargeting` method that is detailed in the `Targeting` section below.
+There a few feature filters that come with the `Microsoft.FeatureManagement` package: `PercentageFilter`, `TimeWindowFilter`, `ContextualTargetingFilter` and `TargetingFilter`. All filters, except for the `TargetingFilter`, are added automatically when calling `AddFeatureManagement`/`AddScopedFeatureManagement`. The `TargetingFilter` is added with the `WithTargeting` method that is detailed in the `Targeting` section below.
 
 Each of the built-in feature filters have their own parameters. Here is the list of feature filters along with examples.
 
@@ -593,14 +625,17 @@ To begin using the `TargetingFilter` in an application it must be added to the a
 
 The implementation type used for the `ITargetingContextAccessor` service must be implemented by the application that is using the targeting filter. Here is an example setting up feature management in a web application to use the `TargetingFilter` with an implementation of `ITargetingContextAccessor` called `HttpContextTargetingContextAccessor`.
 
-```
+``` C#
 services.AddFeatureManagement();
+        .AddFeatureFilter<BrowserFilter>()
         .WithTargeting<HttpContextTargetingContextAccessor>();
 ```
 
+The targeting context accessor and `TargetingFilter` are registered by calling `WithTargeting<T>` on the `IFeatureManagementBuilder`. The targeting filters and `TargetingFilter` will be registered as the same type as the feature manager.
+
 #### ITargetingContextAccessor
 
-To use the `TargetingFilter` in a web application an implementation of `ITargetingContextAccessor` is required. This is because when a targeting evaluation is being performed information such as what user is currently being evaluated is needed. This information is known as the targeting context. Different web applications may extract this information from different places. Some common examples of where an application may pull the targeting context are the request's HTTP context or a database.
+To use the `TargetingFilter` in a web application, an implementation of `ITargetingContextAccessor` is required. This is because when a targeting evaluation is being performed information such as what user is currently being evaluated is needed. This information is known as the targeting context. Different web applications may extract this information from different places. Some common examples of where an application may pull the targeting context are the request's HTTP context or a database.
 
 An example that extracts targeting context information from the application's HTTP context is included in the [FeatureFlagDemo](./examples/FeatureFlagDemo/HttpContextTargetingContextAccessor.cs) example project. This method relies on the use of `IHttpContextAccessor` which is discussed [here](./README.md#Using-HttpContext).
 
