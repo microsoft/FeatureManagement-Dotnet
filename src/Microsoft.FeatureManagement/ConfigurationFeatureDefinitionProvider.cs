@@ -43,6 +43,11 @@ namespace Microsoft.FeatureManagement
         }
 
         /// <summary>
+        /// The option that controls the behavior when "FeatureManagement" section in the configuration is missing.
+        /// </summary>
+        public bool RootConfigurationFallbackEnabled { get; init; }
+
+        /// <summary>
         /// The logger for the configuration feature definition provider.
         /// </summary>
         public ILogger Logger { get; init; }
@@ -354,16 +359,14 @@ namespace Microsoft.FeatureManagement
 
             if (!featureManagementConfigurationSection.Exists())
             {
-                if (_configuration is IConfigurationSection)
-                {
-                    featureManagementConfigurationSection = _configuration as IConfigurationSection;
-                }
-                else
+                if (!RootConfigurationFallbackEnabled)
                 {
                     Logger?.LogDebug($"No configuration section named '{ConfigurationFields.FeatureManagementSectionName}' was found.");
 
                     return Enumerable.Empty<IConfigurationSection>();
                 }
+
+                featureManagementConfigurationSection = _configuration as IConfigurationSection;
             }
 
             IConfigurationSection featureFlagsConfigurationSection = featureManagementConfigurationSection.GetSection(ConfigurationFields.FeatureFlagsSectionName);
