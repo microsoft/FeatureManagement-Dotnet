@@ -23,8 +23,6 @@ namespace Microsoft.FeatureManagement
         public const string FeatureFlagEnabled = "enabled";
         public const string FeatureFlagConditions = "conditions";
         public const string FeatureFlagClientFilters = "client_filters";
-        public const string LowercaseNameKeyword = "name";
-        public const string LowercaseFeatureFilterConfigurationParameters = "parameters";
-        public const string LowercaseRequirementType = "requirement_type";
+        public const string FeatureFlagRequirementType = "requirement_type";
     }
 }

@@ -43,11 +43,6 @@ namespace Microsoft.FeatureManagement
         }
 
         /// <summary>
-        /// The option that controls the behavior when "FeatureManagement" section in the configuration is missing.
-        /// </summary>
-        public bool RootConfigurationFallbackEnabled { get; init; }
-
-        /// <summary>
         /// The logger for the configuration feature definition provider.
         /// </summary>
         public ILogger Logger { get; init; }
@@ -126,6 +121,14 @@ namespace Microsoft.FeatureManagement
 
         private FeatureDefinition ReadFeatureDefinition(string featureName)
         {
+
+            var test = GetFeatureDefinitionSections();
+
+            foreach (var section in test)
+            {
+                var n = GetFeatureFlagSectionName(section);
+            }
+
             IConfigurationSection configuration = GetFeatureDefinitionSections()
                 .FirstOrDefault(section => string.Equals(GetFeatureFlagSectionName(section), featureName, StringComparison.OrdinalIgnoreCase));
 
@@ -141,7 +144,7 @@ namespace Microsoft.FeatureManagement
         {
             if (_azureAppConfigurationFeatureFlagSchemaEnabled)
             {
-                return ParseFeatureDefinitionInFeatureFlagsArray(configurationSection);
+                return ParseAppConfigurationFeatureDefinition(configurationSection);
             }
 
             return ParseFeatureDefinition(configurationSection);
@@ -247,7 +250,7 @@ namespace Microsoft.FeatureManagement
             };
         }
 
-        private FeatureDefinition ParseFeatureDefinitionInFeatureFlagsArray(IConfigurationSection configurationSection)
+        private FeatureDefinition ParseAppConfigurationFeatureDefinition(IConfigurationSection configurationSection)
         {
             /*
             
@@ -285,7 +288,7 @@ namespace Microsoft.FeatureManagement
 
             IConfigurationSection conditions = configurationSection.GetSection(ConfigurationFields.FeatureFlagConditions);
 
-            string rawRequirementType = conditions[ConfigurationFields.LowercaseRequirementType];
+            string rawRequirementType = conditions[ConfigurationFields.FeatureFlagRequirementType];
 
             //
             // If requirement type is specified, parse it and set the requirementType variable
@@ -293,7 +296,7 @@ namespace Microsoft.FeatureManagement
             {
                 throw new FeatureManagementException(
                     FeatureManagementError.InvalidConfigurationSetting,
-                    $"Invalid value '{rawRequirementType}' for '{ConfigurationFields.LowercaseRequirementType}' field of feature '{featureName}'.");
+                    $"Invalid value '{rawRequirementType}' for '{ConfigurationFields.FeatureFlagRequirementType}' field of feature '{featureName}'.");
             }
 
             string rawEnabled = configurationSection[ConfigurationFields.FeatureFlagEnabled];
@@ -318,12 +321,12 @@ namespace Microsoft.FeatureManagement
                         //
                         // Arrays in json such as "myKey": [ "some", "values" ]
                         // Are accessed through the configuration system by using the array index as the property name, e.g. "myKey": { "0": "some", "1": "values" }
-                        if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[ConfigurationFields.LowercaseNameKeyword]))
+                        if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[ConfigurationFields.NameKeyword]))
                         {
                             enabledFor.Add(new FeatureFilterConfiguration()
                             {
-                                Name = section[ConfigurationFields.LowercaseNameKeyword],
-                                Parameters = new ConfigurationWrapper(section.GetSection(ConfigurationFields.LowercaseFeatureFilterConfigurationParameters))
+                                Name = section[ConfigurationFields.NameKeyword],
+                                Parameters = new ConfigurationWrapper(section.GetSection(ConfigurationFields.FeatureFilterConfigurationParameters))
                             });
                         }
                     }
@@ -349,30 +352,21 @@ namespace Microsoft.FeatureManagement
         {
             IConfigurationSection featureManagementConfigurationSection = _configuration.GetSection(ConfigurationFields.FeatureManagementSectionName);
 
-            IConfigurationSection featureFlagsConfigurationSection = _configuration.GetSection(ConfigurationFields.FeatureFlagsSectionName);
-
             if (!featureManagementConfigurationSection.Exists())
             {
-                //
-                // There is no "FeatureManagement" section in the configuration
-                if (RootConfigurationFallbackEnabled)
+                if (_configuration is IConfigurationSection)
                 {
-                    _azureAppConfigurationFeatureFlagSchemaEnabled = featureFlagsConfigurationSection.Exists();
-
-                    if (_azureAppConfigurationFeatureFlagSchemaEnabled)
-                    {
-                        return featureFlagsConfigurationSection.GetChildren();
-                    }
-                    
-                    return _configuration.GetChildren();
+                    featureManagementConfigurationSection = _configuration as IConfigurationSection;
                 }
+                else
+                {
+                    Logger?.LogDebug($"No configuration section named '{ConfigurationFields.FeatureManagementSectionName}' was found.");
 
-                Logger?.LogDebug($"No configuration section named '{ConfigurationFields.FeatureManagementSectionName}' was found.");
-
-                return Enumerable.Empty<IConfigurationSection>();
+                    return Enumerable.Empty<IConfigurationSection>();
+                }
             }
 
-            featureFlagsConfigurationSection = featureManagementConfigurationSection.GetSection(ConfigurationFields.FeatureFlagsSectionName);
+            IConfigurationSection featureFlagsConfigurationSection = featureManagementConfigurationSection.GetSection(ConfigurationFields.FeatureFlagsSectionName);
 
             _azureAppConfigurationFeatureFlagSchemaEnabled = featureFlagsConfigurationSection.Exists();
 
@@ -390,10 +384,8 @@ namespace Microsoft.FeatureManagement
             {
                 return section[ConfigurationFields.FeatureFlagId];
             }
-            else
-            {
-                return section.Key;
-            }
+                
+            return section.Key;
         }
     }
 }
