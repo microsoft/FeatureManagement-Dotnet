@@ -238,9 +238,69 @@ namespace Tests.FeatureManagement
 
             services.AddFeatureManagement(config.GetSection("FeatureManagement"));
 
+            serviceProvider = services.BuildServiceProvider();
+
+            featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
             Assert.False(await featureManager.IsEnabledAsync("MyFeature"));
 
             Assert.True(await featureManager.IsEnabledAsync("Alpha"));
+
+            json = @"
+            {
+              'AllowedHosts': '*',
+              'FeatureManagement': {
+                'MyFeature': true,
+                'FeatureFlags': true
+              }
+            }".Replace('\'', '\"');
+
+            stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+
+            config = new ConfigurationBuilder().AddJsonStream(stream).Build();
+
+            services = new ServiceCollection();
+
+            services.AddFeatureManagement(config.GetSection("FeatureManagement"));
+
+            serviceProvider = services.BuildServiceProvider();
+
+            featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync("MyFeature"));
+
+            Assert.True(await featureManager.IsEnabledAsync("FeatureFlags"));
+
+            json = @"
+            {
+              'AllowedHosts': '*',
+              'FeatureManagement': {
+                'MyFeature': true,
+                'FeatureFlags': {
+                  'EnabledFor': [
+                    {
+                      'Name': 'AlwaysOn'  
+                    }
+                  ]
+                }
+              }
+            }".Replace('\'', '\"');
+
+            stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+
+            config = new ConfigurationBuilder().AddJsonStream(stream).Build();
+
+            services = new ServiceCollection();
+
+            services.AddFeatureManagement(config.GetSection("FeatureManagement"));
+
+            serviceProvider = services.BuildServiceProvider();
+
+            featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync("MyFeature"));
+
+            Assert.True(await featureManager.IsEnabledAsync("FeatureFlags"));
         }
 
         [Fact]
