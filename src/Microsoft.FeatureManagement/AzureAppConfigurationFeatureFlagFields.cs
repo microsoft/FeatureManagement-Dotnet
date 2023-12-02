@@ -6,7 +6,7 @@ namespace Microsoft.FeatureManagement
 {
     //
     // Azure App Configuration feature flag schema: https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureFlag.v1.1.0.schema.json
-    internal static class AzureAppConfigurationFeatureFlagConfigurationFields
+    internal static class AzureAppConfigurationFeatureFlagFields
     {
         public const string FeatureFlagsSectionName = "FeatureFlags";
 
