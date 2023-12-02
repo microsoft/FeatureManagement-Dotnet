@@ -326,12 +326,12 @@ namespace Microsoft.FeatureManagement
                         //
                         // Arrays in json such as "myKey": [ "some", "values" ]
                         // Are accessed through the configuration system by using the array index as the property name, e.g. "myKey": { "0": "some", "1": "values" }
-                        if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[ConfigurationFields.NameKeyword]))
+                        if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[AzureAppConfigurationFeatureFlagFields.Name]))
                         {
                             enabledFor.Add(new FeatureFilterConfiguration()
                             {
-                                Name = section[ConfigurationFields.NameKeyword],
-                                Parameters = new ConfigurationWrapper(section.GetSection(ConfigurationFields.FeatureFilterConfigurationParameters))
+                                Name = section[AzureAppConfigurationFeatureFlagFields.Name],
+                                Parameters = new ConfigurationWrapper(section.GetSection(AzureAppConfigurationFeatureFlagFields.Parameters))
                             });
                         }
                     }
