@@ -33,6 +33,10 @@ Here are some of the benefits of using this library:
 * [Targeting](#targeting)
   * [Targeting Exclusion](#targeting-exclusion)
 * [Variants](#variants)
+* [Telemetry](#telemetry)
+    * [Application Insights Telemetry Publisher](#application-insights-telemetry-publisher)
+    * [Custom Telemetry Publishers](#custom-telemetry-publishers)
+    * [Enabling Telemetry](#enabling-telemetry)
 * [Caching](#caching)
 * [Custom Feature Providers](#custom-feature-providers)
 
@@ -825,7 +829,7 @@ An example of its usage can be found in the [EvaluationDataToApplicationInsights
 
 This telemetry publisher depends on Application Insights already being [setup](https://learn.microsoft.com/azure/azure-monitor/app/asp-net-core#enable-application-insights-server-side-telemetry-no-visual-studio) and registered as an application service. For example, that is done [here](https://github.com/microsoft/FeatureManagement-Dotnet/blob/f125d32a395f560d8d13d50d7f11a69d6ca78499/examples/EvaluationDataToApplicationInsights/Program.cs#L20C9-L20C17) in the example application.
 
-### Custom Telemetry Publisher
+### Custom Telemetry Publishers
 
 By implementing an `ITelemetryPublisher`` and registering it in the feature manager, telemetry data on feature flag evaluations can be collected from the application.
 
