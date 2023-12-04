@@ -799,6 +799,53 @@ If you are using a feature flag with binary variants, the `StatusOverride` prope
 
 In the above example, the feature is enabled by the `AlwaysOn` filter. If the current user is in the calculated percentile range of 10 to 20, then the `On` variant is returned. Otherwise, the `Off` variant is returned and because `StatusOverride` is equal to `Disabled`, the feature will now be considered disabled.
 
+## Telemetry
+
+When a feature flag changed is deployed, it is often important to analyze its affect on an application. For example here are a few questions that may arise:
+
+* Are my flags enabled/disabled as expected?
+* Are targeted users getting access to a certain feature as expected?
+* What variant is a particular user seeing?
+
+These types of questions can be answered through the emission and analysis of feature flag evaluation events. This library supports emitting these events through telemetry publishers. One or many telemetry publishers can be registered to publish events whenever feature flags are evaluated.
+
+### Application Insights telemetry publisher
+
+This library provides a built-in telemetry publisher implementation that sends feature flag evaluation data to Application Insights. To take advantage of this, the `Microsoft.FeatureManagement.Telemetry.ApplicationInsights` package should be referenced. At that point, the Application Insights telemetry publisher can be registered.
+
+```
+builder.services
+    .AddFeatureManagement()
+    .AddTelemetryPublisher<ApplicationInsightsTelemetryPublisher>();
+```
+
+An example of its usage can be found in the [EvaluationDataToApplicationInsights](https://github.com/microsoft/FeatureManagement-Dotnet/blob/preview/examples/EvaluationDataToApplicationInsights) example.
+
+#### Prerequisite
+
+This telemetry publisher depends on Application Insights already being [setup](https://learn.microsoft.com/azure/azure-monitor/app/asp-net-core#enable-application-insights-server-side-telemetry-no-visual-studio) and registered as an application service. For example, that is done [here](https://github.com/microsoft/FeatureManagement-Dotnet/blob/f125d32a395f560d8d13d50d7f11a69d6ca78499/examples/EvaluationDataToApplicationInsights/Program.cs#L20C9-L20C17) in the example application.
+
+### Custom telemetry publisher
+
+By implementing an ITelemetryPublisher and registering it in the feature manager, telemetry data on feature flag evaluations can be collected from the application.
+
+```
+public interface ITelemetryPublisher
+{
+    public ValueTask PublishEvent(EvaluationEvent evaluationEvent, CancellationToken cancellationToken);
+}
+```
+
+The `EvaluationEvent` type can be found [here](https://github.com/microsoft/FeatureManagement-Dotnet/blob/preview/src/Microsoft.FeatureManagement/Telemetry/EvaluationEvent.cs) for reference.
+
+Registering telemetry publishers can be done when registering feature management.
+
+```
+builder.services
+    .AddFeatureManagement()
+    .AddTelemetryPublisher<MyTelemetryPublisher>();
+```
+
 ## Caching
 
 Feature state is provided by the IConfiguration system. Any caching and dynamic updating is expected to be handled by configuration providers. The feature manager asks IConfiguration for the latest value of a feature's state whenever a feature is checked to be enabled.
