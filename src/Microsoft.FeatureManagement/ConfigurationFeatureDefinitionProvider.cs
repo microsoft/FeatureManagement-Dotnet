@@ -26,9 +26,7 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
-
-        private int _notSet = 1;
-        private object _lock = new object();
+        private int _schemaNotSet = 1;
 
         private bool _azureAppConfigurationFeatureFlagSchemaEnabled;
 
@@ -85,7 +83,7 @@ namespace Microsoft.FeatureManagement
 
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
-                Interlocked.Exchange(ref _notSet, 1);
+                _schemaNotSet = 1;
 
                 _definitions.Clear();
             }
@@ -110,7 +108,7 @@ namespace Microsoft.FeatureManagement
         {
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
-                Interlocked.Exchange(ref _notSet, 1);
+                _schemaNotSet = 1;
 
                 _definitions.Clear();
             }
@@ -373,7 +371,7 @@ namespace Microsoft.FeatureManagement
 
             //
             // "FeatureFlag" section should be an array if Azure App Configuration feature flag schema is enabled
-            if (Interlocked.Exchange(ref _notSet, 0) != 0)
+            if (Interlocked.Exchange(ref _schemaNotSet, 0) != 0)
             {
                 _azureAppConfigurationFeatureFlagSchemaEnabled = featureFlagsConfigurationSection.Exists() &&
                     string.IsNullOrEmpty(featureFlagsConfigurationSection.Value) &&
