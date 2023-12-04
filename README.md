@@ -815,7 +815,7 @@ These types of questions can be answered through the emission and analysis of fe
 
 ### Application Insights Telemetry Publisher
 
-This library provides a built-in telemetry publisher implementation that sends feature flag evaluation data to Application Insights. To take advantage of this, the `Microsoft.FeatureManagement.Telemetry.ApplicationInsights` package should be referenced. At that point, the Application Insights telemetry publisher can be registered.
+This library provides a built-in telemetry publisher implementation that sends feature flag evaluation data to Application Insights. To take advantage of this, the `Microsoft.FeatureManagement.Telemetry.ApplicationInsights` package must be referenced. At that point, the Application Insights telemetry publisher can be registered.
 
 ```
 builder.services
