@@ -41,8 +41,8 @@ namespace Microsoft.FeatureManagement
             _changeSubscription = ChangeToken.OnChange(
                 () => _configuration.GetReloadToken(),
                 () => {
-                    _stale = 1;
                     _schemaSet = 0;
+                    _stale = 1;
                 });
         }
 
