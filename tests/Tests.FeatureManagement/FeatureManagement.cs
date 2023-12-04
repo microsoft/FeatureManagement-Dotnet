@@ -19,11 +19,6 @@ namespace Tests.FeatureManagement
 {
     public class FeatureManagement
     {
-        private const string OnFeature = "OnTestFeature";
-        private const string OffFeature = "OffTestFeature";
-        private const string ConditionalFeature = "ConditionalFeature";
-        private const string ContextualFeature = "ContextualFeature";
-
         [Fact]
         public async Task ReadsConfiguration()
         {
@@ -1027,13 +1022,13 @@ namespace Tests.FeatureManagement
             TestTelemetryPublisher testPublisher = (TestTelemetryPublisher) featureManager.TelemetryPublishers.First();
 
             // Test a feature with telemetry disabled
-            bool result = await featureManager.IsEnabledAsync(OnFeature, CancellationToken.None);
+            bool result = await featureManager.IsEnabledAsync(Features.OnTestFeature, CancellationToken.None);
 
             Assert.True(result);
             Assert.Null(testPublisher.evaluationEventCache);
 
             // Test telemetry cases
-            string onFeature = "AlwaysOnTestFeature";
+            const string onFeature = "AlwaysOnTestFeature";
 
             result = await featureManager.IsEnabledAsync(onFeature, CancellationToken.None);
 
@@ -1044,7 +1039,7 @@ namespace Tests.FeatureManagement
             Assert.Equal("LabelValue", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata["Label"]);
             Assert.Equal("Tag1Value", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata["Tags.Tag1"]);
 
-            string offFeature = "OffTimeTestFeature";
+            const string offFeature = "OffTimeTestFeature";
 
             result = await featureManager.IsEnabledAsync(offFeature, CancellationToken.None);
 
@@ -1053,7 +1048,7 @@ namespace Tests.FeatureManagement
             Assert.Equal(result, testPublisher.evaluationEventCache.IsEnabled);
 
             // Test variant cases
-            string variantDefaultEnabledFeature = "VariantFeatureDefaultEnabled";
+            const string variantDefaultEnabledFeature = "VariantFeatureDefaultEnabled";
 
             result = await featureManager.IsEnabledAsync(variantDefaultEnabledFeature, CancellationToken.None);
 
