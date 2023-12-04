@@ -26,7 +26,7 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
-        private int _schemaNotSet = 1;
+        private int _schemaSet = 0;
         private bool _azureAppConfigurationFeatureFlagSchemaEnabled;
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace Microsoft.FeatureManagement
                 () => _configuration.GetReloadToken(),
                 () => {
                     _stale = 1;
-                    _schemaNotSet = 1;
+                    _schemaSet = 0;
                 });
         }
 
@@ -369,7 +369,7 @@ namespace Microsoft.FeatureManagement
 
             //
             // "FeatureFlag" section should be an array if Azure App Configuration feature flag schema is enabled
-            if (Interlocked.Exchange(ref _schemaNotSet, 0) != 0)
+            if (Interlocked.Exchange(ref _schemaSet, 1) != 1)
             {
                 _azureAppConfigurationFeatureFlagSchemaEnabled = featureFlagsConfigurationSection.Exists() &&
                     string.IsNullOrEmpty(featureFlagsConfigurationSection.Value) &&
