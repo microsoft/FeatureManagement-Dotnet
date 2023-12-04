@@ -8,7 +8,7 @@ To run this sample, follow these steps:
 
 1. Set the project as the startup project.
 2. Run the project.
-3. Enter a username and login.
+3. Enter a username and click the login button.
 
 ### About the App
 
