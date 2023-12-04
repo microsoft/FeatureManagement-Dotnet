@@ -823,7 +823,7 @@ builder.services
     .AddTelemetryPublisher<ApplicationInsightsTelemetryPublisher>();
 ```
 
-An example of its usage can be found in the [EvaluationDataToApplicationInsights](https://github.com/microsoft/FeatureManagement-Dotnet/blob/preview/examples/EvaluationDataToApplicationInsights) example.
+An example of its usage can be found in the [EvaluationDataToApplicationInsights](./examples/EvaluationDataToApplicationInsights) example.
 
 #### Prerequisite
 
@@ -840,7 +840,7 @@ public interface ITelemetryPublisher
 }
 ```
 
-The `EvaluationEvent` type can be found [here](https://github.com/microsoft/FeatureManagement-Dotnet/blob/preview/src/Microsoft.FeatureManagement/Telemetry/EvaluationEvent.cs) for reference.
+The `EvaluationEvent` type can be found [here](./src/Microsoft.FeatureManagement/Telemetry/EvaluationEvent.cs) for reference.
 
 Registering telemetry publishers is done when registering feature management.
 
