@@ -111,71 +111,71 @@ namespace Tests.FeatureManagement
         {
             string json = @"
             {
-              'AllowedHosts': '*',
-              'FeatureManagement': {
-                'MyFeature': true,
-                'FeatureFlags': [
+              ""AllowedHosts"": ""*"",
+              ""FeatureManagement"": {
+                ""MyFeature"": true,
+                ""FeatureFlags"": [
                   {
-                    'id': 'Alpha',
-                    'enabled': true,
-                    'conditions': {
-                      'client_filters': []
+                    ""id"": ""Alpha"",
+                    ""enabled"": true,
+                    ""conditions"": {
+                      ""client_filters"": []
                     }
                   },
                   {
-                    'id': 'Beta',
-                    'enabled': true,
-                    'conditions': {
-                      'client_filters': [
+                    ""id"": ""Beta"",
+                    ""enabled"": true,
+                    ""conditions"": {
+                      ""client_filters"": [
                         {
-                          'name': 'Percentage',
-                          'parameters': {
-                            'Value': 100
+                          ""name"": ""Percentage"",
+                          ""parameters"": {
+                            ""Value"": 100
                            }
                         },
                         {
-                          'name': 'Targeting',
-                          'parameters': {
-                            'Audience': {
-                              'Users': ['Jeff'],
-                              'Groups': [],
-                              'DefaultRolloutPercentage': 0
+                          ""name"": ""Targeting"",
+                          ""parameters"": {
+                            ""Audience"": {
+                              ""Users"": [""Jeff""],
+                              ""Groups"": [],
+                              ""DefaultRolloutPercentage"": 0
                             }
                           }
                         }
 					  ],
-                      'requirement_type' : 'all'
+                      ""requirement_type"" : ""all""
                     }
                   },
                   {
-                    'id': 'Sigma',
-                    'enabled': false,
-                    'conditions': {
-					  'client_filters': [
+                    ""id"": ""Sigma"",
+                    ""enabled"": false,
+                    ""conditions"": {
+					  ""client_filters"": [
                         {
-                          'name': 'Percentage',
-                          'parameters': {
-                            'Value': 100
+                          ""name"": ""Percentage"",
+                          ""parameters"": {
+                            ""Value"": 100
                            }
                         }
 			          ]
                     }
                   },
                   {
-                    'id': 'Omega',
-                    'enabled': true,
-                    'conditions': {
-                      'client_filters': [
+                    ""id"": ""Omega"",
+                    ""enabled"": true,
+                    ""conditions"": {
+                      ""client_filters"": [
                         {
-                          'name': 'Percentage',
-                          'parameters': {
-                            'Value': 100
+                          ""name"": ""Percentage"",
+                          ""parameters"": {
+                            ""Value"": 100
                           }
                         },
                         {
-                          'name': 'Percentage',
-                          'parameters': {
-                            'Value': 0
+                          ""name"": ""Percentage"",
+                          ""parameters"": {
+                            ""Value"": 0
                           }
                         }
                       ]
@@ -183,7 +183,7 @@ namespace Tests.FeatureManagement
                   }
                 ]
               }
-            }".Replace('\'', '\"');
+            }";
 
             var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
 
@@ -218,17 +218,17 @@ namespace Tests.FeatureManagement
 
             json = @"
             {
-              'AllowedHosts': '*',
-              'FeatureManagement': {
-                'MyFeature': true,
-                'FeatureFlags': [
+              ""AllowedHosts"": ""*"",
+              ""FeatureManagement"": {
+                ""MyFeature"": true,
+                ""FeatureFlags"": [
                   {
-                    'id': 'Alpha',
-                    'enabled': true
+                    ""id"": ""Alpha"",
+                    ""enabled"": true
                   }
                 ]
               }
-            }".Replace('\'', '\"');
+            }";
 
             stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
 
@@ -248,12 +248,12 @@ namespace Tests.FeatureManagement
 
             json = @"
             {
-              'AllowedHosts': '*',
-              'FeatureManagement': {
-                'MyFeature': true,
-                'FeatureFlags': true
+              ""AllowedHosts"": ""*"",
+              ""FeatureManagement"": {
+                ""MyFeature"": true,
+                ""FeatureFlags"": true
               }
-            }".Replace('\'', '\"');
+            }";
 
             stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
 
@@ -273,18 +273,18 @@ namespace Tests.FeatureManagement
 
             json = @"
             {
-              'AllowedHosts': '*',
-              'FeatureManagement': {
-                'MyFeature': true,
-                'FeatureFlags': {
-                  'EnabledFor': [
+              ""AllowedHosts"": ""*"",
+              ""FeatureManagement"": {
+                ""MyFeature"": true,
+                ""FeatureFlags"": {
+                  ""EnabledFor"": [
                     {
-                      'Name': 'AlwaysOn'  
+                      ""Name"": ""AlwaysOn""  
                     }
                   ]
                 }
               }
-            }".Replace('\'', '\"');
+            }";
 
             stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
 
