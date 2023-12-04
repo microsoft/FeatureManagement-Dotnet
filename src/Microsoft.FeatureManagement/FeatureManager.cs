@@ -321,7 +321,7 @@ namespace Microsoft.FeatureManagement
                     {
                         SlidingExpiration = ParametersCacheSlidingExpiration,
                         AbsoluteExpirationRelativeToNow = ParametersCacheAbsoluteExpirationRelativeToNow
-                    });
+                    }.SetSize(1));
             }
             else
             {
