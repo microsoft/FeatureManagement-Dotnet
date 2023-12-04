@@ -27,7 +27,6 @@ namespace Microsoft.FeatureManagement
         private IDisposable _changeSubscription;
         private int _stale = 0;
         private int _schemaNotSet = 1;
-
         private bool _azureAppConfigurationFeatureFlagSchemaEnabled;
 
         /// <summary>
@@ -41,7 +40,10 @@ namespace Microsoft.FeatureManagement
 
             _changeSubscription = ChangeToken.OnChange(
                 () => _configuration.GetReloadToken(),
-                () => _stale = 1);
+                () => {
+                    _stale = 1;
+                    _schemaNotSet = 1;
+                });
         }
 
         /// <summary>
@@ -83,8 +85,6 @@ namespace Microsoft.FeatureManagement
 
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
-                _schemaNotSet = 1;
-
                 _definitions.Clear();
             }
 
@@ -108,8 +108,6 @@ namespace Microsoft.FeatureManagement
         {
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
-                _schemaNotSet = 1;
-
                 _definitions.Clear();
             }
 
