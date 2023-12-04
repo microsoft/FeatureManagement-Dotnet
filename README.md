@@ -846,6 +846,31 @@ builder.services
     .AddTelemetryPublisher<MyTelemetryPublisher>();
 ```
 
+### Enabling Telemetry
+
+By default, feature flags will not have telemetry emitted. To publish telemetry for a given feature flag the flag MUST declare that it is enabled for telemetry emission.
+
+For flags defined in `appsettings.json`, that is done by using the `TelemetryEnabled` property on feature flags. The value of this property must be `true` to publish telemetry for the flag.
+
+```
+{
+    "FeatureManagement":
+    {
+        "MyFlag":
+        {
+            "TelemetryEnabled": true,
+            "EnabledFor": [
+                {
+                    "Name": "AlwaysOn"
+                }
+            ]
+        }
+    }
+}
+```
+
+The appsettings snippet above defines a flag named `MyFlag` that is enabled for telemetry.
+
 ## Caching
 
 Feature state is provided by the IConfiguration system. Any caching and dynamic updating is expected to be handled by configuration providers. The feature manager asks IConfiguration for the latest value of a feature's state whenever a feature is checked to be enabled.
