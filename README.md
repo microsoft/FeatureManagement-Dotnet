@@ -159,7 +159,8 @@ public class Startup
 
 By default, the feature manager retrieves feature flag configuration from the "FeatureManagement" section of the .NET Core configuration data. If the "FeatureManagement" section does not exist, the configuration will be considered empty.
 
-You can also specify that feature flag configuration should be retrieved from a different configuration section by calling configuration.GetSection and passing in the name of the desired section. The following example tells the feature manager to read from a different section called "MyFeatureFlags" instead:
+You can also specify that feature flag configuration should be retrieved from a different configuration section by passing the section to `AddFeatureManagement`. The following example tells the feature manager to read from a different section called "MyFeatureFlags" instead:
+
 ``` C#
 services.AddFeatureManagement(configuration.GetSection("MyFeatureFlags"));
 ```
@@ -167,7 +168,7 @@ services.AddFeatureManagement(configuration.GetSection("MyFeatureFlags"));
 ### Scoped Feature Management Services
 By default, the feature manager and feature filters should be registered as singleton services by calling `AddFeatureManagement`.
 
-There are scenarios that feature filters are not necessarily be singleton. For example, users may want to use feature filters which consume scoped services for context information. In this case, the feature manager and feature filters should be registered as scoped services by calling `AddScopedFeatureManagement`:
+The `AddFeatureManagement` method adds feature management services as singletons within the application, but there are scenarios where it may be necessary for feature management services to be added as scoped services instead. For example, users may want to use feature filters which consume scoped services for context information. In this case, the `AddScopedFeatureManagement` method should be used instead. This will ensure that feature management services, including feature filters, are added as scoped services.
 
 ``` C#
 services.AddScopedFeatureManagement();
@@ -335,19 +336,16 @@ app.UseForFeature(featureName, appBuilder =>
 
 Creating a feature filter provides a way to enable features based on criteria that you define. To implement a feature filter, the `IFeatureFilter` interface must be implemented. `IFeatureFilter` has a single method named `EvaluateAsync`. When a feature specifies that it can be enabled for a feature filter, the `EvaluateAsync` method is called. If `EvaluateAsync` returns `true` it means the feature should be enabled.
 
-The following snippet demonstrates how to add customized feature filters `MyFirstCriteriaFilter` and `MySecondCriteriaFilter`.
+The following snippet demonstrates how to add a customized feature filter `MyCriteriaFilter`.
 
 ``` C#
 services.AddFeatureManagement()
-        .AddFeatureFilter<MyFirstCriteriaFilter>()
-        .AddFeatureFilter<MySecondCriteriaFilter>();
+        .AddFeatureFilter<MyCriteriaFilter>();
 ```
 
 Feature filters are registered by calling `AddFeatureFilter<T>` on the `IFeatureManagementBuilder` returned from `AddFeatureManagement`. These feature filters have access to the services that exist within the service collection that was used to add feature flags. Dependency injection can be used to retrieve these services.
 
 **Note:** When filters are referenced in feature flag settings (e.g. appsettings.json), the _Filter_ part of the type name should be omitted. Please refer to the `Filter Alias Attribute` section below for more details.
-
-**Advanced:** The feature filters will be registered as the same type as the feature manager. For instance, if the feature manager is registered as scoped after calling `AddScopedFeatureManagement`, as the consequence, feature filters will also be registered as scoped.
 
 ### Parameterized Feature Filters
 
@@ -611,7 +609,7 @@ services.AddFeatureManagement()
         .WithTargeting<HttpContextTargetingContextAccessor>();
 ```
 
-The targeting context accessor and `TargetingFilter` are registered by calling `WithTargeting<T>` on the `IFeatureManagementBuilder`. The targeting context accessor and targeting filter will be registered as the same type as the feature manager.
+The targeting context accessor and `TargetingFilter` are registered by calling `WithTargeting<T>` on the `IFeatureManagementBuilder`.
 
 #### ITargetingContextAccessor
 
