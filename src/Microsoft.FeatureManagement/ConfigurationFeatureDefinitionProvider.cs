@@ -40,10 +40,7 @@ namespace Microsoft.FeatureManagement
 
             _changeSubscription = ChangeToken.OnChange(
                 () => _configuration.GetReloadToken(),
-                () => {
-                    _schemaSet = 0;
-                    _stale = 1;
-                });
+                () => _stale = 1);
         }
 
         /// <summary>
@@ -362,7 +359,7 @@ namespace Microsoft.FeatureManagement
                     return Enumerable.Empty<IConfigurationSection>();
                 }
 
-                featureManagementConfigurationSection = _configuration as IConfigurationSection;
+                featureManagementConfigurationSection = (IConfigurationSection)_configuration;
             }
 
             IConfigurationSection featureFlagsConfigurationSection = featureManagementConfigurationSection.GetSection(AzureAppConfigurationFeatureFlagFields.FeatureFlagsSectionName);
