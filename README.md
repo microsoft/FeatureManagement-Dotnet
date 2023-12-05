@@ -94,7 +94,7 @@ The `FeatureManagement` section of the json document is used by convention to lo
 
 **Advanced:** The usage of colon ':' in feature flag names is forbidden.
 
-### On/Off Declaration
+#### On/Off Declaration
  
 The following snippet demonstrates an alternative way to define a feature that can be used for on/off features. 
 ``` JavaScript
@@ -113,7 +113,7 @@ The following snippet demonstrates an alternative way to define a feature that c
 }
 ```
 
-### RequirementType
+#### RequirementType
 
 The `RequirementType` property of a feature flag is used to determine if the filters should use `Any` or `All` logic when evaluating the state of a feature. If `RequirementType` is not specified, the default value is `Any`.
 
@@ -180,7 +180,7 @@ services.AddScopedFeatureManagement();
 ### Consumption
 The simplest use case for feature flags is to do a conditional check for whether a feature is enabled to take different paths in code. The uses cases grow from there as the feature flag API begins to offer extensions into ASP.NET Core.
 
-### Feature Check
+#### Feature Check
 The basic form of feature management is checking if a feature is enabled and then performing actions based on the result. This is done through the `IFeatureManager`'s `IsEnabledAsync` method.
 
 ``` C#
@@ -193,7 +193,7 @@ if (await featureManager.IsEnabledAsync("FeatureX"))
 }
 ```
 
-### Dependency Injection
+#### Dependency Injection
 
 When using the feature management library with MVC, the `IFeatureManager` can be obtained through dependency injection.
 
