@@ -166,7 +166,6 @@ services.AddFeatureManagement(configuration.GetSection("MyFeatureFlags"));
 ```
 
 ### Scoped Feature Management Services
-By default, the feature manager and feature filters should be registered as singleton services by calling `AddFeatureManagement`.
 
 The `AddFeatureManagement` method adds feature management services as singletons within the application, but there are scenarios where it may be necessary for feature management services to be added as scoped services instead. For example, users may want to use feature filters which consume scoped services for context information. In this case, the `AddScopedFeatureManagement` method should be used instead. This will ensure that feature management services, including feature filters, are added as scoped services.
 
