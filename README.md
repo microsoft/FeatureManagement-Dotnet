@@ -154,10 +154,10 @@ using Microsoft.FeatureManagement;
 
 public class Startup
 {
-  public void ConfigureServices(IServiceCollection services)
-  {
-      services.AddFeatureManagement();
-  }
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddFeatureManagement();
+    }
 }
 ```
 
