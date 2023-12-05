@@ -28,8 +28,11 @@ Here are some of the benefits of using this library:
 * [Feature Flags](#feature-flags)
     * [Feature Filters](#feature-filters)
     * [Feature Flag Declaration](#feature-flag-declaration)
-    * [ASP.NET Core Integration](#ASPNET-Core-Integration)
-    * [Built-in Feature Filters](#built-in-Feature-Filters)
+* [Service Registration](#service-registration)
+* [ASP.NET Core Integration](#ASPNET-core-integration)
+* [Implement a Feature Filter](#implementing-a-feature-filter)
+    * [Providing a Context For Feature Evaluation](#providing-a-context-for-feature-evaluation)
+    * [Built-in Feature Filters](#built-in-feature-filters)
 * [Targeting](#targeting)
   * [Targeting Exclusion](#targeting-exclusion)
 * [Caching](#caching)
@@ -90,7 +93,7 @@ The `FeatureManagement` section of the json document is used by convention to lo
 
 **Advanced:** The usage of colon ':' in feature flag names is forbidden.
 
-### On/Off Declaration
+#### On/Off Declaration
  
 The following snippet demonstrates an alternative way to define a feature that can be used for on/off features. 
 ``` JavaScript
@@ -109,7 +112,7 @@ The following snippet demonstrates an alternative way to define a feature that c
 }
 ```
 
-### RequirementType
+#### RequirementType
 
 The `RequirementType` property of a feature flag is used to determine if the filters should use `Any` or `All` logic when evaluating the state of a feature. If `RequirementType` is not specified, the default value is `Any`.
 
@@ -141,7 +144,7 @@ A `RequirementType` of `All` changes the traversal. First, if there are no filte
 
 In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning all of it's filters must evaluate to true for the feature to be enabled. In this case, the feature will be enabled for 50% of users during the specified time window.
     
-### Service Registration
+## Service Registration
 
 Feature flags rely on .NET Core dependency injection. We can register the feature management services using standard conventions.
 
@@ -173,10 +176,12 @@ The `AddFeatureManagement` method adds feature management services as singletons
 services.AddScopedFeatureManagement();
 ```
 
-## Consumption
+### Consumption
+
 The simplest use case for feature flags is to do a conditional check for whether a feature is enabled to take different paths in code. The uses cases grow from there as the feature flag API begins to offer extensions into ASP.NET Core.
 
-### Feature Check
+#### Feature Check
+
 The basic form of feature management is checking if a feature is enabled and then performing actions based on the result. This is done through the `IFeatureManager`'s `IsEnabledAsync` method.
 
 ``` C#
@@ -189,7 +194,7 @@ if (await featureManager.IsEnabledAsync("FeatureX"))
 }
 ```
 
-### Dependency Injection
+#### Dependency Injection
 
 When using the feature management library with MVC, the `IFeatureManager` can be obtained through dependency injection.
 
@@ -206,9 +211,11 @@ public class HomeController : Controller
 ```
 
 ## ASP.NET Core Integration
+
 The feature management library provides functionality in ASP.NET Core and MVC to enable common feature flag scenarios in web applications. These capabilities are available by referencing the [Microsoft.FeatureManagement.AspNetCore](https://www.nuget.org/packages/Microsoft.FeatureManagement.AspNetCore/) NuGet package.
 
 ### Controllers and Actions
+
 MVC controller and actions can require that a given feature, or one of any list of features, be enabled in order to execute. This can be done by using a `FeatureGateAttribute`, which can be found in the `Microsoft.FeatureManagement.Mvc` namespace. 
 
 ``` C#
@@ -296,6 +303,7 @@ services.AddMvc(o =>
 The code above adds an MVC filter named `SomeMvcFilter`. This filter is only triggered within the MVC pipeline if the feature it specifies, "FeatureX", is enabled.
 
 ### Razor Pages
+
 MVC Razor pages can require that a given feature, or one of any list of features, be enabled in order to execute. This can be done by using a `FeatureGateAttribute`, which can be found in the `Microsoft.FeatureManagement.Mvc` namespace. 
 
 ``` C#
@@ -439,7 +447,7 @@ public void ConfigureServices(IServiceCollection services)
 **Advanced:** `IHttpContextAccessor`/`HttpContext` should not be used in the Razor components of server-side Blazor apps. [The recommended approach](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/server/interactive-server-side-rendering?view=aspnetcore-7.0#ihttpcontextaccessorhttpcontext-in-razor-components) for passing http context in Blazor apps is to copy the data into a scoped service. For Blazor apps, `AddScopedFeatureManagement` should be used to register the feature management services.
 Please refer to the `Scoped Feature Management Services` section for more details.
 
-## Providing a Context For Feature Evaluation
+### Providing a Context For Feature Evaluation
 
 In console applications there is no ambient context such as `HttpContext` that feature filters can acquire and utilize to check if a feature should be on or off. In this case, applications need to provide an object representing a context into the feature management system for use by feature filters. This is done by using `IFeatureManager.IsEnabledAsync<TContext>(string featureName, TContext appContext)`. The appContext object that is provided to the feature manager can be used by feature filters to evaluate the state of a feature.
 
@@ -481,6 +489,7 @@ We can see that the `AccountIdFilter` requires an object that implements `IAccou
 **Note:** Only a single feature filter interface can be implemented by a single type. Trying to add a feature filter that implements more than a single feature filter interface will result in an `ArgumentException`.
 
 ### Using Contextual and Non-contextual Filters With the Same Alias
+
 Filters of `IFeatureFilter` and `IContextualFeatureFilter` can share the same alias. Specifically, you can have one filter alias shared by 0 or 1 `IFeatureFilter` and 0 or N `IContextualFeatureFilter<ContextType>`, so long as there is at most one applicable filter for `ContextType`.
 
 The following passage describes the process of selecting a filter when contextual and non-contextual filters of the same name are registered in an application.
@@ -681,6 +690,7 @@ In the above example, the feature will be enabled for users named `Jeff` and `Al
 Feature state is provided by the IConfiguration system. Any caching and dynamic updating is expected to be handled by configuration providers. The feature manager asks IConfiguration for the latest value of a feature's state whenever a feature is checked to be enabled.
 
 ### Snapshot
+
 There are scenarios which require the state of a feature to remain consistent during the lifetime of a request. The values returned from the standard `IFeatureManager` may change if the `IConfiguration` source which it is pulling from is updated during the request. This can be prevented by using `IFeatureManagerSnapshot`. `IFeatureManagerSnapshot` can be retrieved in the same manner as `IFeatureManager`. `IFeatureManagerSnapshot` implements the interface of `IFeatureManager`, but it caches the first evaluated state of a feature during a request and will return the same state of a feature during its lifetime.
 
 ## Custom Feature Providers
