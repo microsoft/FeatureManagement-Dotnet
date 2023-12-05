@@ -615,7 +615,7 @@ services.AddFeatureManagement()
         .WithTargeting<HttpContextTargetingContextAccessor>();
 ```
 
-The targeting context accessor and `TargetingFilter` are registered by calling `WithTargeting<T>` on the `IFeatureManagementBuilder`. The targeting filters and `TargetingFilter` will be registered as the same type as the feature manager.
+The targeting context accessor and `TargetingFilter` are registered by calling `WithTargeting<T>` on the `IFeatureManagementBuilder`. The targeting context accessor and targeting filter will be registered as the same type as the feature manager.
 
 #### ITargetingContextAccessor
 
