@@ -28,12 +28,8 @@ Here are some of the benefits of using this library:
 * [Feature Flags](#feature-flags)
     * [Feature Filters](#feature-filters)
     * [Feature Flag Declaration](#feature-flag-declaration)
-    * [Service Registration](#service-registration)
-    * [Consumption](#consumption)
-* [ASP.NET Core Integration](#ASPNET-core-tntegration)
-* [Implement a Feature Filter](#implementing-a-feature-filter)
-    * [Providing a Context For Feature Evaluation](#providing-a-context-for-feature-evaluation)
-    * [Built-in Feature Filters](#built-in-feature-filters)
+    * [ASP.NET Core Integration](#ASPNET-Core-Integration)
+    * [Built-in Feature Filters](#built-in-Feature-Filters)
 * [Targeting](#targeting)
   * [Targeting Exclusion](#targeting-exclusion)
 * [Caching](#caching)
@@ -94,7 +90,7 @@ The `FeatureManagement` section of the json document is used by convention to lo
 
 **Advanced:** The usage of colon ':' in feature flag names is forbidden.
 
-#### On/Off Declaration
+### On/Off Declaration
  
 The following snippet demonstrates an alternative way to define a feature that can be used for on/off features. 
 ``` JavaScript
@@ -113,7 +109,7 @@ The following snippet demonstrates an alternative way to define a feature that c
 }
 ```
 
-#### RequirementType
+### RequirementType
 
 The `RequirementType` property of a feature flag is used to determine if the filters should use `Any` or `All` logic when evaluating the state of a feature. If `RequirementType` is not specified, the default value is `Any`.
 
@@ -177,10 +173,10 @@ There are scenarios that feature filters are not necessarily be singleton. For e
 services.AddScopedFeatureManagement();
 ```
 
-### Consumption
+## Consumption
 The simplest use case for feature flags is to do a conditional check for whether a feature is enabled to take different paths in code. The uses cases grow from there as the feature flag API begins to offer extensions into ASP.NET Core.
 
-#### Feature Check
+### Feature Check
 The basic form of feature management is checking if a feature is enabled and then performing actions based on the result. This is done through the `IFeatureManager`'s `IsEnabledAsync` method.
 
 ``` C#
@@ -193,7 +189,7 @@ if (await featureManager.IsEnabledAsync("FeatureX"))
 }
 ```
 
-#### Dependency Injection
+### Dependency Injection
 
 When using the feature management library with MVC, the `IFeatureManager` can be obtained through dependency injection.
 
@@ -446,7 +442,7 @@ public void ConfigureServices(IServiceCollection services)
 **Advanced:** `IHttpContextAccessor`/`HttpContext` should not be used in the Razor components of server-side Blazor apps. [The recommended approach](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/server/interactive-server-side-rendering?view=aspnetcore-7.0#ihttpcontextaccessorhttpcontext-in-razor-components) for passing http context in Blazor apps is to copy the data into a scoped service. For Blazor apps, `AddScopedFeatureManagement` should be used to register the feature management services.
 Please refer to the `Scoped Feature Management Services` section for more details.
 
-### Providing a Context For Feature Evaluation
+## Providing a Context For Feature Evaluation
 
 In console applications there is no ambient context such as `HttpContext` that feature filters can acquire and utilize to check if a feature should be on or off. In this case, applications need to provide an object representing a context into the feature management system for use by feature filters. This is done by using `IFeatureManager.IsEnabledAsync<TContext>(string featureName, TContext appContext)`. The appContext object that is provided to the feature manager can be used by feature filters to evaluate the state of a feature.
 
