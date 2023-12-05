@@ -625,11 +625,11 @@ An example that extracts targeting context information from the application's HT
 
 ### Targeting in a Console Application
 
-The targeting filter relies on a targeting context to evaluate whether a feature should be turned on. This targeting context contains information such as what user is currently being evaluated, and what groups the user in. In console applications there is typically no ambient context available to flow this information in to the targeting filter, thus it must be passed directly when `FeatureManager.IsEnabledAsync` is called. This is supported through the use of the `ContextualTargetingFilter`. Applications that need to float the targeting context into the feature manager should use this instead of the `TargetingFilter.`
+The targeting filter relies on a targeting context to evaluate whether a feature should be turned on. This targeting context contains information such as what user is currently being evaluated, and what groups the user in. In console applications there is typically no ambient context available to flow this information in to the targeting filter, thus it must be passed directly when `FeatureManager.IsEnabledAsync` is called. This is supported through the use of the `ContextualTargetingFilter`.
 
 Since `ContextualTargetingFilter` is an [`IContextualTargetingFilter<ITargetingContext>`](./README.md#Contextual-Feature-Filters), an implementation of `ITargetingContext` must be passed in to `IFeatureManager.IsEnabledAsync` for it to be able to evaluate and turn a feature on.
 
-```
+``` C#
 IFeatureManager fm;
 …
 // userId and groups defined somewhere earlier in application
@@ -650,7 +650,7 @@ An example that uses the `ContextualTargetingFilter` in a console application is
 
 Options are available to customize how targeting evaluation is performed across all features. These options can be configured when setting up feature management.
 
-```
+``` C#
 services.Configure<TargetingEvaluationOptions>(options =>
 {
     options.IgnoreCase = true;
@@ -660,7 +660,7 @@ services.Configure<TargetingEvaluationOptions>(options =>
 ### Targeting Exclusion
 
 When defining an Audience, users and groups can be excluded from the audience. This is useful when a feature is being rolled out to a group of users, but a few users or groups need to be excluded from the rollout. Exclusion is defined by adding a list of users and groups to the `Exclusion` property of the audience.
-```
+``` JavaScript
 "Audience": {
     "Users": [
         "Jeff",
@@ -696,7 +696,7 @@ Implementing a custom feature provider enable developers to pull feature flags f
 
 To customize the loading of feature definitions, one must implement the `IFeatureDefinitionProvider` interface.
 
-```
+``` C#
 public interface IFeatureDefinitionProvider
 {
     Task<FeatureDefinition> GetFeatureDefinitionAsync(string featureName);
@@ -707,7 +707,7 @@ public interface IFeatureDefinitionProvider
 
 To use an implementation of `IFeatureDefinitionProvider` it must be added into the service collection before adding feature management. The following example adds an implementation of `IFeatureDefinitionProvider` named `InMemoryFeatureDefinitionProvider`.
 
-```
+``` C#
 services.AddSingleton<IFeatureDefinitionProvider, InMemoryFeatureDefinitionProvider>()
         .AddFeatureManagement()
 ```
