@@ -28,8 +28,12 @@ Here are some of the benefits of using this library:
 * [Feature Flags](#feature-flags)
     * [Feature Filters](#feature-filters)
     * [Feature Flag Declaration](#feature-flag-declaration)
-    * [ASP.NET Core Integration](#ASPNET-Core-Integration)
-    * [Built-in Feature Filters](#built-in-Feature-Filters)
+    * [Service Registration](#service-registration)
+    * [Consumption](#consumption)
+* [ASP.NET Core Integration](#ASPNET-core-tntegration)
+* [Implement a Feature Filter](#implementing-a-feature-filter)
+    * [Providing a Context For Feature Evaluation](#providing-a-context-for-feature-evaluation)
+    * [Built-in Feature Filters](#built-in-feature-filters)
 * [Targeting](#targeting)
   * [Targeting Exclusion](#targeting-exclusion)
 * [Caching](#caching)
@@ -141,9 +145,9 @@ A `RequirementType` of `All` changes the traversal. First, if there are no filte
 
 In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning all of it's filters must evaluate to true for the feature to be enabled. In this case, the feature will be enabled for 50% of users during the specified time window.
     
-## Service Registration
+### Service Registration
 
-Feature flags rely on .NET Core dependency injection. We can register the feature management services using standard conventions. By default, the feature manager and feature filters should be registered as singleton services by calling `AddFeatureManagement`.
+Feature flags rely on .NET Core dependency injection. We can register the feature management services using standard conventions.
 
 ``` C#
 using Microsoft.FeatureManagement;
@@ -160,17 +164,19 @@ public class Startup
 
 This tells the feature manager to use the "FeatureManagement" section from the configuration for feature flag settings. It also registers a customized feature filter `MyCriteriaFilter`. Please refer to the `Implementing a Feature Filter` section below for more details.
 
-You can also specify that feature management configuration should be retrieved from a different configuration section by calling configuration.GetSection and passing in the name of the desired section. The following example tells the feature manager to read from a different section called "MyFeatureFlags" instead:
+By default, the feature manager retrieves feature flag configuration from the "FeatureManagement" section of the .NET Core configuration data. If the "FeatureManagement" section does not exist, the configuration will be considered empty.
+
+You can also specify that feature flag configuration should be retrieved from a different configuration section by calling configuration.GetSection and passing in the name of the desired section. The following example tells the feature manager to read from a different section called "MyFeatureFlags" instead:
 ``` C#
 …
 services.AddFeatureManagement(configuration.GetSection("MyFeatureFlags"));
 …
 ```
 
-**Advanced:** By default, the feature manager retrieves feature flag configuration from the "FeatureManagement" section of the .NET Core configuration data. If the "FeatureManagement" section does not exist, the configuration will be considered empty. When a specific configuration section is provided to `AddFeatureManagement()`, the feature manager will fall back to the root of that configuration section to look for feature definitions, if there is no "FeatureManagement" section found. 
-
 ### Scoped Feature Management Services
-There are scenarios that feature filters are not necessarily be singleton ([#15](https://github.com/microsoft/FeatureManagement-Dotnet/issues/15), [#258](https://github.com/microsoft/FeatureManagement-Dotnet/issues/258)). For example, users may want to use feature filters which consume scoped services for context information. In this case, the feature management should be registered as scoped by calling `AddScopedFeatureManagement`.
+By default, the feature manager and feature filters should be registered as singleton services by calling `AddFeatureManagement`.
+
+There are scenarios that feature filters are not necessarily be singleton. For example, users may want to use feature filters which consume scoped services for context information. In this case, the feature management should be registered as scoped by calling `AddScopedFeatureManagement`.
 
 This example demonstrates how to register feature manager and feature filters as scoped services to allow the feature filter `MyCriteriaFilter` to consume the scoped context provider service `MyContextProvider`.
 ``` C#
@@ -194,7 +200,7 @@ services.AddScoped<IContextProvider, MyContextProvider>();
 …
 ```
 
-## Consumption
+### Consumption
 The simplest use case for feature flags is to do a conditional check for whether a feature is enabled to take different paths in code. The uses cases grow from there as the feature flag API begins to offer extensions into ASP.NET Core.
 
 ### Feature Check
@@ -364,9 +370,11 @@ services.AddFeatureManagement()
         .AddFeatureFilter<MySecondCriteriaFilter>();
 ```
 
-Feature filters are registered by calling `AddFeatureFilter<T>` on the `IFeatureManagementBuilder` returned from `AddFeatureManagement`/`AddScopedFeatureManagement`. The feature filters will be registered as the same type as the feature manager. For instance, if the feature manager is registered as a singleton, feature filters will also be registered as singletons. Feature filters have access to the services that exist within the service collection that was used to add feature flags. Dependency injection can be used to retrieve these services.
+Feature filters are registered by calling `AddFeatureFilter<T>` on the `IFeatureManagementBuilder` returned from `AddFeatureManagement`. These feature filters have access to the services that exist within the service collection that was used to add feature flags. Dependency injection can be used to retrieve these services.
 
 **Note:** When filters are referenced in feature flag settings (e.g. appsettings.json), the _Filter_ part of the type name should be omitted. Please refer to the `Filter Alias Attribute` section below for more details.
+
+**Advanced:** The feature filters will be registered as the same type as the feature manager. For instance, if the feature manager is registered as scoped after calling `AddScopedFeatureManagement`, as the consequence, feature filters will also be registered as scoped.
 
 ### Parameterized Feature Filters
 
@@ -461,7 +469,7 @@ public void ConfigureServices(IServiceCollection services)
 **Advanced:** `IHttpContextAccessor`/`HttpContext` should not be used in the Razor components of server-side Blazor apps. [The recommended approach](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/server/interactive-server-side-rendering?view=aspnetcore-7.0#ihttpcontextaccessorhttpcontext-in-razor-components) for passing http context in Blazor apps is to copy the data into a scoped service. For Blazor apps, `AddScopedFeatureManagement` should be used to register the feature management services.
 Please refer to the `Scoped Feature Management Services` section for more details.
 
-## Providing a Context For Feature Evaluation
+### Providing a Context For Feature Evaluation
 
 In console applications there is no ambient context such as `HttpContext` that feature filters can acquire and utilize to check if a feature should be on or off. In this case, applications need to provide an object representing a context into the feature management system for use by feature filters. This is done by using `IFeatureManager.IsEnabledAsync<TContext>(string featureName, TContext appContext)`. The appContext object that is provided to the feature manager can be used by feature filters to evaluate the state of a feature.
 
@@ -518,7 +526,7 @@ If all of three filters are registered:
 
 ### Built-In Feature Filters
 
-There a few feature filters that come with the `Microsoft.FeatureManagement` package: `PercentageFilter`, `TimeWindowFilter`, `ContextualTargetingFilter` and `TargetingFilter`. All filters, except for the `TargetingFilter`, are added automatically when calling `AddFeatureManagement`/`AddScopedFeatureManagement`. The `TargetingFilter` is added with the `WithTargeting` method that is detailed in the `Targeting` section below.
+There a few feature filters that come with the `Microsoft.FeatureManagement` package: `PercentageFilter`, `TimeWindowFilter`, `ContextualTargetingFilter` and `TargetingFilter`. All filters, except for the `TargetingFilter`, are added automatically when feature management is registered. The `TargetingFilter` is added with the `WithTargeting` method that is detailed in the `Targeting` section below.
 
 Each of the built-in feature filters have their own parameters. Here is the list of feature filters along with examples.
 
@@ -626,8 +634,7 @@ To begin using the `TargetingFilter` in an application it must be added to the a
 The implementation type used for the `ITargetingContextAccessor` service must be implemented by the application that is using the targeting filter. Here is an example setting up feature management in a web application to use the `TargetingFilter` with an implementation of `ITargetingContextAccessor` called `HttpContextTargetingContextAccessor`.
 
 ``` C#
-services.AddFeatureManagement();
-        .AddFeatureFilter<BrowserFilter>()
+services.AddFeatureManagement()
         .WithTargeting<HttpContextTargetingContextAccessor>();
 ```
 
@@ -703,7 +710,8 @@ In the above example, the feature will be enabled for users named `Jeff` and `Al
 
 Feature state is provided by the IConfiguration system. Any caching and dynamic updating is expected to be handled by configuration providers. The feature manager asks IConfiguration for the latest value of a feature's state whenever a feature is checked to be enabled.
 
-### Snapshot
+##
+ Snapshot
 There are scenarios which require the state of a feature to remain consistent during the lifetime of a request. The values returned from the standard `IFeatureManager` may change if the `IConfiguration` source which it is pulling from is updated during the request. This can be prevented by using `IFeatureManagerSnapshot`. `IFeatureManagerSnapshot` can be retrieved in the same manner as `IFeatureManager`. `IFeatureManagerSnapshot` implements the interface of `IFeatureManager`, but it caches the first evaluated state of a feature during a request and will return the same state of a feature during its lifetime.
 
 ## Custom Feature Providers
