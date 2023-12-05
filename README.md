@@ -156,48 +156,25 @@ public class Startup
 {
   public void ConfigureServices(IServiceCollection services)
   {
-      services.AddFeatureManagement()
-              .AddFeatureFilter<MyCriteriaFilter>();
+      services.AddFeatureManagement();
   }
 }
 ```
-
-This tells the feature manager to use the "FeatureManagement" section from the configuration for feature flag settings. It also registers a customized feature filter `MyCriteriaFilter`. Please refer to the `Implementing a Feature Filter` section below for more details.
 
 By default, the feature manager retrieves feature flag configuration from the "FeatureManagement" section of the .NET Core configuration data. If the "FeatureManagement" section does not exist, the configuration will be considered empty.
 
 You can also specify that feature flag configuration should be retrieved from a different configuration section by calling configuration.GetSection and passing in the name of the desired section. The following example tells the feature manager to read from a different section called "MyFeatureFlags" instead:
 ``` C#
-…
 services.AddFeatureManagement(configuration.GetSection("MyFeatureFlags"));
-…
 ```
 
 ### Scoped Feature Management Services
 By default, the feature manager and feature filters should be registered as singleton services by calling `AddFeatureManagement`.
 
-There are scenarios that feature filters are not necessarily be singleton. For example, users may want to use feature filters which consume scoped services for context information. In this case, the feature management should be registered as scoped by calling `AddScopedFeatureManagement`.
-
-This example demonstrates how to register feature manager and feature filters as scoped services to allow the feature filter `MyCriteriaFilter` to consume the scoped context provider service `MyContextProvider`.
-``` C#
-public class MyCriteriaFilter : IFeatureFilter
-{
-    private readonly IContextProvider _contextProvider;
-
-    public MyCriteriaFilter(IContextProvider contextProvider)
-    {
-        _contextProvider = contextProvider;
-    }
-}
-```
+There are scenarios that feature filters are not necessarily be singleton. For example, users may want to use feature filters which consume scoped services for context information. In this case, the feature manager and feature filters should be registered as scoped services by calling `AddScopedFeatureManagement`:
 
 ``` C#
-…
-services.AddScopedFeatureManagement()
-        .AddFeatureFilter<MyCriteriaFilter>();
-
-services.AddScoped<IContextProvider, MyContextProvider>();
-…
+services.AddScopedFeatureManagement();
 ```
 
 ### Consumption
