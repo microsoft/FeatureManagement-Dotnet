@@ -26,7 +26,8 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
-        private int _schemaSet = 0;
+        private bool _schemaSet;
+        private readonly object _lock = new object();
         private bool _azureAppConfigurationFeatureFlagSchemaEnabled;
 
         /// <summary>
@@ -346,50 +347,89 @@ namespace Microsoft.FeatureManagement
             };
         }
 
-        private IEnumerable<IConfigurationSection> GetFeatureDefinitionSections()
-        {
-            IConfigurationSection featureManagementConfigurationSection = _configuration.GetSection(ConfigurationFields.FeatureManagementSectionName);
-
-            if (!featureManagementConfigurationSection.Exists())
-            {
-                if (!RootConfigurationFallbackEnabled)
-                {
-                    Logger?.LogDebug($"No configuration section named '{ConfigurationFields.FeatureManagementSectionName}' was found.");
-
-                    return Enumerable.Empty<IConfigurationSection>();
-                }
-
-                featureManagementConfigurationSection = (IConfigurationSection)_configuration;
-            }
-
-            IConfigurationSection featureFlagsConfigurationSection = featureManagementConfigurationSection.GetSection(AzureAppConfigurationFeatureFlagFields.FeatureFlagsSectionName);
-
-            //
-            // "FeatureFlag" section should be an array if Azure App Configuration feature flag schema is enabled
-            if (Interlocked.Exchange(ref _schemaSet, 1) != 1)
-            {
-                _azureAppConfigurationFeatureFlagSchemaEnabled = featureFlagsConfigurationSection.Exists() &&
-                    string.IsNullOrEmpty(featureFlagsConfigurationSection.Value) &&
-                    featureFlagsConfigurationSection.GetChildren()
-                        .All(section => int.TryParse(section.Key, out int _));
-            }
-
-            if (_azureAppConfigurationFeatureFlagSchemaEnabled)
-            {
-                return featureFlagsConfigurationSection.GetChildren();
-            }
-
-            return featureManagementConfigurationSection.GetChildren();
-        }
-
         private string GetFeatureFlagSectionName(IConfigurationSection section)
         {
             if (_azureAppConfigurationFeatureFlagSchemaEnabled)
             {
                 return section[AzureAppConfigurationFeatureFlagFields.Id];
             }
-                
+
             return section.Key;
+        }
+
+        private IEnumerable<IConfigurationSection> GetFeatureDefinitionSections()
+        {
+            bool hasFeatureManagementSection = _configuration.GetChildren()
+                .Any(section => string.Equals(section.Key, ConfigurationFields.FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase));
+
+            IConfiguration featureManagementConfigurationSection = _configuration.GetSection(ConfigurationFields.FeatureManagementSectionName);
+
+            if (!hasFeatureManagementSection)
+            {
+                if (!RootConfigurationFallbackEnabled)
+                {
+                    Logger?.LogDebug($"No configuration section named '{ConfigurationFields.FeatureManagementSectionName}' was found.");
+
+                    return Enumerable.Empty<IConfigurationSection>();
+                } 
+                
+                if (!_configuration.GetChildren().Any())
+                {
+                    Logger?.LogDebug($"Configuration is empty.");
+
+                    return Enumerable.Empty<IConfigurationSection>();
+                }
+
+                featureManagementConfigurationSection = _configuration;
+            }
+
+            lock(_lock)
+            {
+                if (!_schemaSet)
+                {
+                    _azureAppConfigurationFeatureFlagSchemaEnabled = HasAzureAppConfigurationFeatureFlagSchema(featureManagementConfigurationSection);
+
+                    _schemaSet = true;
+                }
+            }
+
+            if (_azureAppConfigurationFeatureFlagSchemaEnabled)
+            {
+                IConfigurationSection featureFlagsConfigurationSection = featureManagementConfigurationSection.GetSection(AzureAppConfigurationFeatureFlagFields.FeatureFlagsSectionName);
+
+                return featureFlagsConfigurationSection.GetChildren();
+            }
+
+            return featureManagementConfigurationSection.GetChildren();
+        }
+
+        private static bool HasAzureAppConfigurationFeatureFlagSchema(IConfiguration featureManagementConfiguration)
+        {
+            bool hasFeatureFlagsSection = featureManagementConfiguration.GetChildren()
+                .Any(section => string.Equals(section.Key, AzureAppConfigurationFeatureFlagFields.FeatureFlagsSectionName, StringComparison.OrdinalIgnoreCase));
+
+            if (hasFeatureFlagsSection)
+            {
+                IConfigurationSection featureFlagsConfigurationSection = featureManagementConfiguration.GetSection(AzureAppConfigurationFeatureFlagFields.FeatureFlagsSectionName);
+
+                //
+                // FeatureFlags section is on/off declaration
+                if (!string.IsNullOrEmpty(featureFlagsConfigurationSection.Value))
+                {
+                    return false;
+                }
+
+                //
+                // FeatureFlags section is an array
+                return featureFlagsConfigurationSection.GetChildren()
+                    .All(section => int.TryParse(section.Key, out int _));
+            }
+
+            //
+            // Empty feature management configuration will be considered as using default schema
+            return featureManagementConfiguration.GetChildren().Any() &&
+                featureManagementConfiguration.GetChildren()
+                    .All(section => int.TryParse(section.Key, out int _));
         }
     }
 }
