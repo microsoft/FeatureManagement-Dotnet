@@ -869,6 +869,8 @@ builder.services
     .AddTelemetryPublisher<ApplicationInsightsTelemetryPublisher>();
 ```
 
+**Note:** The base `Microsoft.FeatureManagement` package does not include this telemetry publisher.
+
 An example of its usage can be found in the [EvaluationDataToApplicationInsights](./examples/EvaluationDataToApplicationInsights) example.
 
 #### Prerequisite
