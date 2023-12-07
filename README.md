@@ -34,9 +34,9 @@ Here are some of the benefits of using this library:
   * [Targeting Exclusion](#targeting-exclusion)
 * [Variants](#variants)
 * [Telemetry](#telemetry)
-    * [Application Insights Telemetry Publisher](#application-insights-telemetry-publisher)
-    * [Custom Telemetry Publishers](#custom-telemetry-publishers)
     * [Enabling Telemetry](#enabling-telemetry)
+    * [Custom Telemetry Publishers](#custom-telemetry-publishers)
+    * [Application Insights Telemetry Publisher](#application-insights-telemetry-publisher)
 * [Caching](#caching)
 * [Custom Feature Providers](#custom-feature-providers)
 
@@ -805,7 +805,7 @@ In the above example, the feature is enabled by the `AlwaysOn` filter. If the cu
 
 ## Telemetry
 
-When a feature flag changed is deployed, it is often important to analyze its affect on an application. For example here are a few questions that may arise:
+When a feature flag change is deployed, it is often important to analyze its effect on an application. For example, here are a few questions that may arise:
 
 * Are my flags enabled/disabled as expected?
 * Are targeted users getting access to a certain feature as expected?
@@ -813,46 +813,9 @@ When a feature flag changed is deployed, it is often important to analyze its af
 
 These types of questions can be answered through the emission and analysis of feature flag evaluation events. This library supports emitting these events through telemetry publishers. One or many telemetry publishers can be registered to publish events whenever feature flags are evaluated.
 
-### Application Insights Telemetry Publisher
-
-This library provides a built-in telemetry publisher implementation that sends feature flag evaluation data to Application Insights. To take advantage of this, the `Microsoft.FeatureManagement.Telemetry.ApplicationInsights` package must be referenced. At that point, the Application Insights telemetry publisher can be registered.
-
-```
-builder.services
-    .AddFeatureManagement()
-    .AddTelemetryPublisher<ApplicationInsightsTelemetryPublisher>();
-```
-
-An example of its usage can be found in the [EvaluationDataToApplicationInsights](./examples/EvaluationDataToApplicationInsights) example.
-
-#### Prerequisite
-
-This telemetry publisher depends on Application Insights already being [setup](https://learn.microsoft.com/azure/azure-monitor/app/asp-net-core#enable-application-insights-server-side-telemetry-no-visual-studio) and registered as an application service. For example, that is done [here](https://github.com/microsoft/FeatureManagement-Dotnet/blob/f125d32a395f560d8d13d50d7f11a69d6ca78499/examples/EvaluationDataToApplicationInsights/Program.cs#L20C9-L20C17) in the example application.
-
-### Custom Telemetry Publishers
-
-By implementing an `ITelemetryPublisher`` and registering it in the feature manager, telemetry data on feature flag evaluations can be collected from the application.
-
-```
-public interface ITelemetryPublisher
-{
-    public ValueTask PublishEvent(EvaluationEvent evaluationEvent, CancellationToken cancellationToken);
-}
-```
-
-The `EvaluationEvent` type can be found [here](./src/Microsoft.FeatureManagement/Telemetry/EvaluationEvent.cs) for reference.
-
-Registering telemetry publishers is done when registering feature management.
-
-```
-builder.services
-    .AddFeatureManagement()
-    .AddTelemetryPublisher<MyTelemetryPublisher>();
-```
-
 ### Enabling Telemetry
 
-By default, feature flags will not have telemetry emitted. To publish telemetry for a given feature flag the flag MUST declare that it is enabled for telemetry emission.
+By default, feature flags will not have telemetry emitted. To publish telemetry for a given feature flag, the flag *MUST* declare that it is enabled for telemetry emission.
 
 For flags defined in `appsettings.json`, that is done by using the `TelemetryEnabled` property on feature flags. The value of this property must be `true` to publish telemetry for the flag.
 
@@ -874,6 +837,43 @@ For flags defined in `appsettings.json`, that is done by using the `TelemetryEna
 ```
 
 The appsettings snippet above defines a flag named `MyFlag` that is enabled for telemetry.
+
+### Custom Telemetry Publishers
+
+Custom handling of feature flag telemetry is made possible by implementing an `ITelemetryPublisher` and registering it in the feature manager. Whenever a feature flag that has telemetry enabled is evaluated the registered telemetry publisher will get a chance to publish the corresponding evaluation event.
+
+``` C#
+public interface ITelemetryPublisher
+{
+    ValueTask PublishEvent(EvaluationEvent evaluationEvent, CancellationToken cancellationToken);
+}
+```
+
+The `EvaluationEvent` type can be found [here](./src/Microsoft.FeatureManagement/Telemetry/EvaluationEvent.cs) for reference.
+
+Registering telemetry publishers is done when calling `AddFeatureManagement()`. Here is an example setting up feature management to emit telemetry with an implementation of `ITelemetryPublisher` called `MyTelemetryPublisher`.
+
+``` C#
+builder.services
+    .AddFeatureManagement()
+    .AddTelemetryPublisher<MyTelemetryPublisher>();
+```
+
+### Application Insights Telemetry Publisher
+
+The `Microsoft.FeatureManagement.Telemetry.ApplicationInsights` package provides a built-in telemetry publisher implementation that sends feature flag evaluation data to [Application Insights](https://learn.microsoft.com/en-us/azure/azure-monitor/app/app-insights-overview). To take advantage of this, add a reference to the package and register the Application Insights telemetry publisher as shown below.
+
+``` C#
+builder.services
+    .AddFeatureManagement()
+    .AddTelemetryPublisher<ApplicationInsightsTelemetryPublisher>();
+```
+
+An example of its usage can be found in the [EvaluationDataToApplicationInsights](./examples/EvaluationDataToApplicationInsights) example.
+
+#### Prerequisite
+
+This telemetry publisher depends on Application Insights already being [setup](https://learn.microsoft.com/azure/azure-monitor/app/asp-net-core#enable-application-insights-server-side-telemetry-no-visual-studio) and registered as an application service. For example, that is done [here](https://github.com/microsoft/FeatureManagement-Dotnet/blob/f125d32a395f560d8d13d50d7f11a69d6ca78499/examples/EvaluationDataToApplicationInsights/Program.cs#L20C9-L20C17) in the example application.
 
 ## Caching
 
