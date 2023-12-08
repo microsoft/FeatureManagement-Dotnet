@@ -809,7 +809,8 @@ When a feature flag change is deployed, it is often important to analyze its eff
 
 * Are my flags enabled/disabled as expected?
 * Are targeted users getting access to a certain feature as expected?
-* What variant is a particular user seeing?
+* Which variant is a particular user seeing?
+
 
 These types of questions can be answered through the emission and analysis of feature flag evaluation events. This library supports emitting these events through telemetry publishers. One or many telemetry publishers can be registered to publish events whenever feature flags are evaluated.
 
