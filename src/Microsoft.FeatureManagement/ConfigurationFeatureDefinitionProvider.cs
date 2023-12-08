@@ -26,8 +26,7 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
-        private bool _schemaSet;
-        private readonly object _lock = new object();
+        private int _schemaSet = 0;
         private bool _azureAppConfigurationFeatureFlagSchemaEnabled;
 
         /// <summary>
@@ -81,6 +80,8 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentException($"The value '{ConfigurationPath.KeyDelimiter}' is not allowed in the feature name.", nameof(featureName));
             }
 
+            EnsureInit();
+
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
                 _definitions.Clear();
@@ -104,6 +105,8 @@ namespace Microsoft.FeatureManagement
         public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998
         {
+            EnsureInit();
+
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
                 _definitions.Clear();
@@ -123,6 +126,40 @@ namespace Microsoft.FeatureManagement
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
                 yield return  _definitions.GetOrAdd(featureName, (_) => ReadFeatureDefinition(featureSection));
+            }
+        }
+
+        private void EnsureInit()
+        {
+            if (!_configuration.GetChildren().Any())
+            {
+                Logger?.LogDebug($"Configuration is empty.");
+
+                return;
+            }
+
+            bool hasFeatureManagementSection = _configuration.GetChildren()
+                .Any(section => string.Equals(section.Key, ConfigurationFields.FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase));
+
+            if (!hasFeatureManagementSection && !RootConfigurationFallbackEnabled)
+            {
+                Logger?.LogDebug($"No configuration section named '{ConfigurationFields.FeatureManagementSectionName}' was found.");
+
+                return;
+            }
+
+            if (_schemaSet == 0)
+            {
+                IConfiguration featureManagementConfigurationSection = hasFeatureManagementSection ?
+                    _configuration.GetSection(ConfigurationFields.FeatureManagementSectionName) :
+                    _configuration;
+
+                bool hasAzureAppConfigurationFeatureFlagSchema = HasAzureAppConfigurationFeatureFlagSchema(featureManagementConfigurationSection);
+
+                if (Interlocked.Exchange(ref _schemaSet, 1) != 1)
+                {
+                    _azureAppConfigurationFeatureFlagSchemaEnabled = hasAzureAppConfigurationFeatureFlagSchema;
+                }
             }
         }
 
@@ -359,45 +396,23 @@ namespace Microsoft.FeatureManagement
 
         private IEnumerable<IConfigurationSection> GetFeatureDefinitionSections()
         {
+            if (_schemaSet == 0)
+            {
+                return Enumerable.Empty<IConfigurationSection>();
+            }
+
             bool hasFeatureManagementSection = _configuration.GetChildren()
                 .Any(section => string.Equals(section.Key, ConfigurationFields.FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase));
 
-            IConfiguration featureManagementConfigurationSection = _configuration.GetSection(ConfigurationFields.FeatureManagementSectionName);
-
-            if (!hasFeatureManagementSection)
-            {
-                if (!RootConfigurationFallbackEnabled)
-                {
-                    Logger?.LogDebug($"No configuration section named '{ConfigurationFields.FeatureManagementSectionName}' was found.");
-
-                    return Enumerable.Empty<IConfigurationSection>();
-                } 
-                
-                if (!_configuration.GetChildren().Any())
-                {
-                    Logger?.LogDebug($"Configuration is empty.");
-
-                    return Enumerable.Empty<IConfigurationSection>();
-                }
-
-                featureManagementConfigurationSection = _configuration;
-            }
-
-            lock(_lock)
-            {
-                if (!_schemaSet)
-                {
-                    _azureAppConfigurationFeatureFlagSchemaEnabled = HasAzureAppConfigurationFeatureFlagSchema(featureManagementConfigurationSection);
-
-                    _schemaSet = true;
-                }
-            }
+            IConfiguration featureManagementConfigurationSection = hasFeatureManagementSection ?
+                _configuration.GetSection(ConfigurationFields.FeatureManagementSectionName) :
+                _configuration;
 
             if (_azureAppConfigurationFeatureFlagSchemaEnabled)
             {
-                IConfigurationSection featureFlagsConfigurationSection = featureManagementConfigurationSection.GetSection(AzureAppConfigurationFeatureFlagFields.FeatureFlagsSectionName);
+                IConfigurationSection featureFlagsSection = featureManagementConfigurationSection.GetSection(AzureAppConfigurationFeatureFlagFields.FeatureFlagsSectionName);
 
-                return featureFlagsConfigurationSection.GetChildren();
+                return featureFlagsSection.GetChildren();
             }
 
             return featureManagementConfigurationSection.GetChildren();
@@ -413,23 +428,13 @@ namespace Microsoft.FeatureManagement
                 IConfigurationSection featureFlagsConfigurationSection = featureManagementConfiguration.GetSection(AzureAppConfigurationFeatureFlagFields.FeatureFlagsSectionName);
 
                 //
-                // FeatureFlags section is on/off declaration
-                if (!string.IsNullOrEmpty(featureFlagsConfigurationSection.Value))
-                {
-                    return false;
-                }
-
-                //
                 // FeatureFlags section is an array
-                return featureFlagsConfigurationSection.GetChildren()
-                    .All(section => int.TryParse(section.Key, out int _));
+                return string.IsNullOrEmpty(featureFlagsConfigurationSection.Value) && 
+                    featureFlagsConfigurationSection.GetChildren()
+                        .All(section => int.TryParse(section.Key, out int _));
             }
 
-            //
-            // Empty feature management configuration will be considered as using default schema
-            return featureManagementConfiguration.GetChildren().Any() &&
-                featureManagementConfiguration.GetChildren()
-                    .All(section => int.TryParse(section.Key, out int _));
+            return false;
         }
     }
 }
