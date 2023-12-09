@@ -26,7 +26,7 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
-        private int _schemaSet = 0;
+        private int _initialized = 0;
         private bool _azureAppConfigurationFeatureFlagSchemaEnabled;
 
         /// <summary>
@@ -134,8 +134,6 @@ namespace Microsoft.FeatureManagement
             if (!_configuration.GetChildren().Any())
             {
                 Logger?.LogDebug($"Configuration is empty.");
-
-                return;
             }
 
             bool hasFeatureManagementSection = _configuration.GetChildren()
@@ -144,11 +142,9 @@ namespace Microsoft.FeatureManagement
             if (!hasFeatureManagementSection && !RootConfigurationFallbackEnabled)
             {
                 Logger?.LogDebug($"No configuration section named '{ConfigurationFields.FeatureManagementSectionName}' was found.");
-
-                return;
             }
 
-            if (_schemaSet == 0)
+            if (_initialized == 0)
             {
                 IConfiguration featureManagementConfigurationSection = hasFeatureManagementSection ?
                     _configuration.GetSection(ConfigurationFields.FeatureManagementSectionName) :
@@ -156,7 +152,7 @@ namespace Microsoft.FeatureManagement
 
                 bool hasAzureAppConfigurationFeatureFlagSchema = HasAzureAppConfigurationFeatureFlagSchema(featureManagementConfigurationSection);
 
-                if (Interlocked.Exchange(ref _schemaSet, 1) != 1)
+                if (Interlocked.Exchange(ref _initialized, 1) != 1)
                 {
                     _azureAppConfigurationFeatureFlagSchemaEnabled = hasAzureAppConfigurationFeatureFlagSchema;
                 }
@@ -396,13 +392,18 @@ namespace Microsoft.FeatureManagement
 
         private IEnumerable<IConfigurationSection> GetFeatureDefinitionSections()
         {
-            if (_schemaSet == 0)
+            if (!_configuration.GetChildren().Any())
             {
                 return Enumerable.Empty<IConfigurationSection>();
             }
 
             bool hasFeatureManagementSection = _configuration.GetChildren()
                 .Any(section => string.Equals(section.Key, ConfigurationFields.FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase));
+
+            if (!hasFeatureManagementSection && !RootConfigurationFallbackEnabled)
+            {
+                return Enumerable.Empty<IConfigurationSection>();
+            }
 
             IConfiguration featureManagementConfigurationSection = hasFeatureManagementSection ?
                 _configuration.GetSection(ConfigurationFields.FeatureManagementSectionName) :
