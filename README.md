@@ -28,11 +28,11 @@ Here are some of the benefits of using this library:
 * [Feature Flags](#feature-flags)
     * [Feature Filters](#feature-filters)
     * [Feature Flag Declaration](#feature-flag-declaration)
-* [Service Registration](#service-registration)
+* [Consumption](#consumption)
 * [ASP.NET Core Integration](#ASPNET-core-integration)
 * [Implement a Feature Filter](#implementing-a-feature-filter)
-    * [Providing a Context For Feature Evaluation](#providing-a-context-for-feature-evaluation)
-    * [Built-in Feature Filters](#built-in-feature-filters)
+* [Providing a Context For Feature Evaluation](#providing-a-context-for-feature-evaluation)
+* [Built-in Feature Filters](#built-in-feature-filters)
 * [Targeting](#targeting)
   * [Targeting Exclusion](#targeting-exclusion)
 * [Caching](#caching)
@@ -143,8 +143,22 @@ A `RequirementType` of `All` changes the traversal. First, if there are no filte
 ```
 
 In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning all of it's filters must evaluate to true for the feature to be enabled. In this case, the feature will be enabled for 50% of users during the specified time window.
-    
-## Service Registration
+
+## Consumption
+
+The basic form of feature management is checking if a feature is enabled and then performing actions based on the result. This is done through the `IFeatureManager`'s `IsEnabledAsync` method.
+
+``` C#
+…
+IFeatureManager featureManager;
+…
+if (await featureManager.IsEnabledAsync("FeatureX"))
+{
+    // Do something
+}
+```
+
+### Service Registration
 
 Feature flags rely on .NET Core dependency injection. We can register the feature management services using standard conventions.
 
@@ -168,33 +182,7 @@ You can also specify that feature flag configuration should be retrieved from a 
 services.AddFeatureManagement(configuration.GetSection("MyFeatureFlags"));
 ```
 
-### Scoped Feature Management Services
-
-The `AddFeatureManagement` method adds feature management services as singletons within the application, but there are scenarios where it may be necessary for feature management services to be added as scoped services instead. For example, users may want to use feature filters which consume scoped services for context information. In this case, the `AddScopedFeatureManagement` method should be used instead. This will ensure that feature management services, including feature filters, are added as scoped services.
-
-``` C#
-services.AddScopedFeatureManagement();
-```
-
-### Consumption
-
-The simplest use case for feature flags is to do a conditional check for whether a feature is enabled to take different paths in code. The uses cases grow from there as the feature flag API begins to offer extensions into ASP.NET Core.
-
-#### Feature Check
-
-The basic form of feature management is checking if a feature is enabled and then performing actions based on the result. This is done through the `IFeatureManager`'s `IsEnabledAsync` method.
-
-``` C#
-…
-IFeatureManager featureManager;
-…
-if (await featureManager.IsEnabledAsync("FeatureX"))
-{
-    // Do something
-}
-```
-
-#### Dependency Injection
+### Dependency Injection
 
 When using the feature management library with MVC, the `IFeatureManager` can be obtained through dependency injection.
 
@@ -208,6 +196,14 @@ public class HomeController : Controller
         _featureManager = featureManager;
     }
 }
+```
+
+### Scoped Feature Management Services
+
+The `AddFeatureManagement` method adds feature management services as singletons within the application, but there are scenarios where it may be necessary for feature management services to be added as scoped services instead. For example, users may want to use feature filters which consume scoped services for context information. In this case, the `AddScopedFeatureManagement` method should be used instead. This will ensure that feature management services, including feature filters, are added as scoped services.
+
+``` C#
+services.AddScopedFeatureManagement();
 ```
 
 ## ASP.NET Core Integration
@@ -447,7 +443,7 @@ public void ConfigureServices(IServiceCollection services)
 **Advanced:** `IHttpContextAccessor`/`HttpContext` should not be used in the Razor components of server-side Blazor apps. [The recommended approach](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/server/interactive-server-side-rendering?view=aspnetcore-7.0#ihttpcontextaccessorhttpcontext-in-razor-components) for passing http context in Blazor apps is to copy the data into a scoped service. For Blazor apps, `AddScopedFeatureManagement` should be used to register the feature management services.
 Please refer to the `Scoped Feature Management Services` section for more details.
 
-### Providing a Context For Feature Evaluation
+## Providing a Context For Feature Evaluation
 
 In console applications there is no ambient context such as `HttpContext` that feature filters can acquire and utilize to check if a feature should be on or off. In this case, applications need to provide an object representing a context into the feature management system for use by feature filters. This is done by using `IFeatureManager.IsEnabledAsync<TContext>(string featureName, TContext appContext)`. The appContext object that is provided to the feature manager can be used by feature filters to evaluate the state of a feature.
 
@@ -503,13 +499,13 @@ If all of three filters are registered:
 * When you call IsEnabledAsync("MyFeature", context), if context's type is `TypeB`, `FilterB` will be used. If context's type is `TypeC`, `FilterC` will be used.
 * When you call IsEnabledAsync("MyFeature", context), if context's type is `TypeF`, `FilterA` will be used.
 
-### Built-In Feature Filters
+## Built-In Feature Filters
 
 There a few feature filters that come with the `Microsoft.FeatureManagement` package: `PercentageFilter`, `TimeWindowFilter`, `ContextualTargetingFilter` and `TargetingFilter`. All filters, except for the `TargetingFilter`, are added automatically when feature management is registered. The `TargetingFilter` is added with the `WithTargeting` method that is detailed in the `Targeting` section below.
 
 Each of the built-in feature filters have their own parameters. Here is the list of feature filters along with examples.
 
-#### Microsoft.Percentage
+### Microsoft.Percentage
 
 This filter provides the capability to enable a feature based on a set percentage.
 
@@ -526,7 +522,7 @@ This filter provides the capability to enable a feature based on a set percentag
 }
 ```
 
-#### Microsoft.TimeWindow
+### Microsoft.TimeWindow
 
 This filter provides the capability to enable a feature based on a time window. If only `End` is specified, the feature will be considered on until that time. If only start is specified, the feature will be considered on at all points after that time.
 
@@ -544,7 +540,7 @@ This filter provides the capability to enable a feature based on a time window. 
 }
 ```
 
-#### Microsoft.Targeting
+### Microsoft.Targeting
 
 This filter provides the capability to enable a feature for a target audience. An in-depth explanation of targeting is explained in the [targeting](./README.md#Targeting) section below. The filter parameters include an audience object which describes users, groups, excluded users/groups, and a default percentage of the user base that should have access to the feature. Each group object that is listed in the target audience must also specify what percentage of the group's members should have access. If a user is specified in the exclusion section, either directly or if the user is in an excluded group, the feature will be disabled. Otherwise, if a user is specified in the users section directly, or if the user is in the included percentage of any of the group rollouts, or if the user falls into the default rollout percentage then that user will have the feature enabled.
 
