@@ -146,7 +146,7 @@ In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning
 
 ## Consumption
 
-The basic form of feature management is checking if a feature is enabled and then performing actions based on the result. This is done through the `IFeatureManager`'s `IsEnabledAsync` method.
+The basic form of feature management is checking if a feature flag is enabled and then performing actions based on the result. This is done through the `IFeatureManager`'s `IsEnabledAsync` method.
 
 ``` C#
 …
@@ -160,7 +160,7 @@ if (await featureManager.IsEnabledAsync("FeatureX"))
 
 ### Service Registration
 
-Feature flags rely on .NET Core dependency injection. We can register the feature management services using standard conventions.
+Feature management rely on .NET Core dependency injection. We can register the feature management services using standard conventions.
 
 ``` C#
 using Microsoft.FeatureManagement;
