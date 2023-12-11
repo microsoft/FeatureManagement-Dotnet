@@ -1808,7 +1808,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2023-10-29T00:00:00+08:00"), // 4th Sunday in 2023 Oct
+                ( DateTimeOffset.Parse("2023-10-29T00:00:00+08:00"), // 5th Sunday in 2023 Oct
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-25T00:00:00+08:00"),
