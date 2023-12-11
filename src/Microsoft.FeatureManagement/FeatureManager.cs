@@ -678,7 +678,8 @@ namespace Microsoft.FeatureManagement
                     new MemoryCacheEntryOptions
                     {
                         SlidingExpiration = ParametersCacheSlidingExpiration,
-                        AbsoluteExpirationRelativeToNow = ParametersCacheAbsoluteExpirationRelativeToNow
+                        AbsoluteExpirationRelativeToNow = ParametersCacheAbsoluteExpirationRelativeToNow,
+                        Size = 1
                     });
             }
             else
