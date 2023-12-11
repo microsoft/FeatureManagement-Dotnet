@@ -3,7 +3,7 @@
 //
 using System.Threading.Tasks;
 
-namespace Consoto.Banking.AccountService.Identity
+namespace TargetingConsoleApp.Identity
 {
     interface IUserRepository
     {
