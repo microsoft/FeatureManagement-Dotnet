@@ -160,7 +160,7 @@ if (await featureManager.IsEnabledAsync("FeatureX"))
 
 ### Service Registration
 
-Feature management rely on .NET Core dependency injection. We can register the feature management services using standard conventions.
+Feature management relies on .NET Core dependency injection. We can register the feature management services using standard conventions.
 
 ``` C#
 using Microsoft.FeatureManagement;
