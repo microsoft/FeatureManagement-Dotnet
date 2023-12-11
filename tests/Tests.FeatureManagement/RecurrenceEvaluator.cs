@@ -2103,7 +2103,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2023-10-3T00:00:00+08:00"), // Tuesday
+                ( DateTimeOffset.Parse("2023-10-2T00:00:00+08:00"), // Monday
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -2113,7 +2113,7 @@ namespace Tests.FeatureManagement
                         Pattern = new RecurrencePattern()
                         {
                             Type = "RelativeMonthly",
-                            DaysOfWeek = new List<string>() { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Sunday" },
+                            DaysOfWeek = new List<string>() { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" },
                         },
                         Range = new RecurrenceRange()
                         {
