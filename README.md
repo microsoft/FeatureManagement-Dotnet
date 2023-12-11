@@ -150,16 +150,28 @@ using Microsoft.FeatureManagement;
 
 public class Startup
 {
-  public void ConfigureServices(IServiceCollection services)
-  {
-      services.AddFeatureManagement();
-  }
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddFeatureManagement();
+    }
 }
 ```
 
-This tells the feature manager to use the "FeatureManagement" section from the configuration for feature flag settings.
+By default, the feature manager retrieves feature flag configuration from the "FeatureManagement" section of the .NET Core configuration data. If the "FeatureManagement" section does not exist, the configuration will be considered empty.
 
-**Advanced:** The feature manager looks for feature definitions in a configuration section named "FeatureManagement". If the "FeatureManagement" section does not exist, the configuration will be considered empty.
+You can also specify that feature flag configuration should be retrieved from a different configuration section by passing the section to `AddFeatureManagement`. The following example tells the feature manager to read from a different section called "MyFeatureFlags" instead:
+
+``` C#
+services.AddFeatureManagement(configuration.GetSection("MyFeatureFlags"));
+```
+
+### Scoped Feature Management Services
+
+The `AddFeatureManagement` method adds feature management services as singletons within the application, but there are scenarios where it may be necessary for feature management services to be added as scoped services instead. For example, users may want to use feature filters which consume scoped services for context information. In this case, the `AddScopedFeatureManagement` method should be used instead. This will ensure that feature management services, including feature filters, are added as scoped services.
+
+``` C#
+services.AddScopedFeatureManagement();
+```
 
 ## Consumption
 The simplest use case for feature flags is to do a conditional check for whether a feature is enabled to take different paths in code. The uses cases grow from there as the feature flag API begins to offer extensions into ASP.NET Core.
@@ -327,7 +339,7 @@ The following snippet demonstrates how to add a customized feature filter `MyCri
 
 ``` C#
 services.AddFeatureManagement()
-        .AddFeatureFilter<"MyCriteriaFilter">();
+        .AddFeatureFilter<MyCriteriaFilter>();
 ```
 
 Feature filters are registered by calling `AddFeatureFilter<T>` on the `IFeatureManagementBuilder` returned from `AddFeatureManagement`. These feature filters have access to the services that exist within the service collection that was used to add feature flags. Dependency injection can be used to retrieve these services.
@@ -359,7 +371,7 @@ public class FeatureFilterEvaluationContext
 [FilterAlias("Browser")]
 public class BrowserFilter : IFeatureFilter
 {
-    … Removed for example
+    …
 
     public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
     {
@@ -399,7 +411,7 @@ services.Configure<FeatureManagementOptions>(options =>
 
 ### Using HttpContext
 
-Feature filters can evaluate whether a feature should be enabled based off the properties of an HTTP Request. This is performed by inspecting the HTTP Context. A feature filter can get a reference to the HTTP Context by obtaining an `IHttpContextAccessor` through dependency injection.
+Feature filters can evaluate whether a feature should be enabled based on the properties of an HTTP Request. This is performed by inspecting the HTTP Context. A feature filter can get a reference to the HTTP Context by obtaining an `IHttpContextAccessor` through dependency injection.
 
 ``` C#
 public class BrowserFilter : IFeatureFilter
@@ -423,6 +435,9 @@ public void ConfigureServices(IServiceCollection services)
     …
 }
 ```
+
+**Advanced:** `IHttpContextAccessor`/`HttpContext` should not be used in the Razor components of server-side Blazor apps. [The recommended approach](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/server/interactive-server-side-rendering?view=aspnetcore-7.0#ihttpcontextaccessorhttpcontext-in-razor-components) for passing http context in Blazor apps is to copy the data into a scoped service. For Blazor apps, `AddScopedFeatureManagement` should be used to register the feature management services.
+Please refer to the `Scoped Feature Management Services` section for more details.
 
 ## Providing a Context For Feature Evaluation
 
@@ -588,14 +603,16 @@ To begin using the `TargetingFilter` in an application it must be added to the a
 
 The implementation type used for the `ITargetingContextAccessor` service must be implemented by the application that is using the targeting filter. Here is an example setting up feature management in a web application to use the `TargetingFilter` with an implementation of `ITargetingContextAccessor` called `HttpContextTargetingContextAccessor`.
 
-```
-services.AddFeatureManagement();
+``` C#
+services.AddFeatureManagement()
         .WithTargeting<HttpContextTargetingContextAccessor>();
 ```
 
+The targeting context accessor and `TargetingFilter` are registered by calling `WithTargeting<T>` on the `IFeatureManagementBuilder`.
+
 #### ITargetingContextAccessor
 
-To use the `TargetingFilter` in a web application an implementation of `ITargetingContextAccessor` is required. This is because when a targeting evaluation is being performed information such as what user is currently being evaluated is needed. This information is known as the targeting context. Different web applications may extract this information from different places. Some common examples of where an application may pull the targeting context are the request's HTTP context or a database.
+To use the `TargetingFilter` in a web application, an implementation of `ITargetingContextAccessor` is required. This is because when a targeting evaluation is being performed information such as what user is currently being evaluated is needed. This information is known as the targeting context. Different web applications may extract this information from different places. Some common examples of where an application may pull the targeting context are the request's HTTP context or a database.
 
 An example that extracts targeting context information from the application's HTTP context is included in the [FeatureFlagDemo](./examples/FeatureFlagDemo/HttpContextTargetingContextAccessor.cs) example project. This method relies on the use of `IHttpContextAccessor` which is discussed [here](./README.md#Using-HttpContext).
 
@@ -605,7 +622,7 @@ The targeting filter relies on a targeting context to evaluate whether a feature
 
 Since `ContextualTargetingFilter` is an [`IContextualTargetingFilter<ITargetingContext>`](./README.md#Contextual-Feature-Filters), an implementation of `ITargetingContext` must be passed in to `IFeatureManager.IsEnabledAsync` for it to be able to evaluate and turn a feature on.
 
-```
+``` C#
 IFeatureManager fm;
 …
 // userId and groups defined somewhere earlier in application
@@ -626,7 +643,7 @@ An example that uses the `ContextualTargetingFilter` in a console application is
 
 Options are available to customize how targeting evaluation is performed across all features. These options can be configured when setting up feature management.
 
-```
+``` C#
 services.Configure<TargetingEvaluationOptions>(options =>
 {
     options.IgnoreCase = true;
@@ -636,7 +653,7 @@ services.Configure<TargetingEvaluationOptions>(options =>
 ### Targeting Exclusion
 
 When defining an Audience, users and groups can be excluded from the audience. This is useful when a feature is being rolled out to a group of users, but a few users or groups need to be excluded from the rollout. Exclusion is defined by adding a list of users and groups to the `Exclusion` property of the audience.
-```
+``` JavaScript
 "Audience": {
     "Users": [
         "Jeff",
@@ -672,7 +689,7 @@ Implementing a custom feature provider enable developers to pull feature flags f
 
 To customize the loading of feature definitions, one must implement the `IFeatureDefinitionProvider` interface.
 
-```
+``` C#
 public interface IFeatureDefinitionProvider
 {
     Task<FeatureDefinition> GetFeatureDefinitionAsync(string featureName);
@@ -683,7 +700,7 @@ public interface IFeatureDefinitionProvider
 
 To use an implementation of `IFeatureDefinitionProvider` it must be added into the service collection before adding feature management. The following example adds an implementation of `IFeatureDefinitionProvider` named `InMemoryFeatureDefinitionProvider`.
 
-```
+``` C#
 services.AddSingleton<IFeatureDefinitionProvider, InMemoryFeatureDefinitionProvider>()
         .AddFeatureManagement()
 ```
