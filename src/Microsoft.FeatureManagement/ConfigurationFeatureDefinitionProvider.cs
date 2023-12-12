@@ -26,8 +26,9 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
-        private int _initialized = 0;
+        private long _initialized = 0;
         private bool _azureAppConfigurationFeatureFlagSchemaEnabled;
+        private readonly object _lock = new object();
 
         /// <summary>
         /// Creates a configuration feature definition provider.
@@ -152,9 +153,14 @@ namespace Microsoft.FeatureManagement
 
                 bool hasAzureAppConfigurationFeatureFlagSchema = HasAzureAppConfigurationFeatureFlagSchema(featureManagementConfigurationSection);
 
-                if (Interlocked.Exchange(ref _initialized, 1) != 1)
+                lock (_lock)
                 {
-                    _azureAppConfigurationFeatureFlagSchemaEnabled = hasAzureAppConfigurationFeatureFlagSchema;
+                    if (Interlocked.Read(ref _initialized) == 0)
+                    {
+                        _azureAppConfigurationFeatureFlagSchemaEnabled = hasAzureAppConfigurationFeatureFlagSchema;
+
+                        Interlocked.Exchange(ref _initialized, 1);
+                    }
                 }
             }
         }
