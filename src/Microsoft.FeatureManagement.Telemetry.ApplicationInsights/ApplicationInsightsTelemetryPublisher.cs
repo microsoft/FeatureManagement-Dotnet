@@ -38,7 +38,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 
             if (evaluationEvent.Variant != null)
             {
-                properties["Variant"] = evaluationEvent.Variant?.Name ?? String.Empty;
+                properties["Variant"] = evaluationEvent.Variant.Name;
             }
 
             if (evaluationEvent.AssignmentReason != AssignmentReason.None)
