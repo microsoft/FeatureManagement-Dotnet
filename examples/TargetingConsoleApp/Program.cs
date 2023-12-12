@@ -15,8 +15,7 @@ IConfiguration configuration = new ConfigurationBuilder()
 IServiceCollection services = new ServiceCollection();
 
 services.AddSingleton(configuration)
-        .AddFeatureManagement()
-        .AddFeatureFilter<ContextualTargetingFilter>();
+        .AddFeatureManagement();
 
 IUserRepository userRepository = new InMemoryUserRepository();
 
@@ -43,7 +42,7 @@ using (ServiceProvider serviceProvider = services.BuildServiceProvider())
 
         //
         // Check if feature enabled
-        TargetingContext targetingContext = new TargetingContext
+        var targetingContext = new TargetingContext
         {
             UserId = user.Id,
             Groups = user.Groups
