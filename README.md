@@ -583,7 +583,7 @@ services.AddFeatureManagement();
 
 #### ITargetingContextAccessor
 
-To use the `TargetingFilter` in a web application an implementation of `ITargetingContextAccessor` is required. This is because when a targeting evaluation is being performed information such as what user is currently being evaluated is needed. This information is known as the targeting context. Different web applications may extract this information from different places. Some common examples of where an application may pull the targeting context are the request's HTTP context or a database.
+To use the `TargetingFilter` or the `Allocation` property in a web application, an implementation of `ITargetingContextAccessor` is required. This is because when a targeting evaluation or variant assignment is being performed, information such as what user is currently being evaluated is needed. This information is known as the targeting context. Different web applications may extract this information from different places. Some common examples of where an application may pull the targeting context are the request's HTTP context or a database.
 
 An example that extracts targeting context information from the application's HTTP context is included in the [FeatureFlagDemo](./examples/FeatureFlagDemo/HttpContextTargetingContextAccessor.cs) example project. This method relies on the use of `IHttpContextAccessor` which is discussed [here](./README.md#Using-HttpContext).
 
@@ -767,7 +767,7 @@ In the above example, if the feature is not enabled, `GetVariantAsync` would ret
 
 If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to allocate a variant for this feature. If the user being evaluated is named `Marsha`, in the group named `Ring1`, or the user happens to fall between the 0 and 10th percentile calculated with the given `Seed`, then the specified variant is returned for that allocation. In this case, all of these would return the `Big` variant. If none of these allocations match, the `DefaultWhenEnabled` variant is returned, which is `Small`.
 
-Allocation logic is similar to the [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter, but there are some parameters that are present in targeting that aren't in allocation, and vice versa. Like targeting, allocation gets user information from `ITargetingContextAccessor`, but the outcomes of targeting and allocation are not related.
+Allocation logic is similar to the [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter, but there are some parameters that are present in targeting that aren't in allocation, and vice versa. Like targeting, allocation can only access user information once an implementation of  `ITargetingContextAccessor` has been added to the service collection. The outcomes of targeting and allocation are not related.
 
 ### Overriding Enabled State with a Variant
 
