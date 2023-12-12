@@ -9,32 +9,32 @@ namespace Microsoft.FeatureManagement.Telemetry
     public enum AssignmentReason
     {
         /// <summary>
-        /// The reason the variant was assigned during the evaluation of a feature.
+        /// No variant is assigned.
         /// </summary>
         None,
 
         /// <summary>
-        /// The reason the variant was assigned during the evaluation of a feature.
+        /// Variant is assigned by default after processing the user/group/percentile allocation, when the feature flag is disabled.
         /// </summary>
         DisabledDefault,
 
         /// <summary>
-        /// The reason the variant was assigned during the evaluation of a feature.
+        /// Variant is assigned by default after processing the user/group/percentile allocation, when the feature flag is enabled.
         /// </summary>
         EnabledDefault,
 
         /// <summary>
-        /// The reason the variant was assigned during the evaluation of a feature.
+        /// Variant is assigned because of the user allocation.
         /// </summary>
         User,
 
         /// <summary>
-        /// The reason the variant was assigned during the evaluation of a feature.
+        /// Variant is assigned because of the group allocation.
         /// </summary>
         Group,
 
         /// <summary>
-        /// The reason the variant was assigned during the evaluation of a feature.
+        /// Variant is assigned because of the percentile allocation.
         /// </summary>
         Percentile
     }
