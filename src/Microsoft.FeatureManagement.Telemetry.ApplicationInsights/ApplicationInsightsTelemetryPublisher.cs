@@ -38,10 +38,13 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 
             if (evaluationEvent.Variant != null)
             {
-                properties["Variant"] = evaluationEvent.Variant.Name;
+                properties["Variant"] = evaluationEvent.Variant?.Name ?? String.Empty;
             }
 
-            properties["AssignmentReason"] = evaluationEvent.AssignmentReason.ToString();
+            if (evaluationEvent.AssignmentReason != AssignmentReason.None)
+            {
+                properties["AssignmentReason"] = evaluationEvent.AssignmentReason.ToString();
+            }
 
             if (featureDefinition.TelemetryMetadata != null)
             {

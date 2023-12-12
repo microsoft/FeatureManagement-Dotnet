@@ -19,5 +19,14 @@ namespace Tests.FeatureManagement
         public const string FeatureUsesFiltersWithDuplicatedAlias = "FeatureUsesFiltersWithDuplicatedAlias";
         public const string VariantFeatureDefaultEnabled = "VariantFeatureDefaultEnabled";
         public const string VariantFeatureStatusDisabled = "VariantFeatureStatusDisabled";
+        public const string VariantFeaturePercentileOn = "VariantFeaturePercentileOn";
+        public const string VariantFeaturePercentileOff = "VariantFeaturePercentileOff";
+        public const string VariantFeatureUser = "VariantFeatureUser";
+        public const string VariantFeatureGroup = "VariantFeatureGroup";
+        public const string VariantFeatureNoVariants = "VariantFeatureNoVariants";
+        public const string VariantFeatureNoAllocation = "VariantFeatureNoAllocation";
+        public const string VariantFeatureBothConfigurations = "VariantFeatureBothConfigurations";
+        public const string VariantFeatureInvalidStatusOverride = "VariantFeatureInvalidStatusOverride";
+        public const string VariantFeatureInvalidFromTo = "VariantFeatureInvalidFromTo";
     }
 }

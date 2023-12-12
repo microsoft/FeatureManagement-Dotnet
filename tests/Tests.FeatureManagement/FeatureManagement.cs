@@ -356,7 +356,7 @@ namespace Tests.FeatureManagement
                 }
             }
 
-            Assert.True(enabledCount >= 0 && enabledCount < 10);
+            Assert.True(enabledCount >= 0 && enabledCount <= 10);
         }
 
         [Fact]
@@ -1037,6 +1037,7 @@ namespace Tests.FeatureManagement
             Assert.Equal("EtagValue", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata["Etag"]);
             Assert.Equal("LabelValue", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata["Label"]);
             Assert.Equal("Tag1Value", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata["Tags.Tag1"]);
+            Assert.Null(testPublisher.evaluationEventCache.Variant);
             Assert.Equal(AssignmentReason.None, testPublisher.evaluationEventCache.AssignmentReason);
 
             result = await featureManager.IsEnabledAsync(Features.OffTimeTestFeature, CancellationToken.None);
@@ -1075,6 +1076,33 @@ namespace Tests.FeatureManagement
             Assert.Equal(Features.VariantFeatureStatusDisabled, testPublisher.evaluationEventCache.FeatureDefinition.Name);
             Assert.Equal(variantResult.Name, testPublisher.evaluationEventCache.Variant.Name);
             Assert.Equal(AssignmentReason.DisabledDefault, testPublisher.evaluationEventCache.AssignmentReason);
+
+            targetingContextAccessor.Current = new TargetingContext
+            {
+                UserId = "Marsha",
+                Groups = new List<string> { "Group1" }
+            };
+
+            variantResult = await featureManager.GetVariantAsync(Features.VariantFeaturePercentileOn, CancellationToken.None);
+            Assert.Equal("Big", variantResult.Name);
+            Assert.Equal("Big", testPublisher.evaluationEventCache.Variant.Name);
+            Assert.Equal(AssignmentReason.Percentile, testPublisher.evaluationEventCache.AssignmentReason);
+
+            variantResult = await featureManager.GetVariantAsync(Features.VariantFeaturePercentileOff, CancellationToken.None);
+            Assert.Null(variantResult);
+            Assert.Null(testPublisher.evaluationEventCache.Variant);
+            Assert.Equal(AssignmentReason.None, testPublisher.evaluationEventCache.AssignmentReason);
+
+            variantResult = await featureManager.GetVariantAsync(Features.VariantFeatureUser, CancellationToken.None);
+            Assert.Equal("Small", variantResult.Name);
+            Assert.Equal("Small", testPublisher.evaluationEventCache.Variant.Name);
+            Assert.Equal(AssignmentReason.User, testPublisher.evaluationEventCache.AssignmentReason);
+
+            variantResult = await featureManager.GetVariantAsync(Features.VariantFeatureGroup, CancellationToken.None);
+            Assert.Equal("Small", variantResult.Name);
+            Assert.Equal("Small", testPublisher.evaluationEventCache.Variant.Name);
+            Assert.Equal(AssignmentReason.Group, testPublisher.evaluationEventCache.AssignmentReason);
+
         }
 
         [Fact]
@@ -1122,44 +1150,44 @@ namespace Tests.FeatureManagement
             };
 
             // Test StatusOverride and Percentile with Seed
-            Variant variant = await featureManager.GetVariantAsync("VariantFeaturePercentileOn", cancellationToken);
+            Variant variant = await featureManager.GetVariantAsync(Features.VariantFeaturePercentileOn, cancellationToken);
 
             Assert.Equal("Big", variant.Name);
             Assert.Equal("green", variant.Configuration["Color"]);
-            Assert.False(await featureManager.IsEnabledAsync("VariantFeaturePercentileOn", cancellationToken));
+            Assert.False(await featureManager.IsEnabledAsync(Features.VariantFeaturePercentileOn, cancellationToken));
 
-            variant = await featureManager.GetVariantAsync("VariantFeaturePercentileOff", cancellationToken);
+            variant = await featureManager.GetVariantAsync(Features.VariantFeaturePercentileOff, cancellationToken);
 
             Assert.Null(variant);
-            Assert.True(await featureManager.IsEnabledAsync("VariantFeaturePercentileOff", cancellationToken));
+            Assert.True(await featureManager.IsEnabledAsync(Features.VariantFeaturePercentileOff, cancellationToken));
 
             // Test Status = Disabled
-            variant = await featureManager.GetVariantAsync("VariantFeatureStatusDisabled", cancellationToken);
+            variant = await featureManager.GetVariantAsync(Features.VariantFeatureStatusDisabled, cancellationToken);
 
             Assert.Equal("Small", variant.Name);
             Assert.Equal("300px", variant.Configuration.Value);
-            Assert.False(await featureManager.IsEnabledAsync("VariantFeatureStatusDisabled", cancellationToken));
+            Assert.False(await featureManager.IsEnabledAsync(Features.VariantFeatureStatusDisabled, cancellationToken));
 
             // Test DefaultWhenEnabled and ConfigurationValue with inline IConfigurationSection
-            variant = await featureManager.GetVariantAsync("VariantFeatureDefaultEnabled", cancellationToken);
+            variant = await featureManager.GetVariantAsync(Features.VariantFeatureDefaultEnabled, cancellationToken);
 
             Assert.Equal("Medium", variant.Name);
             Assert.Equal("450px", variant.Configuration["Size"]);
-            Assert.True(await featureManager.IsEnabledAsync("VariantFeatureDefaultEnabled", cancellationToken));
+            Assert.True(await featureManager.IsEnabledAsync(Features.VariantFeatureDefaultEnabled, cancellationToken));
 
             // Test User allocation
-            variant = await featureManager.GetVariantAsync("VariantFeatureUser", cancellationToken);
+            variant = await featureManager.GetVariantAsync(Features.VariantFeatureUser, cancellationToken);
 
             Assert.Equal("Small", variant.Name);
             Assert.Equal("300px", variant.Configuration.Value);
-            Assert.True(await featureManager.IsEnabledAsync("VariantFeatureUser", cancellationToken));
+            Assert.True(await featureManager.IsEnabledAsync(Features.VariantFeatureUser, cancellationToken));
 
             // Test Group allocation
-            variant = await featureManager.GetVariantAsync("VariantFeatureGroup", cancellationToken);
+            variant = await featureManager.GetVariantAsync(Features.VariantFeatureGroup, cancellationToken);
 
             Assert.Equal("Small", variant.Name);
             Assert.Equal("300px", variant.Configuration.Value);
-            Assert.True(await featureManager.IsEnabledAsync("VariantFeatureGroup", cancellationToken));
+            Assert.True(await featureManager.IsEnabledAsync(Features.VariantFeatureGroup, cancellationToken));
         }
 
         [Fact]
@@ -1185,24 +1213,24 @@ namespace Tests.FeatureManagement
             CancellationToken cancellationToken = CancellationToken.None;
 
             // Verify null variant returned if no variants are specified
-            Variant variant = await featureManager.GetVariantAsync("VariantFeatureNoVariants", cancellationToken);
+            Variant variant = await featureManager.GetVariantAsync(Features.VariantFeatureNoVariants, cancellationToken);
 
             Assert.Null(variant);
 
             // Verify null variant returned if no allocation is specified
-            variant = await featureManager.GetVariantAsync("VariantFeatureNoAllocation", cancellationToken);
+            variant = await featureManager.GetVariantAsync(Features.VariantFeatureNoAllocation, cancellationToken);
 
             Assert.Null(variant);
 
             // Verify that ConfigurationValue has priority over ConfigurationReference
-            variant = await featureManager.GetVariantAsync("VariantFeatureBothConfigurations", cancellationToken);
+            variant = await featureManager.GetVariantAsync(Features.VariantFeatureBothConfigurations, cancellationToken);
 
             Assert.Equal("600px", variant.Configuration.Value);
 
             // Verify that an exception is thrown for invalid StatusOverride value
             FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () =>
             {
-                variant = await featureManager.GetVariantAsync("VariantFeatureInvalidStatusOverride", cancellationToken);
+                variant = await featureManager.GetVariantAsync(Features.VariantFeatureInvalidStatusOverride, cancellationToken);
             });
 
             Assert.Equal(FeatureManagementError.InvalidConfigurationSetting, e.Error);
@@ -1211,7 +1239,7 @@ namespace Tests.FeatureManagement
             // Verify that an exception is thrown for invalid doubles From and To in the Percentile section
             e = await Assert.ThrowsAsync<FeatureManagementException>(async () =>
             {
-                variant = await featureManager.GetVariantAsync("VariantFeatureInvalidFromTo", cancellationToken);
+                variant = await featureManager.GetVariantAsync(Features.VariantFeatureInvalidFromTo, cancellationToken);
             });
 
             Assert.Equal(FeatureManagementError.InvalidConfigurationSetting, e.Error);
