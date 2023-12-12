@@ -284,7 +284,7 @@ namespace Microsoft.FeatureManagement
                 {
                     variantDefinition = null;
 
-                    evaluationEvent.VariantReason = "No Allocation or Variants";
+                    evaluationEvent.AssignmentReason = AssignmentReason.None;
                 }
                 else
                 {
@@ -292,7 +292,7 @@ namespace Microsoft.FeatureManagement
                     {
                         variantDefinition = evaluationEvent.FeatureDefinition.Variants.FirstOrDefault((variant) => variant.Name == evaluationEvent.FeatureDefinition.Allocation.DefaultWhenDisabled);
 
-                        evaluationEvent.VariantReason = "Disabled Default";
+                        evaluationEvent.AssignmentReason = AssignmentReason.DisabledDefault;
                     }
                     else
                     {
@@ -543,7 +543,7 @@ namespace Microsoft.FeatureManagement
             {
                 variantDefinition = evaluationEvent.FeatureDefinition.Variants.FirstOrDefault((variant) => variant.Name == evaluationEvent.FeatureDefinition.Allocation.DefaultWhenEnabled);
 
-                evaluationEvent.VariantReason = "Enabled Default";
+                evaluationEvent.AssignmentReason = AssignmentReason.EnabledDefault;
             }
 
             return variantDefinition;
@@ -568,7 +568,7 @@ namespace Microsoft.FeatureManagement
 
                         Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
 
-                        evaluationEvent.VariantReason = "User Allocated";
+                        evaluationEvent.AssignmentReason = AssignmentReason.User;
 
                         return new ValueTask<VariantDefinition>(
                             evaluationEvent.FeatureDefinition
@@ -593,7 +593,7 @@ namespace Microsoft.FeatureManagement
 
                         Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
 
-                        evaluationEvent.VariantReason = "Group Allocated";
+                        evaluationEvent.AssignmentReason = AssignmentReason.Group;
 
                         return new ValueTask<VariantDefinition>(
                             evaluationEvent.FeatureDefinition
@@ -623,7 +623,7 @@ namespace Microsoft.FeatureManagement
 
                         Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
 
-                        evaluationEvent.VariantReason = "Percentile Allocated";
+                        evaluationEvent.AssignmentReason = AssignmentReason.Percentile;
 
                         return new ValueTask<VariantDefinition>(
                             evaluationEvent.FeatureDefinition

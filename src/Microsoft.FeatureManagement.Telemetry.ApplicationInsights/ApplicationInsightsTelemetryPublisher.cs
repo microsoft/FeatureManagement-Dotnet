@@ -41,6 +41,8 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
                 properties["Variant"] = evaluationEvent.Variant.Name;
             }
 
+            properties["AssignmentReason"] = evaluationEvent.AssignmentReason.ToString();
+
             if (featureDefinition.TelemetryMetadata != null)
             {
                 foreach (KeyValuePair<string, string> kvp in featureDefinition.TelemetryMetadata)

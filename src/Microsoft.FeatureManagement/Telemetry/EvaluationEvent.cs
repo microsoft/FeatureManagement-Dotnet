@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.FeatureManagement.FeatureFilters;
-
 namespace Microsoft.FeatureManagement.Telemetry
 {
     /// <summary>
@@ -26,8 +24,8 @@ namespace Microsoft.FeatureManagement.Telemetry
         public Variant Variant { get; set; }
 
         /// <summary>
-        /// The reason the variant was given.
+        /// The reason the variant was assigned.
         /// </summary>
-        public string VariantReason { get; set; }
+        public AssignmentReason AssignmentReason { get; set; }
     }
 }
