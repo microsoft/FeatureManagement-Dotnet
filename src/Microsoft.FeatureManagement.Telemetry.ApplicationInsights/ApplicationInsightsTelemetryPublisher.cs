@@ -43,7 +43,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 
             if (evaluationEvent.AssignmentReason != AssignmentReason.None)
             {
-                properties["AssignmentReason"] = evaluationEvent.AssignmentReason.ToString();
+                properties["AssignmentReason"] = ToString(evaluationEvent.AssignmentReason);
             }
 
             if (featureDefinition.TelemetryMetadata != null)
@@ -70,6 +70,27 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
             {
                 throw new ArgumentNullException(nameof(evaluationEvent.FeatureDefinition));
             }
+        }
+
+        private static string ToString(AssignmentReason reason)
+        {
+            const string None = "None";
+            const string DisabledDefault = "DisabledDefault";
+            const string EnabledDefault = "EnabledDefault";
+            const string User = "User";
+            const string Group = "Group";
+            const string Percentile = "Percentile";
+
+            return reason switch
+            {
+                AssignmentReason.None => None,
+                AssignmentReason.DisabledDefault => DisabledDefault,
+                AssignmentReason.EnabledDefault => EnabledDefault,
+                AssignmentReason.User => User,
+                AssignmentReason.Group => Group,
+                AssignmentReason.Percentile => Percentile,
+                _ => throw new ArgumentException("Invalid assignment reason.", nameof(reason))
+            };
         }
     }
 }

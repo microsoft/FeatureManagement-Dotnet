@@ -271,26 +271,11 @@ namespace Microsoft.FeatureManagement
 
                 //
                 // Determine Variant
-                VariantDefinition variantDefinition;
+                VariantDefinition variantDefinition = null;
 
-                if (evaluationEvent.FeatureDefinition.Allocation == null || (!evaluationEvent.FeatureDefinition.Variants?.Any() ?? false))
+                if (evaluationEvent.FeatureDefinition.Allocation != null && (evaluationEvent.FeatureDefinition.Variants?.Any() ?? false))
                 {
-                    variantDefinition = null;
-
-                    evaluationEvent.AssignmentReason = AssignmentReason.None;
-                }
-                else
-                {
-                    if (!evaluationEvent.IsEnabled)
-                    {
-                        variantDefinition = evaluationEvent.FeatureDefinition.Variants.FirstOrDefault((variant) => variant.Name == evaluationEvent.FeatureDefinition.Allocation.DefaultWhenDisabled);
-
-                        if (variantDefinition != null)
-                        {
-                            evaluationEvent.AssignmentReason = AssignmentReason.DisabledDefault;
-                        }
-                    }
-                    else
+                    if (evaluationEvent.IsEnabled)
                     {
                         TargetingContext targetingContext;
 
@@ -303,16 +288,34 @@ namespace Microsoft.FeatureManagement
                             targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
                         }
 
-                        variantDefinition = await AssignVariantAsync(evaluationEvent, targetingContext, cancellationToken).ConfigureAwait(false);
+                        if (targetingContext != null)
+                        {
+                            variantDefinition = await AssignVariantAsync(evaluationEvent, targetingContext, cancellationToken).ConfigureAwait(false);
+                        }
 
                         if (variantDefinition == null)
                         {
-                            variantDefinition = evaluationEvent.FeatureDefinition.Variants.FirstOrDefault((variant) => variant.Name == evaluationEvent.FeatureDefinition.Allocation.DefaultWhenEnabled);
+                            variantDefinition = evaluationEvent.FeatureDefinition
+                                .Variants
+                                .FirstOrDefault(variant =>
+                                    variant.Name == evaluationEvent.FeatureDefinition.Allocation.DefaultWhenEnabled);
 
                             if (variantDefinition != null)
                             {
                                 evaluationEvent.AssignmentReason = AssignmentReason.EnabledDefault;
                             }
+                        }
+                    }
+                    else
+                    {
+                        variantDefinition = evaluationEvent.FeatureDefinition
+                            .Variants
+                            .FirstOrDefault(variant =>
+                                variant.Name == evaluationEvent.FeatureDefinition.Allocation.DefaultWhenDisabled);
+
+                        if (variantDefinition != null)
+                        {
+                            evaluationEvent.AssignmentReason = AssignmentReason.DisabledDefault;
                         }
                     }
 
@@ -331,6 +334,11 @@ namespace Microsoft.FeatureManagement
                             evaluationEvent.IsEnabled = false;
                         }
                     }
+                }
+
+                if (variantDefinition == null)
+                {
+                    evaluationEvent.AssignmentReason = AssignmentReason.None;
                 }
 
                 foreach (ISessionManager sessionManager in _sessionManagers)
@@ -534,94 +542,93 @@ namespace Microsoft.FeatureManagement
 
         private ValueTask<VariantDefinition> AssignVariantAsync(EvaluationEvent evaluationEvent, TargetingContext targetingContext, CancellationToken cancellationToken)
         {
+            Debug.Assert(evaluationEvent != null);
+
+            Debug.Assert(targetingContext != null);
+
             VariantDefinition variant = null;
 
-            if (targetingContext != null)
+            if (evaluationEvent.FeatureDefinition.Allocation.User != null)
             {
-                if (evaluationEvent.FeatureDefinition.Allocation.User != null)
+                foreach (UserAllocation user in evaluationEvent.FeatureDefinition.Allocation.User)
                 {
-                    foreach (UserAllocation user in evaluationEvent.FeatureDefinition.Allocation.User)
+                    if (TargetingEvaluator.IsTargeted(targetingContext.UserId, user.Users, _assignerOptions.IgnoreCase))
                     {
-                        if (TargetingEvaluator.IsTargeted(targetingContext.UserId, user.Users, _assignerOptions.IgnoreCase))
+                        if (string.IsNullOrEmpty(user.Variant))
                         {
-                            if (string.IsNullOrEmpty(user.Variant))
-                            {
-                                Logger?.LogWarning($"Missing variant name for user allocation in feature {evaluationEvent.FeatureDefinition.Name}");
+                            Logger?.LogWarning($"Missing variant name for user allocation in feature {evaluationEvent.FeatureDefinition.Name}");
 
-                                return new ValueTask<VariantDefinition>((VariantDefinition)null);
-                            }
-
-                            Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
-
-                            evaluationEvent.AssignmentReason = AssignmentReason.User;
-
-                            return new ValueTask<VariantDefinition>(
-                                evaluationEvent.FeatureDefinition
-                                    .Variants
-                                    .FirstOrDefault((variant) => variant.Name == user.Variant));
+                            return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
-                    }
-                }
 
-                if (evaluationEvent.FeatureDefinition.Allocation.Group != null)
-                {
-                    foreach (GroupAllocation group in evaluationEvent.FeatureDefinition.Allocation.Group)
-                    {
-                        if (TargetingEvaluator.IsTargeted(targetingContext.Groups, group.Groups, _assignerOptions.IgnoreCase))
-                        {
-                            if (string.IsNullOrEmpty(group.Variant))
-                            {
-                                Logger?.LogWarning($"Missing variant name for group allocation in feature {evaluationEvent.FeatureDefinition.Name}");
+                        Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
 
-                                return new ValueTask<VariantDefinition>((VariantDefinition)null);
-                            }
+                        evaluationEvent.AssignmentReason = AssignmentReason.User;
 
-                            Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
-
-                            evaluationEvent.AssignmentReason = AssignmentReason.Group;
-
-                            return new ValueTask<VariantDefinition>(
-                                evaluationEvent.FeatureDefinition
-                                    .Variants
-                                    .FirstOrDefault((variant) => variant.Name == group.Variant));
-                        }
-                    }
-                }
-
-                if (evaluationEvent.FeatureDefinition.Allocation.Percentile != null)
-                {
-                    foreach (PercentileAllocation percentile in evaluationEvent.FeatureDefinition.Allocation.Percentile)
-                    {
-                        if (TargetingEvaluator.IsTargeted(
-                            targetingContext,
-                            percentile.From,
-                            percentile.To,
-                            _assignerOptions.IgnoreCase,
-                            evaluationEvent.FeatureDefinition.Allocation.Seed ?? $"allocation\n{evaluationEvent.FeatureDefinition.Name}"))
-                        {
-                            if (string.IsNullOrEmpty(percentile.Variant))
-                            {
-                                Logger?.LogWarning($"Missing variant name for percentile allocation in feature {evaluationEvent.FeatureDefinition.Name}");
-
-                                return new ValueTask<VariantDefinition>((VariantDefinition)null);
-                            }
-
-                            Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
-
-                            evaluationEvent.AssignmentReason = AssignmentReason.Percentile;
-
-                            return new ValueTask<VariantDefinition>(
-                                evaluationEvent.FeatureDefinition
-                                    .Variants
-                                    .FirstOrDefault((variant) => variant.Name == percentile.Variant));
-                        }
+                        return new ValueTask<VariantDefinition>(
+                            evaluationEvent.FeatureDefinition
+                                .Variants
+                                .FirstOrDefault(variant => 
+                                    variant.Name == user.Variant));
                     }
                 }
             }
 
-            if (variant == null)
+            if (evaluationEvent.FeatureDefinition.Allocation.Group != null)
             {
-                evaluationEvent.AssignmentReason = AssignmentReason.None;
+                foreach (GroupAllocation group in evaluationEvent.FeatureDefinition.Allocation.Group)
+                {
+                    if (TargetingEvaluator.IsTargeted(targetingContext.Groups, group.Groups, _assignerOptions.IgnoreCase))
+                    {
+                        if (string.IsNullOrEmpty(group.Variant))
+                        {
+                            Logger?.LogWarning($"Missing variant name for group allocation in feature {evaluationEvent.FeatureDefinition.Name}");
+
+                            return new ValueTask<VariantDefinition>((VariantDefinition)null);
+                        }
+
+                        Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
+
+                        evaluationEvent.AssignmentReason = AssignmentReason.Group;
+
+                        return new ValueTask<VariantDefinition>(
+                            evaluationEvent.FeatureDefinition
+                                .Variants
+                                .FirstOrDefault(variant => 
+                                    variant.Name == group.Variant));
+                    }
+                }
+            }
+
+            if (evaluationEvent.FeatureDefinition.Allocation.Percentile != null)
+            {
+                foreach (PercentileAllocation percentile in evaluationEvent.FeatureDefinition.Allocation.Percentile)
+                {
+                    if (TargetingEvaluator.IsTargeted(
+                        targetingContext,
+                        percentile.From,
+                        percentile.To,
+                        _assignerOptions.IgnoreCase,
+                        evaluationEvent.FeatureDefinition.Allocation.Seed ?? $"allocation\n{evaluationEvent.FeatureDefinition.Name}"))
+                    {
+                        if (string.IsNullOrEmpty(percentile.Variant))
+                        {
+                            Logger?.LogWarning($"Missing variant name for percentile allocation in feature {evaluationEvent.FeatureDefinition.Name}");
+
+                            return new ValueTask<VariantDefinition>((VariantDefinition)null);
+                        }
+
+                        Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
+
+                        evaluationEvent.AssignmentReason = AssignmentReason.Percentile;
+
+                        return new ValueTask<VariantDefinition>(
+                            evaluationEvent.FeatureDefinition
+                                .Variants
+                                .FirstOrDefault(variant => 
+                                    variant.Name == percentile.Variant));
+                    }
+                }
             }
 
             return new ValueTask<VariantDefinition>(variant);
