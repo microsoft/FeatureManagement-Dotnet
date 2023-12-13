@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -17,7 +15,7 @@ namespace FeatureFlagDemo.FeatureManagement
         {
             var result = new ViewResult()
             {
-                ViewName = "Pages/Shared/FeatureNotEnabled.cshtml",
+                ViewName = "Views/Shared/FeatureNotEnabled.cshtml",
                 ViewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
             };
 
