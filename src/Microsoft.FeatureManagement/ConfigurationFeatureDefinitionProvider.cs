@@ -117,7 +117,7 @@ namespace Microsoft.FeatureManagement
             // Iterate over all features registered in the system at initial invocation time
             foreach (IConfigurationSection featureSection in GetFeatureDefinitionSections())
             {
-                string featureName = GetFeatureFlagSectionName(featureSection);
+                string featureName = GetFeatureName(featureSection);
 
                 if (string.IsNullOrEmpty(featureName))
                 {
@@ -132,26 +132,23 @@ namespace Microsoft.FeatureManagement
 
         private void EnsureInit()
         {
-            if (!_configuration.GetChildren().Any())
-            {
-                Logger?.LogDebug($"Configuration is empty.");
-            }
-
-            bool hasFeatureManagementSection = _configuration.GetChildren()
-                .Any(section => string.Equals(section.Key, ConfigurationFields.FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase));
-
-            if (!hasFeatureManagementSection && !RootConfigurationFallbackEnabled)
-            {
-                Logger?.LogDebug($"No configuration section named '{ConfigurationFields.FeatureManagementSectionName}' was found.");
-            }
-
             if (_initialized == 0)
             {
-                IConfiguration featureManagementConfigurationSection = hasFeatureManagementSection ?
-                    _configuration.GetSection(ConfigurationFields.FeatureManagementSectionName) :
-                    _configuration;
+                IConfiguration featureManagementConfigurationSection = _configuration
+                    .GetChildren()
+                    .FirstOrDefault(section =>
+                        string.Equals(
+                            section.Key,
+                            ConfigurationFields.FeatureManagementSectionName,
+                            StringComparison.OrdinalIgnoreCase));
 
-                bool hasAzureAppConfigurationFeatureFlagSchema = HasAzureAppConfigurationFeatureFlagSchema(featureManagementConfigurationSection);
+                if (featureManagementConfigurationSection == null && RootConfigurationFallbackEnabled)
+                {
+                    featureManagementConfigurationSection = _configuration;
+                }
+
+                bool hasAzureAppConfigurationFeatureFlagSchema = featureManagementConfigurationSection != null && 
+                    HasAzureAppConfigurationFeatureFlagSchema(featureManagementConfigurationSection);
 
                 lock (_lock)
                 {
@@ -168,7 +165,7 @@ namespace Microsoft.FeatureManagement
         private FeatureDefinition ReadFeatureDefinition(string featureName)
         {
             IConfigurationSection configuration = GetFeatureDefinitionSections()
-                .FirstOrDefault(section => string.Equals(GetFeatureFlagSectionName(section), featureName, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(section => string.Equals(GetFeatureName(section), featureName, StringComparison.OrdinalIgnoreCase));
 
             if (configuration == null)
             {
@@ -223,7 +220,7 @@ namespace Microsoft.FeatureManagement
 
             */
 
-            string featureName = GetFeatureFlagSectionName(configurationSection);
+            string featureName = GetFeatureName(configurationSection);
 
             var enabledFor = new List<FeatureFilterConfiguration>();
 
@@ -318,7 +315,7 @@ namespace Microsoft.FeatureManagement
 
             */
 
-            string featureName = GetFeatureFlagSectionName(configurationSection);
+            string featureName = GetFeatureName(configurationSection);
 
             var enabledFor = new List<FeatureFilterConfiguration>();
 
@@ -386,7 +383,7 @@ namespace Microsoft.FeatureManagement
             };
         }
 
-        private string GetFeatureFlagSectionName(IConfigurationSection section)
+        private string GetFeatureName(IConfigurationSection section)
         {
             if (_azureAppConfigurationFeatureFlagSchemaEnabled)
             {
@@ -400,20 +397,32 @@ namespace Microsoft.FeatureManagement
         {
             if (!_configuration.GetChildren().Any())
             {
+                Logger?.LogDebug($"Configuration is empty.");
+
                 return Enumerable.Empty<IConfigurationSection>();
             }
 
-            bool hasFeatureManagementSection = _configuration.GetChildren()
-                .Any(section => string.Equals(section.Key, ConfigurationFields.FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase));
+            IConfiguration featureManagementConfigurationSection = _configuration
+                    .GetChildren()
+                    .FirstOrDefault(section =>
+                        string.Equals(
+                            section.Key,
+                            ConfigurationFields.FeatureManagementSectionName,
+                            StringComparison.OrdinalIgnoreCase));
 
-            if (!hasFeatureManagementSection && !RootConfigurationFallbackEnabled)
+            if (featureManagementConfigurationSection == null)
             {
-                return Enumerable.Empty<IConfigurationSection>();
-            }
+                if (RootConfigurationFallbackEnabled)
+                {
+                    featureManagementConfigurationSection = _configuration;
+                }
+                else
+                {
+                    Logger?.LogDebug($"No configuration section named '{ConfigurationFields.FeatureManagementSectionName}' was found.");
 
-            IConfiguration featureManagementConfigurationSection = hasFeatureManagementSection ?
-                _configuration.GetSection(ConfigurationFields.FeatureManagementSectionName) :
-                _configuration;
+                    return Enumerable.Empty<IConfigurationSection>();
+                }
+            }
 
             if (_azureAppConfigurationFeatureFlagSchemaEnabled)
             {
@@ -427,18 +436,24 @@ namespace Microsoft.FeatureManagement
 
         private static bool HasAzureAppConfigurationFeatureFlagSchema(IConfiguration featureManagementConfiguration)
         {
-            bool hasFeatureFlagsSection = featureManagementConfiguration.GetChildren()
-                .Any(section => string.Equals(section.Key, AzureAppConfigurationFeatureFlagFields.FeatureFlagsSectionName, StringComparison.OrdinalIgnoreCase));
+            IConfigurationSection featureFlagsConfigurationSection = featureManagementConfiguration
+              .GetChildren()
+              .FirstOrDefault(section =>
+                  string.Equals(
+                      section.Key,
+                      AzureAppConfigurationFeatureFlagFields.FeatureFlagsSectionName,
+                      StringComparison.OrdinalIgnoreCase));
 
-            if (hasFeatureFlagsSection)
+            if (featureFlagsConfigurationSection != null)
             {
-                IConfigurationSection featureFlagsConfigurationSection = featureManagementConfiguration.GetSection(AzureAppConfigurationFeatureFlagFields.FeatureFlagsSectionName);
+                if (!string.IsNullOrEmpty(featureFlagsConfigurationSection.Value))
+                {
+                    return false;
+                }
 
-                //
-                // FeatureFlags section is an array
-                return string.IsNullOrEmpty(featureFlagsConfigurationSection.Value) && 
-                    featureFlagsConfigurationSection.GetChildren()
-                        .All(section => int.TryParse(section.Key, out int _));
+                IEnumerable<IConfigurationSection> featureFlagsChildren = featureFlagsConfigurationSection.GetChildren();
+
+                return featureFlagsChildren.Any() && featureFlagsChildren.All(section => int.TryParse(section.Key, out int _));
             }
 
             return false;
