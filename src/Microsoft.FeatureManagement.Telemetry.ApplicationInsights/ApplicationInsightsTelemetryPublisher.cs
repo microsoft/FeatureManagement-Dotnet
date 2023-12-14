@@ -30,7 +30,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 
             FeatureDefinition featureDefinition = evaluationEvent.FeatureDefinition;
 
-            Dictionary<string, string> properties = new Dictionary<string, string>()
+            var properties = new Dictionary<string, string>()
             {
                 { "FeatureName", featureDefinition.Name },
                 { "IsEnabled", evaluationEvent.IsEnabled.ToString() }
