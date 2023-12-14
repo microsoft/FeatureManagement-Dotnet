@@ -14,7 +14,7 @@ namespace Microsoft.FeatureManagement.Telemetry
         None,
 
         /// <summary>
-        /// Variant is assigned by default after processing the user/group/percentile allocation, when the feature flag is disabled.
+        /// Variant is assigned by default when the feature flag is disabled.
         /// </summary>
         DisabledDefault,
 
