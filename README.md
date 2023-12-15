@@ -821,7 +821,7 @@ The `Allocation` setting of a feature flag has the following properties:
 | Property | Description |
 | ---------------- | ---------------- |
 | `DefaultWhenDisabled` | Specifies which variant should be used when a variant is requested while the feature is considered disabled. |
-| `DefaultWhenEnabled` | Specifies which variant should be used when a variant is requested while the feature is considered enabled and no other variant was allocated to the user. |
+| `DefaultWhenEnabled` | Specifies which variant should be used when a variant is requested while the feature is considered enabled and no other variant was allocated for the user. |
 | `User` | Specifies a variant and a list of users for which that variant should be used. | 
 | `Group` | Specifies a variant and a list of groups the current user has to be in for that variant to be used. |
 | `Percentile` | Specifies a variant and a percentage range the user's calculated percentage has to fit into for that variant to be used. |
