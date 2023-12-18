@@ -148,7 +148,7 @@ namespace Microsoft.FeatureManagement
         {
             EvaluationEvent evaluationEvent = await EvaluateFeature<object>(feature, context: null, useContext: false, CancellationToken.None);
 
-            return evaluationEvent.IsEnabled;
+            return evaluationEvent.Enabled;
         }
 
         /// <summary>
@@ -161,7 +161,7 @@ namespace Microsoft.FeatureManagement
         {
             EvaluationEvent evaluationEvent = await EvaluateFeature(feature, context: appContext, useContext: true, CancellationToken.None);
 
-            return evaluationEvent.IsEnabled;
+            return evaluationEvent.Enabled;
         }
 
         /// <summary>
@@ -174,7 +174,7 @@ namespace Microsoft.FeatureManagement
         {
             EvaluationEvent evaluationEvent = await EvaluateFeature<object>(feature, context: null, useContext: false, cancellationToken);
 
-            return evaluationEvent.IsEnabled;
+            return evaluationEvent.Enabled;
         }
 
         /// <summary>
@@ -188,7 +188,7 @@ namespace Microsoft.FeatureManagement
         {
             EvaluationEvent evaluationEvent = await EvaluateFeature(feature, context: appContext, useContext: true, cancellationToken);
 
-            return evaluationEvent.IsEnabled;
+            return evaluationEvent.Enabled;
         }
 
         /// <summary>
@@ -267,7 +267,7 @@ namespace Microsoft.FeatureManagement
             {
                 //
                 // Determine IsEnabled
-                evaluationEvent.IsEnabled = await IsEnabledAsync(evaluationEvent.FeatureDefinition, context, useContext, cancellationToken).ConfigureAwait(false);
+                evaluationEvent.Enabled = await IsEnabledAsync(evaluationEvent.FeatureDefinition, context, useContext, cancellationToken).ConfigureAwait(false);
 
                 //
                 // Determine Variant
@@ -275,7 +275,7 @@ namespace Microsoft.FeatureManagement
 
                 if (evaluationEvent.FeatureDefinition.Allocation != null && (evaluationEvent.FeatureDefinition.Variants?.Any() ?? false))
                 {
-                    if (evaluationEvent.IsEnabled)
+                    if (evaluationEvent.Enabled)
                     {
                         TargetingContext targetingContext;
 
@@ -300,10 +300,7 @@ namespace Microsoft.FeatureManagement
                                 .FirstOrDefault(variant =>
                                     variant.Name == evaluationEvent.FeatureDefinition.Allocation.DefaultWhenEnabled);
 
-                            if (variantDefinition != null)
-                            {
-                                evaluationEvent.AssignmentReason = AssignmentReason.EnabledDefault;
-                            }
+                            evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.DefaultWhenEnabled;
                         }
                     }
                     else
@@ -313,10 +310,7 @@ namespace Microsoft.FeatureManagement
                             .FirstOrDefault(variant =>
                                 variant.Name == evaluationEvent.FeatureDefinition.Allocation.DefaultWhenDisabled);
 
-                        if (variantDefinition != null)
-                        {
-                            evaluationEvent.AssignmentReason = AssignmentReason.DisabledDefault;
-                        }
+                        evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.DefaultWhenDisabled;
                     }
 
                     evaluationEvent.Variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null;
@@ -327,23 +321,20 @@ namespace Microsoft.FeatureManagement
                     {
                         if (variantDefinition.StatusOverride == StatusOverride.Enabled)
                         {
-                            evaluationEvent.IsEnabled = true;
+                            evaluationEvent.Enabled = true;
                         }
                         else if (variantDefinition.StatusOverride == StatusOverride.Disabled)
                         {
-                            evaluationEvent.IsEnabled = false;
+                            evaluationEvent.Enabled = false;
                         }
                     }
                 }
 
-                if (variantDefinition == null)
-                {
-                    evaluationEvent.AssignmentReason = AssignmentReason.None;
-                }
+                Debug.Assert(evaluationEvent.Variant != null ? evaluationEvent.VariantAssignmentReason != VariantAssignmentReason.None : true);
 
                 foreach (ISessionManager sessionManager in _sessionManagers)
                 {
-                    await sessionManager.SetAsync(evaluationEvent.FeatureDefinition.Name, evaluationEvent.IsEnabled).ConfigureAwait(false);
+                    await sessionManager.SetAsync(evaluationEvent.FeatureDefinition.Name, evaluationEvent.Enabled).ConfigureAwait(false);
                 }
 
                 if (evaluationEvent.FeatureDefinition.TelemetryEnabled)
@@ -563,7 +554,7 @@ namespace Microsoft.FeatureManagement
 
                         Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
 
-                        evaluationEvent.AssignmentReason = AssignmentReason.User;
+                        evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.User;
 
                         return new ValueTask<VariantDefinition>(
                             evaluationEvent.FeatureDefinition
@@ -589,7 +580,7 @@ namespace Microsoft.FeatureManagement
 
                         Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
 
-                        evaluationEvent.AssignmentReason = AssignmentReason.Group;
+                        evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.Group;
 
                         return new ValueTask<VariantDefinition>(
                             evaluationEvent.FeatureDefinition
@@ -620,7 +611,7 @@ namespace Microsoft.FeatureManagement
 
                         Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
 
-                        evaluationEvent.AssignmentReason = AssignmentReason.Percentile;
+                        evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.Percentile;
 
                         return new ValueTask<VariantDefinition>(
                             evaluationEvent.FeatureDefinition

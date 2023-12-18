@@ -6,22 +6,22 @@ namespace Microsoft.FeatureManagement.Telemetry
     /// <summary>
     /// The reason the variant was assigned during the evaluation of a feature.
     /// </summary>
-    public enum AssignmentReason
+    public enum VariantAssignmentReason
     {
         /// <summary>
-        /// No variant is assigned.
+        /// Variant allocation did not happend. No variant is assigned.
         /// </summary>
         None,
 
         /// <summary>
         /// Variant is assigned by default when the feature flag is disabled.
         /// </summary>
-        DisabledDefault,
+        DefaultWhenDisabled,
 
         /// <summary>
         /// Variant is assigned by default after processing the user/group/percentile allocation, when the feature flag is enabled.
         /// </summary>
-        EnabledDefault,
+        DefaultWhenEnabled,
 
         /// <summary>
         /// Variant is assigned because of the user allocation.

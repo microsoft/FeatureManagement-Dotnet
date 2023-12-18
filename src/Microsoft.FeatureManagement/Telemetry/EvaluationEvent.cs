@@ -16,7 +16,7 @@ namespace Microsoft.FeatureManagement.Telemetry
         /// <summary>
         /// The enabled state of the feature after evaluation.
         /// </summary>
-        public bool IsEnabled { get; set; }
+        public bool Enabled { get; set; }
 
         /// <summary>
         /// The variant given after evaluation.
@@ -26,6 +26,6 @@ namespace Microsoft.FeatureManagement.Telemetry
         /// <summary>
         /// The reason the variant was assigned.
         /// </summary>
-        public AssignmentReason AssignmentReason { get; set; }
+        public VariantAssignmentReason VariantAssignmentReason { get; set; }
     }
 }

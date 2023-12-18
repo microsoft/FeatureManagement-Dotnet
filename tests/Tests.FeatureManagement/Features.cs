@@ -21,6 +21,7 @@ namespace Tests.FeatureManagement
         public const string VariantFeatureStatusDisabled = "VariantFeatureStatusDisabled";
         public const string VariantFeaturePercentileOn = "VariantFeaturePercentileOn";
         public const string VariantFeaturePercentileOff = "VariantFeaturePercentileOff";
+        public const string VariantFeatureAlwaysOff = "VariantFeatureAlwaysOff";
         public const string VariantFeatureUser = "VariantFeatureUser";
         public const string VariantFeatureGroup = "VariantFeatureGroup";
         public const string VariantFeatureNoVariants = "VariantFeatureNoVariants";
