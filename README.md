@@ -822,14 +822,16 @@ The `Allocation` setting of a feature flag has the following properties:
 | ---------------- | ---------------- |
 | `DefaultWhenDisabled` | Specifies which variant should be used when a variant is requested while the feature is considered disabled. |
 | `DefaultWhenEnabled` | Specifies which variant should be used when a variant is requested while the feature is considered enabled and no other variant was assigned to the user. |
-| `User` | Specifies a variant and a list of users for which that variant should be used. | 
-| `Group` | Specifies a variant and a list of groups the current user has to be in for that variant to be used. |
-| `Percentile` | Specifies a variant and a percentage range the user's calculated percentage has to fit into for that variant to be used. |
+| `User` | Specifies a variant and a list of users for which that variant should be assigned. | 
+| `Group` | Specifies a variant and a list of groups the current user has to be in for that variant to be assigned. |
+| `Percentile` | Specifies a variant and a percentage range the user's calculated percentage has to fit into for that variant to be assigned. |
 | `Seed` | The value which percentage calculations for `Percentile` are based on. The percentage calculation for a specific user will be the same across all features if the same `Seed` value is used. If no `Seed` is specified, then a default seed is created based on the feature name. |
 
-In the above example, if the feature is not enabled, `GetVariantAsync` would return the variant allocated by `DefaultWhenDisabled`, which is `Small` in this case. 
+In the above example, if the feature is not enabled, the feature manager will assign the variant allocated by `DefaultWhenDisabled` to the current user, which is `Small` in this case.
 
-If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to assign a variant to the current user. If the user being evaluated is named `Marsha`, in the group named `Ring1`, or the user happens to fall between the 0 and 10th percentile calculated with the given `Seed`, then the specified variant is returned for that allocation. In this case, all of these would return the `Big` variant. If none of these allocations match, the `DefaultWhenEnabled` variant is returned, which is `Small`.
+If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to assign a variant. If the user being evaluated is named `Marsha`, in the group named `Ring1`, or the user happens to fall between the 0 and 10th percentile calculated with the given `Seed`, then the specified variant is assigned to the user. In this case, all of these would return the `Big` variant. If none of these allocations match, the user is assigned the `DefaultWhenEnabled` variant, which is `Small`.
+
+In either scenario, calling `GetVariantAsync` will return the variant that was assigned to the current user.
 
 Allocation logic is similar to the [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter, but there are some parameters that are present in targeting that aren't in allocation, and vice versa. The outcomes of targeting and allocation are not related.
 
