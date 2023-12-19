@@ -8,6 +8,6 @@ namespace Microsoft.FeatureManagement
 {
     public interface IFeaturedService<TService>
     {
-        Task<TService> GetAsync(CancellationToken cancellationToken);
+        ValueTask<TService> GetAsync(CancellationToken cancellationToken);
     }
 }

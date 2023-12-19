@@ -43,7 +43,7 @@ namespace Microsoft.FeatureManagement
             _featureManager = featureManager;
         }
 
-        public async Task<TService> GetAsync(CancellationToken cancellationToken)
+        public async ValueTask<TService> GetAsync(CancellationToken cancellationToken)
         {
             bool isEnabled = await _featureManager.IsEnabledAsync(_feature, cancellationToken);
 
