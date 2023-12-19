@@ -273,9 +273,28 @@ namespace Microsoft.FeatureManagement
                 // Determine Variant
                 VariantDefinition variantDefinition = null;
 
-                if (evaluationEvent.FeatureDefinition.Variants?.Any() ?? false)
+                if (evaluationEvent.FeatureDefinition.Variants != null &&
+                    evaluationEvent.FeatureDefinition.Variants.Any())
                 {
-                    if (evaluationEvent.Enabled)
+                    if (evaluationEvent.FeatureDefinition.Allocation == null)
+                    {
+                        evaluationEvent.VariantAssignmentReason = evaluationEvent.Enabled ?
+                            VariantAssignmentReason.DefaultWhenEnabled :
+                            VariantAssignmentReason.DefaultWhenDisabled;
+                    }
+                    else if (!evaluationEvent.Enabled)
+                    {
+                        if (evaluationEvent.FeatureDefinition.Allocation.DefaultWhenDisabled != null)
+                        {
+                            variantDefinition = evaluationEvent.FeatureDefinition
+                                .Variants
+                                .FirstOrDefault(variant =>
+                                    variant.Name == evaluationEvent.FeatureDefinition.Allocation.DefaultWhenDisabled);
+                        }
+
+                        evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.DefaultWhenDisabled;
+                    }
+                    else
                     {
                         TargetingContext targetingContext;
 
@@ -288,14 +307,14 @@ namespace Microsoft.FeatureManagement
                             targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
                         }
 
-                        if (targetingContext != null)
+                        if (targetingContext != null && evaluationEvent.FeatureDefinition.Allocation != null)
                         {
                             variantDefinition = await AssignVariantAsync(evaluationEvent, targetingContext, cancellationToken).ConfigureAwait(false);
                         }
 
                         if (variantDefinition == null)
                         {
-                            if (evaluationEvent.FeatureDefinition.Allocation?.DefaultWhenEnabled != null)
+                            if (evaluationEvent.FeatureDefinition.Allocation.DefaultWhenEnabled != null)
                             {
                                 variantDefinition = evaluationEvent.FeatureDefinition
                                     .Variants
@@ -305,19 +324,7 @@ namespace Microsoft.FeatureManagement
 
                             evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.DefaultWhenEnabled;
                         }
-                    }
-                    else
-                    {
-                        if (evaluationEvent.FeatureDefinition.Allocation?.DefaultWhenDisabled != null)
-                        {
-                            variantDefinition = evaluationEvent.FeatureDefinition
-                                .Variants
-                                .FirstOrDefault(variant =>
-                                    variant.Name == evaluationEvent.FeatureDefinition.Allocation.DefaultWhenDisabled);
-                        }
-
-                        evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.DefaultWhenDisabled;
-                    }
+                    }        
 
                     evaluationEvent.Variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null;
 
@@ -541,9 +548,11 @@ namespace Microsoft.FeatureManagement
 
             Debug.Assert(targetingContext != null);
 
+            Debug.Assert(evaluationEvent.FeatureDefinition.Allocation != null);
+
             VariantDefinition variant = null;
 
-            if (evaluationEvent.FeatureDefinition.Allocation?.User != null)
+            if (evaluationEvent.FeatureDefinition.Allocation.User != null)
             {
                 foreach (UserAllocation user in evaluationEvent.FeatureDefinition.Allocation.User)
                 {
@@ -569,7 +578,7 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            if (evaluationEvent.FeatureDefinition.Allocation?.Group != null)
+            if (evaluationEvent.FeatureDefinition.Allocation.Group != null)
             {
                 foreach (GroupAllocation group in evaluationEvent.FeatureDefinition.Allocation.Group)
                 {
@@ -595,7 +604,7 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            if (evaluationEvent.FeatureDefinition.Allocation?.Percentile != null)
+            if (evaluationEvent.FeatureDefinition.Allocation.Percentile != null)
             {
                 foreach (PercentileAllocation percentile in evaluationEvent.FeatureDefinition.Allocation.Percentile)
                 {
