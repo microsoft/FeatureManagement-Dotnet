@@ -6,7 +6,6 @@ namespace Microsoft.FeatureManagement
 {
     internal static class ConfigurationFields
     {
-        // Enum keywords
         public const string RequirementType = "RequirementType";
         public const string FeatureStatus = "Status";
 
@@ -37,5 +36,10 @@ namespace Microsoft.FeatureManagement
         // Other keywords
         public const string NameKeyword = "Name";
         public const string FeatureManagementSectionName = "FeatureManagement";
+
+        // Telemetry keywords
+        public const string Telemetry = "Telemetry";
+        public const string Enabled = "Enabled";
+        public const string Metadata = "Metadata";
     }
 }

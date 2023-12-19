@@ -41,9 +41,9 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
                 properties["Variant"] = evaluationEvent.Variant.Name;
             }
 
-            if (featureDefinition.TelemetryMetadata != null)
+            if (featureDefinition.Telemetry.Metadata != null)
             {
-                foreach (KeyValuePair<string, string> kvp in featureDefinition.TelemetryMetadata)
+                foreach (KeyValuePair<string, string> kvp in featureDefinition.Telemetry.Metadata)
                 {
                     properties[kvp.Key] = kvp.Value;
                 }

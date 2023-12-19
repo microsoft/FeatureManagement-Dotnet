@@ -301,7 +301,8 @@ namespace Microsoft.FeatureManagement
                 await sessionManager.SetAsync(feature, isFeatureEnabled).ConfigureAwait(false);
             }
 
-            if (featureDefinition.TelemetryEnabled)
+            if (featureDefinition.Telemetry != null &&
+                featureDefinition.Telemetry.Enabled)
             {
                 PublishTelemetry(new EvaluationEvent
                 {
@@ -484,7 +485,8 @@ namespace Microsoft.FeatureManagement
 
             Variant variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null;
 
-            if (featureDefinition.TelemetryEnabled)
+            if (featureDefinition.Telemetry != null &&
+                featureDefinition.Telemetry.Enabled)
             {
                 PublishTelemetry(new EvaluationEvent
                 {

@@ -1035,9 +1035,9 @@ namespace Tests.FeatureManagement
             Assert.True(result);
             Assert.Equal(onFeature, testPublisher.evaluationEventCache.FeatureDefinition.Name);
             Assert.Equal(result, testPublisher.evaluationEventCache.IsEnabled);
-            Assert.Equal("EtagValue", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata["Etag"]);
-            Assert.Equal("LabelValue", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata["Label"]);
-            Assert.Equal("Tag1Value", testPublisher.evaluationEventCache.FeatureDefinition.TelemetryMetadata["Tags.Tag1"]);
+            Assert.Equal("EtagValue", testPublisher.evaluationEventCache.FeatureDefinition.Telemetry.Metadata["Etag"]);
+            Assert.Equal("LabelValue", testPublisher.evaluationEventCache.FeatureDefinition.Telemetry.Metadata["Label"]);
+            Assert.Equal("Tag1Value", testPublisher.evaluationEventCache.FeatureDefinition.Telemetry.Metadata["Tags.Tag1"]);
 
             const string offFeature = "OffTimeTestFeature";
 

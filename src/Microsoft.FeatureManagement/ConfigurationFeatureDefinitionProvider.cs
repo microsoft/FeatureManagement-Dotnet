@@ -317,15 +317,20 @@ namespace Microsoft.FeatureManagement
                     }
                 }
 
-                telemetryEnabled = configurationSection.GetValue<bool>("TelemetryEnabled");
+                IConfigurationSection telemetrySection = configurationSection.GetSection(ConfigurationFields.Telemetry);
 
-                IConfigurationSection telemetryMetadataSection = configurationSection.GetSection("TelemetryMetadata");
-
-                if (telemetryMetadataSection.Exists())
+                if (telemetrySection.Exists())
                 {
-                    telemetryMetadata = new Dictionary<string, string>();
+                    telemetryEnabled = telemetrySection.GetValue<bool>(ConfigurationFields.Enabled);
 
-                    telemetryMetadata = telemetryMetadataSection.GetChildren().ToDictionary(x => x.Key, x => x.Value);
+                    IConfigurationSection telemetryMetadataSection = telemetrySection.GetSection(ConfigurationFields.Metadata);
+
+                    if (telemetryMetadataSection.Exists())
+                    {
+                        telemetryMetadata = new Dictionary<string, string>();
+
+                        telemetryMetadata = telemetryMetadataSection.GetChildren().ToDictionary(x => x.Key, x => x.Value);
+                    }
                 }
             }
 
@@ -337,8 +342,11 @@ namespace Microsoft.FeatureManagement
                 Status = featureStatus,
                 Allocation = allocation,
                 Variants = variants,
-                TelemetryEnabled = telemetryEnabled,
-                TelemetryMetadata = telemetryMetadata
+                Telemetry = new TelemetryConfiguration
+                {
+                    Enabled = telemetryEnabled,
+                    Metadata = telemetryMetadata
+                }
             };
         }
 
