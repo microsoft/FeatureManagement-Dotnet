@@ -198,7 +198,9 @@ namespace Microsoft.FeatureManagement
             where TService : class
             where TImplementation : class, TService
         {
-            services.AddSingleton<TImplementation>();
+            //
+            // lifetime should be same as feature manager
+            services.TryAddSingleton<TImplementation>();
 
             services.AddSingleton<FeaturedServiceImplementationWrapper<TService>>(sp => new FeaturedServiceImplementationWrapper<TService>()
             {
@@ -206,6 +208,8 @@ namespace Microsoft.FeatureManagement
                 FeatureName = featureName,
             });
 
+            //
+            // lifetime should be same as feature manager
             services.TryAddSingleton<IFeaturedService<TService>, FeaturedService<TService>>();
 
             return services;
@@ -215,6 +219,22 @@ namespace Microsoft.FeatureManagement
             where TService : class
             where TImplementation : class, TService
         {
+            //
+            // lifetime should be same as feature manager
+            services.TryAddSingleton<TImplementation>();
+
+            services.AddSingleton<FeaturedServiceImplementationWrapper<TService>>(sp => new FeaturedServiceImplementationWrapper<TService>()
+            {
+                Implementation = sp.GetRequiredService<TImplementation>(),
+                FeatureName = featureName,
+                VariantName = variantName,
+                VariantBased = true
+            });
+
+            //
+            // lifetime should be same as feature manager
+            services.TryAddSingleton<IFeaturedService<TService>, FeaturedService<TService>>();
+
             return services;
         }
     }

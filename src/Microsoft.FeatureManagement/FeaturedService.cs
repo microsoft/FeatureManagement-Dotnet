@@ -36,9 +36,9 @@ namespace Microsoft.FeatureManagement
 
             _services = services;
 
-            _featureBasedImplementation = _services.FirstOrDefault(s => s.ForVariant == false);
+            _featureBasedImplementation = _services.FirstOrDefault(s => s.VariantBased == false);
 
-            _variantBasedImplementation = _services.Where(s => s.ForVariant);
+            _variantBasedImplementation = _services.Where(s => s.VariantBased);
 
             _featureManager = featureManager;
         }
