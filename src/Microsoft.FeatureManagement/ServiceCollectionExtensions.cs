@@ -193,5 +193,29 @@ namespace Microsoft.FeatureManagement
 
             return services.AddScopedFeatureManagement();
         }
+
+        public static IServiceCollection OverrideForFeature<TService, TImplementation>(this IServiceCollection services, string featureName)
+            where TService : class
+            where TImplementation : class, TService
+        {
+            services.AddSingleton<TImplementation>();
+
+            services.AddSingleton<FeaturedServiceImplementationWrapper<TService>>(sp => new FeaturedServiceImplementationWrapper<TService>()
+            {
+                Implementation = sp.GetRequiredService<TImplementation>(),
+                FeatureName = featureName,
+            });
+
+            services.TryAddSingleton<IFeaturedService<TService>, FeaturedService<TService>>();
+
+            return services;
+        }
+
+        public static IServiceCollection OverrideForFeatureVariant<TService, TImplementation>(this IServiceCollection services, string featureName, string variantName)
+            where TService : class
+            where TImplementation : class, TService
+        {
+            return services;
+        }
     }
 }
