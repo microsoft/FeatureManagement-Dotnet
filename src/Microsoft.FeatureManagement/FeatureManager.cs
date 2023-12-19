@@ -273,7 +273,7 @@ namespace Microsoft.FeatureManagement
                 // Determine Variant
                 VariantDefinition variantDefinition = null;
 
-                if (evaluationEvent.FeatureDefinition.Allocation != null && (evaluationEvent.FeatureDefinition.Variants?.Any() ?? false))
+                if (evaluationEvent.FeatureDefinition.Variants?.Any() ?? false)
                 {
                     if (evaluationEvent.Enabled)
                     {
@@ -295,20 +295,26 @@ namespace Microsoft.FeatureManagement
 
                         if (variantDefinition == null)
                         {
-                            variantDefinition = evaluationEvent.FeatureDefinition
-                                .Variants
-                                .FirstOrDefault(variant =>
-                                    variant.Name == evaluationEvent.FeatureDefinition.Allocation.DefaultWhenEnabled);
+                            if (evaluationEvent.FeatureDefinition.Allocation?.DefaultWhenEnabled != null)
+                            {
+                                variantDefinition = evaluationEvent.FeatureDefinition
+                                    .Variants
+                                    .FirstOrDefault(variant =>
+                                        variant.Name == evaluationEvent.FeatureDefinition.Allocation.DefaultWhenEnabled);
+                            }
 
                             evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.DefaultWhenEnabled;
                         }
                     }
                     else
                     {
-                        variantDefinition = evaluationEvent.FeatureDefinition
-                            .Variants
-                            .FirstOrDefault(variant =>
-                                variant.Name == evaluationEvent.FeatureDefinition.Allocation.DefaultWhenDisabled);
+                        if (evaluationEvent.FeatureDefinition.Allocation?.DefaultWhenDisabled != null)
+                        {
+                            variantDefinition = evaluationEvent.FeatureDefinition
+                                .Variants
+                                .FirstOrDefault(variant =>
+                                    variant.Name == evaluationEvent.FeatureDefinition.Allocation.DefaultWhenDisabled);
+                        }
 
                         evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.DefaultWhenDisabled;
                     }
@@ -537,7 +543,7 @@ namespace Microsoft.FeatureManagement
 
             VariantDefinition variant = null;
 
-            if (evaluationEvent.FeatureDefinition.Allocation.User != null)
+            if (evaluationEvent.FeatureDefinition.Allocation?.User != null)
             {
                 foreach (UserAllocation user in evaluationEvent.FeatureDefinition.Allocation.User)
                 {
@@ -563,7 +569,7 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            if (evaluationEvent.FeatureDefinition.Allocation.Group != null)
+            if (evaluationEvent.FeatureDefinition.Allocation?.Group != null)
             {
                 foreach (GroupAllocation group in evaluationEvent.FeatureDefinition.Allocation.Group)
                 {
@@ -589,7 +595,7 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            if (evaluationEvent.FeatureDefinition.Allocation.Percentile != null)
+            if (evaluationEvent.FeatureDefinition.Allocation?.Percentile != null)
             {
                 foreach (PercentileAllocation percentile in evaluationEvent.FeatureDefinition.Allocation.Percentile)
                 {
