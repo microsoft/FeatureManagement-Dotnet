@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using Microsoft.ApplicationInsights;
+using System.Diagnostics;
 
 namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 {
@@ -36,13 +37,10 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
                 { "Enabled", evaluationEvent.Enabled.ToString() }
             };
 
-            if (evaluationEvent.Variant != null)
-            {
-                properties["Variant"] = evaluationEvent.Variant.Name;
-            }
-
             if (evaluationEvent.VariantAssignmentReason != VariantAssignmentReason.None)
             {
+                properties["Variant"] = evaluationEvent.Variant?.Name ?? string.Empty;
+
                 properties["VariantAssignmentReason"] = ToString(evaluationEvent.VariantAssignmentReason);
             }
 
@@ -74,6 +72,8 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 
         private static string ToString(VariantAssignmentReason reason)
         {
+            Debug.Assert(reason != VariantAssignmentReason.None);
+
             const string DefaultWhenDisabled = "DefaultWhenDisabled";
             const string DefaultWhenEnabled = "DefaultWhenEnabled";
             const string User = "User";

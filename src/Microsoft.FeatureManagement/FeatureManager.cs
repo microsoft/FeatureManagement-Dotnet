@@ -330,8 +330,6 @@ namespace Microsoft.FeatureManagement
                     }
                 }
 
-                Debug.Assert(evaluationEvent.Variant != null ? evaluationEvent.VariantAssignmentReason != VariantAssignmentReason.None : true);
-
                 foreach (ISessionManager sessionManager in _sessionManagers)
                 {
                     await sessionManager.SetAsync(evaluationEvent.FeatureDefinition.Name, evaluationEvent.Enabled).ConfigureAwait(false);
