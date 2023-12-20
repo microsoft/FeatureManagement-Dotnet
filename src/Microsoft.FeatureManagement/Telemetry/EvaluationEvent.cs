@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.FeatureManagement.FeatureFilters;
-
 namespace Microsoft.FeatureManagement.Telemetry
 {
     /// <summary>
@@ -18,11 +16,16 @@ namespace Microsoft.FeatureManagement.Telemetry
         /// <summary>
         /// The enabled state of the feature after evaluation.
         /// </summary>
-        public bool IsEnabled { get; set; }
+        public bool Enabled { get; set; }
 
         /// <summary>
         /// The variant given after evaluation.
         /// </summary>
         public Variant Variant { get; set; }
+
+        /// <summary>
+        /// The reason why the variant was assigned.
+        /// </summary>
+        public VariantAssignmentReason VariantAssignmentReason { get; set; }
     }
 }
