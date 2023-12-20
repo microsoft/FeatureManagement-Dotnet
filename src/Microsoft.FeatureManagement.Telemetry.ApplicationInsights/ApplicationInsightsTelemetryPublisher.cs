@@ -66,7 +66,16 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 
             if (evaluationEvent.FeatureDefinition == null)
             {
-                throw new ArgumentNullException(nameof(evaluationEvent.FeatureDefinition));
+                throw new ArgumentException(
+                    "Feature definition is required.",
+                    nameof(evaluationEvent));
+            }
+
+            if (evaluationEvent.FeatureDefinition.Telemetry == null)
+            {
+                throw new ArgumentException(
+                    "Feature definition telemetry configuration is required.",
+                    nameof(evaluationEvent));
             }
         }
 
