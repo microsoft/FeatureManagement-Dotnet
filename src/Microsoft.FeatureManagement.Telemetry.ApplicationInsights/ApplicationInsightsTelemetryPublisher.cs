@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using Microsoft.ApplicationInsights;
+using System.Diagnostics;
 
 namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 {
@@ -30,15 +31,17 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 
             FeatureDefinition featureDefinition = evaluationEvent.FeatureDefinition;
 
-            Dictionary<string, string> properties = new Dictionary<string, string>()
+            var properties = new Dictionary<string, string>()
             {
                 { "FeatureName", featureDefinition.Name },
-                { "IsEnabled", evaluationEvent.IsEnabled.ToString() }
+                { "Enabled", evaluationEvent.Enabled.ToString() }
             };
 
-            if (evaluationEvent.Variant != null)
+            if (evaluationEvent.VariantAssignmentReason != VariantAssignmentReason.None)
             {
-                properties["Variant"] = evaluationEvent.Variant.Name;
+                properties["Variant"] = evaluationEvent.Variant?.Name;
+
+                properties["VariantAssignmentReason"] = ToString(evaluationEvent.VariantAssignmentReason);
             }
 
             if (featureDefinition.Telemetry.Metadata != null)
@@ -65,6 +68,27 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
             {
                 throw new ArgumentNullException(nameof(evaluationEvent.FeatureDefinition));
             }
+        }
+
+        private static string ToString(VariantAssignmentReason reason)
+        {
+            Debug.Assert(reason != VariantAssignmentReason.None);
+
+            const string DefaultWhenDisabled = "DefaultWhenDisabled";
+            const string DefaultWhenEnabled = "DefaultWhenEnabled";
+            const string User = "User";
+            const string Group = "Group";
+            const string Percentile = "Percentile";
+
+            return reason switch
+            {
+                VariantAssignmentReason.DefaultWhenDisabled => DefaultWhenDisabled,
+                VariantAssignmentReason.DefaultWhenEnabled => DefaultWhenEnabled,
+                VariantAssignmentReason.User => User,
+                VariantAssignmentReason.Group => Group,
+                VariantAssignmentReason.Percentile => Percentile,
+                _ => throw new ArgumentException("Invalid assignment reason.", nameof(reason))
+            };
         }
     }
 }
