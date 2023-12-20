@@ -312,7 +312,7 @@ namespace Microsoft.FeatureManagement
                             variantDefinition = await AssignVariantAsync(evaluationEvent, targetingContext, cancellationToken).ConfigureAwait(false);
                         }
 
-                        if (variantDefinition == null)
+                        if (evaluationEvent.VariantAssignmentReason == VariantAssignmentReason.None)
                         {
                             if (evaluationEvent.FeatureDefinition.Allocation.DefaultWhenEnabled != null)
                             {
