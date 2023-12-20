@@ -24,7 +24,7 @@ namespace Microsoft.FeatureManagement.Telemetry
         public Variant Variant { get; set; }
 
         /// <summary>
-        /// The reason the variant was assigned.
+        /// The reason why the variant was assigned.
         /// </summary>
         public VariantAssignmentReason VariantAssignmentReason { get; set; }
     }
