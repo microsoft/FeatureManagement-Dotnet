@@ -8,12 +8,20 @@ Welcome to your new app.
 
 <p>@authMessage</p>
 
+@if (isBetaEnabled)
+{
+    <h2>You are lucky to see the Beta content.</h2>
+    <img src="https://www.betalabservices.com/wp-content/uploads/2018/06/beta-1000x506-72dpi-color.png" />
+}
+
 <SurveyPrompt Title="How is Blazor working for you?" />
+
+@inject IFeatureManagerSnapshot _featureManager
 
 @code {
     private string authMessage = "The user is NOT authenticated.";
 
-    private bool isEnabled;
+    private bool isBetaEnabled;
 
     [CascadingParameter]
     private Task<AuthenticationState> authenticationState { get; set; }
@@ -27,8 +35,10 @@ Welcome to your new app.
 
             if (user?.Identity is not null && user.Identity.IsAuthenticated)
             {
-                authMessage = $"User {user.Identity.Name} is authenticated.";
+                authMessage = $"The user {user.Identity.Name} is authenticated.";
             }
         }
+
+        isBetaEnabled = await _featureManager.IsEnabledAsync("Beta");
     }
 }

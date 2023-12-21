@@ -1,28 +1,28 @@
 ﻿<CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">
-            <AuthorizeView>
-                <Authorized>
-                    <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
-                    <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-                </Authorized>
-                <NotAuthorized>
-                    <GuestView />
-                </NotAuthorized>
-            </AuthorizeView>
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
         </Found>
         <NotFound>
-            <AuthorizeView>
-                <Authorized>
-                    <PageTitle>Not found</PageTitle>
-                    <LayoutView Layout="@typeof(MainLayout)">
-                        <p role="alert">Sorry, there's nothing at this address.</p>
-                    </LayoutView>
-                </Authorized>
-                <NotAuthorized>
-                    <GuestView />
-                </NotAuthorized>
-            </AuthorizeView>
+            <PageTitle>Not found</PageTitle>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <p role="alert">Sorry, there's nothing at this address.</p>
+            </LayoutView>
         </NotFound>
     </Router>
 </CascadingAuthenticationState>
+
+@inject UserAgentContextProvider UserAgentContextProvider
+
+@code {
+    [Parameter]
+    public string UserAgentContext { get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+        UserAgentContextProvider.Context = UserAgentContext;
+
+        return base.OnInitializedAsync();
+    }
+}

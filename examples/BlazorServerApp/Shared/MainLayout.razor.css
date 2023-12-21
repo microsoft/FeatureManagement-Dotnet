@@ -16,7 +16,16 @@ main {
     background-color: #f7f7f7;
     border-bottom: 1px solid #d6d5d5;
     justify-content: flex-end;
-    height: 3.5rem;
+    height: 3.6rem;
+    display: flex;
+    align-items: center;
+}
+
+.enhanced-top-row {
+    background-color: #04173D;
+    border-bottom: 1px solid #04173D;
+    justify-content: flex-end;
+    height: 3.6rem;
     display: flex;
     align-items: center;
 }

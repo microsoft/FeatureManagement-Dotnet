@@ -3,6 +3,8 @@
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @{
     Layout = "_Layout";
+
+    string userAgentContext = HttpContext.Request.Headers["User-Agent"];
 }
 
-<component type="typeof(App)" render-mode="ServerPrerendered" />
+<component param-UserAgentContext="userAgentContext" type="typeof(App)" render-mode="Server" />

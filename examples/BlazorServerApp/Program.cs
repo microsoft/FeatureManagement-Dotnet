@@ -17,6 +17,12 @@ namespace BlazorServerApp
 
             builder.Services.AddScoped<AuthenticationStateProvider, RandomAuthenticationStateProvider>();
 
+            builder.Services.AddScoped<UserAgentContextProvider>();
+
+            builder.Services.AddScopedFeatureManagement()
+                .WithTargeting<MyTargetingContextAccessor>()
+                .AddFeatureFilter<BrowserFilter>();
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
