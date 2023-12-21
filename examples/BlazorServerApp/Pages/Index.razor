@@ -8,11 +8,15 @@ Welcome to your new app.
 
 <p>@authMessage</p>
 
-@if (isBetaEnabled)
-{
-    <h2>You are lucky to see the Beta content.</h2>
-    <img src="https://www.betalabservices.com/wp-content/uploads/2018/06/beta-1000x506-72dpi-color.png" />
-}
+<AuthorizeView>
+    <Authorized>
+        @if (isBetaEnabled)
+        {
+            <h2>You are lucky to see the BETA content.</h2>
+            <img src="https://www.betalabservices.com/wp-content/uploads/2018/06/beta-1000x506-72dpi-color.png" />
+        }
+    </Authorized>
+</AuthorizeView>
 
 <SurveyPrompt Title="How is Blazor working for you?" />
 

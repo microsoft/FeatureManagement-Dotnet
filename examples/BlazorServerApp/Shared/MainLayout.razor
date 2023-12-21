@@ -8,7 +8,7 @@
     </div>
 
     <main>
-        <div class="top-row px-4">
+        <div class=@(isEnhancementEnabled ? "enhanced-top-row px-4" : "top-row px-4")>
             <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
         </div>
 
@@ -17,3 +17,14 @@
         </article>
     </main>
 </div>
+
+@inject IFeatureManagerSnapshot _featureManager
+
+@code {
+    private bool isEnhancementEnabled;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isEnhancementEnabled = await _featureManager.IsEnabledAsync("BrowserEnhancement");
+    }
+}
