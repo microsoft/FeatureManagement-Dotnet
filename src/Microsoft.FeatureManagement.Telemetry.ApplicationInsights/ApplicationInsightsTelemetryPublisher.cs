@@ -14,6 +14,11 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
         private const string _eventName = "FeatureEvaluation";
         private readonly TelemetryClient _telemetryClient;
 
+        /// <summary>
+        /// Creates an instance of the Application Insights telemetry publisher
+        /// </summary>
+        /// <param name="telemetryClient">The underlying telemetry client that will be used to send data to Application Insights</param>
+        /// <exception cref="ArgumentNullException">Thrown if the provided telemetry client is null.</exception>
         public ApplicationInsightsTelemetryPublisher(TelemetryClient telemetryClient)
         {
             _telemetryClient = telemetryClient ?? throw new ArgumentNullException(nameof(telemetryClient));
