@@ -44,9 +44,9 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
                 properties["VariantAssignmentReason"] = ToString(evaluationEvent.VariantAssignmentReason);
             }
 
-            if (featureDefinition.TelemetryMetadata != null)
+            if (featureDefinition.Telemetry.Metadata != null)
             {
-                foreach (KeyValuePair<string, string> kvp in featureDefinition.TelemetryMetadata)
+                foreach (KeyValuePair<string, string> kvp in featureDefinition.Telemetry.Metadata)
                 {
                     properties[kvp.Key] = kvp.Value;
                 }
@@ -66,7 +66,16 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 
             if (evaluationEvent.FeatureDefinition == null)
             {
-                throw new ArgumentNullException(nameof(evaluationEvent.FeatureDefinition));
+                throw new ArgumentException(
+                    "Feature definition is required.",
+                    nameof(evaluationEvent));
+            }
+
+            if (evaluationEvent.FeatureDefinition.Telemetry == null)
+            {
+                throw new ArgumentException(
+                    "Feature definition telemetry configuration is required.",
+                    nameof(evaluationEvent));
             }
         }
 

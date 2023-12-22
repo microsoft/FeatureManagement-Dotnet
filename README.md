@@ -870,7 +870,7 @@ These types of questions can be answered through the emission and analysis of fe
 
 By default, feature flags will not have telemetry emitted. To publish telemetry for a given feature flag, the flag *MUST* declare that it is enabled for telemetry emission.
 
-For flags defined in `appsettings.json`, that is done by using the `TelemetryEnabled` property on feature flags. The value of this property must be `true` to publish telemetry for the flag.
+For flags defined in `appsettings.json`, that is done by using the `Telemetry` property on feature flags.
 
 ```
 {
@@ -878,7 +878,9 @@ For flags defined in `appsettings.json`, that is done by using the `TelemetryEna
     {
         "MyFlag":
         {
-            "TelemetryEnabled": true,
+            "Telemetry": {
+                "Enabled": true
+            },
             "EnabledFor": [
                 {
                     "Name": "AlwaysOn"
@@ -889,7 +891,14 @@ For flags defined in `appsettings.json`, that is done by using the `TelemetryEna
 }
 ```
 
-The appsettings snippet above defines a flag named `MyFlag` that is enabled for telemetry.
+The appsettings snippet above defines a feature flag named `MyFlag` that is enabled for telemetry. This is indicated by the `Telemetry` object which sets `Enabled` to true. The value of the `Enabled` property must be `true` to publish telemetry for the flag.
+
+The `Telemetry` section of a feature flag has the following properties:
+
+| Property | Description |
+| ---------------- | ---------------- |
+| `Enabled` | Specifies whether telemetry should be published for the feature flag. |
+| `Metadata` | A collection of key-value pairs, modeled as a dictionary, that can be used to attach custom metadata about the feature flag to evaluation events. |
 
 ### Custom Telemetry Publishers
 

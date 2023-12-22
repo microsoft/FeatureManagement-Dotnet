@@ -348,7 +348,8 @@ namespace Microsoft.FeatureManagement
                     await sessionManager.SetAsync(evaluationEvent.FeatureDefinition.Name, evaluationEvent.Enabled).ConfigureAwait(false);
                 }
 
-                if (evaluationEvent.FeatureDefinition.TelemetryEnabled)
+                if (evaluationEvent.FeatureDefinition.Telemetry != null &&
+                    evaluationEvent.FeatureDefinition.Telemetry.Enabled)
                 {
                     PublishTelemetry(evaluationEvent, cancellationToken);
                 }
@@ -497,7 +498,7 @@ namespace Microsoft.FeatureManagement
 
             return enabled;
         }
-
+        
         private async ValueTask<FeatureDefinition> GetFeatureDefinition(string feature)
         {
             FeatureDefinition featureDefinition = await _featureDefinitionProvider
