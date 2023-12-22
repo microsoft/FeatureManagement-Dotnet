@@ -1,9 +1,40 @@
 ﻿@page "/"
 @namespace BlazorServerApp.Pages
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@using System.Security.Claims;
+@using Microsoft.AspNetCore.Authentication;
+@using Microsoft.AspNetCore.Authentication.Cookies;
 @{
     Layout = "_Layout";
 
+    int randomNum = Random.Shared.Next();
+
+    //
+    // It has 2/3 chance to be logged in.
+    if (randomNum % 3 != 0)
+    {
+        string username = randomNum.ToString();
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, username)
+        };
+
+        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(claimsIdentity),
+            new AuthenticationProperties());
+    }
+    else
+    {
+        await HttpContext.SignOutAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme);
+    }
+
+    //
+    // The user agent context will be set to the parameter UserAgentContext in App.razor
     string userAgentContext = HttpContext.Request.Headers["User-Agent"];
 }
 

@@ -1,5 +1,5 @@
 using BlazorServerApp.Data;
-using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.FeatureManagement;
 
 namespace BlazorServerApp
@@ -15,7 +15,8 @@ namespace BlazorServerApp
             builder.Services.AddServerSideBlazor();
             builder.Services.AddSingleton<WeatherForecastService>();
 
-            builder.Services.AddScoped<AuthenticationStateProvider, RandomAuthenticationStateProvider>();
+            builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie();
 
             builder.Services.AddScoped<UserAgentContextProvider>();
 
@@ -38,6 +39,8 @@ namespace BlazorServerApp
             app.UseStaticFiles();
 
             app.UseRouting();
+
+            app.UseAuthentication();
 
             app.MapBlazorHub();
             app.MapFallbackToPage("/_Host");

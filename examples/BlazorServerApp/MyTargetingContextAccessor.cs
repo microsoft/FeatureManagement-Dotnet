@@ -16,17 +16,17 @@ namespace BlazorServerApp
 
         public async ValueTask<TargetingContext> GetContextAsync()
         {
+            string userAgentContext = _userAgentContextProvider.Context;
+
             AuthenticationState authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
 
             string username = authState.User.Identity.Name;
 
-            bool IsAuthenticated = authState.User.Identity.IsAuthenticated;
-
-            string userAgentContext = _userAgentContextProvider.Context;
+            bool isAuthenticated = authState.User.Identity.IsAuthenticated;
 
             var groups = new List<string>();
 
-            if (!IsAuthenticated)
+            if (!isAuthenticated)
             {
                 groups.Add("Guests");
             }
@@ -41,7 +41,7 @@ namespace BlazorServerApp
                 groups.Add("Firefox");
             }
 
-            TargetingContext targetingContext = new TargetingContext
+            var targetingContext = new TargetingContext
             {
                 UserId = username,
                 Groups = groups

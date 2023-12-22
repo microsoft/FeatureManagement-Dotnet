@@ -54,7 +54,9 @@ The `"Beta"` feature uses the [`Targeting`](https://github.com/microsoft/Feature
 
 ## User Authentication
 
-This app uses the [`AuthenticationStateProvider`](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/?view=aspnetcore-8.0#authenticationstateprovider-service) service to obtain the user authentication state information. When the application is loaded, the custom `RandomAuthenticationStateProvider` will generate a random user which has 2/3 chance to be authenticated.
+This app uses [cookie authentication](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/cookie?view=aspnetcore-6.0). When the app is loaded, it has 2/3 chance to be an authenticated user. The details can be found [here](./examples/BlazorServerApp/Pages/_Host.cshtml).
+
+The [`AuthenticationStateProvider`](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/?view=aspnetcore-8.0#authenticationstateprovider-service) service to obtain the user authentication state information.
 
 ## Targeting Context
 
