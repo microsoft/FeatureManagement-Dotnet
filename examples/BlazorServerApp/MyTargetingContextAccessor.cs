@@ -5,19 +5,15 @@ namespace BlazorServerApp
 {
     public class MyTargetingContextAccessor : ITargetingContextAccessor
     {
-        private readonly UserAgentContextProvider _userAgentContextProvider;
         private readonly AuthenticationStateProvider _authenticationStateProvider;
 
-        public MyTargetingContextAccessor(UserAgentContextProvider userAgentContextProvider, AuthenticationStateProvider authenticationStateProvider)
+        public MyTargetingContextAccessor(AuthenticationStateProvider authenticationStateProvider)
         {
-            _userAgentContextProvider = userAgentContextProvider ?? throw new ArgumentNullException(nameof(userAgentContextProvider));
             _authenticationStateProvider = authenticationStateProvider ?? throw new ArgumentNullException(nameof(authenticationStateProvider));
         }
 
         public async ValueTask<TargetingContext> GetContextAsync()
         {
-            string userAgentContext = _userAgentContextProvider.Context;
-
             AuthenticationState authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
 
             string username = authState.User.Identity.Name;
@@ -31,16 +27,6 @@ namespace BlazorServerApp
                 groups.Add("Guests");
             }
 
-            if (IsEdgeBrowser(userAgentContext))
-            {
-                groups.Add("Edge");
-            }
-
-            if (IsFirefoxBrowser(userAgentContext))
-            {
-                groups.Add("Firefox");
-            }
-
             var targetingContext = new TargetingContext
             {
                 UserId = username,
@@ -48,26 +34,6 @@ namespace BlazorServerApp
             };
 
             return targetingContext;
-        }
-
-        private static bool IsEdgeBrowser(string userAgentContext)
-        {
-            if (userAgentContext == null)
-            {
-                return false;
-            }
-
-            return userAgentContext.Contains("edge", StringComparison.OrdinalIgnoreCase) || userAgentContext.Contains("edg", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static bool IsFirefoxBrowser(string userAgentContext)
-        {
-            if (userAgentContext == null)
-            {
-                return false;
-            }
-
-            return userAgentContext.Contains("Firefox", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

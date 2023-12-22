@@ -1,35 +1,32 @@
 ﻿using Microsoft.FeatureManagement;
-using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace BlazorServerApp
 {
     [FilterAlias("Browser")]
     public class BrowserFilter : IFeatureFilter
     {
-        private readonly ITargetingContextAccessor _targetingContextAccessor;
+        private readonly UserAgentContextProvider _userAgentContextProvider;
 
-        public BrowserFilter(ITargetingContextAccessor targetingContextAccessor)
+        public BrowserFilter(UserAgentContextProvider userAgentContextProvider)
         {
-            _targetingContextAccessor = targetingContextAccessor ?? throw new ArgumentNullException(nameof(targetingContextAccessor));
+            _userAgentContextProvider = userAgentContextProvider ?? throw new ArgumentNullException(nameof(userAgentContextProvider));
         }
 
-        public async Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
-            BrowserFilterSettings settings = context.Parameters.Get<BrowserFilterSettings>() ?? new BrowserFilterSettings();
+            string userAgentContext = _userAgentContextProvider.Context;
 
-            foreach (string browser in settings.AllowedBrowsers)
+            return Task.FromResult(IsEdgeBrowser(userAgentContext));
+        }
+
+        private static bool IsEdgeBrowser(string userAgentContext)
+        {
+            if (userAgentContext == null)
             {
-                TargetingContext targetingContext = await _targetingContextAccessor.GetContextAsync();
-
-                if (targetingContext.Groups
-                    .Any(group =>
-                        string.Equals(group, browser, StringComparison.OrdinalIgnoreCase)))
-                {
-                    return true;
-                }
+                return false;
             }
 
-            return false;
+            return userAgentContext.Contains("edge", StringComparison.OrdinalIgnoreCase) || userAgentContext.Contains("edg", StringComparison.OrdinalIgnoreCase);
         }
     }
 }
