@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.FeatureManagement.Telemetry;
+using System.Collections.Generic;
 
 namespace Microsoft.FeatureManagement
 {
@@ -8,7 +9,7 @@ namespace Microsoft.FeatureManagement
     public class TelemetryConfiguration
     {
         /// <summary>
-        /// A flag to enable or disable sending telemetry events to the registered <see cref="Telemetry.ITelemetryPublisher"/>.
+        /// A flag to enable or disable sending <see cref="EvaluationEvent"/> events to registered <see cref="ITelemetryPublisher"/>s.
         /// </summary>
         public bool Enabled { get; set; }
 
