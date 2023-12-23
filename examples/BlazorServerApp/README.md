@@ -48,7 +48,7 @@ This app uses two feature flags: "BrowserEnhancement" and "Beta".
 }
 ```
 
-The `"BrowserEnhancement"` feature is enabled when the user is using any of the allowed browsers, in this case, the Edge browser. If the `"BrowserEnhancement"` feature is on, the color of the top bar will be dark blue. Otherwise, it will be white.
+The `"BrowserEnhancement"` feature is enabled when the user is using the allowed browsers, in this example, the Edge browser. If the `"BrowserEnhancement"` feature is on, the color of the top bar will be dark blue. Otherwise, it will be white.
 
 The `"Beta"` feature uses the [`Targeting`](https://github.com/microsoft/FeatureManagement-Dotnet?tab=readme-ov-file#targeting) filter to evaluate when to activate. The `"Guests"` group, consisting of the unauthenticated users, will be excluded from the audience. Other users will have 50% chance to fall into the default rollout. When the `"Beta"` feature is enabled, the **BETA** content will be displayed.
 
