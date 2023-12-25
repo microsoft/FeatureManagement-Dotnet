@@ -11,17 +11,17 @@ namespace Microsoft.FeatureManagement
 {
     internal class FeaturedService<TService> : IFeaturedService<TService>
     {
-        TService _defaultImplementation;
+        private TService _defaultImplementation;
 
-        IEnumerable<FeaturedServiceImplementationWrapper<TService>> _services;
+        private IEnumerable<FeaturedServiceImplementationWrapper<TService>> _services;
 
-        FeaturedServiceImplementationWrapper<TService> _featureBasedImplementation;
+        private FeaturedServiceImplementationWrapper<TService> _featureBasedImplementation;
 
-        IEnumerable<FeaturedServiceImplementationWrapper<TService>> _variantBasedImplementation;
+        private IEnumerable<FeaturedServiceImplementationWrapper<TService>> _variantBasedImplementation;
 
-        IVariantFeatureManager _featureManager;
+        private IVariantFeatureManager _featureManager;
 
-        string _feature;
+        private string _featureName;
 
         public FeaturedService(TService defaultImplementation, IEnumerable<FeaturedServiceImplementationWrapper<TService>> services, IVariantFeatureManager featureManager)
         {
@@ -32,7 +32,7 @@ namespace Microsoft.FeatureManagement
 
             _defaultImplementation = defaultImplementation;
 
-            _feature = services.First()?.FeatureName;
+            _featureName = services.First()?.FeatureName;
 
             _services = services;
 
@@ -45,9 +45,9 @@ namespace Microsoft.FeatureManagement
 
         public async ValueTask<TService> GetAsync(CancellationToken cancellationToken)
         {
-            bool isEnabled = await _featureManager.IsEnabledAsync(_feature, cancellationToken);
+            bool isEnabled = await _featureManager.IsEnabledAsync(_featureName, cancellationToken);
 
-            Variant variant = await _featureManager.GetVariantAsync(_feature, cancellationToken);
+            Variant variant = await _featureManager.GetVariantAsync(_featureName, cancellationToken);
 
             if (variant != null)
             {

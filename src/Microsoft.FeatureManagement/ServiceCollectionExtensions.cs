@@ -202,7 +202,28 @@ namespace Microsoft.FeatureManagement
             // lifetime should be same as feature manager
             services.TryAddSingleton<TImplementation>();
 
-            services.AddSingleton<FeaturedServiceImplementationWrapper<TService>>(sp => new FeaturedServiceImplementationWrapper<TService>()
+            services.AddSingleton(sp => new FeaturedServiceImplementationWrapper<TService>()
+            {
+                Implementation = sp.GetRequiredService<TImplementation>(),
+                FeatureName = featureName,
+            });
+
+            //
+            // lifetime should be same as feature manager
+            services.TryAddSingleton<IFeaturedService<TService>, FeaturedService<TService>>();
+
+            return services;
+        }
+
+        public static IServiceCollection OverrideForFeature<TService, TImplementation>(this IServiceCollection services,string featureName, Func<IServiceProvider, TImplementation> implementationFactory)
+            where TService : class
+            where TImplementation : class, TService
+        {
+            //
+            // lifetime should be same as feature manager
+            services.TryAddSingleton(implementationFactory);
+
+            services.AddSingleton(sp => new FeaturedServiceImplementationWrapper<TService>()
             {
                 Implementation = sp.GetRequiredService<TImplementation>(),
                 FeatureName = featureName,
@@ -223,7 +244,30 @@ namespace Microsoft.FeatureManagement
             // lifetime should be same as feature manager
             services.TryAddSingleton<TImplementation>();
 
-            services.AddSingleton<FeaturedServiceImplementationWrapper<TService>>(sp => new FeaturedServiceImplementationWrapper<TService>()
+            services.AddSingleton(sp => new FeaturedServiceImplementationWrapper<TService>()
+            {
+                Implementation = sp.GetRequiredService<TImplementation>(),
+                FeatureName = featureName,
+                VariantName = variantName,
+                VariantBased = true
+            });
+
+            //
+            // lifetime should be same as feature manager
+            services.TryAddSingleton<IFeaturedService<TService>, FeaturedService<TService>>();
+
+            return services;
+        }
+
+        public static IServiceCollection OverrideForFeatureVariant<TService, TImplementation>(this IServiceCollection services, string featureName, string variantName, Func<IServiceProvider, TImplementation> implementationFactory)
+            where TService : class
+            where TImplementation : class, TService
+        {
+            //
+            // lifetime should be same as feature manager
+            services.TryAddSingleton(implementationFactory);
+
+            services.AddSingleton(sp => new FeaturedServiceImplementationWrapper<TService>()
             {
                 Implementation = sp.GetRequiredService<TImplementation>(),
                 FeatureName = featureName,
