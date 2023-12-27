@@ -742,7 +742,7 @@ IConfigurationSection variantConfiguration = variant.Configuration;
 
 MyFeatureSettings settings = new MyFeatureSettings();
 
-variant.Configuration.Bind(settings);
+variantConfiguration.Bind(settings);
 ```
 
 The variant returned is dependent on the user currently being evaluated, and that information is obtained from an instance of `TargetingContext`. This context can either be passed in when calling `GetVariantAsync` or it can be automatically retrieved from an implementation of [`ITargetingContextAccessor`](#itargetingcontextaccessor) if one is registered.
