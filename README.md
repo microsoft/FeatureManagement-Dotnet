@@ -827,7 +827,8 @@ The `Allocation` setting of a feature flag has the following properties:
 | `Percentile` | Specifies a variant and a percentage range the user's calculated percentage has to fit into for that variant to be assigned. |
 | `Seed` | The value which percentage calculations for `Percentile` are based on. The percentage calculation for a specific user will be the same across all features if the same `Seed` value is used. If no `Seed` is specified, then a default seed is created based on the feature name. |
 
-In the above example, if the feature is not enabled, the feature manager will assign the variant allocated by `DefaultWhenDisabled` to the current user, which is `Small` in this case.
+In the above example, if the feature is not enabled, the feature manager will assign the variant marked as `DefaultWhenDisabled` to the current user, which is `Small` in this case.
+
 
 If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to assign a variant. If the user being evaluated is named `Marsha`, in the group named `Ring1`, or the user happens to fall between the 0 and 10th percentile calculated with the given `Seed`, then the specified variant is assigned to the user. In this case, all of these would return the `Big` variant. If none of these allocations match, the user is assigned the `DefaultWhenEnabled` variant, which is `Small`.
 
