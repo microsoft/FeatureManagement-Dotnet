@@ -737,7 +737,7 @@ IConfigurationSection variantConfiguration = variant.Configuration;
 // Do something with the resulting variant and its configuration
 ```
 
-### Defining a Feature's Variants
+### Defining Variants
 
 Each variant has two properties: a name and a configuration. The name is used to refer to a specific variant, and the configuration is the value of that variant. The configuration can be set using either the `ConfigurationReference` or `ConfigurationValue` properties. `ConfigurationReference` is a string path that references a section of the current configuration that contains the feature flag declaration. `ConfigurationValue` is an inline configuration that can be a string, number, boolean, or configuration object. If both are specified, `ConfigurationValue` is used. If neither are specified, the returned variant's `Configuration` property will be null.
 
@@ -771,7 +771,7 @@ A list of all possible variants is defined for each feature under the `Variants`
 }
 ```
 
-### Allocating a Feature's Variants
+### Allocating Variants
 
 The process of allocating a feature's variants is determined by the `Allocation` property of the feature.
 
