@@ -722,20 +722,30 @@ public class Variant
 
 ### Getting Variants
 
-For each feature, a variant can be retrieved using the `IVariantFeatureManager`'s `GetVariantAsync` method. The variant returned is dependent on the
-user currently being evaluated, and that information is obtained from an instance of `TargetingContext`. This context can either be passed in when
-calling `GetVariantAsync` or it can be automatically retrieved from an implementation of `ITargetingContextAccessor` if one is registered.
+For each feature, a variant can be retrieved using the `IVariantFeatureManager`'s `GetVariantAsync` method.
 
 ``` C#
 …
 IVariantFeatureManager featureManager;
 …
-Variant variant = await featureManager.GetVariantAsync(MyFeatureFlags.FeatureU);
+Variant variant = await featureManager.GetVariantAsync(MyFeatureFlags.FeatureU, CancellationToken.None);
 
 IConfigurationSection variantConfiguration = variant.Configuration;
 
 // Do something with the resulting variant and its configuration
 ```
+
+Once a variant is retrieved, the configuration of a variant can be used directly as an `IConfigurationSection` from the variant's `Configuration` property. Another option is to bind the configuration to an object using .NET's configuration binding pattern.
+
+``` C#
+IConfigurationSection variantConfiguration = variant.Configuration;
+
+MyFeatureSettings settings = new MyFeatureSettings();
+
+variant.Configuration.Bind(settings);
+```
+
+The variant returned is dependent on the user currently being evaluated, and that information is obtained from an instance of `TargetingContext`. This context can either be passed in when calling `GetVariantAsync` or it can be automatically retrieved from an implementation of [`ITargetingContextAccessor`](#itargetingcontextaccessor) if one is registered.
 
 ### Defining Variants
 
@@ -829,8 +839,7 @@ The `Allocation` setting of a feature flag has the following properties:
 
 In the above example, if the feature is not enabled, the feature manager will assign the variant marked as `DefaultWhenDisabled` to the current user, which is `Small` in this case.
 
-
-If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to assign a variant. If the user being evaluated is named `Marsha`, in the group named `Ring1`, or the user happens to fall between the 0 and 10th percentile calculated with the given `Seed`, then the specified variant is assigned to the user. In this case, all of these would return the `Big` variant. If none of these allocations match, the user is assigned the `DefaultWhenEnabled` variant, which is `Small`.
+If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to assign a variant. For this particular example, if the user being evaluated is named `Marsha`, in the group named `Ring1`, or the user happens to fall between the 0 and 10th percentile, then the specified variant is assigned to the user. In this case, all of these would return the `Big` variant. If none of these allocations match, the user is assigned the `DefaultWhenEnabled` variant, which is `Small`.
 
 Allocation logic is similar to the [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter, but there are some parameters that are present in targeting that aren't in allocation, and vice versa. The outcomes of targeting and allocation are not related.
 
