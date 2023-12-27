@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FeatureManagement;
-using Microsoft.FeatureManagement.FeatureFilters;
 
 //
 // Setup configuration
@@ -15,7 +14,6 @@ IServiceCollection services = new ServiceCollection();
 
 services.AddSingleton(configuration)
         .AddFeatureManagement()
-        .AddFeatureFilter<PercentageFilter>()
         .AddFeatureFilter<AccountIdFilter>();
 
 //
@@ -25,11 +23,11 @@ using (ServiceProvider serviceProvider = services.BuildServiceProvider())
     IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
     var accounts = new List<string>()
-                {
-                    "abc",
-                    "adef",
-                    "abcdefghijklmnopqrstuvwxyz"
-                };
+    {
+        "abc",
+        "adef",
+        "abcdefghijklmnopqrstuvwxyz"
+    };
 
     //
     // Mimic work items in a task-driven console application

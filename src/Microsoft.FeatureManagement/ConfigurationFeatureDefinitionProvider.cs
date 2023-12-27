@@ -16,7 +16,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// A feature definition provider that pulls feature definitions from the .NET Core <see cref="IConfiguration"/> system.
     /// </summary>
-    sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable, IFeatureDefinitionProviderCacheable
+    public sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable, IFeatureDefinitionProviderCacheable
     {
         //
         // IFeatureDefinitionProviderCacheable interface is only used to mark this provider as cacheable. This allows our test suite's
@@ -28,13 +28,15 @@ namespace Microsoft.FeatureManagement
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
-        private readonly ILogger _logger;
         private int _stale = 0;
 
-        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration, ILoggerFactory loggerFactory)
+        /// <summary>
+        /// Creates a configuration feature definition provider.
+        /// </summary>
+        /// <param name="configuration">The configuration of feature definitions.</param>
+        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _logger = loggerFactory?.CreateLogger<ConfigurationFeatureDefinitionProvider>() ?? throw new ArgumentNullException(nameof(loggerFactory));
             _definitions = new ConcurrentDictionary<string, FeatureDefinition>();
 
             _changeSubscription = ChangeToken.OnChange(
@@ -42,6 +44,19 @@ namespace Microsoft.FeatureManagement
                 () => _stale = 1);
         }
 
+        /// <summary>
+        /// The option that controls the behavior when "FeatureManagement" section in the configuration is missing.
+        /// </summary>
+        public bool RootConfigurationFallbackEnabled { get; init; }
+
+        /// <summary>
+        /// The logger for the configuration feature definition provider.
+        /// </summary>
+        public ILogger Logger { get; init; }
+
+        /// <summary>
+        /// Disposes the change subscription of the configuration.
+        /// </summary>
         public void Dispose()
         {
             _changeSubscription?.Dispose();
@@ -49,6 +64,11 @@ namespace Microsoft.FeatureManagement
             _changeSubscription = null;
         }
 
+        /// <summary>
+        /// Retrieves the definition for a given feature.
+        /// </summary>
+        /// <param name="featureName">The name of the feature to retrieve the definition for.</param>
+        /// <returns>The feature's definition.</returns>
         public Task<FeatureDefinition> GetFeatureDefinitionAsync(string featureName)
         {
             if (featureName == null)
@@ -73,6 +93,10 @@ namespace Microsoft.FeatureManagement
             return Task.FromResult(definition);
         }
 
+        /// <summary>
+        /// Retrieves definitions for all features.
+        /// </summary>
+        /// <returns>An enumerator which provides asynchronous iteration over feature definitions.</returns>
         //
         // The async key word is necessary for creating IAsyncEnumerable.
         // The need to disable this warning occurs when implementaing async stream synchronously. 
@@ -217,7 +241,14 @@ namespace Microsoft.FeatureManagement
                 return featureManagementConfigurationSection.GetChildren();
             }
 
-            _logger.LogDebug($"No configuration section named '{FeatureManagementSectionName}' was found.");
+            //
+            // There is no "FeatureManagement" section in the configuration
+            if (RootConfigurationFallbackEnabled)
+            {
+                return _configuration.GetChildren();
+            }
+
+            Logger?.LogDebug($"No configuration section named '{FeatureManagementSectionName}' was found.");
 
             return Enumerable.Empty<IConfigurationSection>();
         }

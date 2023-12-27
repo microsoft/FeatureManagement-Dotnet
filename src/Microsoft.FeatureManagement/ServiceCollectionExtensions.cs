@@ -1,12 +1,16 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.FeatureManagement
 {
@@ -16,21 +20,37 @@ namespace Microsoft.FeatureManagement
     public static class ServiceCollectionExtensions
     {
         /// <summary>
-        /// Adds required feature management services and built-in feature filters.
+        /// Adds singleton <see cref="FeatureManager"/> and other required feature management services.
         /// </summary>
         /// <param name="services">The service collection that feature management services are added to.</param>
         /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
+        /// <exception cref="FeatureManagementException">Thrown if <see cref="FeatureManager"/> has been registered as scoped.</exception>
         public static IFeatureManagementBuilder AddFeatureManagement(this IServiceCollection services)
         {
+            if (services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.Conflict,
+                    "Scoped feature management has been registered.");
+            }
+
             services.AddLogging();
+
+            services.AddMemoryCache();
 
             //
             // Add required services
             services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
 
-            services.AddSingleton<IFeatureManager, FeatureManager>();
-
-            services.AddSingleton<ISessionManager, EmptySessionManager>();
+            services.AddSingleton<IFeatureManager>(sp => new FeatureManager(
+                sp.GetRequiredService<IFeatureDefinitionProvider>(),
+                sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
+            {
+                FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
+                Cache = sp.GetRequiredService<IMemoryCache>(),
+                Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>()
+            });
 
             services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
 
@@ -48,7 +68,8 @@ namespace Microsoft.FeatureManagement
         }
 
         /// <summary>
-        /// Adds required feature management services.
+        /// Adds singleton <see cref="FeatureManager"/> and other required feature management services.
+        /// The registered <see cref="ConfigurationFeatureDefinitionProvider"/> will use the provided configuration and read from the top level if no "FeatureManagement" section can be found.
         /// </summary>
         /// <param name="services">The service collection that feature management services are added to.</param>
         /// <param name="configuration">A specific <see cref="IConfiguration"/> instance that will be used to obtain feature settings.</param>
@@ -60,9 +81,86 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            services.AddSingleton<IFeatureDefinitionProvider>(sp => new ConfigurationFeatureDefinitionProvider(configuration, sp.GetRequiredService<ILoggerFactory>()));
+            services.AddSingleton<IFeatureDefinitionProvider>(sp =>
+                new ConfigurationFeatureDefinitionProvider(configuration)
+                {
+                    RootConfigurationFallbackEnabled = true,
+                    Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<ConfigurationFeatureDefinitionProvider>()
+                });
 
             return services.AddFeatureManagement();
+        }
+
+        /// <summary>
+        /// Adds scoped <see cref="FeatureManager"/> and other required feature management services.
+        /// </summary>
+        /// <param name="services">The service collection that feature management services are added to.</param>
+        /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
+        /// <exception cref="FeatureManagementException">Thrown if <see cref="FeatureManager"/> has been registered as singleton.</exception>
+        public static IFeatureManagementBuilder AddScopedFeatureManagement(this IServiceCollection services)
+        {
+            if (services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Singleton))
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.Conflict,
+                    "Singleton feature management has been registered.");
+            }
+
+            services.AddLogging();
+
+            services.AddMemoryCache();
+
+            //
+            // Add required services
+            services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
+
+            services.AddScoped<IFeatureManager>(sp => new FeatureManager(
+                sp.GetRequiredService<IFeatureDefinitionProvider>(),
+                sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
+            {
+                FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
+                Cache = sp.GetRequiredService<IMemoryCache>(),
+                Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>()
+            });
+
+            services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
+
+            var builder = new FeatureManagementBuilder(services);
+
+            //
+            // Add built-in feature filters
+            builder.AddFeatureFilter<PercentageFilter>();
+
+            builder.AddFeatureFilter<TimeWindowFilter>();
+
+            builder.AddFeatureFilter<ContextualTargetingFilter>();
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Adds scoped <see cref="FeatureManager"/> and other required feature management services.
+        /// The registered <see cref="ConfigurationFeatureDefinitionProvider"/> will use the provided configuration and read from the top level if no "FeatureManagement" section can be found.
+        /// </summary>
+        /// <param name="services">The service collection that feature management services are added to.</param>
+        /// <param name="configuration">A specific <see cref="IConfiguration"/> instance that will be used to obtain feature settings.</param>
+        /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
+        public static IFeatureManagementBuilder AddScopedFeatureManagement(this IServiceCollection services, IConfiguration configuration)
+        {
+            if (configuration == null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
+            services.AddSingleton<IFeatureDefinitionProvider>(sp =>
+                new ConfigurationFeatureDefinitionProvider(configuration)
+                {
+                    RootConfigurationFallbackEnabled = true,
+                    Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<ConfigurationFeatureDefinitionProvider>()
+                });
+
+            return services.AddScopedFeatureManagement();
         }
     }
 }

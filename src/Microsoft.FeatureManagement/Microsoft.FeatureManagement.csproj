@@ -4,8 +4,8 @@
   <!-- Official Version -->
   <PropertyGroup>
     <MajorVersion>3</MajorVersion>
-    <MinorVersion>0</MinorVersion>
-    <PatchVersion>0</PatchVersion>
+    <MinorVersion>1</MinorVersion>
+    <PatchVersion>1</PatchVersion>
   </PropertyGroup>
 
   <Import Project="..\..\build\Versioning.props" />
@@ -15,7 +15,7 @@
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>..\..\build\Microsoft.FeatureManagement.snk</AssemblyOriginatorKeyFile>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>9.0</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -4,7 +4,6 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -16,7 +15,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Used to evaluate whether a feature is enabled or disabled.
     /// </summary>
-    class FeatureManager : IFeatureManager, IDisposable
+    public sealed class FeatureManager : IFeatureManager
     {
         private readonly TimeSpan ParametersCacheSlidingExpiration = TimeSpan.FromMinutes(5);
         private readonly TimeSpan ParametersCacheAbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
@@ -24,12 +23,10 @@ namespace Microsoft.FeatureManagement
         private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
-        private readonly ILogger _logger;
         private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
         private readonly FeatureManagementOptions _options;
-        private readonly IMemoryCache _parametersCache;
-        
+
         private class ConfigurationCacheItem
         {
             public IConfiguration Parameters { get; set; }
@@ -37,44 +34,94 @@ namespace Microsoft.FeatureManagement
             public object Settings { get; set; }
         }
 
+        /// <summary>
+        /// Creates a feature manager.
+        /// </summary>
+        /// <param name="featureDefinitionProvider">The provider of feature flag definitions.</param>
+        /// <param name="options">Options controlling the behavior of the feature manager.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureDefinitionProvider"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="options"/> is null.</exception>
         public FeatureManager(
             IFeatureDefinitionProvider featureDefinitionProvider,
-            IEnumerable<IFeatureFilterMetadata> featureFilters,
-            IEnumerable<ISessionManager> sessionManagers,
-            ILoggerFactory loggerFactory,
-            IOptions<FeatureManagementOptions> options)
+            FeatureManagementOptions options)
         {
-            _featureDefinitionProvider = featureDefinitionProvider;
-            _featureFilters = featureFilters ?? throw new ArgumentNullException(nameof(featureFilters));
-            _sessionManagers = sessionManagers ?? throw new ArgumentNullException(nameof(sessionManagers));
-            _logger = loggerFactory.CreateLogger<FeatureManager>();
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
-            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
-            _parametersCache = new MemoryCache(new MemoryCacheOptions());
+            _featureDefinitionProvider = featureDefinitionProvider ?? throw new ArgumentNullException(nameof(featureDefinitionProvider));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
+            _featureFilters = Enumerable.Empty<IFeatureFilterMetadata>();
+            _sessionManagers = Enumerable.Empty<ISessionManager>();
         }
 
+        /// <summary>
+        /// The collection of feature filter metadata.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
+        public IEnumerable<IFeatureFilterMetadata> FeatureFilters
+        {
+            get => _featureFilters;
+
+            init
+            {
+                _featureFilters = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
+
+        /// <summary>
+        /// The collection of session managers.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
+        public IEnumerable<ISessionManager> SessionManagers
+        {
+            get => _sessionManagers;
+
+            init
+            {
+                _sessionManagers = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
+
+        /// <summary>
+        /// The application memory cache to store feature filter settings.
+        /// </summary>
+        public IMemoryCache Cache { get; init; }
+
+        /// <summary>
+        /// The logger for the feature manager.
+        /// </summary>
+        public ILogger Logger { get; init; }
+
+        /// <summary>
+        /// Checks whether a given feature is enabled.
+        /// </summary>
+        /// <param name="feature">The name of the feature to check.</param>
+        /// <returns>True if the feature is enabled, otherwise false.</returns>
         public Task<bool> IsEnabledAsync(string feature)
         {
             return IsEnabledAsync<object>(feature, null, false);
         }
 
+        /// <summary>
+        /// Checks whether a given feature is enabled.
+        /// </summary>
+        /// <param name="feature">The name of the feature to check.</param>
+        /// <param name="appContext">A context providing information that can be used to evaluate whether a feature should be on or off.</param>
+        /// <returns>True if the feature is enabled, otherwise false.</returns>
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
         {
             return IsEnabledAsync(feature, appContext, true);
         }
 
+        /// <summary>
+        /// Retrieves a list of feature names registered in the feature manager.
+        /// </summary>
+        /// <returns>An enumerator which provides asynchronous iteration over the feature names registered in the feature manager.</returns>
         public async IAsyncEnumerable<string> GetFeatureNamesAsync()
         {
             await foreach (FeatureDefinition featureDefintion in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
             {
                 yield return featureDefintion.Name;
             }
-        }
-
-        public void Dispose()
-        {
-            _parametersCache.Dispose();
         }
 
         private async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, bool useAppContext)
@@ -155,6 +202,14 @@ namespace Microsoft.FeatureManagement
 
                         if (filter == null)
                         {
+                            if (_featureFilters.Any(f => IsMatchingName(f.GetType(), featureFilterConfiguration.Name)))
+                            {
+                                //
+                                // Cannot find the appropriate registered feature filter which matches the filter name and the provided context type.
+                                // But there is a registered feature filter which matches the filter name.
+                                continue;
+                            }
+
                             string errorMessage = $"The feature filter '{featureFilterConfiguration.Name}' specified for feature '{feature}' was not found.";
 
                             if (!_options.IgnoreMissingFeatureFilters)
@@ -162,7 +217,7 @@ namespace Microsoft.FeatureManagement
                                 throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
                             }
 
-                            _logger.LogWarning(errorMessage);
+                            Logger?.LogWarning(errorMessage);
 
                             continue;
                         }
@@ -215,7 +270,7 @@ namespace Microsoft.FeatureManagement
                     throw new FeatureManagementException(FeatureManagementError.MissingFeature, errorMessage);
                 }
                 
-                _logger.LogDebug(errorMessage);
+                Logger?.LogDebug(errorMessage);
             }
 
             foreach (ISessionManager sessionManager in _sessionManagers)
@@ -235,7 +290,7 @@ namespace Microsoft.FeatureManagement
                 return;
             }
 
-            if (!(_featureDefinitionProvider is IFeatureDefinitionProviderCacheable))
+            if (!(_featureDefinitionProvider is IFeatureDefinitionProviderCacheable) || Cache == null)
             {
                 context.Settings = binder.BindParameters(context.Parameters);
 
@@ -250,12 +305,12 @@ namespace Microsoft.FeatureManagement
 
             //
             // Check if settings already bound from configuration or the parameters have changed
-            if (!_parametersCache.TryGetValue(cacheKey, out cacheItem) ||
+            if (!Cache.TryGetValue(cacheKey, out cacheItem) ||
                 cacheItem.Parameters != context.Parameters)
             {
                 settings = binder.BindParameters(context.Parameters);
 
-                _parametersCache.Set(
+                Cache.Set(
                     cacheKey,
                     new ConfigurationCacheItem
                     {
@@ -265,7 +320,8 @@ namespace Microsoft.FeatureManagement
                     new MemoryCacheEntryOptions
                     {
                         SlidingExpiration = ParametersCacheSlidingExpiration,
-                        AbsoluteExpirationRelativeToNow = ParametersCacheAbsoluteExpirationRelativeToNow
+                        AbsoluteExpirationRelativeToNow = ParametersCacheAbsoluteExpirationRelativeToNow,
+                        Size = 1
                     });
             }
             else
