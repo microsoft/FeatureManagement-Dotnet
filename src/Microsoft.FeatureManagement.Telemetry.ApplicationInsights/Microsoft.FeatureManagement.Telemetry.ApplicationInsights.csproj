@@ -6,6 +6,7 @@
     <MajorVersion>4</MajorVersion>
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
+    <PreviewVersion>-preview</PreviewVersion>
   </PropertyGroup>
 
   <Import Project="..\..\build\Versioning.props" />
@@ -19,7 +20,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Description>Microsoft.FeatureManagement.AspNetCore provides a way to develop and expose application functionality based on features. Many applications have special requirements when a new feature is developed such as when the feature should be enabled and under what conditions. This library provides a way to define these relationships, and also integrates into common ASP.NET Core code patterns to make exposing these features possible.</Description>
+    <Description>Microsoft.FeatureManagement.Telemetry.ApplicationInsights provides a solution for sending feature flag evaluation events produced by the Microsoft.FeatureManagement library to Application Insights.</Description>
     <Authors>Microsoft</Authors>
     <Company>Microsoft</Company>
     <PackageLicenseUrl>https://licenses.nuget.org/MIT</PackageLicenseUrl>
