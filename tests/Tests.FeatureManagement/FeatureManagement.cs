@@ -1087,6 +1087,7 @@ namespace Tests.FeatureManagement
             variantResult = await featureManager.GetVariantAsync(Features.VariantFeaturePercentileOn, cancellationToken);
             Assert.Equal("Big", variantResult.Name);
             Assert.Equal("Big", testPublisher.evaluationEventCache.Variant.Name);
+            Assert.Equal("Marsha", testPublisher.evaluationEventCache.TargetingContext.UserId);
             Assert.Equal(VariantAssignmentReason.Percentile, testPublisher.evaluationEventCache.VariantAssignmentReason);
 
             variantResult = await featureManager.GetVariantAsync(Features.VariantFeaturePercentileOff, cancellationToken);
