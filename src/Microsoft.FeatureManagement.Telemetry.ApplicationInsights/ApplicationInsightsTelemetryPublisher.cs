@@ -14,6 +14,11 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
         private const string _eventName = "FeatureEvaluation";
         private readonly TelemetryClient _telemetryClient;
 
+        /// <summary>
+        /// Creates an instance of the Application Insights telemetry publisher
+        /// </summary>
+        /// <param name="telemetryClient">The underlying telemetry client that will be used to send data to Application Insights</param>
+        /// <exception cref="ArgumentNullException">Thrown if the provided telemetry client is null.</exception>
         public ApplicationInsightsTelemetryPublisher(TelemetryClient telemetryClient)
         {
             _telemetryClient = telemetryClient ?? throw new ArgumentNullException(nameof(telemetryClient));
@@ -44,9 +49,9 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
                 properties["VariantAssignmentReason"] = ToString(evaluationEvent.VariantAssignmentReason);
             }
 
-            if (featureDefinition.TelemetryMetadata != null)
+            if (featureDefinition.Telemetry.Metadata != null)
             {
-                foreach (KeyValuePair<string, string> kvp in featureDefinition.TelemetryMetadata)
+                foreach (KeyValuePair<string, string> kvp in featureDefinition.Telemetry.Metadata)
                 {
                     properties[kvp.Key] = kvp.Value;
                 }
@@ -66,7 +71,16 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 
             if (evaluationEvent.FeatureDefinition == null)
             {
-                throw new ArgumentNullException(nameof(evaluationEvent.FeatureDefinition));
+                throw new ArgumentException(
+                    "Feature definition is required.",
+                    nameof(evaluationEvent));
+            }
+
+            if (evaluationEvent.FeatureDefinition.Telemetry == null)
+            {
+                throw new ArgumentException(
+                    "Feature definition telemetry configuration is required.",
+                    nameof(evaluationEvent));
             }
         }
 
