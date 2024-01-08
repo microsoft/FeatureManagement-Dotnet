@@ -18,7 +18,7 @@ namespace Microsoft.FeatureManagement.Telemetry
         /// <summary>
         /// The targeting context used to evaluate the feature.
         /// </summary>
-        public ITargetingContext TargetingContext { get; set; }
+        public TargetingContext TargetingContext { get; set; }
 
         /// <summary>
         /// The enabled state of the feature after evaluation.
