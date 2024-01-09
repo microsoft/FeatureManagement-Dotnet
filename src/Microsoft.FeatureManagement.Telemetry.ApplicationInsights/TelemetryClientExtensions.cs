@@ -17,12 +17,14 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
         /// </summary>
         public static void TrackEvent(this TelemetryClient telemetryClient, string eventName, TargetingContext targetingContext, IDictionary<string, string> properties = null, IDictionary<string, double> metrics = null)
         {
+            ValidateTargetingContext(targetingContext);
+
             if (properties == null)
             {
                 properties = new Dictionary<string, string>();
             }
 
-            properties["TargetingId"] = targetingContext.UserId;
+            AddTargetingProperties(properties, targetingContext);
 
             telemetryClient.TrackEvent(eventName, properties, metrics);
         }
@@ -32,12 +34,14 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
         /// </summary>
         public static void TrackEvent(this TelemetryClient telemetryClient, EventTelemetry telemetry, TargetingContext targetingContext)
         {
+            ValidateTargetingContext(targetingContext);
+
             if (telemetry == null)
             {
                 telemetry = new EventTelemetry();
             }
 
-            telemetry.Properties["TargetingId"] = targetingContext.UserId;
+            AddTargetingProperties(telemetry.Properties, targetingContext);
 
             telemetryClient.TrackEvent(telemetry);
         }
@@ -47,12 +51,14 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
         /// </summary>
         public static void TrackMetric(this TelemetryClient telemetryClient, string name, double value, TargetingContext targetingContext, IDictionary<string, string> properties = null)
         {
+            ValidateTargetingContext(targetingContext);
+
             if (properties == null)
             {
                 properties = new Dictionary<string, string>();
             }
 
-            properties["TargetingId"] = targetingContext.UserId;
+            AddTargetingProperties(properties, targetingContext);
 
             telemetryClient.TrackMetric(name, value, properties);
         }
@@ -62,14 +68,29 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
         /// </summary>
         public static void TrackMetric(this TelemetryClient telemetryClient, MetricTelemetry telemetry, TargetingContext targetingContext)
         {
+            ValidateTargetingContext(targetingContext);
+
             if (telemetry == null)
             {
                 telemetry = new MetricTelemetry();
             }
 
-            telemetry.Properties["TargetingId"] = targetingContext.UserId;
+            AddTargetingProperties(telemetry.Properties, targetingContext);
 
             telemetryClient.TrackMetric(telemetry);
+        }
+
+        private static void ValidateTargetingContext(TargetingContext targetingContext)
+        {
+            if (targetingContext == null)
+            {
+                throw new ArgumentNullException(nameof(targetingContext));
+            }
+        }
+
+        private static void AddTargetingProperties(IDictionary<string, string> properties, TargetingContext targetingContext)
+        {
+            properties["TargetingId"] = targetingContext.UserId;
         }
     }
 }
