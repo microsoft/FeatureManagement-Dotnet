@@ -263,6 +263,21 @@ namespace Microsoft.FeatureManagement
                 FeatureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false)
             };
 
+            //
+            // Determine Targeting Context
+            TargetingContext targetingContext;
+
+            if (useContext)
+            {
+                targetingContext = context as TargetingContext;
+            }
+            else
+            {
+                targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            evaluationEvent.TargetingContext = targetingContext;
+
             if (evaluationEvent.FeatureDefinition != null)
             {
                 //
@@ -296,17 +311,6 @@ namespace Microsoft.FeatureManagement
                     }
                     else
                     {
-                        TargetingContext targetingContext;
-
-                        if (useContext)
-                        {
-                            targetingContext = context as TargetingContext;
-                        }
-                        else
-                        {
-                            targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
-                        }
-
                         if (targetingContext != null && evaluationEvent.FeatureDefinition.Allocation != null)
                         {
                             variantDefinition = await AssignVariantAsync(evaluationEvent, targetingContext, cancellationToken).ConfigureAwait(false);
