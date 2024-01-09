@@ -1,4 +1,7 @@
-﻿using Microsoft.ApplicationInsights;
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.FeatureManagement.FeatureFilters;
 
@@ -10,7 +13,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
     public static class ApplicationInsightsTelemetryExtensions
     {
         /// <summary>
-        /// Extension method to track an event with TargetingContext.
+        /// Extension method to track an event with <see cref="TargetingContext"/>.
         /// </summary>
         public static void TrackEvent(this TelemetryClient telemetryClient, string eventName, TargetingContext targetingContext, IDictionary<string, string> properties = null, IDictionary<string, double> metrics = null)
         {
@@ -19,13 +22,13 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
                 properties = new Dictionary<string, string>();
             }
 
-            properties.Add("TargetingId", targetingContext.UserId);
+            properties["TargetingId"] = targetingContext.UserId;
 
             telemetryClient.TrackEvent(eventName, properties, metrics);
         }
 
         /// <summary>
-        /// Extension method to track an EventTelemetry with TargetingContext.
+        /// Extension method to track an <see cref="EventTelemetry"/> with <see cref="TargetingContext"/>.
         /// </summary>
         public static void TrackEvent(this TelemetryClient telemetryClient, EventTelemetry telemetry, TargetingContext targetingContext)
         {
@@ -40,7 +43,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
         }
 
         /// <summary>
-        /// Extension method to track a metric with TargetingContext.
+        /// Extension method to track a metric with <see cref="TargetingContext"/>.
         /// </summary>
         public static void TrackMetric(this TelemetryClient telemetryClient, string name, double value, TargetingContext targetingContext, IDictionary<string, string> properties = null)
         {
@@ -49,13 +52,13 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
                 properties = new Dictionary<string, string>();
             }
 
-            properties.Add("TargetingId", targetingContext.UserId);
+            properties["TargetingId"] = targetingContext.UserId;
 
             telemetryClient.TrackMetric(name, value, properties);
         }
 
         /// <summary>
-        /// Extension method to track a MetricTelemetry with TargetingContext.
+        /// Extension method to track a <see cref="MetricTelemetry"/> with <see cref="TargetingContext"/>.
         /// </summary>
         public static void TrackMetric(this TelemetryClient telemetryClient, MetricTelemetry telemetry, TargetingContext targetingContext)
         {
