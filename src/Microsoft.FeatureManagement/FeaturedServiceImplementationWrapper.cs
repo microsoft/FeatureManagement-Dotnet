@@ -3,12 +3,10 @@
 //
 namespace Microsoft.FeatureManagement
 {
-    internal class FeaturedServiceImplementationWrapper<TService>
+    internal class FeaturedServiceImplementationWrapper<TService> where TService : class
     {
-        public TService Implementation { get; init; }
-
         public string FeatureName { get; init; }
 
-        public string VariantName { get; init; }
+        public TService Implementation { get; init; }
     }
 }

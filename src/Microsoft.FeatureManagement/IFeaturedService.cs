@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
 {
-    public interface IFeaturedService<TService>
+    public interface IFeaturedService<TService> where TService : class
     {
         ValueTask<TService> GetAsync(CancellationToken cancellationToken);
     }

@@ -5,9 +5,9 @@ using System;
 
 namespace Microsoft.FeatureManagement
 {
-    public class VariantAliasAttribute : Attribute
+    public class FeaturedServiceAliasAttribute : Attribute
     {
-        public VariantAliasAttribute(string alias)
+        public FeaturedServiceAliasAttribute(string alias)
         {
             if (string.IsNullOrEmpty(alias))
             {

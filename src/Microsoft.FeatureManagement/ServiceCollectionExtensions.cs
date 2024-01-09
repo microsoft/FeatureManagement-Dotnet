@@ -195,9 +195,9 @@ namespace Microsoft.FeatureManagement
             return services.AddScopedFeatureManagement();
         }
 
-        public static IServiceCollection AddSingletonForFeature<TService>(this IServiceCollection services, string featureName)
+        public static IServiceCollection AddSingletonForFeature<TService>(this IServiceCollection services, string featureName) where TService : class
         {
-            var implementationTypes = Assembly.GetAssembly(typeof(TService))
+            IEnumerable<Type> implementationTypes = Assembly.GetAssembly(typeof(TService))
                 .GetTypes()
                 .Where(type => 
                     typeof(TService).IsAssignableFrom(type) && 
@@ -208,19 +208,11 @@ namespace Microsoft.FeatureManagement
             {
                 services.TryAddSingleton(implementationType);
 
-                var attribute = (VariantAliasAttribute) Attribute.GetCustomAttribute(implementationType, typeof(VariantAliasAttribute));
-
-                if (attribute != null)
+                services.AddSingleton(sp => new FeaturedServiceImplementationWrapper<TService>()
                 {
-                    string variantName = attribute.Alias;
-
-                    services.AddSingleton(sp => new FeaturedServiceImplementationWrapper<TService>()
-                    {
-                        Implementation = (TService) sp.GetRequiredService(implementationType),
-                        FeatureName = featureName,
-                        VariantName = variantName,
-                    });
-                }
+                    FeatureName = featureName,
+                    Implementation = (TService) sp.GetRequiredService(implementationType)
+                });
             }
 
 
@@ -228,7 +220,7 @@ namespace Microsoft.FeatureManagement
             {
                 services.AddScoped<IFeaturedService<TService>>(sp => new FeaturedService<TService>(
                     featureName,
-                    sp.GetRequiredService<IEnumerable< FeaturedServiceImplementationWrapper<TService>>>(),
+                    sp.GetRequiredService<IEnumerable<FeaturedServiceImplementationWrapper<TService>>>(),
                     sp.GetRequiredService<IVariantFeatureManager>()));
             }
             else

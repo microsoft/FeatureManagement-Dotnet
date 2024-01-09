@@ -1,12 +1,15 @@
-﻿namespace FeatureBasedInjectionPOC
+﻿using Microsoft.FeatureManagement;
+
+namespace FeatureBasedInjectionPOC
 {
+    [FeaturedServiceAlias("Omega")]
     internal class AlgorithmOmega : IAlgorithm
     {
         public string Name { get; set; }
 
-        public AlgorithmOmega(string name)
+        public AlgorithmOmega()
         {
-            Name = name;
+            Name = "Omega";
         }
     }
 }
