@@ -58,7 +58,7 @@ using (ServiceProvider serviceProvider = services.BuildServiceProvider())
 
     variant = await featureManager.GetVariantAsync("MyFeature", CancellationToken.None);
 
-    Console.WriteLine($"Get algorithm {algorithm?.Name ?? "Null"} because the feature variant is {variant.Name}");
+    Console.WriteLine($"Get algorithm {algorithm?.Name ?? "Null"} because the feature variant is {variant?.Name ?? "Null"}");
 
     targetingContextAccessor.Current = new TargetingContext
     {
@@ -69,5 +69,5 @@ using (ServiceProvider serviceProvider = services.BuildServiceProvider())
 
     variant = await featureManager.GetVariantAsync("MyFeature", CancellationToken.None);
 
-    Console.WriteLine($"Get algorithm {algorithm?.Name ?? "Null"} because the feature variant is {variant.Name}");
+    Console.WriteLine($"Get algorithm {algorithm?.Name ?? "Null"} because the feature variant is {variant?.Name ?? "Null"}");
 }
