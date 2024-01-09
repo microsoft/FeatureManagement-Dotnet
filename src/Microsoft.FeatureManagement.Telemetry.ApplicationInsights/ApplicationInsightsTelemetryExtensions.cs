@@ -10,7 +10,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
     /// <summary>
     /// Provides extension methods for tracking events with TargetingContext.
     /// </summary>
-    public static class ApplicationInsightsTelemetryExtensions
+    public static class TelemetryClientExtensions
     {
         /// <summary>
         /// Extension method to track an event with <see cref="TargetingContext"/>.
