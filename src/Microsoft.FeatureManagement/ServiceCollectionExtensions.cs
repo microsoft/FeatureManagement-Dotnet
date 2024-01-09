@@ -12,6 +12,7 @@ using Microsoft.FeatureManagement.Telemetry;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace Microsoft.FeatureManagement
 {
@@ -194,90 +195,49 @@ namespace Microsoft.FeatureManagement
             return services.AddScopedFeatureManagement();
         }
 
-        public static IServiceCollection OverrideForFeature<TService, TImplementation>(this IServiceCollection services, string featureName)
-            where TService : class
-            where TImplementation : class, TService
+        public static IServiceCollection AddSingletonForFeature<TService>(this IServiceCollection services, string featureName)
         {
-            //
-            // lifetime should be same as feature manager
-            services.TryAddSingleton<TImplementation>();
+            var implementationTypes = Assembly.GetAssembly(typeof(TService))
+                .GetTypes()
+                .Where(type => 
+                    typeof(TService).IsAssignableFrom(type) && 
+                    !type.IsInterface && 
+                    !type.IsAbstract);
 
-            services.AddSingleton(sp => new FeaturedServiceImplementationWrapper<TService>()
+            foreach (var implementationType in implementationTypes)
             {
-                Implementation = sp.GetRequiredService<TImplementation>(),
-                FeatureName = featureName,
-            });
+                services.TryAddSingleton(implementationType);
 
-            //
-            // lifetime should be same as feature manager
-            services.TryAddSingleton<IFeaturedService<TService>, FeaturedService<TService>>();
+                var attribute = (VariantAliasAttribute) Attribute.GetCustomAttribute(implementationType, typeof(VariantAliasAttribute));
 
-            return services;
-        }
+                if (attribute != null)
+                {
+                    string variantName = attribute.Alias;
 
-        public static IServiceCollection OverrideForFeature<TService, TImplementation>(this IServiceCollection services,string featureName, Func<IServiceProvider, TImplementation> implementationFactory)
-            where TService : class
-            where TImplementation : class, TService
-        {
-            //
-            // lifetime should be same as feature manager
-            services.TryAddSingleton(implementationFactory);
+                    services.AddSingleton(sp => new FeaturedServiceImplementationWrapper<TService>()
+                    {
+                        Implementation = (TService) sp.GetRequiredService(implementationType),
+                        FeatureName = featureName,
+                        VariantName = variantName,
+                    });
+                }
+            }
 
-            services.AddSingleton(sp => new FeaturedServiceImplementationWrapper<TService>()
+
+            if (services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
             {
-                Implementation = sp.GetRequiredService<TImplementation>(),
-                FeatureName = featureName,
-            });
-
-            //
-            // lifetime should be same as feature manager
-            services.TryAddSingleton<IFeaturedService<TService>, FeaturedService<TService>>();
-
-            return services;
-        }
-
-        public static IServiceCollection OverrideForFeatureVariant<TService, TImplementation>(this IServiceCollection services, string featureName, string variantName)
-            where TService : class
-            where TImplementation : class, TService
-        {
-            //
-            // lifetime should be same as feature manager
-            services.TryAddSingleton<TImplementation>();
-
-            services.AddSingleton(sp => new FeaturedServiceImplementationWrapper<TService>()
+                services.AddScoped<IFeaturedService<TService>>(sp => new FeaturedService<TService>(
+                    featureName,
+                    sp.GetRequiredService<IEnumerable< FeaturedServiceImplementationWrapper<TService>>>(),
+                    sp.GetRequiredService<IVariantFeatureManager>()));
+            }
+            else
             {
-                Implementation = sp.GetRequiredService<TImplementation>(),
-                FeatureName = featureName,
-                VariantName = variantName,
-                VariantBased = true
-            });
-
-            //
-            // lifetime should be same as feature manager
-            services.TryAddSingleton<IFeaturedService<TService>, FeaturedService<TService>>();
-
-            return services;
-        }
-
-        public static IServiceCollection OverrideForFeatureVariant<TService, TImplementation>(this IServiceCollection services, string featureName, string variantName, Func<IServiceProvider, TImplementation> implementationFactory)
-            where TService : class
-            where TImplementation : class, TService
-        {
-            //
-            // lifetime should be same as feature manager
-            services.TryAddSingleton(implementationFactory);
-
-            services.AddSingleton(sp => new FeaturedServiceImplementationWrapper<TService>()
-            {
-                Implementation = sp.GetRequiredService<TImplementation>(),
-                FeatureName = featureName,
-                VariantName = variantName,
-                VariantBased = true
-            });
-
-            //
-            // lifetime should be same as feature manager
-            services.TryAddSingleton<IFeaturedService<TService>, FeaturedService<TService>>();
+                services.AddSingleton<IFeaturedService<TService>>(sp => new FeaturedService<TService>(
+                    featureName,
+                    sp.GetRequiredService<IEnumerable<FeaturedServiceImplementationWrapper<TService>>>(),
+                    sp.GetRequiredService<IVariantFeatureManager>()));
+            }
 
             return services;
         }

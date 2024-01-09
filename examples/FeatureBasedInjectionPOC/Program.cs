@@ -15,10 +15,7 @@ services.AddSingleton(configuration)
         .AddFeatureManagement()
         .AddFeatureFilter<TargetingFilter>();
 
-services.AddSingleton<IAlgorithm, AlgorithmAlpha>()
-    .OverrideForFeature<IAlgorithm, AlgorithmBeta>("MyFeature")
-    .OverrideForFeatureVariant<IAlgorithm, AlgorithmSigma>("MyFeature", "Sigma")
-    .OverrideForFeatureVariant<IAlgorithm, AlgorithmOmega>("MyFeature", "Omega", sp => new AlgorithmOmega("OMEGA"));
+services.AddSingleton<IAlgorithm, AlgorithmAlpha>();
 
 var targetingContextAccessor = new OnDemandTargetingContextAccessor();
 

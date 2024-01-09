@@ -10,7 +10,5 @@ namespace Microsoft.FeatureManagement
         public string FeatureName { get; init; }
 
         public string VariantName { get; init; }
-
-        public bool VariantBased { get; init; }
     }
 }
