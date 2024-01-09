@@ -60,9 +60,9 @@ In regular ASP.NET Core web app, the most common way to get targeting context is
 
 ## User Authentication State
 
-This app uses [cookie authentication](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/cookie?view=aspnetcore-6.0). When the app is loaded, it has 2/3 chance to be an authenticated user. The details can be found in the [`_Host.cshtml`](./examples/BlazorServerApp/Pages/_Host.cshtml).
+This app uses [cookie authentication](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/cookie?view=aspnetcore-6.0). When the app is loaded, it has 2/3 chance to be an authenticated user. The details can be found in the [`_Host.cshtml`](./Pages/_Host.cshtml).
 
-Rather than `HttpContext`, the [`AuthenticationStateProvider`](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/?view=aspnetcore-8.0#authenticationstateprovider-service) service is used to obtain the user authentication state information for setting targeting context. The details can be found in the [`MyTargetingContextAccessor`](./examples/BlazorServerApp/MyTargetingContextAccessor.cs).
+Rather than `HttpContext`, the [`AuthenticationStateProvider`](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/?view=aspnetcore-8.0#authenticationstateprovider-service) service is used to obtain the user authentication state information for setting targeting context. The details can be found in the [`MyTargetingContextAccessor`](./MyTargetingContextAccessor.cs).
 
 ## Service Registration
 Blazor applications like this one typically pull ambient contextual data from scoped services. For example, the `UserAgentContext`, `AuthenticationStateProvider` and `ITargetingContextAccessor` are all scoped services. This pattern *breaks* if the feature management services are added as singleton, which is typical in non-blazor web apps.
@@ -77,5 +77,5 @@ And instead use
 services.AddScopedFeatureManagement()
 ```
 
-This call can be seen in the [example](./examples/BlazorServerApp/Program.cs).
+This call can be seen in the [example](./Program.cs).
 
