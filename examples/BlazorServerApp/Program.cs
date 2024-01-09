@@ -18,7 +18,7 @@ namespace BlazorServerApp
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie();
 
-            builder.Services.AddScoped<UserAgentContextProvider>();
+            builder.Services.AddScoped<UserAgentContext>();
 
             builder.Services.AddScopedFeatureManagement()
                 .WithTargeting<MyTargetingContextAccessor>()

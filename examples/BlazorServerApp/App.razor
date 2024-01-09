@@ -13,15 +13,15 @@
     </Router>
 </CascadingAuthenticationState>
 
-@inject UserAgentContextProvider UserAgentContextProvider
+@inject UserAgentContext UserAgentContext
 
 @code {
     [Parameter]
-    public string UserAgentContext { get; set; }
+    public string UserAgent { get; set; }
 
     protected override Task OnInitializedAsync()
     {
-        UserAgentContextProvider.Context = UserAgentContext;
+        UserAgentContext.UserAgent = UserAgent;
 
         return base.OnInitializedAsync();
     }

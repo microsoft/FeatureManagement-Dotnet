@@ -34,8 +34,8 @@
     }
 
     //
-    // The user agent context will be set to the parameter UserAgentContext in App.razor
-    string userAgentContext = HttpContext.Request.Headers["User-Agent"];
+    // The user agent context will be set to the parameter UserAgent in App.razor
+    string userAgent = HttpContext.Request.Headers["User-Agent"];
 }
 
-<component param-UserAgentContext="userAgentContext" type="typeof(App)" render-mode="Server" />
+<component param-UserAgent="userAgent" type="typeof(App)" render-mode="Server" />
