@@ -11,11 +11,15 @@ IConfiguration configuration = new ConfigurationBuilder()
 
 IServiceCollection services = new ServiceCollection();
 
+services.AddSingleton<IAlgorithm, AlgorithmAlpha>();
+services.AddSingleton<IAlgorithm, AlgorithmBeta>();
+services.AddSingleton<IAlgorithm, AlgorithmSigma>();
+services.AddSingleton<IAlgorithm>(sp => new AlgorithmOmega("Omega"));
+
 services.AddSingleton(configuration)
         .AddFeatureManagement()
-        .AddFeatureFilter<TargetingFilter>();
-
-services.AddSingletonForFeature<IAlgorithm>("MyFeature");
+        .AddFeatureFilter<TargetingFilter>()
+        .AddFeaturedService<IAlgorithm>("MyFeature");
 
 var targetingContextAccessor = new OnDemandTargetingContextAccessor();
 

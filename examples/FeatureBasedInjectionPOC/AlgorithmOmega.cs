@@ -7,9 +7,9 @@ namespace FeatureBasedInjectionPOC
     {
         public string Name { get; set; }
 
-        public AlgorithmOmega()
+        public AlgorithmOmega(string name)
         {
-            Name = "Omega";
+            Name = name;
         }
     }
 }

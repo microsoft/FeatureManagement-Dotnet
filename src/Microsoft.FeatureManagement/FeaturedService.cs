@@ -12,14 +12,14 @@ namespace Microsoft.FeatureManagement
 {
     internal class FeaturedService<TService> : IFeaturedService<TService> where TService : class
     {
-        private string _featureName;
-        private IVariantFeatureManager _featureManager;
-        private IEnumerable<FeaturedServiceImplementationWrapper<TService>> _services;
+        private readonly string _featureName;
+        private readonly IVariantFeatureManager _featureManager;
+        private readonly IEnumerable<TService> _services;
 
-        public FeaturedService(string featureName, IEnumerable<FeaturedServiceImplementationWrapper<TService>> services, IVariantFeatureManager featureManager)
+        public FeaturedService(string featureName, IEnumerable<TService> services, IVariantFeatureManager featureManager)
         {
             _featureName = featureName;
-            _services = services.Where(s => s.FeatureName.Equals(featureName));
+            _services = services;
             _featureManager = featureManager;
         }
 
@@ -27,20 +27,17 @@ namespace Microsoft.FeatureManagement
         {
             Variant variant = await _featureManager.GetVariantAsync(_featureName, cancellationToken);
 
+            TService implementation = null;
+
             if (variant != null)
             {
-                FeaturedServiceImplementationWrapper<TService> implementationWrapper = _services.FirstOrDefault(s => 
+                implementation = _services.FirstOrDefault(service => 
                     IsMatchingVariant(
-                        s.Implementation.GetType(),
+                        service.GetType(),
                         variant));
-
-                if (implementationWrapper != null)
-                {
-                    return implementationWrapper.Implementation;
-                }
             }
 
-            return null;
+            return implementation;
         }
 
         private bool IsMatchingVariant(Type implementationType, Variant variant)

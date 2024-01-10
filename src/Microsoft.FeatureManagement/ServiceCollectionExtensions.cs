@@ -194,44 +194,5 @@ namespace Microsoft.FeatureManagement
 
             return services.AddScopedFeatureManagement();
         }
-
-        public static IServiceCollection AddSingletonForFeature<TService>(this IServiceCollection services, string featureName) where TService : class
-        {
-            IEnumerable<Type> implementationTypes = Assembly.GetAssembly(typeof(TService))
-                .GetTypes()
-                .Where(type => 
-                    typeof(TService).IsAssignableFrom(type) && 
-                    !type.IsInterface && 
-                    !type.IsAbstract);
-
-            foreach (var implementationType in implementationTypes)
-            {
-                services.TryAddSingleton(implementationType);
-
-                services.AddSingleton(sp => new FeaturedServiceImplementationWrapper<TService>()
-                {
-                    FeatureName = featureName,
-                    Implementation = (TService) sp.GetRequiredService(implementationType)
-                });
-            }
-
-
-            if (services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
-            {
-                services.AddScoped<IFeaturedService<TService>>(sp => new FeaturedService<TService>(
-                    featureName,
-                    sp.GetRequiredService<IEnumerable<FeaturedServiceImplementationWrapper<TService>>>(),
-                    sp.GetRequiredService<IVariantFeatureManager>()));
-            }
-            else
-            {
-                services.AddSingleton<IFeaturedService<TService>>(sp => new FeaturedService<TService>(
-                    featureName,
-                    sp.GetRequiredService<IEnumerable<FeaturedServiceImplementationWrapper<TService>>>(),
-                    sp.GetRequiredService<IVariantFeatureManager>()));
-            }
-
-            return services;
-        }
     }
 }
