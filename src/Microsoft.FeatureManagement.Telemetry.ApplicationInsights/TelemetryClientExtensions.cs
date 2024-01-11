@@ -24,7 +24,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
                 properties = new Dictionary<string, string>();
             }
 
-            AddTargetingProperties(properties, targetingContext);
+            properties["TargetingId"] = targetingContext.UserId;
 
             telemetryClient.TrackEvent(eventName, properties, metrics);
         }
@@ -41,43 +41,9 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
                 telemetry = new EventTelemetry();
             }
 
-            AddTargetingProperties(telemetry.Properties, targetingContext);
+            telemetry.Properties["TargetingId"] = targetingContext.UserId;
 
             telemetryClient.TrackEvent(telemetry);
-        }
-
-        /// <summary>
-        /// Extension method to track a metric with <see cref="TargetingContext"/>.
-        /// </summary>
-        public static void TrackMetric(this TelemetryClient telemetryClient, string name, double value, TargetingContext targetingContext, IDictionary<string, string> properties = null)
-        {
-            ValidateTargetingContext(targetingContext);
-
-            if (properties == null)
-            {
-                properties = new Dictionary<string, string>();
-            }
-
-            AddTargetingProperties(properties, targetingContext);
-
-            telemetryClient.TrackMetric(name, value, properties);
-        }
-
-        /// <summary>
-        /// Extension method to track a <see cref="MetricTelemetry"/> with <see cref="TargetingContext"/>.
-        /// </summary>
-        public static void TrackMetric(this TelemetryClient telemetryClient, MetricTelemetry telemetry, TargetingContext targetingContext)
-        {
-            ValidateTargetingContext(targetingContext);
-
-            if (telemetry == null)
-            {
-                telemetry = new MetricTelemetry();
-            }
-
-            AddTargetingProperties(telemetry.Properties, targetingContext);
-
-            telemetryClient.TrackMetric(telemetry);
         }
 
         private static void ValidateTargetingContext(TargetingContext targetingContext)
@@ -86,11 +52,6 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
             {
                 throw new ArgumentNullException(nameof(targetingContext));
             }
-        }
-
-        private static void AddTargetingProperties(IDictionary<string, string> properties, TargetingContext targetingContext)
-        {
-            properties["TargetingId"] = targetingContext.UserId;
         }
     }
 }
