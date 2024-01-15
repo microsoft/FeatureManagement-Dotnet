@@ -16,39 +16,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         const string RequiredParameter = "Value cannot be null.";
         const string NotMatched = "Start date is not a valid first occurrence.";
 
-        //
-        // Day of week
-        const string Sunday = "Sunday";
-        const string Monday = "Monday";
-        const string Tuesday = "Tuesday";
-        const string Wednesday = "Wednesday";
-        const string Thursday = "Thursday";
-        const string Friday = "Friday";
-        const string Saturday = "Saturday";
-
-        //
-        // Index
-        const string First = "First";
-        const string Second = "Second";
-        const string Third = "Third";
-        const string Fourth = "Fourth";
-        const string Last = "Last";
-
-        //
-        // Recurrence Pattern Type
-        const string Daily = "Daily";
-        const string Weekly = "Weekly";
-        const string AbsoluteMonthly = "AbsoluteMonthly";
-        const string RelativeMonthly = "RelativeMonthly";
-        const string AbsoluteYearly = "AbsoluteYearly";
-        const string RelativeYearly = "RelativeYearly";
-
-        //
-        // Recurrence Range Type
-        const string EndDate = "EndDate";
-        const string Numbered = "Numbered";
-        const string NoEnd = "NoEnd";
-
         const int WeekDayNumber = 7;
         const int MinMonthDayNumber = 28;
         const int MinYearDayNumber = 365;
@@ -108,59 +75,57 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 return false;
             }
 
-            string patternType = settings.Recurrence.Pattern.Type;
-
             int numberOfOccurrences;
 
-            if (string.Equals(patternType, Daily, StringComparison.OrdinalIgnoreCase))
+            switch (settings.Recurrence.Pattern.Type)
             {
-                FindDailyPreviousOccurrence(time, settings, out previousOccurrence, out numberOfOccurrences);
-            }
-            else if (string.Equals(patternType, Weekly, StringComparison.OrdinalIgnoreCase))
-            {
-                FindWeeklyPreviousOccurrence(time, settings, out previousOccurrence, out numberOfOccurrences);
-            }
-            else if (string.Equals(patternType, AbsoluteMonthly, StringComparison.OrdinalIgnoreCase))
-            {
-                FindAbsoluteMonthlyPreviousOccurrence(time, settings, out previousOccurrence, out numberOfOccurrences);
-            }
-            else if (string.Equals(patternType, RelativeMonthly, StringComparison.OrdinalIgnoreCase))
-            {
-                FindRelativeMonthlyPreviousOccurrence(time, settings, out previousOccurrence, out numberOfOccurrences);
-            }
-            else if (string.Equals(patternType, AbsoluteYearly, StringComparison.OrdinalIgnoreCase))
-            {
-                FindAbsoluteYearlyPreviousOccurrence(time, settings, out previousOccurrence, out numberOfOccurrences);
-            }
-            else if (string.Equals(patternType, RelativeYearly, StringComparison.OrdinalIgnoreCase))
-            {
-                FindRelativeYearlyPreviousOccurrence(time, settings, out previousOccurrence, out numberOfOccurrences);
-            }
-            else
-            {
-                throw new ArgumentException(nameof(settings));
+                case RecurrencePatternType.Daily:
+                    FindDailyPreviousOccurrence(time, settings, out previousOccurrence, out numberOfOccurrences);
+
+                    break;
+
+                case RecurrencePatternType.Weekly:
+                    FindWeeklyPreviousOccurrence(time, settings, out previousOccurrence, out numberOfOccurrences);
+
+                    break;
+
+                case RecurrencePatternType.AbsoluteMonthly:
+                    FindAbsoluteMonthlyPreviousOccurrence(time, settings, out previousOccurrence, out numberOfOccurrences);
+
+                    break;
+
+                case RecurrencePatternType.RelativeMonthly:
+                    FindRelativeMonthlyPreviousOccurrence(time, settings, out previousOccurrence, out numberOfOccurrences);
+
+                    break;
+
+                case RecurrencePatternType.AbsoluteYearly:
+                    FindAbsoluteYearlyPreviousOccurrence(time, settings, out previousOccurrence, out numberOfOccurrences);
+
+                    break;
+
+                case RecurrencePatternType.RelativeYearly:
+                    FindRelativeYearlyPreviousOccurrence(time, settings, out previousOccurrence, out numberOfOccurrences);
+
+                    break;
+
+                default:
+                    return false;
             }
 
             RecurrenceRange range = settings.Recurrence.Range;
 
             TimeSpan timeZoneOffset = GetRecurrenceTimeZone(settings);
 
-            if (string.Equals(range.Type, EndDate, StringComparison.OrdinalIgnoreCase))
+            if (range.Type == RecurrenceRangeType.EndDate)
             {
                 DateTime alignedPreviousOccurrence = previousOccurrence.DateTime + timeZoneOffset - previousOccurrence.Offset;
 
-                if (alignedPreviousOccurrence.Date > range.EndDate.Value.Date)
-                {
-                    return false;
-                }
+                return alignedPreviousOccurrence.Date <= range.EndDate.Value.Date;
             }
-
-            if (string.Equals(range.Type, Numbered, StringComparison.OrdinalIgnoreCase))
-            {
-                if (numberOfOccurrences >= range.NumberOfOccurrences)
-                {
-                    return false;
-                }
+            
+            if (range.Type == RecurrenceRangeType.Numbered) {
+                return numberOfOccurrences < range.NumberOfOccurrences;
             }
 
             return true;
@@ -217,15 +182,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             TimeSpan timeGap = time - start;
 
-            int firstDayOfWeek = pattern.FirstDayOfWeek != null ? DayOfWeekNumber(pattern.FirstDayOfWeek) : 0; // first day of week is Sunday by default
-
-            int remainingDaysOfFirstWeek = RemainingDaysOfWeek((int)alignedStart.DayOfWeek, firstDayOfWeek);
+            int remainingDaysOfFirstWeek = RemainingDaysOfWeek(alignedStart.DayOfWeek, pattern.FirstDayOfWeek);
 
             TimeSpan remainingTimeOfFirstInterval = TimeSpan.FromDays(remainingDaysOfFirstWeek) - alignedStart.TimeOfDay + TimeSpan.FromDays((interval - 1) * 7);
 
             if (remainingTimeOfFirstInterval <= timeGap)
             {
-                int numberOfInterval = (int)Math.Floor((timeGap - remainingTimeOfFirstInterval).TotalSeconds / TimeSpan.FromDays(interval * 7).TotalSeconds);
+                int numberOfInterval = (int) Math.Floor((timeGap - remainingTimeOfFirstInterval).TotalSeconds / TimeSpan.FromDays(interval * 7).TotalSeconds);
 
                 previousOccurrence = start.AddDays(numberOfInterval * interval * 7 + remainingDaysOfFirstWeek + (interval - 1) * 7);
 
@@ -237,10 +200,10 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
                 DateTime dateTime = alignedStart.AddDays(1);
 
-                while ((int)dateTime.DayOfWeek != firstDayOfWeek)
+                while (dateTime.DayOfWeek != pattern.FirstDayOfWeek)
                 {
                     if (pattern.DaysOfWeek.Any(day =>
-                        DayOfWeekNumber(day) == (int)dateTime.DayOfWeek))
+                        day == dateTime.DayOfWeek))
                     {
                         numberOfOccurrences += 1;
                     }
@@ -261,13 +224,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 alignedPreviousOccurrence = alignedPreviousOccurrence.AddDays(1);
 
-                if ((int)alignedPreviousOccurrence.DayOfWeek == firstDayOfWeek) // Come to the next week
+                if (alignedPreviousOccurrence.DayOfWeek == pattern.FirstDayOfWeek) // Come to the next week
                 {
                     break;
                 }
 
                 if (pattern.DaysOfWeek.Any(day =>
-                    DayOfWeekNumber(day) == (int)alignedPreviousOccurrence.DayOfWeek))
+                    day == alignedPreviousOccurrence.DayOfWeek))
                 {
                     previousOccurrence = new DateTimeOffset(alignedPreviousOccurrence, timeZoneOffset);
 
@@ -338,7 +301,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 alignedTime >= NthDayOfWeekInTheMonth(alignedTime, pattern.Index, day) + alignedStart.TimeOfDay))
             {
                 //
-                // E.g. start: 2023.9.1 (the first Friday in 2023.9) and time: 2023.10.2 (the first Friday in 2023.10 is 2023.10.6)
+                // E.g. start is 2023.9.1 (the first Friday in 2023.9) and current time is 2023.10.2 (the first Friday in next month is 2023.10.6)
                 // Not a complete monthly interval
                 monthGap -= 1;
             }
@@ -352,7 +315,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             //
             // Find the first occurence date matched the pattern
             // Only one day of week in the month will be matched
-            foreach (string day in pattern.DaysOfWeek)
+            foreach (DayOfWeek day in pattern.DaysOfWeek)
             {
                 DateTime occurrenceDate = NthDayOfWeekInTheMonth(alignedPreviousOccurrenceMonth, pattern.Index, day);
 
@@ -450,7 +413,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             //
             // Find the first occurence date matched the pattern
             // Only one day of week in the month will be matched
-            foreach (string day in pattern.DaysOfWeek)
+            foreach (DayOfWeek day in pattern.DaysOfWeek)
             {
                 DateTime occurrenceDate = NthDayOfWeekInTheMonth(alignedPreviousOccurrenceMonth, pattern.Index, day);
 
@@ -543,24 +506,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 return false;
             }
 
-            if (recurrence.Pattern.Type == null)
-            {
-                paramName = $"{nameof(settings.Recurrence)}.{nameof(recurrence.Pattern)}.{nameof(recurrence.Pattern.Type)}";
-
-                reason = RequiredParameter;
-
-                return false;
-            }
-
-            if (recurrence.Range.Type == null)
-            {
-                paramName = $"{nameof(settings.Recurrence)}.{nameof(recurrence.Range)}.{nameof(recurrence.Range.Type)}";
-
-                reason = RequiredParameter;
-
-                return false;
-            }
-
             if (settings.End.Value - settings.Start.Value <= TimeSpan.Zero)
             {
                 paramName = nameof(settings.End);
@@ -575,48 +520,37 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
         private static bool TryValidateRecurrencePattern(TimeWindowFilterSettings settings, out string paramName, out string reason)
         {
-            paramName = null;
-
-            reason = null;
-
             if (!TryValidateInterval(settings, out paramName, out reason))
             {
                 return false;
             }
 
-            string patternType = settings.Recurrence.Pattern.Type;
+            switch (settings.Recurrence.Pattern.Type)
+            {
+                case RecurrencePatternType.Daily:
+                    return TryValidateDailyRecurrencePattern(settings, out paramName, out reason);
 
-            if (string.Equals(patternType, Daily, StringComparison.OrdinalIgnoreCase))
-            {
-                return TryValidateDailyRecurrencePattern(settings, out paramName, out reason);
-            }
-            else if (string.Equals(patternType, Weekly, StringComparison.OrdinalIgnoreCase))
-            {
-                return TryValidateWeeklyRecurrencePattern(settings, out paramName, out reason);
-            }
-            else if (string.Equals(patternType, AbsoluteMonthly, StringComparison.OrdinalIgnoreCase))
-            {
-                return TryValidateAbsoluteMonthlyRecurrencePattern(settings, out paramName, out reason);
-            }
-            else if (string.Equals(patternType, RelativeMonthly, StringComparison.OrdinalIgnoreCase))
-            {
-                return TryValidateRelativeMonthlyRecurrencePattern(settings, out paramName, out reason);
-            }
-            else if (string.Equals(patternType, AbsoluteYearly, StringComparison.OrdinalIgnoreCase))
-            {
-                return TryValidateAbsoluteYearlyRecurrencePattern(settings, out paramName, out reason);
-            }
-            else if (string.Equals(patternType, RelativeYearly, StringComparison.OrdinalIgnoreCase))
-            {
-                return TryValidateRelativeYearlyRecurrencePattern(settings, out paramName, out reason);
-            }
-            else
-            {
-                paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Pattern)}.{nameof(settings.Recurrence.Pattern.Type)}";
+                case RecurrencePatternType.Weekly:
+                    return TryValidateWeeklyRecurrencePattern(settings, out paramName, out reason);
 
-                reason = UnrecognizableValue;
+                case RecurrencePatternType.AbsoluteMonthly:
+                    return TryValidateAbsoluteMonthlyRecurrencePattern(settings, out paramName, out reason);
 
-                return false;
+                case RecurrencePatternType.RelativeMonthly:
+                    return TryValidateRelativeMonthlyRecurrencePattern(settings, out paramName, out reason);
+
+                case RecurrencePatternType.AbsoluteYearly:
+                    return TryValidateAbsoluteYearlyRecurrencePattern(settings, out paramName, out reason);
+
+                case RecurrencePatternType.RelativeYearly:
+                    return TryValidateRelativeYearlyRecurrencePattern(settings, out paramName, out reason);
+
+                default:
+                    paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Pattern)}.{nameof(settings.Recurrence.Pattern.Type)}";
+
+                    reason = UnrecognizableValue;
+
+                    return false;
             }
         }
 
@@ -670,25 +604,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
 
             //
-            // Required parameters
-            if (!TryValidateDaysOfWeek(settings, out paramName, out reason))
-            {
-                return false;
-            }
-
-            if (!TryValidateFirstDayOfWeek(settings, out paramName, out reason))
-            {
-                return false;
-            }
-
-            //
             // Check whether "Start" is a valid first occurrence
             DateTimeOffset start = settings.Start.Value;
 
             DateTime alignedStart = start.DateTime + GetRecurrenceTimeZone(settings) - start.Offset;
 
             if (!pattern.DaysOfWeek.Any(day =>
-                DayOfWeekNumber(day) == (int)alignedStart.DayOfWeek))
+                day == alignedStart.DayOfWeek))
             {
                 paramName = nameof(settings.Start);
 
@@ -775,18 +697,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
                 reason = OutOfRange;
 
-                return false;
-            }
-
-            //
-            // Required parameters
-            if (!TryValidateIndex(settings, out paramName, out reason))
-            {
-                return false;
-            }
-
-            if (!TryValidateDaysOfWeek(settings, out paramName, out reason))
-            {
                 return false;
             }
 
@@ -888,16 +798,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 return false;
             }
 
-            if (!TryValidateIndex(settings, out paramName, out reason))
-            {
-                return false;
-            }
-
-            if (!TryValidateDaysOfWeek(settings, out paramName, out reason))
-            {
-                return false;
-            }
-
             //
             // Check whether "Start" is a valid first occurrence
             DateTimeOffset start = settings.Start.Value;
@@ -920,46 +820,29 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
         private static bool TryValidateRecurrenceRange(TimeWindowFilterSettings settings, out string paramName, out string reason)
         {
-            paramName = null;
-
-            reason = null;
-
             if (!TryValidateRecurrenceTimeZone(settings, out paramName, out reason))
             {
                 return false;
             }
 
-            string rangeType = settings.Recurrence.Range.Type;
+            switch(settings.Recurrence.Range.Type)
+            {
+                case RecurrenceRangeType.NoEnd:
+                    return true;
 
-            if (string.Equals(rangeType, NoEnd, StringComparison.OrdinalIgnoreCase))
-            {
-                //
-                // No parameter is required
-            }
-            else if (string.Equals(rangeType, EndDate, StringComparison.OrdinalIgnoreCase))
-            {
-                if (!TryValidateEndDate(settings, out paramName, out reason))
-                {
+                case RecurrenceRangeType.EndDate:
+                    return TryValidateEndDate(settings, out paramName, out reason);
+
+                case RecurrenceRangeType.Numbered:
+                    return !TryValidateNumberOfOccurrences(settings, out paramName, out reason);
+
+                default:
+                    paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Range)}.{nameof(settings.Recurrence.Range.Type)}";
+
+                    reason = UnrecognizableValue;
+
                     return false;
-                }
             }
-            else if (string.Equals(rangeType, Numbered, StringComparison.OrdinalIgnoreCase))
-            {
-                if (!TryValidateNumberOfOccurrences(settings, out paramName, out reason))
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Range)}.{nameof(settings.Recurrence.Range.Type)}";
-
-                reason = UnrecognizableValue;
-
-                return false;
-            }
-
-            return true;
         }
 
         private static bool TryValidateInterval(TimeWindowFilterSettings settings, out string paramName, out string reason)
@@ -971,96 +854,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             if (settings.Recurrence.Pattern.Interval <= 0)
             {
                 reason = OutOfRange;
-
-                return false;
-            }
-
-            return true;
-        }
-
-        private static bool TryValidateDaysOfWeek(TimeWindowFilterSettings settings, out string paramName, out string reason)
-        {
-            paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Pattern)}.{nameof(settings.Recurrence.Pattern.DaysOfWeek)}";
-
-            reason = null;
-
-            if (settings.Recurrence.Pattern.DaysOfWeek == null || !settings.Recurrence.Pattern.DaysOfWeek.Any())
-            {
-                reason = RequiredParameter;
-
-                return false;
-            }
-
-            foreach (string day in settings.Recurrence.Pattern.DaysOfWeek)
-            {
-                if (!string.Equals(day, Monday, StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(day, Tuesday, StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(day, Wednesday, StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(day, Thursday, StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(day, Friday, StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(day, Saturday, StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(day, Sunday, StringComparison.OrdinalIgnoreCase))
-                {
-                    reason = UnrecognizableValue;
-
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private static bool TryValidateFirstDayOfWeek(TimeWindowFilterSettings settings, out string paramName, out string reason)
-        {
-            paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Pattern)}.{nameof(settings.Recurrence.Pattern.FirstDayOfWeek)}";
-
-            reason = null;
-
-            string firstDayOfWeek = settings.Recurrence.Pattern.FirstDayOfWeek;
-
-            if (firstDayOfWeek == null)
-            {
-                return true;
-            }
-
-            if (!string.Equals(firstDayOfWeek, Monday, StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(firstDayOfWeek, Tuesday, StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(firstDayOfWeek, Wednesday, StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(firstDayOfWeek, Thursday, StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(firstDayOfWeek, Friday, StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(firstDayOfWeek, Saturday, StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(firstDayOfWeek, Sunday, StringComparison.OrdinalIgnoreCase))
-            {
-                reason = UnrecognizableValue;
-
-                return false;
-            }
-
-            return true;
-        }
-
-        private static bool TryValidateIndex(TimeWindowFilterSettings settings, out string paramName, out string reason)
-        {
-            paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Pattern)}.{nameof(settings.Recurrence.Pattern.Index)}";
-
-            reason = null;
-
-            string index = settings.Recurrence.Pattern.Index;
-
-            if (index == null)
-            {
-                reason = RequiredParameter;
-
-                return false;
-            }
-
-            if (!string.Equals(index, First, StringComparison.Ordinal) &&
-                !string.Equals(index, Second, StringComparison.Ordinal) &&
-                !string.Equals(index, Third, StringComparison.Ordinal) &&
-                !string.Equals(index, Fourth, StringComparison.Ordinal) &&
-                !string.Equals(index, Last, StringComparison.Ordinal))
-            {
-                reason = UnrecognizableValue;
 
                 return false;
             }
@@ -1249,7 +1042,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <param name="daysOfWeek">The days of the week when the recurrence will occur.</param>
         /// <param name="firstDayOfWeek">The first day of the week.</param>
         /// <returns>True if the duration is compliant with days of week, false otherwise.</returns>
-        private static bool IsDurationCompliantWithDaysOfWeek(TimeSpan duration, int interval, IEnumerable<string> daysOfWeek, string firstDayOfWeek)
+        private static bool IsDurationCompliantWithDaysOfWeek(TimeSpan duration, int interval, IEnumerable<DayOfWeek> daysOfWeek, DayOfWeek firstDayOfWeek)
         {
             if (daysOfWeek.Count() == 1)
             {
@@ -1260,7 +1053,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Shift to the first day of the week
             DateTime date = DateTime.Today;
 
-            int offset = RemainingDaysOfWeek((int)date.DayOfWeek, DayOfWeekNumber(firstDayOfWeek));
+            int offset = RemainingDaysOfWeek(date.DayOfWeek, firstDayOfWeek);
 
             date = date.AddDays(offset);
 
@@ -1273,7 +1066,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 date = date.AddDays(1);
 
                 if (daysOfWeek.Any(day =>
-                    DayOfWeekNumber(day) == (int)date.DayOfWeek))
+                    day == date.DayOfWeek))
                 {
                     TimeSpan gap = date - prevOccurrence;
 
@@ -1303,9 +1096,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             return minGap >= duration;
         }
 
-        private static int RemainingDaysOfWeek(int day, int firstDayOfWeek)
+        private static int RemainingDaysOfWeek(DayOfWeek dayOfWeek, DayOfWeek firstDayOfWeek)
         {
-            int remainingDays = day - firstDayOfWeek;
+            int remainingDays = (int) dayOfWeek - (int) firstDayOfWeek;
 
             if (remainingDays < 0)
             {
@@ -1324,20 +1117,20 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <param name="index">The index of the day of week in the month.</param>
         /// <param name="dayOfWeek">The day of week.</param>
         /// <returns>The data time of the nth day of week in the month.</returns>
-        private static DateTime NthDayOfWeekInTheMonth(DateTime dateTime, string index, string dayOfWeek)
+        private static DateTime NthDayOfWeekInTheMonth(DateTime dateTime, WeekIndex index, DayOfWeek dayOfWeek)
         {
             var date = new DateTime(dateTime.Year, dateTime.Month, 1);
 
             //
             // Find the first day of week in the month
-            while ((int)date.DayOfWeek != DayOfWeekNumber(dayOfWeek))
+            while (date.DayOfWeek != dayOfWeek)
             {
                 date = date.AddDays(1);
             }
 
-            if (date.AddDays(WeekDayNumber * (IndexNumber(index) - 1)).Month == dateTime.Month)
+            if (date.AddDays(WeekDayNumber * (int) index).Month == dateTime.Month)
             {
-                date = date.AddDays(WeekDayNumber * (IndexNumber(index) - 1));
+                date = date.AddDays(WeekDayNumber * (int) index);
             }
             else // There is no the 5th day of week in the month
             {
@@ -1347,70 +1140,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
 
             return date;
-        }
-
-        private static int DayOfWeekNumber(string str)
-        {
-            if (string.Equals(str, Sunday, StringComparison.OrdinalIgnoreCase))
-            {
-                return 0;
-            }
-            else if (string.Equals(str, Monday, StringComparison.OrdinalIgnoreCase))
-            {
-                return 1;
-            }
-            else if (string.Equals(str, Tuesday, StringComparison.OrdinalIgnoreCase))
-            {
-                return 2;
-            }
-            else if (string.Equals(str, Wednesday, StringComparison.OrdinalIgnoreCase))
-            {
-                return 3;
-            }
-            else if (string.Equals(str, Thursday, StringComparison.OrdinalIgnoreCase))
-            {
-                return 4;
-            }
-            else if (string.Equals(str, Friday, StringComparison.OrdinalIgnoreCase))
-            {
-                return 5;
-            }
-            else if (string.Equals(str, Saturday, StringComparison.OrdinalIgnoreCase))
-            {
-                return 6;
-            }
-            else
-            {
-                throw new ArgumentException(nameof(str));
-            }
-        }
-
-        public static int IndexNumber(string str)
-        {
-            if (string.Equals(str, First, StringComparison.OrdinalIgnoreCase))
-            {
-                return 1;
-            }
-            else if (string.Equals(str, Second, StringComparison.OrdinalIgnoreCase))
-            {
-                return 2;
-            }
-            else if (string.Equals(str, Third, StringComparison.OrdinalIgnoreCase))
-            {
-                return 3;
-            }
-            else if (string.Equals(str, Fourth, StringComparison.OrdinalIgnoreCase))
-            {
-                return 4;
-            }
-            else if (string.Equals(str, Last, StringComparison.OrdinalIgnoreCase))
-            {
-                return 5;
-            }
-            else
-            {
-                throw new ArgumentException(nameof(str));
-            }
         }
     }
 }
