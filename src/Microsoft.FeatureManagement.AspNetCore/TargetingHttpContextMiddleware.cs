@@ -3,6 +3,7 @@
 //
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Threading.Tasks;
@@ -15,12 +16,16 @@ namespace EvaluationDataToApplicationInsights.Telemetry
     public class TargetingHttpContextMiddleware
     {
         private readonly RequestDelegate _next;
+        private readonly ILogger _logger;
+
+        private const string TargetingIdKey = $"Microsoft.FeatureManagement.TargetingId";
 
         /// <summary>
         /// Creates an instance of the TargetingHttpContextMiddleware
         /// </summary>
-        public TargetingHttpContextMiddleware(RequestDelegate next) { 
-            _next = next; 
+        public TargetingHttpContextMiddleware(RequestDelegate next, ILoggerFactory loggerFactory) {
+            _next = next;
+            _logger = loggerFactory?.CreateLogger<TargetingHttpContextMiddleware>() ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
         /// <summary>
@@ -45,7 +50,11 @@ namespace EvaluationDataToApplicationInsights.Telemetry
 
             if (targetingContext != null)
             {
-                context.Items["TargetingId"] = targetingContext.UserId;
+                context.Items[TargetingIdKey] = targetingContext.UserId;
+            }
+            else
+            {
+                _logger.LogDebug("The targeting context accessor returned a null TargetingContext");
             }
 
             await _next(context);

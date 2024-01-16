@@ -14,6 +14,8 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
     /// </summary>
     public class TargetingTelemetryInitializer : TelemetryInitializerBase
     {
+        private const string TargetingIdKey = $"Microsoft.FeatureManagement.TargetingId";
+
         /// <summary>
         /// Creates an instance of the TargetingTelemetryInitializer
         /// </summary>
@@ -45,7 +47,8 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
                 throw new ArgumentNullException("httpContext");
             }
 
-            string targetingId = (string) httpContext.Items["TargetingId"];
+            // Extract the targeting id from the http context
+            string targetingId = httpContext.Items[TargetingIdKey]?.ToString();
 
             if (!string.IsNullOrEmpty(targetingId))
             {
