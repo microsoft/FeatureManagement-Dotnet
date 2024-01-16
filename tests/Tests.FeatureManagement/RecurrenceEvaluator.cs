@@ -5,7 +5,9 @@ using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime;
 using Xunit;
+using Xunit.Sdk;
 
 namespace Tests.FeatureManagement
 {
@@ -13,7 +15,7 @@ namespace Tests.FeatureManagement
     {
         public const string OutOfRange = "The value is out of the accepted range.";
         public const string UnrecognizableValue = "The value is unrecognizable.";
-        public const string RequiredParameter = "Value cannot be null.";
+        public const string RequiredParameter = "Value cannot be null or empty.";
         public const string NotMatched = "Start date is not a valid first occurrence.";
     }
 
@@ -25,9 +27,7 @@ namespace Tests.FeatureManagement
         public const string Pattern = "Recurrence.Pattern";
         public const string PatternType = "Recurrence.Pattern.Type";
         public const string Interval = "Recurrence.Pattern.Interval";
-        public const string Index = "Recurrence.Pattern.Index";
         public const string DaysOfWeek = "Recurrence.Pattern.DaysOfWeek";
-        public const string FirstDayOfWeek = "Recurrence.Pattern.FirstDayOfWeek";
         public const string Month = "Recurrence.Pattern.Month";
         public const string DayOfMonth = "Recurrence.Pattern.DayOfMonth";
 
@@ -317,6 +317,42 @@ namespace Tests.FeatureManagement
 
                 ( new TimeWindowFilterSettings()
                 {
+                    Start = DateTimeOffset.Parse("2023-9-2T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2023-9-5T00:00:01+08:00"), // The duration of the time window is longer than how frequently it recurs.
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Weekly,
+                            Interval = 1,
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Saturday } // The time window duration should be shorter than 2 days because the gap between Saturday in the previous week and Monday in this week is 2 days.
+                        },
+                        Range = new RecurrenceRange()
+                    }
+                },
+                ParamName.End,
+                ErrorMessage.OutOfRange ),
+
+                ( new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-1-16T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2024-1-19T00:00:01+08:00"), // The duration of the time window is longer than how frequently it recurs.
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Weekly,
+                            Interval = 1,
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Tuesday, DayOfWeek.Saturday } // The time window duration should be shorter than 3 days because the gap between Saturday in the previous week and Tuesday in this week is 3 days.
+                        },
+                        Range = new RecurrenceRange()
+                    }
+                },
+                ParamName.End,
+                ErrorMessage.OutOfRange ),
+
+                ( new TimeWindowFilterSettings()
+                {
                     Start = DateTimeOffset.Parse("2023-2-1T00:00:00+08:00"), // The duration of the time window is longer than how frequently it recurs.
                     End = DateTimeOffset.Parse("2023-3-29T00:00:01+08:00"), // This behavior is the same as the Outlook. Outlook uses 28 days as a monthly interval.
                     Recurrence = new Recurrence()
@@ -426,6 +462,30 @@ namespace Tests.FeatureManagement
             };
 
             ConsumeValidationTestData(testData);
+        }
+
+        [Fact]
+        public void ValidTimeWindowAcrossWeeks()
+        {
+            var settings = new TimeWindowFilterSettings()
+            {
+                Start = DateTimeOffset.Parse("2024-1-16T00:00:00+08:00"), // Tuesday
+                End = DateTimeOffset.Parse("2024-1-19T00:00:00+08:00"), // Time window duration is 3 days
+                Recurrence = new Recurrence()
+                {
+                    Pattern = new RecurrencePattern()
+                    {
+                        Type = RecurrencePatternType.Weekly,
+                        Interval = 1,
+                        DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Tuesday, DayOfWeek.Saturday } // The time window duration should be shorter than 3 days because the gap between Saturday in the previous week and Tuesday in this week is 3 days.
+                    },
+                    Range = new RecurrenceRange()
+                }
+            };
+
+            //
+            // The settings is valid. No exception should be thrown.
+            RecurrenceEvaluator.MatchRecurrence(DateTimeOffset.Now, settings);
         }
 
         [Fact]
@@ -1348,8 +1408,8 @@ namespace Tests.FeatureManagement
                         Pattern = new RecurrencePattern()
                         {
                             Type = RecurrencePatternType.AbsoluteMonthly,
-                            DayOfMonth = 29,
-                            Interval = 2
+                            Interval = 2,
+                            DayOfMonth = 29
                         },
                         Range = new RecurrenceRange()
                         {
@@ -1370,8 +1430,8 @@ namespace Tests.FeatureManagement
                         Pattern = new RecurrencePattern()
                         {
                             Type = RecurrencePatternType.AbsoluteMonthly,
-                            DayOfMonth = 29,
-                            Interval = 2
+                            Interval = 2,
+                            DayOfMonth = 29
                         },
                         Range = new RecurrenceRange()
                         {
@@ -1674,9 +1734,9 @@ namespace Tests.FeatureManagement
                         Pattern = new RecurrencePattern()
                         {
                             Type = RecurrencePatternType.RelativeMonthly,
-                            DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Friday, DayOfWeek.Monday },
+                            Interval = 2,
+                            DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Friday, DayOfWeek.Monday }
                             // Index is First by default.
-                            Interval = 2
                         },
                         Range = new RecurrenceRange()
                     }
@@ -1693,9 +1753,9 @@ namespace Tests.FeatureManagement
                         Pattern = new RecurrencePattern()
                         {
                             Type = RecurrencePatternType.RelativeMonthly,
-                            DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Friday, DayOfWeek.Monday },
+                            Interval = 2,
+                            DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Friday, DayOfWeek.Monday }
                             // Index is First by default.
-                            Interval = 2
                         },
                         Range = new RecurrenceRange()
                     }
@@ -1712,9 +1772,9 @@ namespace Tests.FeatureManagement
                         Pattern = new RecurrencePattern()
                         {
                             Type = RecurrencePatternType.RelativeMonthly,
-                            DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday },
+                            Interval = 3,
+                            DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday }
                             // Index is First by default.
-                            Interval = 3
                         },
                         Range = new RecurrenceRange()
                     }
@@ -1731,9 +1791,9 @@ namespace Tests.FeatureManagement
                         Pattern = new RecurrencePattern()
                         {
                             Type = RecurrencePatternType.RelativeMonthly,
-                            DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday },
+                            Interval = 3, // 2023-9, 2023-12, 2024-3 ...
+                            DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday }
                             // Index is First by default.
-                            Interval = 3 // 2023-9, 2023-12, 2024-3 ...
                         },
                         Range = new RecurrenceRange()
                     }
@@ -1893,9 +1953,9 @@ namespace Tests.FeatureManagement
                         Pattern = new RecurrencePattern()
                         {
                             Type = RecurrencePatternType.AbsoluteYearly,
+                            Interval = 3, // 2023, 2026, ...
                             DayOfMonth = 1,
-                            Month = 9,
-                            Interval = 3 // 2023, 2026, ...
+                            Month = 9
                         },
                         Range = new RecurrenceRange()
                         {
@@ -1916,9 +1976,9 @@ namespace Tests.FeatureManagement
                         Pattern = new RecurrencePattern()
                         {
                             Type = RecurrencePatternType.AbsoluteYearly,
+                            Interval = 3, // 2023, 2026, 2029 ...
                             DayOfMonth = 1,
-                            Month = 9,
-                            Interval = 3 // 2023, 2026, 2029 ...
+                            Month = 9
                         },
                         Range = new RecurrenceRange()
                         {
@@ -2043,9 +2103,9 @@ namespace Tests.FeatureManagement
                         Pattern = new RecurrencePattern()
                         {
                             Type = RecurrencePatternType.RelativeYearly,
+                            Interval = 2, // 2023, 2025 ...
                             DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday },
-                            Month = 9,
-                            Interval = 2 // 2023, 2025 ...
+                            Month = 9
                         },
                         Range = new RecurrenceRange()
                     }
@@ -2062,9 +2122,9 @@ namespace Tests.FeatureManagement
                         Pattern = new RecurrencePattern()
                         {
                             Type = RecurrencePatternType.RelativeYearly,
+                            Interval = 3, // 2023, 2026 ...
                             DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday },
-                            Month = 9,
-                            Interval = 3 // 2023, 2026 ...
+                            Month = 9
                         },
                         Range = new RecurrenceRange()
                     }
