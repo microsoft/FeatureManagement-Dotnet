@@ -322,7 +322,10 @@ namespace Tests.FeatureManagement
             Environment.SetEnvironmentVariable($"FeatureManagement:{feature6}:EnabledFor:0:Parameters:Recurrence:Pattern:Interval", "3");
             Environment.SetEnvironmentVariable($"FeatureManagement:{feature6}:EnabledFor:0:Parameters:Recurrence:Range:Type", "NoEnd");
 
-            IConfiguration config = new ConfigurationBuilder().AddEnvironmentVariables().Build();
+            IConfiguration config = new ConfigurationBuilder()
+                .AddEnvironmentVariables()
+                .AddJsonFile("appsettings.json")
+                .Build();
 
             var serviceCollection = new ServiceCollection();
 
@@ -339,6 +342,7 @@ namespace Tests.FeatureManagement
             Assert.False(await featureManager.IsEnabledAsync(feature4));
             Assert.True(await featureManager.IsEnabledAsync(feature5));
             Assert.False(await featureManager.IsEnabledAsync(feature6));
+            Assert.True(await featureManager.IsEnabledAsync(Features.TimeWindowTestFeature));
         }
 
         [Fact]
@@ -349,7 +353,7 @@ namespace Tests.FeatureManagement
             Environment.SetEnvironmentVariable($"FeatureManagement:{feature}:EnabledFor:0:Name", "Percentage");
             Environment.SetEnvironmentVariable($"FeatureManagement:{feature}:EnabledFor:0:Parameters:Value", "50");
 
-            IConfiguration config = new ConfigurationBuilder().AddEnvironmentVariables().Build();
+            IConfiguration config = new ConfigurationBuilder().AddEnvironmentVariables().AddJsonFile("appsettings.json").Build();
 
             var serviceCollection = new ServiceCollection();
 

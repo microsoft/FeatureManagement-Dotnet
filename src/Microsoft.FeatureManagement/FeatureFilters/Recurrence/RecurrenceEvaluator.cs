@@ -437,10 +437,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             Recurrence recurrence = settings.Recurrence;
 
-            paramName = null;
-
-            reason = null;
-
             if (recurrence != null)
             {
                 if (!TryValidateGeneralRequiredParameter(settings, out paramName, out reason))
@@ -459,17 +455,15 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 }
             }
 
+            paramName = null;
+
+            reason = null;
+
             return true;
         }
 
         private static bool TryValidateGeneralRequiredParameter(TimeWindowFilterSettings settings, out string paramName, out string reason)
         {
-            Recurrence recurrence = settings.Recurrence;
-
-            paramName = null;
-
-            reason = null;
-
             if (settings.Start == null)
             {
                 paramName = nameof(settings.Start);
@@ -487,6 +481,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
                 return false;
             }
+
+            Recurrence recurrence = settings.Recurrence;
 
             if (recurrence.Pattern == null)
             {
@@ -514,6 +510,10 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
                 return false;
             }
+
+            paramName = null;
+
+            reason = null;
 
             return true;
         }
@@ -556,15 +556,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
         private static bool TryValidateDailyRecurrencePattern(TimeWindowFilterSettings settings, out string paramName, out string reason)
         {
-            paramName = null;
-
-            reason = null;
-
             TimeSpan intervalDuration = TimeSpan.FromDays(settings.Recurrence.Pattern.Interval);
+
+            TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
 
             //
             // Time window duration must be shorter than how frequently it occurs
-            if (settings.End.Value - settings.Start.Value > intervalDuration)
+            if (timeWindowDuration > intervalDuration)
             {
                 paramName = $"{nameof(settings.End)}";
 
@@ -577,15 +575,15 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // No required parameter for "Daily" pattern
             // "Start" is always a valid first occurrence for "Daily" pattern
 
+            paramName = null;
+
+            reason = null;
+
             return true;
         }
 
         private static bool TryValidateWeeklyRecurrencePattern(TimeWindowFilterSettings settings, out string paramName, out string reason)
         {
-            paramName = null;
-
-            reason = null;
-
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 
             TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * WeekDayNumber);
@@ -600,6 +598,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
                 reason = OutOfRange;
 
+                return false;
+            }
+
+            //
+            // Required parameters
+            if (!TryValidateDaysOfWeek(settings, out paramName, out reason))
+            {
                 return false;
             }
 
@@ -635,17 +640,15 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
         private static bool TryValidateAbsoluteMonthlyRecurrencePattern(TimeWindowFilterSettings settings, out string paramName, out string reason)
         {
-            paramName = null;
-
-            reason = null;
-
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 
             TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * MinMonthDayNumber);
 
+            TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
+
             //
             // Time window duration must be shorter than how frequently it occurs
-            if (settings.End.Value - settings.Start.Value > intervalDuration)
+            if (timeWindowDuration > intervalDuration)
             {
                 paramName = $"{nameof(settings.End)}";
 
@@ -681,22 +684,27 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
         private static bool TryValidateRelativeMonthlyRecurrencePattern(TimeWindowFilterSettings settings, out string paramName, out string reason)
         {
-            paramName = null;
-
-            reason = null;
-
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 
             TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * MinMonthDayNumber);
 
+            TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
+
             //
             // Time window duration must be shorter than how frequently it occurs
-            if (settings.End.Value - settings.Start.Value > intervalDuration)
+            if (timeWindowDuration > intervalDuration)
             {
                 paramName = $"{nameof(settings.End)}";
 
                 reason = OutOfRange;
 
+                return false;
+            }
+
+            //
+            // Required parameters
+            if (!TryValidateDaysOfWeek(settings, out paramName, out reason))
+            {
                 return false;
             }
 
@@ -721,17 +729,15 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
         private static bool TryValidateAbsoluteYearlyRecurrencePattern(TimeWindowFilterSettings settings, out string paramName, out string reason)
         {
-            paramName = null;
-
-            reason = null;
-
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 
             TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * MinYearDayNumber);
 
+            TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
+
             //
             // Time window duration must be shorter than how frequently it occurs
-            if (settings.End.Value - settings.Start.Value > intervalDuration)
+            if (timeWindowDuration > intervalDuration)
             {
                 paramName = $"{nameof(settings.End)}";
 
@@ -772,17 +778,15 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
         private static bool TryValidateRelativeYearlyRecurrencePattern(TimeWindowFilterSettings settings, out string paramName, out string reason)
         {
-            paramName = null;
-
-            reason = null;
-
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 
             TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * MinYearDayNumber);
 
+            TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
+
             //
             // Time window duration must be shorter than how frequently it occurs
-            if (settings.End.Value - settings.Start.Value > intervalDuration)
+            if (timeWindowDuration > intervalDuration)
             {
                 paramName = $"{nameof(settings.End)}";
 
@@ -793,6 +797,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             //
             // Required parameters
+            if (!TryValidateDaysOfWeek(settings, out paramName, out reason))
+            {
+                return false;
+            }
+
             if (!TryValidateMonth(settings, out paramName, out reason))
             {
                 return false;
@@ -834,7 +843,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                     return TryValidateEndDate(settings, out paramName, out reason);
 
                 case RecurrenceRangeType.Numbered:
-                    return !TryValidateNumberOfOccurrences(settings, out paramName, out reason);
+                    return TryValidateNumberOfOccurrences(settings, out paramName, out reason);
 
                 default:
                     paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Range)}.{nameof(settings.Recurrence.Range.Type)}";
@@ -849,8 +858,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         {
             paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Pattern)}.{nameof(settings.Recurrence.Pattern.Interval)}";
 
-            reason = null;
-
             if (settings.Recurrence.Pattern.Interval <= 0)
             {
                 reason = OutOfRange;
@@ -858,14 +865,30 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 return false;
             }
 
+            reason = null;
+
+            return true;
+        }
+
+        private static bool TryValidateDaysOfWeek(TimeWindowFilterSettings settings, out string paramName, out string reason)
+        {
+            paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Pattern)}.{nameof(settings.Recurrence.Pattern.DaysOfWeek)}";
+
+            if (settings.Recurrence.Pattern.DaysOfWeek == null || !settings.Recurrence.Pattern.DaysOfWeek.Any())
+            {
+                reason = RequiredParameter;
+
+                return false;
+            }
+
+            reason = null;
+
             return true;
         }
 
         private static bool TryValidateDayOfMonth(TimeWindowFilterSettings settings, out string paramName, out string reason)
         {
             paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Pattern)}.{nameof(settings.Recurrence.Pattern.DayOfMonth)}";
-
-            reason = null;
 
             if (settings.Recurrence.Pattern.DayOfMonth == null)
             {
@@ -881,14 +904,14 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 return false;
             }
 
+            reason = null;
+
             return true;
         }
 
         private static bool TryValidateMonth(TimeWindowFilterSettings settings, out string paramName, out string reason)
         {
             paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Pattern)}.{nameof(settings.Recurrence.Pattern.Month)}";
-
-            reason = null;
 
             if (settings.Recurrence.Pattern.Month == null)
             {
@@ -904,6 +927,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 return false;
             }
 
+            reason = null;
+
             return true;
         }
 
@@ -911,16 +936,12 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         {
             paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Range)}.{nameof(settings.Recurrence.Range.EndDate)}";
 
-            reason = null;
-
             if (settings.Recurrence.Range.EndDate == null)
             {
                 reason = RequiredParameter;
 
                 return false;
             }
-
-            TimeSpan timeZoneOffset;
 
             if (settings.Start == null)
             {
@@ -933,15 +954,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             DateTimeOffset start = settings.Start.Value;
 
-            timeZoneOffset = start.Offset;
+            TimeSpan timeZoneOffset = start.Offset;
 
-            if (settings.Recurrence.Range.RecurrenceTimeZone != null && !TryParseTimeZone(settings.Recurrence.Range.RecurrenceTimeZone, out timeZoneOffset))
+            if (settings.Recurrence.Range.RecurrenceTimeZone != null)
             {
-                paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Range)}.{nameof(settings.Recurrence.Range.RecurrenceTimeZone)}";
-
-                reason = UnrecognizableValue;
-
-                return false;
+                TryParseTimeZone(settings.Recurrence.Range.RecurrenceTimeZone, out timeZoneOffset);
             }
 
             DateTime alignedStart = start.DateTime + timeZoneOffset - start.Offset;
@@ -955,14 +972,14 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 return false;
             }
 
+            reason = null;
+
             return true;
         }
 
         private static bool TryValidateNumberOfOccurrences(TimeWindowFilterSettings settings, out string paramName, out string reason)
         {
             paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Range)}.{nameof(settings.Recurrence.Range.NumberOfOccurrences)}";
-
-            reason = null;
 
             if (settings.Recurrence.Range.NumberOfOccurrences == null)
             {
@@ -978,6 +995,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 return false;
             }
 
+            reason = null;
+
             return true;
         }
 
@@ -985,14 +1004,14 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         {
             paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Range)}.{nameof(settings.Recurrence.Range.RecurrenceTimeZone)}";
 
-            reason = null;
-
             if (settings.Recurrence.Range.RecurrenceTimeZone != null && !TryParseTimeZone(settings.Recurrence.Range.RecurrenceTimeZone, out _))
             {
                 reason = UnrecognizableValue;
 
                 return false;
             }
+
+            reason = null;
 
             return true;
         }
