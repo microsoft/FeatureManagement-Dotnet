@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace EvaluationDataToApplicationInsights.Telemetry
 {
     /// <summary>
-    /// Used to add targeting information to http context. This allows synronous code to access targeting information.
+    /// Used to add targeting information to HTTP context.
     /// </summary>
     public class TargetingHttpContextMiddleware
     {
@@ -29,7 +29,7 @@ namespace EvaluationDataToApplicationInsights.Telemetry
         }
 
         /// <summary>
-        /// Adds targeting information to the http context.
+        /// Adds targeting information to the HTTP context.
         /// </summary>
         /// <param name="context">The <see cref="HttpContext"/> to add the targeting information to.</param>
         /// <param name="targetingContextAccessor">The <see cref="ITargetingContextAccessor"/> to retrieve the targeting information from.</param>
