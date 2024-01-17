@@ -8,7 +8,7 @@ using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Threading.Tasks;
 
-namespace EvaluationDataToApplicationInsights.Telemetry
+namespace Microsoft.FeatureManagement
 {
     /// <summary>
     /// Used to add targeting information to HTTP context.
@@ -24,7 +24,7 @@ namespace EvaluationDataToApplicationInsights.Telemetry
         /// Creates an instance of the TargetingHttpContextMiddleware
         /// </summary>
         public TargetingHttpContextMiddleware(RequestDelegate next, ILoggerFactory loggerFactory) {
-            _next = next;
+            _next = next ?? throw new ArgumentNullException(nameof(next));
             _logger = loggerFactory?.CreateLogger<TargetingHttpContextMiddleware>() ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 

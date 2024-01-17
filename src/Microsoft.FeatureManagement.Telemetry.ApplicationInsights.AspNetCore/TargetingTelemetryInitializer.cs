@@ -37,23 +37,21 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
                 throw new ArgumentNullException("telemetry");
             }
 
-            if (requestTelemetry == null)
-            {
-                throw new ArgumentNullException("requestTelemetry");
-            }
-
             if (httpContext == null)
             {
                 throw new ArgumentNullException("httpContext");
             }
 
             // Extract the targeting id from the http context
-            string targetingId = httpContext.Items[TargetingIdKey]?.ToString();
+            string targetingId = null;
+
+            if (httpContext.Items.TryGetValue(TargetingIdKey, out object value))
+            {
+                targetingId = value?.ToString();
+            }
 
             if (!string.IsNullOrEmpty(targetingId))
             {
-                requestTelemetry.Properties["TargetingId"] = targetingId;
-
                 // Telemetry.Properties is deprecated in favor of ISupportProperties
                 if (telemetry is ISupportProperties telemetryWithSupportProperties)
                 {
