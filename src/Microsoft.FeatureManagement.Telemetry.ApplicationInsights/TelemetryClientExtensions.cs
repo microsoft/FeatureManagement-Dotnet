@@ -8,7 +8,7 @@ using Microsoft.FeatureManagement.FeatureFilters;
 namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 {
     /// <summary>
-    /// Provides extension methods for tracking events with TargetingContext.
+    /// Provides extension methods for tracking events with <see cref="TargetingContext"/>.
     /// </summary>
     public static class TelemetryClientExtensions
     {
