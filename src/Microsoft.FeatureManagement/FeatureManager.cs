@@ -256,7 +256,7 @@ namespace Microsoft.FeatureManagement
             return evaluationEvent.Variant;
         }
 
-        private async Task<EvaluationEvent> EvaluateFeature<TContext>(string feature, TContext context, bool useContext, CancellationToken cancellationToken)
+        private async ValueTask<EvaluationEvent> EvaluateFeature<TContext>(string feature, TContext context, bool useContext, CancellationToken cancellationToken)
         {
             var evaluationEvent = new EvaluationEvent
             {
@@ -362,7 +362,7 @@ namespace Microsoft.FeatureManagement
             return evaluationEvent;
         }
 
-        private async Task<bool> IsEnabledAsync<TContext>(FeatureDefinition featureDefinition, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
+        private async ValueTask<bool> IsEnabledAsync<TContext>(FeatureDefinition featureDefinition, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
             Debug.Assert(featureDefinition != null);
 
