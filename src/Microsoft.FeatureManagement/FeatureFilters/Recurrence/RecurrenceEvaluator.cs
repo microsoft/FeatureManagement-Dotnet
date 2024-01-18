@@ -590,13 +590,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         {
             paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Range)}.{nameof(settings.Recurrence.Range.NumberOfOccurrences)}";
 
-            if (settings.Recurrence.Range.NumberOfOccurrences == null)
-            {
-                reason = RequiredParameter;
-
-                return false;
-            }
-
             if (settings.Recurrence.Range.NumberOfOccurrences < 1)
             {
                 reason = OutOfRange;
@@ -722,8 +715,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// </summary>
         private static void FindWeeklyPreviousOccurrence(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset previousOccurrence, out int numberOfOccurrences)
         {
-            numberOfOccurrences = 0;
-
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 
             DateTimeOffset start = settings.Start.Value;
@@ -743,6 +734,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             TimeSpan remainingTimeOfFirstInterval = remainingTimeOfFirstWeek + remaingTimeOfFirstIntervalAfterFirstWeek;
 
             DateTimeOffset tentativePreviousOccurrence = start;
+
+            numberOfOccurrences = 0;
 
             //
             // Time is not within the first interval
@@ -911,6 +904,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             DateTimeOffset start = settings.Start.Value;
 
+            Debug.Assert(time >= start);
+
             int interval = pattern.Interval;
 
             DateTime alignedTime = time.DateTime + start.Offset - time.Offset;
@@ -944,6 +939,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 
             DateTimeOffset start = settings.Start.Value;
+
+            Debug.Assert(time >= start);
 
             int interval = pattern.Interval;
 
@@ -1041,13 +1038,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
 
             //
-            // It may across weeks. Check the adjacent week if the interval is one week.
+            // It may across weeks. Check the next week if the interval is one week.
             if (interval == 1)
             {
-                for (int i = 1; i <= DayNumberOfWeek; i++)
+                for (int i = 0; i < DayNumberOfWeek; i++)
                 {
-                    //
-                    // If there are multiple day in DaysOfWeek, it will eventually enter the following if branch
                     if (daysOfWeek.Any(day =>
                         day == date.DayOfWeek))
                     {
@@ -1058,6 +1053,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                             minGap = gap;
                         }
 
+                        //
+                        // Only check the first occurrence in the next week
                         break;
                     }
 

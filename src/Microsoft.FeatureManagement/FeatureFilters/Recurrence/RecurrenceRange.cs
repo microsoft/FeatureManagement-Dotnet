@@ -23,6 +23,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <summary>
         /// The number of times to repeat the time window.
         /// </summary>
-        public int? NumberOfOccurrences { get; set; }
+        public int NumberOfOccurrences { get; set; } = 1;
     }
 }
