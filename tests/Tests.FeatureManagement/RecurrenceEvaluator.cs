@@ -233,7 +233,7 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                         {
                             Type = RecurrenceRangeType.EndDate,
-                            EndDate = DateTimeOffset.Parse("2023-8-31T23:59:59+08:00") // EndDate is earlier than the Start
+                            EndDate = DateTimeOffset.Parse("2023-8-31T23:59:59+08:00") // EndDate is earlier than the Start.
                         }
                     }
                 },
@@ -437,7 +437,7 @@ namespace Tests.FeatureManagement
             var settings = new TimeWindowFilterSettings()
             {
                 Start = DateTimeOffset.Parse("2024-1-16T00:00:00+08:00"), // Tuesday
-                End = DateTimeOffset.Parse("2024-1-19T00:00:00+08:00"), // Time window duration is 3 days
+                End = DateTimeOffset.Parse("2024-1-19T00:00:00+08:00"), // Time window duration is 3 days.
                 Recurrence = new Recurrence()
                 {
                     Pattern = new RecurrencePattern()
@@ -457,13 +457,13 @@ namespace Tests.FeatureManagement
             settings = new TimeWindowFilterSettings()
             {
                 Start = DateTimeOffset.Parse("2024-1-15T00:00:00+08:00"), // Monday
-                End = DateTimeOffset.Parse("2024-1-19T00:00:00+08:00"), // Time window duration is 4 days
+                End = DateTimeOffset.Parse("2024-1-19T00:00:00+08:00"), // Time window duration is 4 days.
                 Recurrence = new Recurrence()
                 {
                     Pattern = new RecurrencePattern()
                     {
                         Type = RecurrencePatternType.Weekly,
-                        Interval = 2, // The interval is larger than one week, there is no across-week issue
+                        Interval = 2, // The interval is larger than one week, there is no across-week issue.
                         FirstDayOfWeek = DayOfWeek.Monday,
                         DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Monday, DayOfWeek.Sunday }
                     },
@@ -478,7 +478,7 @@ namespace Tests.FeatureManagement
             settings = new TimeWindowFilterSettings()
             {
                 Start = DateTimeOffset.Parse("2024-1-15T00:00:00+08:00"), // Monday
-                End = DateTimeOffset.Parse("2024-1-19T00:00:00+08:00"), // Time window duration is 4 days
+                End = DateTimeOffset.Parse("2024-1-19T00:00:00+08:00"), // Time window duration is 4 days.
                 Recurrence = new Recurrence()
                 {
                     Pattern = new RecurrencePattern()
@@ -855,7 +855,7 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
-                ( DateTimeOffset.Parse("2023-9-5T00:00:00+08:00"), // Within the recurring time window 2023-9-5T00:00:00+08:00 ~ 2023-9-7T00:00:00+08:00.
+                ( DateTimeOffset.Parse("2023-9-5T00:00:00+08:00"), // Within the recurring time window 2023-9-5T00:00:00+08:00 ~ 2023-9-7T00:00:00+08:00
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -872,7 +872,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2023-9-6T00:00:00+08:00"), // Within the recurring time window 2023-9-5T00:00:00+08:00 ~ 2023-9-7T00:00:00+08:00.
+                ( DateTimeOffset.Parse("2023-9-6T00:00:00+08:00"), // Within the recurring time window 2023-9-5T00:00:00+08:00 ~ 2023-9-7T00:00:00+08:00
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -889,7 +889,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2023-9-9T00:00:00+08:00"),  // Within the recurring time window 2023-9-9T00:00:00+08:00 ~ 2023-9-11T00:00:00+08:00.
+                ( DateTimeOffset.Parse("2023-9-9T00:00:00+08:00"),  // Within the recurring time window 2023-9-9T00:00:00+08:00 ~ 2023-9-11T00:00:00+08:00
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -906,7 +906,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Within the recurring time window 2023-9-3T00:00:00+08:00 ~ 2023-9-31T00:00:01+08:00.
+                ( DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Within the recurring time window 2023-9-3T00:00:00+08:00 ~ 2023-9-31T00:00:01+08:00
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -923,7 +923,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // The third occurrence.
+                ( DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // The third occurrence
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -1006,7 +1006,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2023-9-4T00:00:00+08:00"), // Monday is not included in DaysOfWeek
+                ( DateTimeOffset.Parse("2023-9-4T00:00:00+08:00"), // Monday is not included in DaysOfWeek.
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // Friday
@@ -1023,7 +1023,7 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
-                ( DateTimeOffset.Parse("2023-9-2T00:00:00+08:00"), // The 2nd occurrence.
+                ( DateTimeOffset.Parse("2023-9-2T00:00:00+08:00"), // The 2nd occurrence
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -1044,7 +1044,49 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
-                ( DateTimeOffset.Parse("2023-9-8T00:00:00+08:00"), // The 8th occurence.
+                ( DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // The 3rd occurrence
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Weekly,
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday }
+                        },
+                        Range = new RecurrenceRange()
+                        {
+                            Type = RecurrenceRangeType.Numbered,
+                            NumberOfOccurrences = 2
+                        }
+                    }
+                },
+                false ),
+
+                ( DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // The 3rd occurrence
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Weekly,
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday }
+                        },
+                        Range = new RecurrenceRange()
+                        {
+                            Type = RecurrenceRangeType.Numbered,
+                            NumberOfOccurrences = 3
+                        }
+                    }
+                },
+                true ),
+
+                ( DateTimeOffset.Parse("2023-9-8T00:00:00+08:00"), // The 8th occurence
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // Friday
@@ -1065,7 +1107,7 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
-                ( DateTimeOffset.Parse("2023-9-8T00:00:00+08:00"), // The 8th occurence.
+                ( DateTimeOffset.Parse("2023-9-8T00:00:00+08:00"), // The 8th occurence
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // Friday
@@ -1086,7 +1128,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2024-1-18T00:30:00+08:00"), // The 4th occurence.
+                ( DateTimeOffset.Parse("2024-1-18T00:30:00+08:00"), // The 4th occurence
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2024-1-4T00:00:00+08:00"), // Thursday
@@ -1109,7 +1151,7 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
-                ( DateTimeOffset.Parse("2024-1-18T00:30:00+08:00"), // The 4th occurence.
+                ( DateTimeOffset.Parse("2024-1-18T00:30:00+08:00"), // The 4th occurence
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2024-1-4T00:00:00+08:00"), // Thursday
@@ -1231,7 +1273,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2023-9-13T00:00:00+08:00"), // Within the recurring time window 2023-9-11T:00:00:00+08:00 ~ 2023-9-15T:00:00:00+08:00.
+                ( DateTimeOffset.Parse("2023-9-13T00:00:00+08:00"), // Within the recurring time window 2023-9-11T:00:00:00+08:00 ~ 2023-9-15T:00:00:00+08:00
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
@@ -1250,7 +1292,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2023-9-19T00:00:00+08:00"), // The 3rd occurrence: 2023-9-17T:00:00:00+08:00 ~ 2023-9-21T:00:00:00+08:00.
+                ( DateTimeOffset.Parse("2023-9-19T00:00:00+08:00"), // The 3rd occurrence: 2023-9-17T:00:00:00+08:00 ~ 2023-9-21T:00:00:00+08:00
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
@@ -1273,7 +1315,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2023-9-19T00:00:00+08:00"), // The 3rd occurrences
+                ( DateTimeOffset.Parse("2023-9-19T00:00:00+08:00"), // The 3rd occurrence
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
@@ -1394,7 +1436,7 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
-                ( DateTimeOffset.Parse("2024-9-1T00:00:00+08:00"), // The 4th occurrence.
+                ( DateTimeOffset.Parse("2024-9-1T00:00:00+08:00"), // The 4th occurrence
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -1416,7 +1458,7 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
-                ( DateTimeOffset.Parse("2024-9-1T00:00:00+08:00"), // The 4th occurrence.
+                ( DateTimeOffset.Parse("2024-9-1T00:00:00+08:00"), // The 4th occurrence
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -1509,7 +1551,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2023-9-8T00:00:00+08:00"), // 2nd Friday in 2023 Sep 
+                ( DateTimeOffset.Parse("2023-9-8T00:00:00+08:00"), // 2nd Friday in 2023 Sep
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // 1st Friday in 2023 Sep
@@ -1762,7 +1804,7 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                     }
                 },
-                false ), // The time window will only occur on either 1st Monday or 1st Friday, the 1st Monday of 2023 Oct is 10.2 
+                false ), // The time window will only occur on either 1st Monday or 1st Friday, the 1st Monday of 2023 Oct is 10.2 .
 
                 ( DateTimeOffset.Parse("2023-11-3T00:00:00+08:00"), // 1st Friday in 2023 Nov
                 new TimeWindowFilterSettings()
@@ -1800,7 +1842,7 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                     }
                 },
-                false ), // The time window will only occur on either 1st Monday or 1st Friday, the 1st Monday of 2023 Nov is 11.3
+                false ), // The time window will only occur on either 1st Monday or 1st Friday, the 1st Monday of 2023 Nov is 11.3.
 
                 ( DateTimeOffset.Parse("2023-12-1T00:00:00+08:00"), // the first day of the month
                 new TimeWindowFilterSettings()
@@ -1840,7 +1882,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2023-12-1T00:00:00+08:00"), // The 4th occurrence.
+                ( DateTimeOffset.Parse("2023-12-1T00:00:00+08:00"), // The 4th occurrence
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -1862,7 +1904,7 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
-                ( DateTimeOffset.Parse("2023-12-1T00:00:00+08:00"), // The 4th occurrence.
+                ( DateTimeOffset.Parse("2023-12-1T00:00:00+08:00"), // The 4th occurrence
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -1884,7 +1926,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2023-10-1T00:00:00+08:00"), // Sunday is not included in the DaysOfWeek
+                ( DateTimeOffset.Parse("2023-10-1T00:00:00+08:00"), // Sunday is not included in the DaysOfWeek.
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -1920,7 +1962,7 @@ namespace Tests.FeatureManagement
                 },
                 true ), // 2023-10-1 is Sunday which is not included in the DaysOfWeek.
 
-                ( DateTimeOffset.Parse("2023-10-2T00:00:00+08:00"), // 1st Monday,
+                ( DateTimeOffset.Parse("2023-10-2T00:00:00+08:00"), // 1st Monday
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -1983,7 +2025,7 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
-                ( DateTimeOffset.Parse("2024-9-1T00:00:00+08:00"), // The 2nd occurrence.
+                ( DateTimeOffset.Parse("2024-9-1T00:00:00+08:00"), // The 2nd occurrence
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -2005,7 +2047,7 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
-                ( DateTimeOffset.Parse("2026-9-1T00:00:00+08:00"), // The 2nd occurrence.
+                ( DateTimeOffset.Parse("2026-9-1T00:00:00+08:00"), // The 2nd occurrence
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -2028,7 +2070,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2029-9-1T00:00:00+08:00"), // The 3rd occurrence.
+                ( DateTimeOffset.Parse("2029-9-1T00:00:00+08:00"), // The 3rd occurrence
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -2174,7 +2216,7 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
-                ( DateTimeOffset.Parse("2026-9-1T00:00:00+08:00"), // the first day of Sep
+                ( DateTimeOffset.Parse("2026-9-1T00:00:00+08:00"), // The first day of Sep
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -2193,7 +2235,7 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2026-9-1T00:00:00+08:00"), // The 4th occurrence.
+                ( DateTimeOffset.Parse("2026-9-1T00:00:00+08:00"), // The 4th occurrence
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
@@ -2215,7 +2257,7 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
-                ( DateTimeOffset.Parse("2026-9-1T00:00:00+08:00"), // The 4th occurrence.
+                ( DateTimeOffset.Parse("2026-9-1T00:00:00+08:00"), // The 4th occurrence
                 new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),

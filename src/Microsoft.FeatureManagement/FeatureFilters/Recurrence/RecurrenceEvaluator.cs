@@ -802,8 +802,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                     break;
                 }
             }
-
-            Console.WriteLine("YES");
         }
 
         /// <summary>
