@@ -334,7 +334,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             DateTimeOffset start = settings.Start.Value;
 
             if (!pattern.DaysOfWeek.Any(day =>
-                    NthDayOfWeekInTheMonth(start.DateTime, pattern.Index, day) == start.Date))
+                NthDayOfWeekInTheMonth(start.DateTime, pattern.Index, day) == start.Date))
             {
                 paramName = nameof(settings.Start);
 
@@ -706,7 +706,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             //
             // netstandard2.0 does not support '/' operator for TimeSpan. After we stop supporting netstandard2.0, we can remove .TotalSeconds.
-            int numberOfInterval = (int)Math.Floor(timeGap.TotalSeconds / TimeSpan.FromDays(interval).TotalSeconds);
+            int numberOfInterval = (int) Math.Floor(timeGap.TotalSeconds / TimeSpan.FromDays(interval).TotalSeconds);
 
             previousOccurrence = start.AddDays(numberOfInterval * interval);
 
@@ -827,14 +827,15 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             int interval = pattern.Interval;
 
-            TimeSpan timeZoneOffset = start.Offset;
-
-            DateTime alignedTime = time.DateTime + timeZoneOffset - time.Offset;
+            DateTime alignedTime = time.DateTime + start.Offset - time.Offset;
 
             int monthGap = (alignedTime.Year - start.Year) * 12 + alignedTime.Month - start.Month;
 
             if (alignedTime.TimeOfDay + TimeSpan.FromDays(alignedTime.Day) < start.TimeOfDay + TimeSpan.FromDays(start.Day))
             {
+                //
+                // E.g. start: 2023-9-1T12:00:00 and time: 2023-10-1T11:00:00
+                // Not a complete month
                 monthGap -= 1;
             }
 
@@ -862,9 +863,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             int interval = pattern.Interval;
 
-            TimeSpan timeZoneOffset = start.Offset;
-
-            DateTime alignedTime = time.DateTime + timeZoneOffset - time.Offset;
+            DateTime alignedTime = time.DateTime + start.Offset - time.Offset;
 
             int monthGap = (alignedTime.Year - start.Year) * 12 + alignedTime.Month - start.Month;
 
@@ -873,7 +872,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 //
                 // E.g. start is 2023.9.1 (the first Friday in 2023.9) and current time is 2023.10.2 (the first Friday in next month is 2023.10.6)
-                // Not a complete monthly interval
+                // Not a complete month
                 monthGap -= 1;
             }
 
@@ -914,14 +913,15 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             int interval = pattern.Interval;
 
-            TimeSpan timeZoneOffset = start.Offset;
-
-            DateTime alignedTime = time.DateTime + timeZoneOffset - time.Offset;
+            DateTime alignedTime = time.DateTime + start.Offset - time.Offset;
 
             int yearGap = alignedTime.Year - start.Year;
 
             if (alignedTime.TimeOfDay + TimeSpan.FromDays(alignedTime.DayOfYear) < start.TimeOfDay + TimeSpan.FromDays(start.DayOfYear))
             {
+                //
+                // E.g. start: 2023-9-1T12:00:00 and time: 2024-9-1T11:00:00
+                // Not a complete year
                 yearGap -= 1;
             }
 
@@ -947,9 +947,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             int interval = pattern.Interval;
 
-            TimeSpan timeZoneOffset = start.Offset;
-
-            DateTime alignedTime = time.DateTime + timeZoneOffset - time.Offset;
+            DateTime alignedTime = time.DateTime + start.Offset - time.Offset;
 
             int yearGap = alignedTime.Year - start.Year;
 
@@ -957,15 +955,16 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 //
                 // E.g. start: 2023.9 and time: 2024.8
-                // Not a complete yearly interval
+                // Not a complete year
                 yearGap -= 1;
             }
-            else if (alignedTime.Month == start.Month && !pattern.DaysOfWeek.Any(day =>
-                alignedTime >= NthDayOfWeekInTheMonth(alignedTime, pattern.Index, day) + start.TimeOfDay))
+            else if (alignedTime.Month == start.Month && 
+                !pattern.DaysOfWeek.Any(day =>
+                    alignedTime >= NthDayOfWeekInTheMonth(alignedTime, pattern.Index, day) + start.TimeOfDay))
             {
                 //
                 // E.g. start: 2023.9.1 (the first Friday in 2023.9) and time: 2024.9.2 (the first Friday in 2023.9 is 2024.9.6)
-                // Not a complete yearly interval
+                // Not a complete year
                 yearGap -= 1;
             }
 
@@ -1010,31 +1009,31 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             DateTime date = DateTime.Today.AddDays(
                 RemainingDaysOfTheWeek(DateTime.Today.DayOfWeek, firstDayOfWeek));
 
-            DateTime prevOccurrence = DateTime.MinValue;
+            DateTime prev = DateTime.MinValue;
 
-            TimeSpan minGap = TimeSpan.MaxValue;
+            TimeSpan minGap = TimeSpan.FromDays(DayNumberOfWeek);
 
             for (int i = 0; i < DayNumberOfWeek; i++)
             {
                 if (daysOfWeek.Any(day =>
                     day == date.DayOfWeek))
                 {
-                    if (prevOccurrence == DateTime.MinValue)
+                    if (prev == DateTime.MinValue)
                     {
                         //
-                        // init
-                        prevOccurrence = date;
+                        // Find a occurrence for the first time
+                        prev = date;
                     }
                     else
                     {
-                        TimeSpan gap = date - prevOccurrence;
+                        TimeSpan gap = date - prev;
 
                         if (gap < minGap)
                         {
                             minGap = gap;
                         }
 
-                        prevOccurrence = date;
+                        prev = date;
                     }
                 }
 
@@ -1052,7 +1051,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                     if (daysOfWeek.Any(day =>
                         day == date.DayOfWeek))
                     {
-                        TimeSpan gap = date - prevOccurrence;
+                        TimeSpan gap = date - prev;
 
                         if (gap < minGap)
                         {

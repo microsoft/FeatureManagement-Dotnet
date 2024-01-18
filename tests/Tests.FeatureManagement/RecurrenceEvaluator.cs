@@ -5,9 +5,7 @@ using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime;
 using Xunit;
-using Xunit.Sdk;
 
 namespace Tests.FeatureManagement
 {
