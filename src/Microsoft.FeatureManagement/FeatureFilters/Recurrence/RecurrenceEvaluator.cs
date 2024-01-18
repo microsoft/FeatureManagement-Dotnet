@@ -679,7 +679,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (range.Type == RecurrenceRangeType.Numbered)
             {
-                return numberOfOccurrences < range.NumberOfOccurrences;
+                return numberOfOccurrences <= range.NumberOfOccurrences;
             }
 
             return true;
@@ -698,6 +698,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             DateTimeOffset start = settings.Start.Value;
 
+            Debug.Assert(time >= start);
+
             int interval = pattern.Interval;
 
             TimeSpan timeGap = time - start;
@@ -708,7 +710,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             previousOccurrence = start.AddDays(numberOfInterval * interval);
 
-            numberOfOccurrences = numberOfInterval;
+            numberOfOccurrences = numberOfInterval + 1;
         }
 
         /// <summary>
@@ -726,6 +728,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             DateTimeOffset start = settings.Start.Value;
 
+            Debug.Assert(time >= start);
+
             int interval = pattern.Interval;
 
             TimeSpan timeGap = time - start;
@@ -734,7 +738,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             TimeSpan remainingTimeOfFirstWeek = TimeSpan.FromDays(remainingDaysOfFirstWeek) - start.TimeOfDay;
 
-            TimeSpan remainingTimeOfFirstInterval = remainingTimeOfFirstWeek + TimeSpan.FromDays((interval - 1) * DayNumberOfWeek);
+            TimeSpan remaingTimeOfFirstIntervalAfterFirstWeek = TimeSpan.FromDays((interval - 1) * DayNumberOfWeek);
+
+            TimeSpan remainingTimeOfFirstInterval = remainingTimeOfFirstWeek + remaingTimeOfFirstIntervalAfterFirstWeek;
 
             DateTimeOffset tentativePreviousOccurrence = start;
 
@@ -743,27 +749,22 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             if (remainingTimeOfFirstInterval <= timeGap)
             {
                 //
-                // Add the occurrences in the first occurrence (i.e. start)
-                numberOfOccurrences += 1;
-
-                tentativePreviousOccurrence = tentativePreviousOccurrence.AddDays(1);
-
-                while (tentativePreviousOccurrence.DayOfWeek != pattern.FirstDayOfWeek)
+                // Add the occurrence in the first week and shift the tentative previous occurrence to the next week
+                while (tentativePreviousOccurrence.DayOfWeek != pattern.FirstDayOfWeek || 
+                    tentativePreviousOccurrence == start)
                 {
                     if (pattern.DaysOfWeek.Any(day =>
                         day == tentativePreviousOccurrence.DayOfWeek))
                     {
-                        //
-                        // Add the occurrence in the first week
                         numberOfOccurrences += 1;
                     }
 
-                    tentativePreviousOccurrence = tentativePreviousOccurrence.AddDays(1);
+                    tentativePreviousOccurrence += TimeSpan.FromDays(1);
                 }
 
                 //
                 // Shift the tentative previous occurrence to the first day of the first week of the second interval
-                tentativePreviousOccurrence = tentativePreviousOccurrence.AddDays((interval - 1) * DayNumberOfWeek);
+                tentativePreviousOccurrence += remaingTimeOfFirstIntervalAfterFirstWeek;
 
                 //
                 // The number of intervals between the first and the latest intervals (not inclusive)
@@ -772,7 +773,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
                 //
                 // Shift the tentative previous occurrence to the first day of the first week of the latest interval
-                tentativePreviousOccurrence = tentativePreviousOccurrence.AddDays(numberOfInterval * interval * DayNumberOfWeek);
+                tentativePreviousOccurrence += TimeSpan.FromDays(numberOfInterval * interval * DayNumberOfWeek);
 
                 //
                 // Add the occurrence in the intervals between the first and the latest intervals (not inclusive)
@@ -786,7 +787,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             //
             // Check the following days of the first week if time is still within the first interval
             // Otherwise, check the first week of the latest interval
-            tentativePreviousOccurrence = tentativePreviousOccurrence.AddDays(1);
+            tentativePreviousOccurrence += TimeSpan.FromDays(1);
 
             while (tentativePreviousOccurrence <= time)
             {
@@ -805,7 +806,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                     numberOfOccurrences += 1;
                 }
 
-                tentativePreviousOccurrence = tentativePreviousOccurrence.AddDays(1);
+                tentativePreviousOccurrence += TimeSpan.FromDays(1);
             }
         }
 
@@ -821,6 +822,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 
             DateTimeOffset start = settings.Start.Value;
+
+            Debug.Assert(time >= start);
 
             int interval = pattern.Interval;
 
@@ -839,7 +842,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             previousOccurrence = start.AddMonths(numberOfInterval * interval);
 
-            numberOfOccurrences = numberOfInterval;
+            numberOfOccurrences = numberOfInterval + 1;
         }
 
         /// <summary>
@@ -854,6 +857,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 
             DateTimeOffset start = settings.Start.Value;
+
+            Debug.Assert(time >= start);
 
             int interval = pattern.Interval;
 
@@ -876,11 +881,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             DateTime previousOccurrenceMonth = start.AddMonths(numberOfInterval * interval).DateTime;
 
-            previousOccurrence = DateTimeOffset.MaxValue;
-
             //
             // Find the first occurence date matched the pattern
             // Only one day of week in the month will be matched
+            previousOccurrence = DateTimeOffset.MaxValue;
+
             foreach (DayOfWeek day in pattern.DaysOfWeek)
             {
                 DateTime occurrenceDate = NthDayOfWeekInTheMonth(previousOccurrenceMonth, pattern.Index, day);
@@ -891,7 +896,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 }
             }
 
-            numberOfOccurrences = numberOfInterval;
+            numberOfOccurrences = numberOfInterval + 1;
         }
 
         /// <summary>
@@ -924,7 +929,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             previousOccurrence = start.AddYears(numberOfInterval * interval);
 
-            numberOfOccurrences = numberOfInterval;
+            numberOfOccurrences = numberOfInterval + 1;
         }
 
         /// <summary>
@@ -968,11 +973,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             DateTime previousOccurrenceMonth = start.AddYears(numberOfInterval * interval).DateTime;
 
-            previousOccurrence = DateTime.MaxValue;
-
             //
             // Find the first occurence date matched the pattern
             // Only one day of week in the month will be matched
+            previousOccurrence = DateTime.MaxValue;
+
             foreach (DayOfWeek day in pattern.DaysOfWeek)
             {
                 DateTime occurrenceDate = NthDayOfWeekInTheMonth(previousOccurrenceMonth, pattern.Index, day);
@@ -983,7 +988,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 }
             }
 
-            numberOfOccurrences = numberOfInterval;
+            numberOfOccurrences = numberOfInterval + 1;
         }
 
         /// <summary>
@@ -1001,12 +1006,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 return true;
             }
 
-            DateTime date = DateTime.Today;
-
-            int offset = RemainingDaysOfTheWeek(date.DayOfWeek, firstDayOfWeek);
-
             // Shift to the first day of the week
-            date = date.AddDays(offset);
+            DateTime date = DateTime.Today.AddDays(
+                RemainingDaysOfTheWeek(DateTime.Today.DayOfWeek, firstDayOfWeek));
 
             DateTime prevOccurrence = DateTime.MinValue;
 
@@ -1019,6 +1021,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 {
                     if (prevOccurrence == DateTime.MinValue)
                     {
+                        //
+                        // init
                         prevOccurrence = date;
                     }
                     else
@@ -1034,7 +1038,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                     }
                 }
 
-                date = date.AddDays(1);
+                date += TimeSpan.FromDays(1);
             }
 
             //
@@ -1058,7 +1062,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                         break;
                     }
 
-                    date = date.AddDays(1);
+                    date += TimeSpan.FromDays(1);
                 }
             }
 
@@ -1094,18 +1098,18 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Find the first provided day of week in the month
             while (date.DayOfWeek != dayOfWeek)
             {
-                date = date.AddDays(1);
+                date += TimeSpan.FromDays(1);
             }
 
             if (date.AddDays(DayNumberOfWeek * (int) index).Month == dateTime.Month)
             {
-                date = date.AddDays(DayNumberOfWeek * (int) index);
+                date += TimeSpan.FromDays(DayNumberOfWeek * (int) index);
             }
             else // There is no the 5th day of week in the month
             {
                 //
                 // Add 3 weeks to reach the fourth day of week in the month
-                date = date.AddDays(DayNumberOfWeek * 3);
+                date += TimeSpan.FromDays(DayNumberOfWeek * 3);
             }
 
             return date;

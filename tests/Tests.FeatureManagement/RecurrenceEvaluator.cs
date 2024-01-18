@@ -905,303 +905,349 @@ namespace Tests.FeatureManagement
         {
             var testData = new List<ValueTuple<DateTimeOffset, TimeWindowFilterSettings, bool>>()
             {
-                ( DateTimeOffset.Parse("2023-9-4T00:00:00+08:00"), // Monday in the 2nd week after the Start date
+                //( DateTimeOffset.Parse("2023-9-4T00:00:00+08:00"), // Monday in the 2nd week after the Start date
+                //new TimeWindowFilterSettings()
+                //{
+                //    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // Friday
+                //    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
+                //    Recurrence = new Recurrence()
+                //    {
+                //        Pattern = new RecurrencePattern()
+                //        {
+                //            Type = RecurrencePatternType.Weekly,
+                //            // FirstDayOfWeek is Sunday by default.
+                //            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Friday }
+                //        },
+                //        Range = new RecurrenceRange()
+                //    }
+                //},
+                //true ),
+
+                //( DateTimeOffset.Parse("2023-9-8T00:00:00+08:00"), // Friday in the 2nd week after the Start date
+                //new TimeWindowFilterSettings()
+                //{
+                //    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // Friday
+                //    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
+                //    Recurrence = new Recurrence()
+                //    {
+                //        Pattern = new RecurrencePattern()
+                //        {
+                //            Type = RecurrencePatternType.Weekly,
+                //            Interval = 2,
+                //            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Friday }
+                //        },
+                //        Range = new RecurrenceRange()
+                //    }
+                //},
+                //false ),
+
+                //( DateTimeOffset.Parse("2023-9-15T00:00:00+08:00"), // Friday in the 3rd week after the Start date
+                //new TimeWindowFilterSettings()
+                //{
+                //    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // Friday
+                //    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
+                //    Recurrence = new Recurrence()
+                //    {
+                //        Pattern = new RecurrencePattern()
+                //        {
+                //            Type = RecurrencePatternType.Weekly,
+                //            Interval = 2,
+                //            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Friday }
+                //        },
+                //        Range = new RecurrenceRange()
+                //    }
+                //},
+                //true ),
+
+                //( DateTimeOffset.Parse("2023-9-4T00:00:00+08:00"), // Monday is not included in DaysOfWeek
+                //new TimeWindowFilterSettings()
+                //{
+                //    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // Friday
+                //    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
+                //    Recurrence = new Recurrence()
+                //    {
+                //        Pattern = new RecurrencePattern()
+                //        {
+                //            Type = RecurrencePatternType.Weekly,
+                //            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday }
+                //        },
+                //        Range = new RecurrenceRange()
+                //    }
+                //},
+                //false ),
+
+                //( DateTimeOffset.Parse("2023-9-2T00:00:00+08:00"), // The 2nd occurrence.
+                //new TimeWindowFilterSettings()
+                //{
+                //    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
+                //    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
+                //    Recurrence = new Recurrence()
+                //    {
+                //        Pattern = new RecurrencePattern()
+                //        {
+                //            Type = RecurrencePatternType.Weekly,
+                //            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday }
+                //        },
+                //        Range = new RecurrenceRange()
+                //        {
+                //            Type = RecurrenceRangeType.Numbered,
+                //            NumberOfOccurrences = 1
+                //        }
+                //    }
+                //},
+                //false ),
+
+                //( DateTimeOffset.Parse("2023-9-8T00:00:00+08:00"), // The 8th occurence.
+                //new TimeWindowFilterSettings()
+                //{
+                //    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // Friday
+                //    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
+                //    Recurrence = new Recurrence()
+                //    {
+                //        Pattern = new RecurrencePattern()
+                //        {
+                //            Type = RecurrencePatternType.Weekly,
+                //            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday }
+                //        },
+                //        Range = new RecurrenceRange()
+                //        {
+                //            Type = RecurrenceRangeType.Numbered,
+                //            NumberOfOccurrences = 7
+                //        }
+                //    }
+                //},
+                //false ),
+
+                //( DateTimeOffset.Parse("2023-9-8T00:00:00+08:00"), // The 8th occurence.
+                //new TimeWindowFilterSettings()
+                //{
+                //    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // Friday
+                //    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
+                //    Recurrence = new Recurrence()
+                //    {
+                //        Pattern = new RecurrencePattern()
+                //        {
+                //            Type = RecurrencePatternType.Weekly,
+                //            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday }
+                //        },
+                //        Range = new RecurrenceRange()
+                //        {
+                //            Type = RecurrenceRangeType.Numbered,
+                //            NumberOfOccurrences = 8
+                //        }
+                //    }
+                //},
+                //true ),
+
+                //( DateTimeOffset.Parse("2024-1-18T00:30:00+08:00"), // The 4th occurence.
+                //new TimeWindowFilterSettings()
+                //{
+                //    Start = DateTimeOffset.Parse("2024-1-4T00:00:00+08:00"), // Thursday
+                //    End = DateTimeOffset.Parse("2024-1-4T01:00:00+08:00"),
+                //    Recurrence = new Recurrence()
+                //    {
+                //        Pattern = new RecurrencePattern()
+                //        {
+                //            Type = RecurrencePatternType.Weekly,
+                //            // FirstDayOfWeek is Sunday by default.
+                //            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Tuesday, DayOfWeek.Thursday, DayOfWeek.Friday},
+                //            Interval = 2
+                //        },
+                //        Range = new RecurrenceRange()
+                //        {
+                //            Type = RecurrenceRangeType.Numbered,
+                //            NumberOfOccurrences = 3
+                //        }
+                //    }
+                //},
+                //false ),
+
+                ( DateTimeOffset.Parse("2024-1-18T00:30:00+08:00"), // The 4th occurence.
                 new TimeWindowFilterSettings()
                 {
-                    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // Friday
-                    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
+                    Start = DateTimeOffset.Parse("2024-1-4T00:00:00+08:00"), // Thursday
+                    End = DateTimeOffset.Parse("2024-1-4T01:00:00+08:00"),
                     Recurrence = new Recurrence()
                     {
                         Pattern = new RecurrencePattern()
                         {
                             Type = RecurrencePatternType.Weekly,
                             // FirstDayOfWeek is Sunday by default.
-                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Friday }
-                        },
-                        Range = new RecurrenceRange()
-                    }
-                },
-                true ),
-
-                ( DateTimeOffset.Parse("2023-9-8T00:00:00+08:00"), // Friday in the 2nd week after the Start date
-                new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // Friday
-                    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern()
-                        {
-                            Type = RecurrencePatternType.Weekly,
-                            Interval = 2,
-                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Friday }
-                        },
-                        Range = new RecurrenceRange()
-                    }
-                },
-                false ),
-
-                ( DateTimeOffset.Parse("2023-9-15T00:00:00+08:00"), // Friday in the 3rd week after the Start date
-                new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // Friday
-                    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern()
-                        {
-                            Type = RecurrencePatternType.Weekly,
-                            Interval = 2,
-                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Friday }
-                        },
-                        Range = new RecurrenceRange()
-                    }
-                },
-                true ),
-
-                ( DateTimeOffset.Parse("2023-9-4T00:00:00+08:00"), // Monday is not included in DaysOfWeek
-                new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // Friday
-                    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern()
-                        {
-                            Type = RecurrencePatternType.Weekly,
-                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday }
-                        },
-                        Range = new RecurrenceRange()
-                    }
-                },
-                false ),
-
-                ( DateTimeOffset.Parse("2023-9-2T00:00:00+08:00"), // The 2nd occurrence.
-                new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
-                    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern()
-                        {
-                            Type = RecurrencePatternType.Weekly,
-                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday }
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Tuesday, DayOfWeek.Thursday, DayOfWeek.Friday},
+                            Interval = 2
                         },
                         Range = new RecurrenceRange()
                         {
                             Type = RecurrenceRangeType.Numbered,
-                            NumberOfOccurrences = 1
-                        }
-                    }
-                },
-                false ),
-
-                ( DateTimeOffset.Parse("2023-9-8T00:00:00+08:00"), // The 8th occurence.
-                new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // Friday
-                    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern()
-                        {
-                            Type = RecurrencePatternType.Weekly,
-                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday }
-                        },
-                        Range = new RecurrenceRange()
-                        {
-                            Type = RecurrenceRangeType.Numbered,
-                            NumberOfOccurrences = 7
-                        }
-                    }
-                },
-                false ),
-
-                ( DateTimeOffset.Parse("2023-9-8T00:00:00+08:00"), // The 8th occurence.
-                new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // Friday
-                    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern()
-                        {
-                            Type = RecurrencePatternType.Weekly,
-                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday }
-                        },
-                        Range = new RecurrenceRange()
-                        {
-                            Type = RecurrenceRangeType.Numbered,
-                            NumberOfOccurrences = 8
+                            NumberOfOccurrences = 4
                         }
                     }
                 },
                 true ),
 
-                ( DateTimeOffset.Parse("2023-9-4T00:00:00+08:00"), // Monday in the 2nd week after the Start date
-                new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
-                    End = DateTimeOffset.Parse("2023-9-3T00:00:01+08:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern()
-                        {
-                            Type = RecurrencePatternType.Weekly,
-                            Interval = 2,
-                            FirstDayOfWeek = DayOfWeek.Monday, // 2023-9-3 is the last day of the 1st week after the Start date
-                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Sunday }
-                        },
-                        Range = new RecurrenceRange()
-                    }
-                },
-                false ),
+                //( DateTimeOffset.Parse("2023-9-4T00:00:00+08:00"), // Monday in the 2nd week after the Start date
+                //new TimeWindowFilterSettings()
+                //{
+                //    Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
+                //    End = DateTimeOffset.Parse("2023-9-3T00:00:01+08:00"),
+                //    Recurrence = new Recurrence()
+                //    {
+                //        Pattern = new RecurrencePattern()
+                //        {
+                //            Type = RecurrencePatternType.Weekly,
+                //            Interval = 2,
+                //            FirstDayOfWeek = DayOfWeek.Monday, // 2023-9-3 is the last day of the 1st week after the Start date
+                //            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Sunday }
+                //        },
+                //        Range = new RecurrenceRange()
+                //    }
+                //},
+                //false ),
 
-                ( DateTimeOffset.Parse("2023-9-4T00:00:00+08:00"), // Monday in the 1st week after the Start date
-                new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
-                    End = DateTimeOffset.Parse("2023-9-3T00:00:01+08:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern()
-                        {
-                            Type = RecurrencePatternType.Weekly,
-                            Interval = 2,
-                            // FirstDayOfWeek is Sunday by default, 2023-9-3 ~ 2023-9-9 is the 1st week after the Start date
-                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Sunday }
-                        },
-                        Range = new RecurrenceRange()
-                    }
-                },
-                true ),
+                //( DateTimeOffset.Parse("2023-9-4T00:00:00+08:00"), // Monday in the 1st week after the Start date
+                //new TimeWindowFilterSettings()
+                //{
+                //    Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
+                //    End = DateTimeOffset.Parse("2023-9-3T00:00:01+08:00"),
+                //    Recurrence = new Recurrence()
+                //    {
+                //        Pattern = new RecurrencePattern()
+                //        {
+                //            Type = RecurrencePatternType.Weekly,
+                //            Interval = 2,
+                //            // FirstDayOfWeek is Sunday by default, 2023-9-3 ~ 2023-9-9 is the 1st week after the Start date
+                //            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Sunday }
+                //        },
+                //        Range = new RecurrenceRange()
+                //    }
+                //},
+                //true ),
 
-                ( DateTimeOffset.Parse("2023-9-18T00:00:00+08:00"), // Monday in the 4th week after the Start date
-                new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"),
-                    End = DateTimeOffset.Parse("2023-9-3T00:00:01+08:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern()
-                        {
-                            Type = RecurrencePatternType.Weekly,
-                            Interval = 2,
-                            FirstDayOfWeek = DayOfWeek.Monday, // 2023-9-3 1st week, 9-4 ~ 9-10 2nd week (Skipped), 9-11 ~ 9-17 3rd week, 9-18 ~ 9-24 4th week (Skipped)
-                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Sunday }
-                        },
-                        Range = new RecurrenceRange()
-                    }
-                },
-                false ),
+                //( DateTimeOffset.Parse("2023-9-18T00:00:00+08:00"), // Monday in the 4th week after the Start date
+                //new TimeWindowFilterSettings()
+                //{
+                //    Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"),
+                //    End = DateTimeOffset.Parse("2023-9-3T00:00:01+08:00"),
+                //    Recurrence = new Recurrence()
+                //    {
+                //        Pattern = new RecurrencePattern()
+                //        {
+                //            Type = RecurrencePatternType.Weekly,
+                //            Interval = 2,
+                //            FirstDayOfWeek = DayOfWeek.Monday, // 2023-9-3 1st week, 9-4 ~ 9-10 2nd week (Skipped), 9-11 ~ 9-17 3rd week, 9-18 ~ 9-24 4th week (Skipped)
+                //            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Sunday }
+                //        },
+                //        Range = new RecurrenceRange()
+                //    }
+                //},
+                //false ),
 
-                ( DateTimeOffset.Parse("2023-9-18T00:00:00+08:00"), // Monday in the 3rd week after the Start date
-                new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
-                    End = DateTimeOffset.Parse("2023-9-3T00:00:01+08:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern()
-                        {
-                            Type = RecurrencePatternType.Weekly,
-                            Interval = 2,
-                            // FirstDayOfWeek is Sunday by default, 2023-9-3 ~ 9-9 1st week, 9-17 ~ 9-23 3rd week
-                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Sunday }
-                        },
-                        Range = new RecurrenceRange()
-                    }
-                },
-                true ),
+                //( DateTimeOffset.Parse("2023-9-18T00:00:00+08:00"), // Monday in the 3rd week after the Start date
+                //new TimeWindowFilterSettings()
+                //{
+                //    Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
+                //    End = DateTimeOffset.Parse("2023-9-3T00:00:01+08:00"),
+                //    Recurrence = new Recurrence()
+                //    {
+                //        Pattern = new RecurrencePattern()
+                //        {
+                //            Type = RecurrencePatternType.Weekly,
+                //            Interval = 2,
+                //            // FirstDayOfWeek is Sunday by default, 2023-9-3 ~ 9-9 1st week, 9-17 ~ 9-23 3rd week
+                //            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Sunday }
+                //        },
+                //        Range = new RecurrenceRange()
+                //    }
+                //},
+                //true ),
 
-                ( DateTimeOffset.Parse("2023-9-17T00:00:00+08:00"), // Sunday in the 3rd week after the Start date
-                new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
-                    End = DateTimeOffset.Parse("2023-9-3T00:00:01+08:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern()
-                        {
-                            Type = RecurrencePatternType.Weekly,
-                            Interval = 2,
-                            FirstDayOfWeek = DayOfWeek.Monday, // 2023-9-3 1st week, 9-11 ~ 9-17 3rd week
-                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Sunday } // 2023-9-3, 9-11. 9-17
-                        },
-                        Range = new RecurrenceRange()
-                        {
-                            Type = RecurrenceRangeType.Numbered,
-                            NumberOfOccurrences = 3
-                        }
-                    }
-                },
-                true ),
+                //( DateTimeOffset.Parse("2023-9-17T00:00:00+08:00"), // Sunday in the 3rd week after the Start date
+                //new TimeWindowFilterSettings()
+                //{
+                //    Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
+                //    End = DateTimeOffset.Parse("2023-9-3T00:00:01+08:00"),
+                //    Recurrence = new Recurrence()
+                //    {
+                //        Pattern = new RecurrencePattern()
+                //        {
+                //            Type = RecurrencePatternType.Weekly,
+                //            Interval = 2,
+                //            FirstDayOfWeek = DayOfWeek.Monday, // 2023-9-3 1st week, 9-11 ~ 9-17 3rd week
+                //            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Sunday } // 2023-9-3, 9-11. 9-17
+                //        },
+                //        Range = new RecurrenceRange()
+                //        {
+                //            Type = RecurrenceRangeType.Numbered,
+                //            NumberOfOccurrences = 3
+                //        }
+                //    }
+                //},
+                //true ),
 
-                ( DateTimeOffset.Parse("2023-9-13T00:00:00+08:00"), // Within the recurring time window 2023-9-11T:00:00:00+08:00 ~ 2023-9-15T:00:00:00+08:00.
-                new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
-                    End = DateTimeOffset.Parse("2023-9-7T00:00:00+08:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern()
-                        {
-                            Type = RecurrencePatternType.Weekly,
-                            Interval = 2,
-                            FirstDayOfWeek = DayOfWeek.Monday,
-                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Sunday } // Time window occurrences: 9-3 ~ 9-7 (1st week), 9-11 ~ 9-15 and 9-17 ~ 9-21 (3rd week)
-                        },
-                        Range = new RecurrenceRange()
-                    }
-                },
-                true ),
+                //( DateTimeOffset.Parse("2023-9-13T00:00:00+08:00"), // Within the recurring time window 2023-9-11T:00:00:00+08:00 ~ 2023-9-15T:00:00:00+08:00.
+                //new TimeWindowFilterSettings()
+                //{
+                //    Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
+                //    End = DateTimeOffset.Parse("2023-9-7T00:00:00+08:00"),
+                //    Recurrence = new Recurrence()
+                //    {
+                //        Pattern = new RecurrencePattern()
+                //        {
+                //            Type = RecurrencePatternType.Weekly,
+                //            Interval = 2,
+                //            FirstDayOfWeek = DayOfWeek.Monday,
+                //            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Sunday } // Time window occurrences: 9-3 ~ 9-7 (1st week), 9-11 ~ 9-15 and 9-17 ~ 9-21 (3rd week)
+                //        },
+                //        Range = new RecurrenceRange()
+                //    }
+                //},
+                //true ),
 
-                ( DateTimeOffset.Parse("2023-9-19T00:00:00+08:00"), // The 3rd occurrence: 2023-9-17T:00:00:00+08:00 ~ 2023-9-21T:00:00:00+08:00.
-                new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
-                    End = DateTimeOffset.Parse("2023-9-7T00:00:00+08:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern()
-                        {
-                            Type = RecurrencePatternType.Weekly,
-                            Interval = 2,
-                            FirstDayOfWeek = DayOfWeek.Monday,
-                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Sunday } // Time window occurrences: 9-3 ~ 9-7 (1st week), 9-11 ~ 9-15 and 9-17 ~ 9-21 (3rd week)
-                        },
-                        Range = new RecurrenceRange()
-                        {
-                            Type = RecurrenceRangeType.Numbered,
-                            NumberOfOccurrences = 3
-                        }
-                    }
-                },
-                true ),
+                //( DateTimeOffset.Parse("2023-9-19T00:00:00+08:00"), // The 3rd occurrence: 2023-9-17T:00:00:00+08:00 ~ 2023-9-21T:00:00:00+08:00.
+                //new TimeWindowFilterSettings()
+                //{
+                //    Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
+                //    End = DateTimeOffset.Parse("2023-9-7T00:00:00+08:00"),
+                //    Recurrence = new Recurrence()
+                //    {
+                //        Pattern = new RecurrencePattern()
+                //        {
+                //            Type = RecurrencePatternType.Weekly,
+                //            Interval = 2,
+                //            FirstDayOfWeek = DayOfWeek.Monday,
+                //            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Sunday } // Time window occurrences: 9-3 ~ 9-7 (1st week), 9-11 ~ 9-15 and 9-17 ~ 9-21 (3rd week)
+                //        },
+                //        Range = new RecurrenceRange()
+                //        {
+                //            Type = RecurrenceRangeType.Numbered,
+                //            NumberOfOccurrences = 3
+                //        }
+                //    }
+                //},
+                //true ),
 
-                ( DateTimeOffset.Parse("2023-9-19T00:00:00+08:00"), // The 3rd occurrences
-                new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
-                    End = DateTimeOffset.Parse("2023-9-7T00:00:00+08:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern()
-                        {
-                            Type = RecurrencePatternType.Weekly,
-                            Interval = 2,
-                            FirstDayOfWeek = DayOfWeek.Monday,
-                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Sunday } // Time window occurrences: 9-3 ~ 9-7 (1st week), 9-11 ~ 9-15 and 9-17 ~ 9-21 (3rd week)
-                        },
-                        Range = new RecurrenceRange()
-                        {
-                            Type = RecurrenceRangeType.Numbered,
-                            NumberOfOccurrences = 2
-                        }
-                    }
-                },
-                false )
+                //( DateTimeOffset.Parse("2023-9-19T00:00:00+08:00"), // The 3rd occurrences
+                //new TimeWindowFilterSettings()
+                //{
+                //    Start = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00"), // Sunday
+                //    End = DateTimeOffset.Parse("2023-9-7T00:00:00+08:00"),
+                //    Recurrence = new Recurrence()
+                //    {
+                //        Pattern = new RecurrencePattern()
+                //        {
+                //            Type = RecurrencePatternType.Weekly,
+                //            Interval = 2,
+                //            FirstDayOfWeek = DayOfWeek.Monday,
+                //            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Sunday } // Time window occurrences: 9-3 ~ 9-7 (1st week), 9-11 ~ 9-15 and 9-17 ~ 9-21 (3rd week)
+                //        },
+                //        Range = new RecurrenceRange()
+                //        {
+                //            Type = RecurrenceRangeType.Numbered,
+                //            NumberOfOccurrences = 2
+                //        }
+                //    }
+                //},
+                //false )
             };
 
             ConsumeEvalutationTestData(testData);
@@ -1323,6 +1369,28 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
+                ( DateTimeOffset.Parse("2024-9-1T00:00:00+08:00"), // The 4th occurrence.
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.AbsoluteMonthly,
+                            DayOfMonth = 1,
+                            Interval = 4 // 2023-9-1, 2024-1-1, 2024-5-1, 2024-9-1 ...
+                        },
+                        Range = new RecurrenceRange()
+                        {
+                            Type = RecurrenceRangeType.Numbered,
+                            NumberOfOccurrences = 4
+                        }
+                    }
+                },
+                true ),
+
                 ( DateTimeOffset.Parse("2024-2-29T00:00:00+08:00"),
                 new TimeWindowFilterSettings()
                 {
@@ -1365,7 +1433,7 @@ namespace Tests.FeatureManagement
                         }
                     }
                 },
-                false ),
+                false )
             };
 
             ConsumeEvalutationTestData(testData);
@@ -1741,11 +1809,33 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                         {
                             Type = RecurrenceRangeType.Numbered,
-                            NumberOfOccurrences = 3
+                            NumberOfOccurrences = 3 // 2023-9-1, 2023-10-1, 2023-11-1, 2023-12-1 ...
                         }
                     }
                 },
                 false ),
+
+                ( DateTimeOffset.Parse("2023-12-1T00:00:00+08:00"), // The 4th occurrence.
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.RelativeMonthly,
+                            DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday }
+                            // Index is First by default.
+                        },
+                        Range = new RecurrenceRange()
+                        {
+                            Type = RecurrenceRangeType.Numbered,
+                            NumberOfOccurrences = 4 // 2023-9-1, 2023-10-1, 2023-11-1, 2023-12-1 ...
+                        }
+                    }
+                },
+                true ),
 
                 ( DateTimeOffset.Parse("2023-10-1T00:00:00+08:00"), // Sunday is not included in the DaysOfWeek
                 new TimeWindowFilterSettings()
@@ -2072,11 +2162,33 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                         {
                             Type = RecurrenceRangeType.Numbered,
-                            NumberOfOccurrences = 3
+                            NumberOfOccurrences = 3 // 2023-9-1, 2024-9-1, 2025-9-1, 2026-9-1 ...
                         }
                     }
                 },
                 false ),
+
+                ( DateTimeOffset.Parse("2026-9-1T00:00:00+08:00"), // The 4th occurrence.
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.RelativeYearly,
+                            DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday },
+                            Month = 9
+                        },
+                        Range = new RecurrenceRange()
+                        {
+                            Type = RecurrenceRangeType.Numbered,
+                            NumberOfOccurrences = 4 // 2023-9-1, 2024-9-1, 2025-9-1, 2026-9-1 ...
+                        }
+                    }
+                },
+                true )
             };
 
             ConsumeEvalutationTestData(testData);
