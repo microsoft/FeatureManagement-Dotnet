@@ -715,7 +715,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// Find the closest previous recurrence occurrence before the provided time stamp according to the "Weekly" recurrence pattern.
         /// <param name="time">A time stamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
-        /// <param name="tentativePreviousOccurrence">The closest previous occurrence.</param>
+        /// <param name="previousOccurrence">The closest previous occurrence.</param>
         /// <param name="numberOfOccurrences">The number of recurring days of week which have occurred between the time and the recurrence start.</param>
         /// </summary>
         private static void FindWeeklyPreviousOccurrence(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset previousOccurrence, out int numberOfOccurrences)
@@ -746,31 +746,36 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 // Add the occurrences in the first occurrence (i.e. start)
                 numberOfOccurrences += 1;
 
-                //
-                // Add the occurrence in the first week
-                DateTime date = start.AddDays(1).DateTime;
+                tentativePreviousOccurrence = tentativePreviousOccurrence.AddDays(1);
 
-                while (date.DayOfWeek != pattern.FirstDayOfWeek)
+                while (tentativePreviousOccurrence.DayOfWeek != pattern.FirstDayOfWeek)
                 {
                     if (pattern.DaysOfWeek.Any(day =>
-                        day == date.DayOfWeek))
+                        day == tentativePreviousOccurrence.DayOfWeek))
                     {
+                        //
+                        // Add the occurrence in the first week
                         numberOfOccurrences += 1;
                     }
 
-                    date = date.AddDays(1);
+                    tentativePreviousOccurrence = tentativePreviousOccurrence.AddDays(1);
                 }
 
                 //
+                // Shift the tentative previous occurrence to the first day of the first week of the second interval
+                tentativePreviousOccurrence = tentativePreviousOccurrence.AddDays((interval - 1) * DayNumberOfWeek);
+
+                //
+                // The number of intervals between the first and the latest intervals (not inclusive)
                 // netstandard2.0 does not support '/' operator for TimeSpan. After we stop supporting netstandard2.0, we can remove .TotalSeconds.
                 int numberOfInterval = (int) Math.Floor((timeGap - remainingTimeOfFirstInterval).TotalSeconds / TimeSpan.FromDays(interval * DayNumberOfWeek).TotalSeconds);
 
-                int remainingDaysOfFirstInterval = remainingDaysOfFirstWeek + (interval - 1) * DayNumberOfWeek;
-
                 //
                 // Shift the tentative previous occurrence to the first day of the first week of the latest interval
-                tentativePreviousOccurrence = start.AddDays(remainingDaysOfFirstInterval + numberOfInterval * interval * DayNumberOfWeek);
+                tentativePreviousOccurrence = tentativePreviousOccurrence.AddDays(numberOfInterval * interval * DayNumberOfWeek);
 
+                //
+                // Add the occurrence in the intervals between the first and the latest intervals (not inclusive)
                 numberOfOccurrences += numberOfInterval * pattern.DaysOfWeek.Count();
             }
 
