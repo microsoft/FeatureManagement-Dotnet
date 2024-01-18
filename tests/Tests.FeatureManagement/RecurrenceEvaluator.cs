@@ -216,22 +216,6 @@ namespace Tests.FeatureManagement
                         Pattern = new RecurrencePattern(),
                         Range = new RecurrenceRange()
                         {
-                            RecurrenceTimeZone = ""
-                        }
-                    }
-                },
-                ParamName.RecurrenceTimeZone,
-                ErrorMessage.UnrecognizableValue ),
-
-                ( new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
-                    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern(),
-                        Range = new RecurrenceRange()
-                        {
                             Type = RecurrenceRangeType.Numbered,
                             NumberOfOccurrences = 0 // NumberOfOccurrences should be larger than 0.
                         }
@@ -435,25 +419,7 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                         {
                             Type = RecurrenceRangeType.EndDate,
-                            EndDate = DateTimeOffset.Parse("2023-8-31T00:00:00+08:00") // EndDate is earlier than the Start
-                        }
-                    }
-                },
-                ParamName.EndDate,
-                ErrorMessage.OutOfRange ),
-
-                ( new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-1T23:00:00+00:00"), // 2023-9-2 under the RecurrenceTimeZone
-                    End = DateTimeOffset.Parse("2023-9-1T23:00:01+00:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern(),
-                        Range = new RecurrenceRange()
-                        {
-                            Type = RecurrenceRangeType.EndDate,
-                            EndDate = DateTimeOffset.Parse("2023-9-1"), // EndDate is earlier than the Start
-                            RecurrenceTimeZone = "UTC+08:00" // All date time in the recurrence settings will be aligned to the RecurrenceTimeZone
+                            EndDate = DateTimeOffset.Parse("2023-8-31T23:59:59+08:00") // EndDate is earlier than the Start
                         }
                     }
                 },
@@ -531,26 +497,6 @@ namespace Tests.FeatureManagement
                             DaysOfWeek = new List<DayOfWeek>{ DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Saturday, DayOfWeek.Sunday }
                         },
                         Range = new RecurrenceRange()
-                    }
-                },
-                ParamName.Start,
-                ErrorMessage.NotMatched ),
-
-                ( new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"), // Start (2023-8-31T23:00:00+07:00) is Thursday under the RecurrenceTimeZone. Start date is not a valid first occurrence.
-                    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern()
-                        {
-                            Type = RecurrencePatternType.Weekly,
-                            DaysOfWeek = new List<DayOfWeek>{ DayOfWeek.Friday }
-                        },
-                        Range = new RecurrenceRange()
-                        {
-                            RecurrenceTimeZone = "UTC+07:00"
-                        }
                     }
                 },
                 ParamName.Start,
@@ -945,27 +891,6 @@ namespace Tests.FeatureManagement
                         {
                             Type = RecurrenceRangeType.Numbered,
                             NumberOfOccurrences = 2
-                        }
-                    }
-                },
-                false ),
-
-                ( DateTimeOffset.Parse("2023-9-2T17:00:00+00:00"), // 2023-9-3T01:00:00+08:00 under the RecurrenceTimeZone, which is beyond the EndDate
-                new TimeWindowFilterSettings()
-                {
-                    Start = DateTimeOffset.Parse("2023-9-1T17:00:00+00:00"),
-                    End = DateTimeOffset.Parse("2023-9-1T17:30:00+00:00"),
-                    Recurrence = new Recurrence()
-                    {
-                        Pattern = new RecurrencePattern()
-                        {
-                            Type = RecurrencePatternType.Daily
-                        },
-                        Range = new RecurrenceRange()
-                        {
-                            Type = RecurrenceRangeType.EndDate,
-                            EndDate = DateTimeOffset.Parse("2023-9-2"),
-                            RecurrenceTimeZone = "UTC+08:00"
                         }
                     }
                 },
@@ -1414,7 +1339,7 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                         {
                             Type = RecurrenceRangeType.EndDate,
-                            EndDate = DateTimeOffset.Parse("2024-2-29")
+                            EndDate = DateTimeOffset.Parse("2024-2-29T00:00:00+08:00")
                         }
                     }
                 },
@@ -1436,7 +1361,7 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                         {
                             Type = RecurrenceRangeType.EndDate,
-                            EndDate = DateTimeOffset.Parse("2024-2-28")
+                            EndDate = DateTimeOffset.Parse("2024-2-28T23:59:59+08:00")
                         }
                     }
                 },

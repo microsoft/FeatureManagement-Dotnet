@@ -24,10 +24,5 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// The number of times to repeat the time window.
         /// </summary>
         public int? NumberOfOccurrences { get; set; }
-
-        /// <summary>
-        /// Time zone for recurrence settings. e.g. UTC+08:00
-        /// </summary>
-        public string RecurrenceTimeZone { get; set; }
     }
 }

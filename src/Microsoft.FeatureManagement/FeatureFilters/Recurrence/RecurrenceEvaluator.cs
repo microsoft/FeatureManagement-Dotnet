@@ -237,10 +237,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Check whether "Start" is a valid first occurrence
             DateTimeOffset start = settings.Start.Value;
 
-            DateTime alignedStart = start.DateTime + GetRecurrenceTimeZone(settings) - start.Offset;
-
             if (!pattern.DaysOfWeek.Any(day =>
-                day == alignedStart.DayOfWeek))
+                day == start.DayOfWeek))
             {
                 paramName = nameof(settings.Start);
 
@@ -293,9 +291,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Check whether "Start" is a valid first occurrence
             DateTimeOffset start = settings.Start.Value;
 
-            DateTime alignedStart = start.DateTime + GetRecurrenceTimeZone(settings) - start.Offset;
-
-            if (alignedStart.Day != pattern.DayOfMonth.Value)
+            if (start.Day != pattern.DayOfMonth.Value)
             {
                 paramName = nameof(settings.Start);
 
@@ -337,10 +333,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Check whether "Start" is a valid first occurrence
             DateTimeOffset start = settings.Start.Value;
 
-            DateTime alignedStart = start.DateTime + GetRecurrenceTimeZone(settings) - start.Offset;
-
             if (!pattern.DaysOfWeek.Any(day =>
-                    NthDayOfWeekInTheMonth(alignedStart, pattern.Index, day) == alignedStart.Date))
+                    NthDayOfWeekInTheMonth(start.DateTime, pattern.Index, day) == start.Date))
             {
                 paramName = nameof(settings.Start);
 
@@ -387,9 +381,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Check whether "Start" is a valid first occurrence
             DateTimeOffset start = settings.Start.Value;
 
-            DateTime alignedStart = start.DateTime + GetRecurrenceTimeZone(settings) - start.Offset;
-
-            if (alignedStart.Day != pattern.DayOfMonth.Value || alignedStart.Month != pattern.Month.Value)
+            if (start.Day != pattern.DayOfMonth.Value || start.Month != pattern.Month.Value)
             {
                 paramName = nameof(settings.Start);
 
@@ -436,11 +428,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Check whether "Start" is a valid first occurrence
             DateTimeOffset start = settings.Start.Value;
 
-            DateTime alignedStart = start.DateTime + GetRecurrenceTimeZone(settings) - start.Offset;
-
-            if (alignedStart.Month != pattern.Month.Value ||
+            if (start.Month != pattern.Month.Value ||
                     !pattern.DaysOfWeek.Any(day =>
-                        NthDayOfWeekInTheMonth(alignedStart, pattern.Index, day) == alignedStart.Date))
+                        NthDayOfWeekInTheMonth(start.DateTime, pattern.Index, day) == start.Date))
             {
                 paramName = nameof(settings.Start);
 
@@ -458,14 +448,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             Debug.Assert(settings.Recurrence != null);
             Debug.Assert(settings.Recurrence.Range != null);
 
-            if (!TryValidateRecurrenceTimeZone(settings, out paramName, out reason))
-            {
-                return false;
-            }
-
             switch(settings.Recurrence.Range.Type)
             {
                 case RecurrenceRangeType.NoEnd:
+                    paramName = null;
+
+                    reason = null;
+
                     return true;
 
                 case RecurrenceRangeType.EndDate:
@@ -583,18 +572,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             DateTimeOffset start = settings.Start.Value;
 
-            TimeSpan timeZoneOffset = start.Offset;
+            DateTimeOffset endDate = settings.Recurrence.Range.EndDate.Value;
 
-            if (settings.Recurrence.Range.RecurrenceTimeZone != null)
-            {
-                TryParseTimeZone(settings.Recurrence.Range.RecurrenceTimeZone, out timeZoneOffset);
-            }
-
-            DateTime alignedStart = start.DateTime + timeZoneOffset - start.Offset;
-
-            DateTime endDate = settings.Recurrence.Range.EndDate.Value.DateTime;
-
-            if (endDate.Date < alignedStart.Date)
+            if (endDate < start)
             {
                 reason = OutOfRange;
 
@@ -629,49 +609,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             return true;
         }
 
-        private static bool TryValidateRecurrenceTimeZone(TimeWindowFilterSettings settings, out string paramName, out string reason)
-        {
-            paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Range)}.{nameof(settings.Recurrence.Range.RecurrenceTimeZone)}";
-
-            if (settings.Recurrence.Range.RecurrenceTimeZone != null && !TryParseTimeZone(settings.Recurrence.Range.RecurrenceTimeZone, out _))
-            {
-                reason = UnrecognizableValue;
-
-                return false;
-            }
-
-            reason = null;
-
-            return true;
-        }
-
-        private static bool TryParseTimeZone(string timeZoneStr, out TimeSpan timeZoneOffset)
-        {
-            timeZoneOffset = TimeSpan.Zero;
-
-            if (timeZoneStr == null)
-            {
-                return false;
-            }
-
-            if (!timeZoneStr.StartsWith("UTC+") && !timeZoneStr.StartsWith("UTC-"))
-            {
-                return false;
-            }
-
-            if (!TimeSpan.TryParseExact(timeZoneStr.Substring(4), @"hh\:mm", null, out timeZoneOffset))
-            {
-                return false;
-            }
-
-            if (timeZoneStr[3] == '-')
-            {
-                timeZoneOffset = -timeZoneOffset;
-            }
-
-            return true;
-        }
-
         /// <summary>
         /// Try to find the closest previous recurrence occurrence before the provided time stamp according to the recurrence pattern.
         /// <param name="time">A time stamp.</param>
@@ -681,6 +618,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// </summary>
         private static bool TryGetPreviousOccurrence(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset previousOccurrence)
         {
+            Debug.Assert(settings.Start != null);
+            Debug.Assert(settings.Recurrence != null);
+            Debug.Assert(settings.Recurrence.Pattern != null);
+            Debug.Assert(settings.Recurrence.Range != null);
+
             previousOccurrence = DateTimeOffset.MaxValue;
 
             DateTimeOffset start = settings.Start.Value;
@@ -730,13 +672,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             RecurrenceRange range = settings.Recurrence.Range;
 
-            TimeSpan timeZoneOffset = GetRecurrenceTimeZone(settings);
-
             if (range.Type == RecurrenceRangeType.EndDate)
             {
-                DateTime alignedPreviousOccurrence = previousOccurrence.DateTime + timeZoneOffset - previousOccurrence.Offset;
-
-                return alignedPreviousOccurrence.Date <= range.EndDate.Value.Date;
+                return previousOccurrence <= range.EndDate.Value;
             }
 
             if (range.Type == RecurrenceRangeType.Numbered)
@@ -777,13 +715,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// Find the closest previous recurrence occurrence before the provided time stamp according to the "Weekly" recurrence pattern.
         /// <param name="time">A time stamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
-        /// <param name="previousOccurrence">The closest previous occurrence.</param>
+        /// <param name="tentativePreviousOccurrence">The closest previous occurrence.</param>
         /// <param name="numberOfOccurrences">The number of recurring days of week which have occurred between the time and the recurrence start.</param>
         /// </summary>
         private static void FindWeeklyPreviousOccurrence(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset previousOccurrence, out int numberOfOccurrences)
         {
-            previousOccurrence = DateTimeOffset.MaxValue;
-
             numberOfOccurrences = 0;
 
             RecurrencePattern pattern = settings.Recurrence.Pattern;
@@ -792,66 +728,79 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             int interval = pattern.Interval;
 
-            TimeSpan timeZoneOffset = GetRecurrenceTimeZone(settings);
-
-            DateTime alignedStart = start.DateTime + timeZoneOffset - start.Offset;
-
             TimeSpan timeGap = time - start;
 
-            int remainingDaysOfFirstWeek = RemainingDaysOfTheWeek(alignedStart.DayOfWeek, pattern.FirstDayOfWeek);
+            int remainingDaysOfFirstWeek = RemainingDaysOfTheWeek(start.DayOfWeek, pattern.FirstDayOfWeek);
 
-            TimeSpan remainingTimeOfFirstInterval = TimeSpan.FromDays(remainingDaysOfFirstWeek) - alignedStart.TimeOfDay + TimeSpan.FromDays((interval - 1) * 7);
+            TimeSpan remainingTimeOfFirstWeek = TimeSpan.FromDays(remainingDaysOfFirstWeek) - start.TimeOfDay;
 
+            TimeSpan remainingTimeOfFirstInterval = remainingTimeOfFirstWeek + TimeSpan.FromDays((interval - 1) * DayNumberOfWeek);
+
+            DateTimeOffset tentativePreviousOccurrence = start;
+
+            //
+            // Time is not within the first interval
             if (remainingTimeOfFirstInterval <= timeGap)
             {
-                int numberOfInterval = (int)Math.Floor((timeGap - remainingTimeOfFirstInterval).TotalSeconds / TimeSpan.FromDays(interval * 7).TotalSeconds);
-
-                previousOccurrence = start.AddDays(numberOfInterval * interval * 7 + remainingDaysOfFirstWeek + (interval - 1) * 7);
-
-                numberOfOccurrences += numberOfInterval * pattern.DaysOfWeek.Count();
-
                 //
-                // Add the occurrences in the first week
+                // Add the occurrences in the first occurrence (i.e. start)
                 numberOfOccurrences += 1;
 
-                DateTime dateTime = alignedStart.AddDays(1);
+                //
+                // Add the occurrence in the first week
+                DateTime date = start.AddDays(1).DateTime;
 
-                while (dateTime.DayOfWeek != pattern.FirstDayOfWeek)
+                while (date.DayOfWeek != pattern.FirstDayOfWeek)
                 {
                     if (pattern.DaysOfWeek.Any(day =>
-                        day == dateTime.DayOfWeek))
+                        day == date.DayOfWeek))
                     {
                         numberOfOccurrences += 1;
                     }
 
-                    dateTime = dateTime.AddDays(1);
+                    date = date.AddDays(1);
                 }
+
+                //
+                // netstandard2.0 does not support '/' operator for TimeSpan. After we stop supporting netstandard2.0, we can remove .TotalSeconds.
+                int numberOfInterval = (int) Math.Floor((timeGap - remainingTimeOfFirstInterval).TotalSeconds / TimeSpan.FromDays(interval * DayNumberOfWeek).TotalSeconds);
+
+                int remainingDaysOfFirstInterval = remainingDaysOfFirstWeek + (interval - 1) * DayNumberOfWeek;
+
+                //
+                // Shift the tentative previous occurrence to the first day of the first week of the latest interval
+                tentativePreviousOccurrence = start.AddDays(remainingDaysOfFirstInterval + numberOfInterval * interval * DayNumberOfWeek);
+
+                numberOfOccurrences += numberOfInterval * pattern.DaysOfWeek.Count();
             }
-            else // time is still within the first interval
+
+            //
+            // Tentative previous occurrence should either be the start or the first day of the first week of the latest interval.
+            previousOccurrence = tentativePreviousOccurrence;
+
+            //
+            // Check the following days of the first week if time is still within the first interval
+            // Otherwise, check the first week of the latest interval
+            tentativePreviousOccurrence = tentativePreviousOccurrence.AddDays(1);
+
+            while (tentativePreviousOccurrence <= time)
             {
-                previousOccurrence = start;
-            }
-
-            DateTime alignedPreviousOccurrence = previousOccurrence.DateTime + timeZoneOffset - previousOccurrence.Offset;
-
-            DateTime alignedTime = time.DateTime + timeZoneOffset - time.Offset;
-
-            while (alignedPreviousOccurrence.AddDays(1) <= alignedTime)
-            {
-                alignedPreviousOccurrence = alignedPreviousOccurrence.AddDays(1);
-
-                if (alignedPreviousOccurrence.DayOfWeek == pattern.FirstDayOfWeek) // Come to the next week
+                if (tentativePreviousOccurrence.DayOfWeek == pattern.FirstDayOfWeek)
                 {
+                    //
+                    // It comes to the next week, so break.
                     break;
                 }
 
                 if (pattern.DaysOfWeek.Any(day =>
-                    day == alignedPreviousOccurrence.DayOfWeek))
+                    day == tentativePreviousOccurrence.DayOfWeek))
                 {
-                    previousOccurrence = new DateTimeOffset(alignedPreviousOccurrence, timeZoneOffset);
+                    previousOccurrence = tentativePreviousOccurrence;
 
                     numberOfOccurrences += 1;
                 }
+
+                tentativePreviousOccurrence = tentativePreviousOccurrence.AddDays(1);
             }
         }
 
@@ -870,15 +819,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             int interval = pattern.Interval;
 
-            TimeSpan timeZoneOffset = GetRecurrenceTimeZone(settings);
-
-            DateTime alignedStart = start.DateTime + timeZoneOffset - start.Offset;
+            TimeSpan timeZoneOffset = start.Offset;
 
             DateTime alignedTime = time.DateTime + timeZoneOffset - time.Offset;
 
-            int monthGap = (alignedTime.Year - alignedStart.Year) * 12 + alignedTime.Month - alignedStart.Month;
+            int monthGap = (alignedTime.Year - start.Year) * 12 + alignedTime.Month - start.Month;
 
-            if (alignedTime.TimeOfDay + TimeSpan.FromDays(alignedTime.Day) < alignedStart.TimeOfDay + TimeSpan.FromDays(alignedStart.Day))
+            if (alignedTime.TimeOfDay + TimeSpan.FromDays(alignedTime.Day) < start.TimeOfDay + TimeSpan.FromDays(start.Day))
             {
                 monthGap -= 1;
             }
@@ -905,16 +852,14 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             int interval = pattern.Interval;
 
-            TimeSpan timeZoneOffset = GetRecurrenceTimeZone(settings);
-
-            DateTime alignedStart = start.DateTime + timeZoneOffset - start.Offset;
+            TimeSpan timeZoneOffset = start.Offset;
 
             DateTime alignedTime = time.DateTime + timeZoneOffset - time.Offset;
 
-            int monthGap = (alignedTime.Year - alignedStart.Year) * 12 + alignedTime.Month - alignedStart.Month;
+            int monthGap = (alignedTime.Year - start.Year) * 12 + alignedTime.Month - start.Month;
 
             if (!pattern.DaysOfWeek.Any(day =>
-                alignedTime >= NthDayOfWeekInTheMonth(alignedTime, pattern.Index, day) + alignedStart.TimeOfDay))
+                alignedTime >= NthDayOfWeekInTheMonth(alignedTime, pattern.Index, day) + start.TimeOfDay))
             {
                 //
                 // E.g. start is 2023.9.1 (the first Friday in 2023.9) and current time is 2023.10.2 (the first Friday in next month is 2023.10.6)
@@ -924,24 +869,22 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             int numberOfInterval = monthGap / interval;
 
-            DateTime alignedPreviousOccurrenceMonth = alignedStart.AddMonths(numberOfInterval * interval);
+            DateTime previousOccurrenceMonth = start.AddMonths(numberOfInterval * interval).DateTime;
 
-            DateTime alignedPreviousOccurrence = DateTime.MaxValue;
+            previousOccurrence = DateTimeOffset.MaxValue;
 
             //
             // Find the first occurence date matched the pattern
             // Only one day of week in the month will be matched
             foreach (DayOfWeek day in pattern.DaysOfWeek)
             {
-                DateTime occurrenceDate = NthDayOfWeekInTheMonth(alignedPreviousOccurrenceMonth, pattern.Index, day);
+                DateTime occurrenceDate = NthDayOfWeekInTheMonth(previousOccurrenceMonth, pattern.Index, day);
 
-                if (occurrenceDate + alignedStart.TimeOfDay < alignedPreviousOccurrence)
+                if (occurrenceDate + start.TimeOfDay < previousOccurrence)
                 {
-                    alignedPreviousOccurrence = occurrenceDate + alignedStart.TimeOfDay;
+                    previousOccurrence = occurrenceDate + start.TimeOfDay;
                 }
             }
-
-            previousOccurrence = new DateTimeOffset(alignedPreviousOccurrence, timeZoneOffset);
 
             numberOfOccurrences = numberOfInterval;
         }
@@ -961,15 +904,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             int interval = pattern.Interval;
 
-            TimeSpan timeZoneOffset = GetRecurrenceTimeZone(settings);
-
-            DateTime alignedStart = start.DateTime + timeZoneOffset - start.Offset;
+            TimeSpan timeZoneOffset = start.Offset;
 
             DateTime alignedTime = time.DateTime + timeZoneOffset - time.Offset;
 
-            int yearGap = alignedTime.Year - alignedStart.Year;
+            int yearGap = alignedTime.Year - start.Year;
 
-            if (alignedTime.TimeOfDay + TimeSpan.FromDays(alignedTime.DayOfYear) < alignedStart.TimeOfDay + TimeSpan.FromDays(alignedStart.DayOfYear))
+            if (alignedTime.TimeOfDay + TimeSpan.FromDays(alignedTime.DayOfYear) < start.TimeOfDay + TimeSpan.FromDays(start.DayOfYear))
             {
                 yearGap -= 1;
             }
@@ -996,23 +937,21 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             int interval = pattern.Interval;
 
-            TimeSpan timeZoneOffset = GetRecurrenceTimeZone(settings);
-
-            DateTime alignedStart = start.DateTime + timeZoneOffset - start.Offset;
+            TimeSpan timeZoneOffset = start.Offset;
 
             DateTime alignedTime = time.DateTime + timeZoneOffset - time.Offset;
 
-            int yearGap = alignedTime.Year - alignedStart.Year;
+            int yearGap = alignedTime.Year - start.Year;
 
-            if (alignedTime.Month < alignedStart.Month)
+            if (alignedTime.Month < start.Month)
             {
                 //
                 // E.g. start: 2023.9 and time: 2024.8
                 // Not a complete yearly interval
                 yearGap -= 1;
             }
-            else if (alignedTime.Month == alignedStart.Month && !pattern.DaysOfWeek.Any(day =>
-                alignedTime >= NthDayOfWeekInTheMonth(alignedTime, pattern.Index, day) + alignedStart.TimeOfDay))
+            else if (alignedTime.Month == start.Month && !pattern.DaysOfWeek.Any(day =>
+                alignedTime >= NthDayOfWeekInTheMonth(alignedTime, pattern.Index, day) + start.TimeOfDay))
             {
                 //
                 // E.g. start: 2023.9.1 (the first Friday in 2023.9) and time: 2024.9.2 (the first Friday in 2023.9 is 2024.9.6)
@@ -1022,36 +961,24 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             int numberOfInterval = yearGap / interval;
 
-            DateTime alignedPreviousOccurrenceMonth = alignedStart.AddYears(numberOfInterval * interval);
+            DateTime previousOccurrenceMonth = start.AddYears(numberOfInterval * interval).DateTime;
 
-            DateTime alignedPreviousOccurrence = DateTime.MaxValue;
+            previousOccurrence = DateTime.MaxValue;
 
             //
             // Find the first occurence date matched the pattern
             // Only one day of week in the month will be matched
             foreach (DayOfWeek day in pattern.DaysOfWeek)
             {
-                DateTime occurrenceDate = NthDayOfWeekInTheMonth(alignedPreviousOccurrenceMonth, pattern.Index, day);
+                DateTime occurrenceDate = NthDayOfWeekInTheMonth(previousOccurrenceMonth, pattern.Index, day);
 
-                if (occurrenceDate + alignedStart.TimeOfDay < alignedPreviousOccurrence)
+                if (occurrenceDate + start.TimeOfDay < previousOccurrence)
                 {
-                    alignedPreviousOccurrence = occurrenceDate + alignedStart.TimeOfDay;
+                    previousOccurrence = occurrenceDate + start.TimeOfDay;
                 }
             }
 
-            previousOccurrence = new DateTimeOffset(alignedPreviousOccurrence, timeZoneOffset);
-
             numberOfOccurrences = numberOfInterval;
-        }
-
-        private static TimeSpan GetRecurrenceTimeZone(TimeWindowFilterSettings settings)
-        {
-            if (!TryParseTimeZone(settings.Recurrence.Range.RecurrenceTimeZone, out TimeSpan timeZoneOffset))
-            {
-                timeZoneOffset = settings.Start.Value.Offset;
-            }
-
-            return timeZoneOffset;
         }
 
         /// <summary>
