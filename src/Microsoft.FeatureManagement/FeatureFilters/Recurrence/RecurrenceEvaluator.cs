@@ -686,7 +686,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <param name="time">A time stamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
-        /// <param name="numberOfOccurrences">The number of complete recurrence intervals which have occurred between the time and the recurrence start.</param>
+        /// <param name="numberOfOccurrences">The number of occurrences between the time and the recurrence start.</param>
         /// </summary>
         private static void FindDailyPreviousOccurrence(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset previousOccurrence, out int numberOfOccurrences)
         {
@@ -714,7 +714,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <param name="time">A time stamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
-        /// <param name="numberOfOccurrences">The number of recurring days of week which have occurred between the time and the recurrence start.</param>
+        /// <param name="numberOfOccurrences">The number of occurrences between the time and the recurrence start.</param>
         /// </summary>
         private static void FindWeeklyPreviousOccurrence(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset previousOccurrence, out int numberOfOccurrences)
         {
@@ -809,7 +809,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <param name="time">A time stamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
-        /// <param name="numberOfOccurrences">The number of complete recurrence intervals which have occurred between the time and the recurrence start.</param>
+        /// <param name="numberOfOccurrences">The number of occurrences between the time and the recurrence start.</param>
         /// </summary>
         private static void FindAbsoluteMonthlyPreviousOccurrence(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset previousOccurrence, out int numberOfOccurrences)
         {
@@ -845,7 +845,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <param name="time">A time stamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
-        /// <param name="numberOfOccurrences">The number of complete recurrence intervals which have occurred between the time and the recurrence start.</param>
+        /// <param name="numberOfOccurrences">The number of occurrences between the time and the recurrence start.</param>
         /// </summary>
         private static void FindRelativeMonthlyPreviousOccurrence(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset previousOccurrence, out int numberOfOccurrences)
         {
@@ -897,7 +897,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <param name="time">A time stamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
-        /// <param name="numberOfOccurrences">The number of complete recurrence intervals which have occurred between the time and the recurrence start.</param>
+        /// <param name="numberOfOccurrences">The number of occurrences between the time and the recurrence start.</param>
         /// </summary>
         private static void FindAbsoluteYearlyPreviousOccurrence(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset previousOccurrence, out int numberOfOccurrences)
         {
@@ -933,7 +933,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <param name="time">A time stamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
-        /// <param name="numberOfOccurrences">The number of complete recurrence intervals which have occurred between the time and the recurrence start.</param>
+        /// <param name="numberOfOccurrences">The number of occurrences between the time and the recurrence start.</param>
         /// </summary>
         private static void FindRelativeYearlyPreviousOccurrence(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset previousOccurrence, out int numberOfOccurrences)
         {
