@@ -25,53 +25,24 @@ var targetingContextAccessor = new OnDemandTargetingContextAccessor();
 
 services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor);
 
-using (ServiceProvider serviceProvider = services.BuildServiceProvider())
+using ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+IFeaturedService<IAlgorithm> featuredAlgorithm = serviceProvider.GetRequiredService<IFeaturedService<IAlgorithm>>();
+
+string[] userIds = { "Guest", "UserBeta", "UserSigma", "UserOmega" };
+
+foreach (string userId in userIds)
 {
-    IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
-
-    IFeaturedService<IAlgorithm> featuredAlgorithm = serviceProvider.GetRequiredService<IFeaturedService<IAlgorithm>>();
-
     targetingContextAccessor.Current = new TargetingContext
     {
-        UserId = "Guest"
+        UserId = userId
     };
 
     IAlgorithm algorithm = await featuredAlgorithm.GetAsync(CancellationToken.None);
 
     Variant variant = await featureManager.GetVariantAsync("MyFeature", CancellationToken.None);
-
-    Console.WriteLine($"Get algorithm {algorithm?.Name ?? "Null"} because the feature variant is {variant?.Name ?? "Null"}");
-
-    targetingContextAccessor.Current = new TargetingContext
-    {
-        UserId = "UserBeta"
-    };
-
-    algorithm = await featuredAlgorithm.GetAsync(CancellationToken.None);
-
-    variant = await featureManager.GetVariantAsync("MyFeature", CancellationToken.None);
-
-    Console.WriteLine($"Get algorithm {algorithm?.Name ?? "Null"} because the feature variant is {variant?.Name ?? "Null"}");
-
-    targetingContextAccessor.Current = new TargetingContext
-    {
-        UserId = "UserSigma"
-    };
-
-    algorithm = await featuredAlgorithm.GetAsync(CancellationToken.None);
-
-    variant = await featureManager.GetVariantAsync("MyFeature", CancellationToken.None);
-
-    Console.WriteLine($"Get algorithm {algorithm?.Name ?? "Null"} because the feature variant is {variant?.Name ?? "Null"}");
-
-    targetingContextAccessor.Current = new TargetingContext
-    {
-        UserId = "UserOmega"
-    };
-
-    algorithm = await featuredAlgorithm.GetAsync(CancellationToken.None);
-
-    variant = await featureManager.GetVariantAsync("MyFeature", CancellationToken.None);
 
     Console.WriteLine($"Get algorithm {algorithm?.Name ?? "Null"} because the feature variant is {variant?.Name ?? "Null"}");
 }
