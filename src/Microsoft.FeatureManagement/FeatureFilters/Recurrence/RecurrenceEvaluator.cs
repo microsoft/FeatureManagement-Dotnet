@@ -12,10 +12,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
     {
         //
         // Error Message
-        const string OutOfRange = "The value is out of the accepted range.";
+        const string ValueOutOfRange = "The value is out of the accepted range.";
         const string UnrecognizableValue = "The value is unrecognizable.";
         const string RequiredParameter = "Value cannot be null or empty.";
-        const string NotMatched = "Start date is not a valid first occurrence.";
+        const string StartNotMatched = "Start date is not a valid first occurrence.";
+        const string TimeWindowDurationOutOfRange = "Time window duration cannot be longer than how frequently it occurs";
 
         const int DayNumberOfWeek = 7;
         const int MinDayNumberOfMonth = 28;
@@ -127,7 +128,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 paramName = nameof(settings.End);
 
-                reason = OutOfRange;
+                reason = ValueOutOfRange;
 
                 return false;
             }
@@ -181,6 +182,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
         private static bool TryValidateDailyRecurrencePattern(TimeWindowFilterSettings settings, out string paramName, out string reason)
         {
+            Debug.Assert(settings.Recurrence.Pattern.Interval >  0);
+
             TimeSpan intervalDuration = TimeSpan.FromDays(settings.Recurrence.Pattern.Interval);
 
             TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
@@ -191,7 +194,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 paramName = $"{nameof(settings.End)}";
 
-                reason = OutOfRange;
+                reason = TimeWindowDurationOutOfRange;
 
                 return false;
             }
@@ -211,17 +214,20 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         {
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 
+            Debug.Assert(pattern.Interval > 0);
+
             TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * DayNumberOfWeek);
 
             TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
 
             //
             // Time window duration must be shorter than how frequently it occurs
-            if (timeWindowDuration > intervalDuration)
+            if (timeWindowDuration > intervalDuration || 
+                !IsDurationCompliantWithDaysOfWeek(timeWindowDuration, pattern.Interval, pattern.DaysOfWeek, pattern.FirstDayOfWeek))
             {
                 paramName = $"{nameof(settings.End)}";
 
-                reason = OutOfRange;
+                reason = TimeWindowDurationOutOfRange;
 
                 return false;
             }
@@ -242,18 +248,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 paramName = nameof(settings.Start);
 
-                reason = NotMatched;
-
-                return false;
-            }
-
-            //
-            // Check whether the time window duration is shorter than the minimum gap between days of week
-            if (!IsDurationCompliantWithDaysOfWeek(timeWindowDuration, pattern.Interval, pattern.DaysOfWeek, pattern.FirstDayOfWeek))
-            {
-                paramName = nameof(settings.End);
-
-                reason = OutOfRange;
+                reason = StartNotMatched;
 
                 return false;
             }
@@ -265,6 +260,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         {
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 
+            Debug.Assert(pattern.Interval > 0);
+
             TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * MinDayNumberOfMonth);
 
             TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
@@ -275,7 +272,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 paramName = $"{nameof(settings.End)}";
 
-                reason = OutOfRange;
+                reason = TimeWindowDurationOutOfRange;
 
                 return false;
             }
@@ -295,7 +292,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 paramName = nameof(settings.Start);
 
-                reason = NotMatched;
+                reason = StartNotMatched;
 
                 return false;
             }
@@ -307,6 +304,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         {
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 
+            Debug.Assert(pattern.Interval > 0);
+
             TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * MinDayNumberOfMonth);
 
             TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
@@ -317,7 +316,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 paramName = $"{nameof(settings.End)}";
 
-                reason = OutOfRange;
+                reason = TimeWindowDurationOutOfRange;
 
                 return false;
             }
@@ -338,7 +337,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 paramName = nameof(settings.Start);
 
-                reason = NotMatched;
+                reason = StartNotMatched;
 
                 return false;
             }
@@ -350,6 +349,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         {
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 
+            Debug.Assert(pattern.Interval > 0);
+
             TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * MinDayNumberOfYear);
 
             TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
@@ -360,7 +361,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 paramName = $"{nameof(settings.End)}";
 
-                reason = OutOfRange;
+                reason = TimeWindowDurationOutOfRange;
 
                 return false;
             }
@@ -385,7 +386,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 paramName = nameof(settings.Start);
 
-                reason = NotMatched;
+                reason = StartNotMatched;
 
                 return false;
             }
@@ -397,6 +398,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         {
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 
+            Debug.Assert(pattern.Interval > 0);
+
             TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * MinDayNumberOfYear);
 
             TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
@@ -407,7 +410,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 paramName = $"{nameof(settings.End)}";
 
-                reason = OutOfRange;
+                reason = TimeWindowDurationOutOfRange;
 
                 return false;
             }
@@ -434,7 +437,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 paramName = nameof(settings.Start);
 
-                reason = NotMatched;
+                reason = StartNotMatched;
 
                 return false;
             }
@@ -478,7 +481,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (settings.Recurrence.Pattern.Interval <= 0)
             {
-                reason = OutOfRange;
+                reason = ValueOutOfRange;
 
                 return false;
             }
@@ -517,7 +520,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (settings.Recurrence.Pattern.DayOfMonth < 1 || settings.Recurrence.Pattern.DayOfMonth > 31)
             {
-                reason = OutOfRange;
+                reason = ValueOutOfRange;
 
                 return false;
             }
@@ -540,7 +543,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (settings.Recurrence.Pattern.Month < 1 || settings.Recurrence.Pattern.Month > 12)
             {
-                reason = OutOfRange;
+                reason = ValueOutOfRange;
 
                 return false;
             }
@@ -576,7 +579,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (endDate < start)
             {
-                reason = OutOfRange;
+                reason = ValueOutOfRange;
 
                 return false;
             }
@@ -592,7 +595,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (settings.Recurrence.Range.NumberOfOccurrences < 1)
             {
-                reason = OutOfRange;
+                reason = ValueOutOfRange;
 
                 return false;
             }
@@ -780,17 +783,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             //
             // Check the following days of the first week if time is still within the first interval
             // Otherwise, check the first week of the latest interval
-            tentativePreviousOccurrence += TimeSpan.FromDays(1);
-
             while (tentativePreviousOccurrence <= time)
             {
-                if (tentativePreviousOccurrence.DayOfWeek == pattern.FirstDayOfWeek)
-                {
-                    //
-                    // It comes to the next week, so break.
-                    break;
-                }
-
                 if (pattern.DaysOfWeek.Any(day =>
                     day == tentativePreviousOccurrence.DayOfWeek))
                 {
@@ -800,7 +794,16 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 }
 
                 tentativePreviousOccurrence += TimeSpan.FromDays(1);
+
+                if (tentativePreviousOccurrence.DayOfWeek == pattern.FirstDayOfWeek)
+                {
+                    //
+                    // It comes to the next week, so break.
+                    break;
+                }
             }
+
+            Console.WriteLine("YES");
         }
 
         /// <summary>
@@ -997,6 +1000,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <returns>True if the duration is compliant with days of week, false otherwise.</returns>
         private static bool IsDurationCompliantWithDaysOfWeek(TimeSpan duration, int interval, IEnumerable<DayOfWeek> daysOfWeek, DayOfWeek firstDayOfWeek)
         {
+            Debug.Assert(interval > 0);
+
             if (daysOfWeek.Count() == 1)
             {
                 return true;
