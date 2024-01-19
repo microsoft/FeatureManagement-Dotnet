@@ -19,7 +19,7 @@ services.AddSingleton<IAlgorithm>(sp => new AlgorithmOmega("Omega"));
 services.AddSingleton(configuration)
         .AddFeatureManagement()
         .AddFeatureFilter<TargetingFilter>()
-        .AddFeaturedService<IAlgorithm>("MyFeature");
+        .AddVariantServiceProvider<IAlgorithm>("MyFeature");
 
 var targetingContextAccessor = new OnDemandTargetingContextAccessor();
 

@@ -46,21 +46,30 @@ namespace Microsoft.FeatureManagement
         /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
         /// <param name="featureName">The variant feature flag used to assign variants. The <see cref="VariantServiceProvider{TService}"/> will return different implementations of TService according to the assigned variant.</param>
         /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
-        public static IFeatureManagementBuilder AddFeaturedService<TService>(this IFeatureManagementBuilder builder, string featureName) where TService : class
+        public static IFeatureManagementBuilder AddVariantServiceProvider<TService>(this IFeatureManagementBuilder builder, string featureName) where TService : class
         {
+            if (string.IsNullOrEmpty(featureName))
+            {
+                throw new ArgumentNullException(nameof(featureName));
+            }
+
             if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
             {
                 builder.Services.AddScoped<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
-                    featureName,
                     sp.GetRequiredService<IEnumerable<TService>>(),
-                    sp.GetRequiredService<IVariantFeatureManager>()));
+                    sp.GetRequiredService<IVariantFeatureManager>())
+                {
+                    VariantFeatureName = featureName,
+                });
             }
             else
             {
                 builder.Services.AddSingleton<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
-                    featureName,
                     sp.GetRequiredService<IEnumerable<TService>>(),
-                    sp.GetRequiredService<IVariantFeatureManager>()));
+                    sp.GetRequiredService<IVariantFeatureManager>())
+                {
+                    VariantFeatureName = featureName,
+                });
             }
 
             return builder;

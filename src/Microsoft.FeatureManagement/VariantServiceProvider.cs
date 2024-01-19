@@ -10,22 +10,45 @@ using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
 {
-    internal class VariantServiceProvider<TService> : IFeaturedService<TService> where TService : class
+    /// <summary>
+    /// Used to get different implementations of TService depending on the assigned variant from a specific variant feature flag.
+    /// </summary>
+    internal class VariantServiceProvider<TService> : IVariantServiceProvider<TService> where TService : class
     {
-        private readonly string _featureName;
-        private readonly IVariantFeatureManager _featureManager;
         private readonly IEnumerable<TService> _services;
+        private readonly IVariantFeatureManager _featureManager;
+        private readonly string _variantFeatureName;
 
-        public VariantServiceProvider(string featureName, IEnumerable<TService> services, IVariantFeatureManager featureManager)
+
+        public VariantServiceProvider(IEnumerable<TService> services, IVariantFeatureManager featureManager)
         {
-            _featureName = featureName;
-            _services = services;
-            _featureManager = featureManager;
+            _services = services ?? throw new ArgumentNullException(nameof(services));
+            _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
         }
 
+        /// <summary>
+        /// The variant feature flag used to assign variants.
+        /// </summary>
+        public string VariantFeatureName
+        {
+            get => _variantFeatureName;
+
+            init
+            {
+                _variantFeatureName = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
+
+        /// <summary>
+        /// Gets implementation of TService according to the assigned variant from the feature flag.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>An implementation matched with the assigned variant. If there is no matched implementation, it will return null.</returns>
         public async ValueTask<TService> GetAsync(CancellationToken cancellationToken)
         {
-            Variant variant = await _featureManager.GetVariantAsync(_featureName, cancellationToken);
+            Debug.Assert(_variantFeatureName != null);
+
+            Variant variant = await _featureManager.GetVariantAsync(_variantFeatureName, cancellationToken);
 
             TService implementation = null;
 
