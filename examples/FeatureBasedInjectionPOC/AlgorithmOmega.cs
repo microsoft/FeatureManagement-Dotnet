@@ -2,7 +2,7 @@
 
 namespace FeatureBasedInjectionPOC
 {
-    [FeaturedServiceAlias("Omega")]
+    [VariantServiceAlias("Omega")]
     class AlgorithmOmega : IAlgorithm
     {
         public string Name { get; set; }

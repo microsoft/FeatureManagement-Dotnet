@@ -29,7 +29,7 @@ using ServiceProvider serviceProvider = services.BuildServiceProvider();
 
 IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
 
-IFeaturedService<IAlgorithm> featuredAlgorithm = serviceProvider.GetRequiredService<IFeaturedService<IAlgorithm>>();
+IVariantServiceProvider<IAlgorithm> featuredAlgorithm = serviceProvider.GetRequiredService<IVariantServiceProvider<IAlgorithm>>();
 
 string[] userIds = { "Guest", "UserBeta", "UserSigma", "UserOmega" };
 

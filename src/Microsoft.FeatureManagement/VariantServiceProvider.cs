@@ -10,13 +10,13 @@ using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
 {
-    internal class FeaturedService<TService> : IFeaturedService<TService> where TService : class
+    internal class VariantServiceProvider<TService> : IFeaturedService<TService> where TService : class
     {
         private readonly string _featureName;
         private readonly IVariantFeatureManager _featureManager;
         private readonly IEnumerable<TService> _services;
 
-        public FeaturedService(string featureName, IEnumerable<TService> services, IVariantFeatureManager featureManager)
+        public VariantServiceProvider(string featureName, IEnumerable<TService> services, IVariantFeatureManager featureManager)
         {
             _featureName = featureName;
             _services = services;
@@ -44,7 +44,7 @@ namespace Microsoft.FeatureManagement
         {
             Debug.Assert(variant != null);
 
-            string implementationName = ((FeaturedServiceAliasAttribute)Attribute.GetCustomAttribute(implementationType, typeof(FeaturedServiceAliasAttribute)))?.Alias;
+            string implementationName = ((VariantServiceAliasAttribute)Attribute.GetCustomAttribute(implementationType, typeof(VariantServiceAliasAttribute)))?.Alias;
 
             if (implementationName == null)
             {

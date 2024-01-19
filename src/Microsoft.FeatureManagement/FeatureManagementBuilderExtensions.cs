@@ -41,23 +41,23 @@ namespace Microsoft.FeatureManagement
         }
 
         /// <summary>
-        /// Adds a <see cref="FeaturedService{TService}"/> to the feature management system.
+        /// Adds a <see cref="VariantServiceProvider{TService}"/> to the feature management system.
         /// </summary>
         /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
-        /// <param name="featureName">The variant feature flag used to assign variants. The <see cref="FeaturedService{TService}"/> will return different implementations of TService according to the assigned variant.</param>
+        /// <param name="featureName">The variant feature flag used to assign variants. The <see cref="VariantServiceProvider{TService}"/> will return different implementations of TService according to the assigned variant.</param>
         /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
         public static IFeatureManagementBuilder AddFeaturedService<TService>(this IFeatureManagementBuilder builder, string featureName) where TService : class
         {
             if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
             {
-                builder.Services.AddScoped<IFeaturedService<TService>>(sp => new FeaturedService<TService>(
+                builder.Services.AddScoped<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
                     featureName,
                     sp.GetRequiredService<IEnumerable<TService>>(),
                     sp.GetRequiredService<IVariantFeatureManager>()));
             }
             else
             {
-                builder.Services.AddSingleton<IFeaturedService<TService>>(sp => new FeaturedService<TService>(
+                builder.Services.AddSingleton<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
                     featureName,
                     sp.GetRequiredService<IEnumerable<TService>>(),
                     sp.GetRequiredService<IVariantFeatureManager>()));
