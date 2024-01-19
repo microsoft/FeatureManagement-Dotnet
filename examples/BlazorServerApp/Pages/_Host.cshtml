@@ -34,7 +34,8 @@
     }
 
     //
-    // The user agent context will be set to the parameter UserAgent in App.razor
+    // The user agent context will be set to the parameter UserAgent in App.razor.
+    // This is the recommended way to work with HttpContext in Blazor server apps. For more details, please refer to: https://learn.microsoft.com/en-us/aspnet/core/blazor/security/server/interactive-server-side-rendering?view=aspnetcore-7.0#ihttpcontextaccessorhttpcontext-in-razor-components
     string userAgent = HttpContext.Request.Headers["User-Agent"];
 }
 
