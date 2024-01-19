@@ -51,13 +51,6 @@ namespace Microsoft.FeatureManagement
                 implementationName = implementationType.Name;
             }
 
-            string variantConfiguration = variant.Configuration?.Value;
-
-            if (variantConfiguration != null && string.Equals(implementationName, variantConfiguration, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
             return string.Equals(implementationName, variant.Name, StringComparison.OrdinalIgnoreCase);
         }
     }
