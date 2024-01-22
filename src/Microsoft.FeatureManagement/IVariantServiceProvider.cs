@@ -16,6 +16,6 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>An implementation of TService.</returns>
-        ValueTask<TService> GetAsync(CancellationToken cancellationToken);
+        ValueTask<TService> GetServiceAsync(CancellationToken cancellationToken);
     }
 }

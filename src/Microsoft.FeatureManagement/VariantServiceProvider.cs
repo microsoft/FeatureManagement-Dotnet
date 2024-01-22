@@ -19,7 +19,13 @@ namespace Microsoft.FeatureManagement
         private readonly IVariantFeatureManager _featureManager;
         private readonly string _variantFeatureName;
 
-
+        /// <summary>
+        /// Creates a variant service provider.
+        /// </summary>
+        /// <param name="services">The provider of feature flag definitions.</param>
+        /// <param name="featureManager">Options controlling the behavior of the feature manager.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="services"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureManager"/> is null.</exception>
         public VariantServiceProvider(IEnumerable<TService> services, IVariantFeatureManager featureManager)
         {
             _services = services ?? throw new ArgumentNullException(nameof(services));
@@ -44,7 +50,7 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>An implementation matched with the assigned variant. If there is no matched implementation, it will return null.</returns>
-        public async ValueTask<TService> GetAsync(CancellationToken cancellationToken)
+        public async ValueTask<TService> GetServiceAsync(CancellationToken cancellationToken)
         {
             Debug.Assert(_variantFeatureName != null);
 
