@@ -18,9 +18,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         const string StartNotMatched = "Start date is not a valid first occurrence.";
         const string TimeWindowDurationOutOfRange = "Time window duration cannot be longer than how frequently it occurs";
 
-        const int DayNumberOfWeek = 7;
-        const int MinDayNumberOfMonth = 28;
-        const int MinDayNumberOfYear = 365;
+        const int DaysPerWeek = 7;
+        const int MinDaysPerMonth = 28;
+        const int MinDaysPerYear = 365;
 
         /// <summary>
         /// Checks if a provided timestamp is within any recurring time window specified by the Recurrence section in the time window filter settings.
@@ -216,7 +216,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             Debug.Assert(pattern.Interval > 0);
 
-            TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * DayNumberOfWeek);
+            TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * DaysPerWeek);
 
             TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
 
@@ -262,7 +262,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             Debug.Assert(pattern.Interval > 0);
 
-            TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * MinDayNumberOfMonth);
+            TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * MinDaysPerMonth);
 
             TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
 
@@ -306,7 +306,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             Debug.Assert(pattern.Interval > 0);
 
-            TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * MinDayNumberOfMonth);
+            TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * MinDaysPerMonth);
 
             TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
 
@@ -351,7 +351,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             Debug.Assert(pattern.Interval > 0);
 
-            TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * MinDayNumberOfYear);
+            TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * MinDaysPerYear);
 
             TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
 
@@ -400,7 +400,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             Debug.Assert(pattern.Interval > 0);
 
-            TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * MinDayNumberOfYear);
+            TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * MinDaysPerYear);
 
             TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
 
@@ -732,7 +732,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             TimeSpan remainingTimeOfFirstWeek = TimeSpan.FromDays(remainingDaysOfFirstWeek) - start.TimeOfDay;
 
-            TimeSpan remaingTimeOfFirstIntervalAfterFirstWeek = TimeSpan.FromDays((interval - 1) * DayNumberOfWeek);
+            TimeSpan remaingTimeOfFirstIntervalAfterFirstWeek = TimeSpan.FromDays((interval - 1) * DaysPerWeek);
 
             TimeSpan remainingTimeOfFirstInterval = remainingTimeOfFirstWeek + remaingTimeOfFirstIntervalAfterFirstWeek;
 
@@ -765,11 +765,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 //
                 // The number of intervals between the first and the latest intervals (not inclusive)
                 // netstandard2.0 does not support '/' operator for TimeSpan. After we stop supporting netstandard2.0, we can remove .TotalSeconds.
-                int numberOfInterval = (int) Math.Floor((timeGap - remainingTimeOfFirstInterval).TotalSeconds / TimeSpan.FromDays(interval * DayNumberOfWeek).TotalSeconds);
+                int numberOfInterval = (int) Math.Floor((timeGap - remainingTimeOfFirstInterval).TotalSeconds / TimeSpan.FromDays(interval * DaysPerWeek).TotalSeconds);
 
                 //
                 // Shift the tentative previous occurrence to the first day of the first week of the latest interval
-                tentativePreviousOccurrence += TimeSpan.FromDays(numberOfInterval * interval * DayNumberOfWeek);
+                tentativePreviousOccurrence += TimeSpan.FromDays(numberOfInterval * interval * DaysPerWeek);
 
                 //
                 // Add the occurrence in the intervals between the first and the latest intervals (not inclusive)
@@ -1011,9 +1011,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             DateTime prev = DateTime.MinValue;
 
-            TimeSpan minGap = TimeSpan.FromDays(DayNumberOfWeek);
+            TimeSpan minGap = TimeSpan.FromDays(DaysPerWeek);
 
-            for (int i = 0; i < DayNumberOfWeek; i++)
+            for (int i = 0; i < DaysPerWeek; i++)
             {
                 if (daysOfWeek.Any(day =>
                     day == date.DayOfWeek))
@@ -1044,7 +1044,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // It may across weeks. Check the next week if the interval is one week.
             if (interval == 1)
             {
-                for (int i = 0; i < DayNumberOfWeek; i++)
+                for (int i = 0; i < DaysPerWeek; i++)
                 {
                     if (daysOfWeek.Any(day =>
                         day == date.DayOfWeek))
@@ -1078,7 +1078,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
             else
             {
-                return DayNumberOfWeek - remainingDays;
+                return DaysPerWeek - remainingDays;
             }
         }
 
@@ -1100,15 +1100,15 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 date += TimeSpan.FromDays(1);
             }
 
-            if (date.AddDays(DayNumberOfWeek * (int) index).Month == dateTime.Month)
+            if (date.AddDays(DaysPerWeek * (int) index).Month == dateTime.Month)
             {
-                date += TimeSpan.FromDays(DayNumberOfWeek * (int) index);
+                date += TimeSpan.FromDays(DaysPerWeek * (int) index);
             }
             else // There is no the 5th day of week in the month
             {
                 //
                 // Add 3 weeks to reach the fourth day of week in the month
-                date += TimeSpan.FromDays(DayNumberOfWeek * 3);
+                date += TimeSpan.FromDays(DaysPerWeek * 3);
             }
 
             return date;

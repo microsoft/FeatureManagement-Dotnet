@@ -10,7 +10,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 {
     /// <summary>
     /// A feature filter that can be used to activate a feature based on a time window.
-    /// The time window filter supports recurrence settings. The time window can occur repeatedly.
+    /// The time window can be configured to recur periodically.
     /// </summary>
     [FilterAlias(Alias)]
     public class TimeWindowFilter : IFeatureFilter, IFilterParametersBinder
@@ -38,7 +38,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Evaluates whether a feature is enabled based on a configurable fixed time window or recurring time windows.
+        /// Evaluates whether a feature is enabled based on the <see cref="TimeWindowFilterSettings"/> specifed in the configuration.
         /// </summary>
         /// <param name="context">The feature evaluation context.</param>
         /// <returns>True if the feature is enabled, false otherwise.</returns>
