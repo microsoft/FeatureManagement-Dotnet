@@ -22,8 +22,8 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// Creates a variant service provider.
         /// </summary>
-        /// <param name="services">The provider of feature flag definitions.</param>
-        /// <param name="featureManager">Options controlling the behavior of the feature manager.</param>
+        /// <param name="services">Implementation variants of TService.</param>
+        /// <param name="featureManager">Feature manager to get the assigned variant of the variant feature flag.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="services"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureManager"/> is null.</exception>
         public VariantServiceProvider(IEnumerable<TService> services, IVariantFeatureManager featureManager)
