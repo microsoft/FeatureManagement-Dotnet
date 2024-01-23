@@ -18,7 +18,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <summary>
         /// The date to stop applying the recurrence pattern.
         /// </summary>
-        public DateTimeOffset? EndDate { get; set; }
+        public DateTimeOffset EndDate { get; set; } = DateTimeOffset.MaxValue;
 
         /// <summary>
         /// The number of times to repeat the time window.

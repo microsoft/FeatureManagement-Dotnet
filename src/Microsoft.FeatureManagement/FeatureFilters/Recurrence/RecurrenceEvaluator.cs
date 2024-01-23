@@ -143,6 +143,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         private static bool TryValidateRecurrencePattern(TimeWindowFilterSettings settings, out string paramName, out string reason)
         {
             Debug.Assert(settings != null);
+            Debug.Assert(settings.Start != null);
+            Debug.Assert(settings.End != null);
             Debug.Assert(settings.Recurrence != null);
             Debug.Assert(settings.Recurrence.Pattern != null);
 
@@ -448,6 +450,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         private static bool TryValidateRecurrenceRange(TimeWindowFilterSettings settings, out string paramName, out string reason)
         {
             Debug.Assert(settings != null);
+            Debug.Assert(settings.Start != null);
             Debug.Assert(settings.Recurrence != null);
             Debug.Assert(settings.Recurrence.Range != null);
 
@@ -557,13 +560,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         {
             paramName = $"{nameof(settings.Recurrence)}.{nameof(settings.Recurrence.Range)}.{nameof(settings.Recurrence.Range.EndDate)}";
 
-            if (settings.Recurrence.Range.EndDate == null)
-            {
-                reason = RequiredParameter;
-
-                return false;
-            }
-
             if (settings.Start == null)
             {
                 paramName = nameof(settings.Start);
@@ -575,7 +571,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             DateTimeOffset start = settings.Start.Value;
 
-            DateTimeOffset endDate = settings.Recurrence.Range.EndDate.Value;
+            DateTimeOffset endDate = settings.Recurrence.Range.EndDate;
 
             if (endDate < start)
             {
@@ -670,7 +666,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (range.Type == RecurrenceRangeType.EndDate)
             {
-                return previousOccurrence <= range.EndDate.Value;
+                return previousOccurrence <= range.EndDate;
             }
 
             if (range.Type == RecurrenceRangeType.Numbered)
