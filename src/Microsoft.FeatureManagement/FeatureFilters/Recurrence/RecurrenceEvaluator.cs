@@ -25,9 +25,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <summary>
         /// Checks if a provided timestamp is within any recurring time window specified by the Recurrence section in the time window filter settings.
         /// If the time window filter has an invalid recurrence setting, an exception will be thrown.
-        /// <param name="time">A time stamp.</param>
+        /// <param name="time">A timestamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
-        /// <returns>True if the time stamp is within any recurring time window, false otherwise.</returns>
+        /// <returns>True if the timestamp is within any recurring time window, false otherwise.</returns>
         /// </summary>
         public static bool MatchRecurrence(DateTimeOffset time, TimeWindowFilterSettings settings)
         {
@@ -606,8 +606,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Try to find the closest previous recurrence occurrence before the provided time stamp according to the recurrence pattern.
-        /// <param name="time">A time stamp.</param>
+        /// Try to find the closest previous recurrence occurrence before the provided timestamp according to the recurrence pattern.
+        /// <param name="time">A timestamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
         /// <returns>True if the closest previous occurrence is within the recurrence range, false otherwise.</returns>
@@ -682,8 +682,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Find the closest previous recurrence occurrence before the provided time stamp according to the "Daily" recurrence pattern.
-        /// <param name="time">A time stamp.</param>
+        /// Find the closest previous recurrence occurrence before the provided timestamp according to the "Daily" recurrence pattern.
+        /// <param name="time">A timestamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
         /// <param name="numberOfOccurrences">The number of occurrences between the time and the recurrence start.</param>
@@ -710,8 +710,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Find the closest previous recurrence occurrence before the provided time stamp according to the "Weekly" recurrence pattern.
-        /// <param name="time">A time stamp.</param>
+        /// Find the closest previous recurrence occurrence before the provided timestamp according to the "Weekly" recurrence pattern.
+        /// <param name="time">A timestamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
         /// <param name="numberOfOccurrences">The number of occurrences between the time and the recurrence start.</param>
@@ -805,8 +805,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Find the closest previous recurrence occurrence before the provided time stamp according to the "AbsoluteMonthly" recurrence pattern.
-        /// <param name="time">A time stamp.</param>
+        /// Find the closest previous recurrence occurrence before the provided timestamp according to the "AbsoluteMonthly" recurrence pattern.
+        /// <param name="time">A timestamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
         /// <param name="numberOfOccurrences">The number of occurrences between the time and the recurrence start.</param>
@@ -841,8 +841,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Find the closest previous recurrence occurrence before the provided time stamp according to the "RelativeMonthly" recurrence pattern.
-        /// <param name="time">A time stamp.</param>
+        /// Find the closest previous recurrence occurrence before the provided timestamp according to the "RelativeMonthly" recurrence pattern.
+        /// <param name="time">A timestamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
         /// <param name="numberOfOccurrences">The number of occurrences between the time and the recurrence start.</param>
@@ -893,8 +893,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Find the closest previous recurrence occurrence before the provided time stamp according to the "AbsoluteYearly" recurrence pattern.
-        /// <param name="time">A time stamp.</param>
+        /// Find the closest previous recurrence occurrence before the provided timestamp according to the "AbsoluteYearly" recurrence pattern.
+        /// <param name="time">A timestamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
         /// <param name="numberOfOccurrences">The number of occurrences between the time and the recurrence start.</param>
@@ -929,8 +929,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Find the closest previous recurrence occurrence before the provided time stamp according to the "RelativeYearly" recurrence pattern.
-        /// <param name="time">A time stamp.</param>
+        /// Find the closest previous recurrence occurrence before the provided timestamp according to the "RelativeYearly" recurrence pattern.
+        /// <param name="time">A timestamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
         /// <param name="numberOfOccurrences">The number of occurrences between the time and the recurrence start.</param>
@@ -1078,6 +1078,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
             else
             {
+                //
+                // If the dayOfWeek is the firstDayOfWeek, there will be 7 days remaining in this week.
                 return DaysPerWeek - remainingDays;
             }
         }
@@ -1095,9 +1097,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             //
             // Find the first provided day of week in the month
-            while (date.DayOfWeek != dayOfWeek)
+            if (date.DayOfWeek != dayOfWeek)
             {
-                date += TimeSpan.FromDays(1);
+                date += TimeSpan.FromDays(RemainingDaysOfTheWeek(date.DayOfWeek, dayOfWeek));
             }
 
             if (date.AddDays(DaysPerWeek * (int) index).Month == dateTime.Month)

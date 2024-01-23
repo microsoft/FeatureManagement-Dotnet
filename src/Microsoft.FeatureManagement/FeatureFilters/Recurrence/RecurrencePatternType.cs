@@ -14,7 +14,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         Daily,
 
         /// <summary>
-        /// The pattern where the time window will repeat on the same day or days of the week, based on the number of weeks between each set of occurrences
+        /// The pattern where the time window will repeat on the same day or days of the week, based on the number of weeks between each set of occurrences.
         /// </summary>
         Weekly,
 
