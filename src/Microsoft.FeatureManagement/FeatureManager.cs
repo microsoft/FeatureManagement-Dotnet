@@ -301,7 +301,7 @@ namespace Microsoft.FeatureManagement
 
             ConfigurationCacheItem cacheItem;
 
-            string cacheKey = $"{context.FeatureName}.{filterIndex}";
+            string cacheKey = $"Microsoft.FeatureManagement{Environment.NewLine}{context.FeatureName}{Environment.NewLine}{filterIndex}";
 
             //
             // Check if settings already bound from configuration or the parameters have changed
