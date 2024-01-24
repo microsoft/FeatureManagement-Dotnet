@@ -2047,6 +2047,25 @@ namespace Tests.FeatureManagement
                 },
                 false ),
 
+                ( DateTimeOffset.Parse("2024-9-1T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.AbsoluteYearly,
+                            Interval = 2, // 2023, 2025 ...
+                            DayOfMonth = 1,
+                            Month = 9
+                        },
+                        Range = new RecurrenceRange()
+                    }
+                },
+                false ),
+
                 ( DateTimeOffset.Parse("2026-9-1T00:00:00+08:00"), // The 2nd occurrence
                 new TimeWindowFilterSettings()
                 {
@@ -2210,6 +2229,7 @@ namespace Tests.FeatureManagement
                             Interval = 2, // 2023, 2025 ...
                             DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday },
                             Month = 9
+                            // Index is First by default.
                         },
                         Range = new RecurrenceRange()
                     }
