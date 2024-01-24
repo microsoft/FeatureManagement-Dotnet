@@ -225,19 +225,19 @@ namespace Microsoft.FeatureManagement
 
             string featureName = GetFeatureName(configurationSection);
 
+            var enabledFor = new List<FeatureFilterConfiguration>();
+
+            RequirementType requirementType = RequirementType.Any;
+
             FeatureStatus featureStatus = FeatureStatus.Conditional;
 
             Allocation allocation = null;
 
             List<VariantDefinition> variants = null;
 
-            var enabledFor = new List<FeatureFilterConfiguration>();
-
             bool telemetryEnabled = false;
 
             Dictionary<string, string> telemetryMetadata = null;
-
-            RequirementType requirementType = RequirementType.Any;
 
             string val = configurationSection.Value; // configuration[$"{featureName}"];
 
@@ -267,12 +267,12 @@ namespace Microsoft.FeatureManagement
 
                 if (!string.IsNullOrEmpty(rawRequirementType))
                 {
-                    requirementType = ParseEnum<RequirementType>(configurationSection.Key, rawRequirementType, ConfigurationFields.RequirementType);
+                    requirementType = ParseEnum<RequirementType>(featureName, rawRequirementType, ConfigurationFields.RequirementType);
                 }
 
                 if (!string.IsNullOrEmpty(rawFeatureStatus))
                 {
-                    featureStatus = ParseEnum<FeatureStatus>(configurationSection.Key, rawFeatureStatus, ConfigurationFields.FeatureStatus);
+                    featureStatus = ParseEnum<FeatureStatus>(featureName, rawFeatureStatus, ConfigurationFields.FeatureStatus);
                 }
 
                 IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(ConfigurationFields.FeatureFiltersSectionName).GetChildren();
@@ -379,7 +379,12 @@ namespace Microsoft.FeatureManagement
 
                 if (telemetrySection.Exists())
                 {
-                    telemetryEnabled = telemetrySection.GetValue<bool>(ConfigurationFields.Enabled);
+                    string rawTelemetryEnabled = telemetrySection[ConfigurationFields.Enabled];
+
+                    if (!string.IsNullOrEmpty(rawTelemetryEnabled))
+                    {
+                        telemetryEnabled = ParseBool(featureName, rawTelemetryEnabled, ConfigurationFields.Enabled);
+                    }
 
                     IConfigurationSection telemetryMetadataSection = telemetrySection.GetSection(ConfigurationFields.Metadata);
 
@@ -444,28 +449,22 @@ namespace Microsoft.FeatureManagement
 
             RequirementType requirementType = RequirementType.Any;
 
+            bool enabled = false;
+
             IConfigurationSection conditions = configurationSection.GetSection(MicrosoftFeatureFlagFields.Conditions);
 
             string rawRequirementType = conditions[MicrosoftFeatureFlagFields.RequirementType];
 
-            //
-            // If requirement type is specified, parse it and set the requirementType variable
-            if (!string.IsNullOrEmpty(rawRequirementType) && !Enum.TryParse(rawRequirementType, ignoreCase: true, out requirementType))
-            {
-                throw new FeatureManagementException(
-                    FeatureManagementError.InvalidConfigurationSetting,
-                    $"Invalid value '{rawRequirementType}' for field '{MicrosoftFeatureFlagFields.RequirementType}' of feature '{featureName}'.");
-            }
-
             string rawEnabled = configurationSection[MicrosoftFeatureFlagFields.Enabled];
 
-            bool enabled = false;
-
-            if (!string.IsNullOrEmpty(rawEnabled) && !bool.TryParse(rawEnabled, out enabled))
+            if (!string.IsNullOrEmpty(rawEnabled))
             {
-                throw new FeatureManagementException(
-                    FeatureManagementError.InvalidConfigurationSetting,
-                    $"Invalid value '{rawEnabled}' for field '{MicrosoftFeatureFlagFields.Enabled}' of feature '{featureName}'.");
+                enabled = ParseBool(featureName, rawEnabled, MicrosoftFeatureFlagFields.Enabled);
+            }
+
+            if (!string.IsNullOrEmpty(rawRequirementType))
+            {
+                requirementType = ParseEnum<RequirementType>(featureName, rawRequirementType, MicrosoftFeatureFlagFields.RequirementType);
             }
 
             if (enabled)
@@ -602,6 +601,20 @@ namespace Microsoft.FeatureManagement
             Debug.Assert(!string.IsNullOrEmpty(rawValue));
 
             if (!double.TryParse(rawValue, out double value))
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.InvalidConfigurationSetting,
+                    string.Format(ParseValueErrorString, fieldKeyword, rawValue, feature));
+            }
+
+            return value;
+        }
+
+        private bool ParseBool(string feature, string rawValue, string fieldKeyword)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(rawValue));
+
+            if (!bool.TryParse(rawValue, out bool value))
             {
                 throw new FeatureManagementException(
                     FeatureManagementError.InvalidConfigurationSetting,
