@@ -233,7 +233,7 @@ namespace Microsoft.FeatureManagement
 
             Allocation allocation = null;
 
-            List<VariantDefinition> variants = null;
+            var variants = new List<VariantDefinition>();
 
             bool telemetryEnabled = false;
 
@@ -349,8 +349,6 @@ namespace Microsoft.FeatureManagement
 
                 IEnumerable<IConfigurationSection> variantsSections = configurationSection.GetSection(ConfigurationFields.VariantsSectionName).GetChildren();
 
-                variants = new List<VariantDefinition>();
-
                 foreach (IConfigurationSection section in variantsSections)
                 {
                     if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[ConfigurationFields.NameKeyword]))
@@ -452,9 +450,19 @@ namespace Microsoft.FeatureManagement
 
             bool enabled = false;
 
-            IConfigurationSection conditions = configurationSection.GetSection(MicrosoftFeatureFlagFields.Conditions);
+            FeatureStatus featureStatus = FeatureStatus.Disabled;
 
-            string rawRequirementType = conditions[MicrosoftFeatureFlagFields.RequirementType];
+            Allocation allocation = null;
+
+            var variants = new List<VariantDefinition>();
+
+            bool telemetryEnabled = false;
+
+            Dictionary<string, string> telemetryMetadata = null;
+
+            IConfigurationSection conditionsSection = configurationSection.GetSection(MicrosoftFeatureFlagFields.Conditions);
+
+            string rawRequirementType = conditionsSection[MicrosoftFeatureFlagFields.RequirementType];
 
             string rawEnabled = configurationSection[MicrosoftFeatureFlagFields.Enabled];
 
@@ -470,7 +478,9 @@ namespace Microsoft.FeatureManagement
 
             if (enabled)
             {
-                IEnumerable<IConfigurationSection> filterSections = conditions.GetSection(MicrosoftFeatureFlagFields.ClientFilters).GetChildren();
+                featureStatus = FeatureStatus.Conditional;
+
+                IEnumerable<IConfigurationSection> filterSections = conditionsSection.GetSection(MicrosoftFeatureFlagFields.ClientFilters).GetChildren();
 
                 if (filterSections.Any())
                 {
@@ -498,11 +508,122 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
+            IConfigurationSection allocationSection = configurationSection.GetSection(MicrosoftFeatureFlagFields.AllocationSectionName);
+
+            if (allocationSection.Exists())
+            {
+                allocation = new Allocation()
+                {
+                    DefaultWhenDisabled = allocationSection[MicrosoftFeatureFlagFields.AllocationDefaultWhenDisabled],
+                    DefaultWhenEnabled = allocationSection[MicrosoftFeatureFlagFields.AllocationDefaultWhenEnabled],
+                    User = allocationSection.GetSection(MicrosoftFeatureFlagFields.UserAllocationSectionName).GetChildren().Select(userAllocation =>
+                    {
+                        return new UserAllocation()
+                        {
+                            Variant = userAllocation[MicrosoftFeatureFlagFields.AllocationVariantKeyword],
+                            Users = userAllocation.GetSection(MicrosoftFeatureFlagFields.UserAllocationUsers).Get<IEnumerable<string>>()
+                        };
+                    }),
+                    Group = allocationSection.GetSection(MicrosoftFeatureFlagFields.GroupAllocationSectionName).GetChildren().Select(groupAllocation =>
+                    {
+                        return new GroupAllocation()
+                        {
+                            Variant = groupAllocation[MicrosoftFeatureFlagFields.AllocationVariantKeyword],
+                            Groups = groupAllocation.GetSection(MicrosoftFeatureFlagFields.GroupAllocationGroups).Get<IEnumerable<string>>()
+                        };
+                    }),
+                    Percentile = allocationSection.GetSection(MicrosoftFeatureFlagFields.PercentileAllocationSectionName).GetChildren().Select(percentileAllocation =>
+                    {
+                        double from = 0;
+
+                        double to = 0;
+
+                        string rawFrom = percentileAllocation[MicrosoftFeatureFlagFields.PercentileAllocationFrom];
+
+                        string rawTo = percentileAllocation[MicrosoftFeatureFlagFields.PercentileAllocationTo];
+
+                        if (!string.IsNullOrEmpty(rawFrom))
+                        {
+                            from = ParseDouble(featureName, rawFrom, MicrosoftFeatureFlagFields.PercentileAllocationFrom);
+                        }
+
+                        if (!string.IsNullOrEmpty(rawTo))
+                        {
+                            to = ParseDouble(featureName, rawTo, MicrosoftFeatureFlagFields.PercentileAllocationTo);
+                        }
+
+                        return new PercentileAllocation()
+                        {
+                            Variant = percentileAllocation[MicrosoftFeatureFlagFields.AllocationVariantKeyword],
+                            From = from,
+                            To = to
+                        };
+                    }),
+                    Seed = allocationSection[MicrosoftFeatureFlagFields.AllocationSeed]
+                };
+            }
+
+            IEnumerable<IConfigurationSection> variantsSections = configurationSection.GetSection(MicrosoftFeatureFlagFields.VariantsSectionName).GetChildren();
+
+            foreach (IConfigurationSection section in variantsSections)
+            {
+                if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[MicrosoftFeatureFlagFields.Name]))
+                {
+                    StatusOverride statusOverride = StatusOverride.None;
+
+                    string rawStatusOverride = section[MicrosoftFeatureFlagFields.VariantDefinitionStatusOverride];
+
+                    if (!string.IsNullOrEmpty(rawStatusOverride))
+                    {
+                        statusOverride = ParseEnum<StatusOverride>(configurationSection.Key, rawStatusOverride, MicrosoftFeatureFlagFields.VariantDefinitionStatusOverride);
+                    }
+
+                    var variant = new VariantDefinition()
+                    {
+                        Name = section[MicrosoftFeatureFlagFields.Name],
+                        ConfigurationValue = section.GetSection(MicrosoftFeatureFlagFields.VariantDefinitionConfigurationValue),
+                        ConfigurationReference = section[MicrosoftFeatureFlagFields.VariantDefinitionConfigurationReference],
+                        StatusOverride = statusOverride
+                    };
+
+                    variants.Add(variant);
+                }
+            }
+
+            IConfigurationSection telemetrySection = configurationSection.GetSection(MicrosoftFeatureFlagFields.Telemetry);
+
+            if (telemetrySection.Exists())
+            {
+                string rawTelemetryEnabled = telemetrySection[MicrosoftFeatureFlagFields.Enabled];
+
+                if (!string.IsNullOrEmpty(rawTelemetryEnabled))
+                {
+                    telemetryEnabled = ParseBool(featureName, rawTelemetryEnabled, MicrosoftFeatureFlagFields.Enabled);
+                }
+
+                IConfigurationSection telemetryMetadataSection = telemetrySection.GetSection(MicrosoftFeatureFlagFields.Metadata);
+
+                if (telemetryMetadataSection.Exists())
+                {
+                    telemetryMetadata = new Dictionary<string, string>();
+
+                    telemetryMetadata = telemetryMetadataSection.GetChildren().ToDictionary(x => x.Key, x => x.Value);
+                }
+            }
+
             return new FeatureDefinition()
             {
                 Name = featureName,
                 EnabledFor = enabledFor,
-                RequirementType = requirementType
+                RequirementType = requirementType,
+                Status = featureStatus,
+                Allocation = allocation,
+                Variants = variants,
+                Telemetry = new TelemetryConfiguration
+                {
+                    Enabled = telemetryEnabled,
+                    Metadata = telemetryMetadata
+                }
             };
         }
 
