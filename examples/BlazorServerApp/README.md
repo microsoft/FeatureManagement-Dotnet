@@ -56,7 +56,7 @@ The `"Beta"` feature uses the [`Targeting`](https://github.com/microsoft/Feature
 
 In regular ASP.NET Core web app, the most common way to get targeting context is through the `HttpContextAccessor`. However, `IHttpContextAccessor` must be avoided with interactive rendering of Razor component in the Blazor server app because there isn't a valid `HttpContext` available. More details can be found [here](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/server/interactive-server-side-rendering?view=aspnetcore-7.0#ihttpcontextaccessorhttpcontext-in-razor-components).
 
-[The recommended approach](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/server/interactive-server-side-rendering?view=aspnetcore-7.0#ihttpcontextaccessorhttpcontext-in-razor-components) to pass the http context in Blazor apps is to copy the data into a scoped service. This app obtains the `"User-Agent"` information from the `HttpContext` and passes it to a scoped service called `UserAgentContext`. `UserAgentContext` will be consumed by the `BrowserFilter` through dependency injection.
+[The recommended approach](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/server/interactive-server-side-rendering?view=aspnetcore-7.0#ihttpcontextaccessorhttpcontext-in-razor-components) to pass the `HttpContext` in Blazor apps is to copy the data into a scoped service. This app obtains the `"User-Agent"` information from the `HttpContext` and passes it to a scoped service called `UserAgentContext`. `UserAgentContext` will be consumed by the `BrowserFilter` through dependency injection.
 
 ## User Authentication State
 
