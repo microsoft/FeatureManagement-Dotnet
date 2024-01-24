@@ -328,12 +328,12 @@ namespace Microsoft.FeatureManagement
 
                             if (!string.IsNullOrEmpty(rawFrom))
                             {
-                                from = ParseDouble(configurationSection.Key, rawFrom, ConfigurationFields.PercentileAllocationFrom);
+                                from = ParseDouble(featureName, rawFrom, ConfigurationFields.PercentileAllocationFrom);
                             }
 
                             if (!string.IsNullOrEmpty(rawTo))
                             {
-                                to = ParseDouble(configurationSection.Key, rawTo, ConfigurationFields.PercentileAllocationTo);
+                                to = ParseDouble(featureName, rawTo, ConfigurationFields.PercentileAllocationTo);
                             }
 
                             return new PercentileAllocation()
@@ -348,6 +348,7 @@ namespace Microsoft.FeatureManagement
                 }
 
                 IEnumerable<IConfigurationSection> variantsSections = configurationSection.GetSection(ConfigurationFields.VariantsSectionName).GetChildren();
+
                 variants = new List<VariantDefinition>();
 
                 foreach (IConfigurationSection section in variantsSections)
@@ -363,7 +364,7 @@ namespace Microsoft.FeatureManagement
                             statusOverride = ParseEnum<StatusOverride>(configurationSection.Key, rawStatusOverride, ConfigurationFields.VariantDefinitionStatusOverride);
                         }
 
-                        VariantDefinition variant = new VariantDefinition()
+                        var variant = new VariantDefinition()
                         {
                             Name = section[ConfigurationFields.NameKeyword],
                             ConfigurationValue = section.GetSection(ConfigurationFields.VariantDefinitionConfigurationValue),
