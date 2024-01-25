@@ -110,7 +110,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task ReadsFeatureFlagsArraySchema()
+        public async Task ReadsMicrosoftFeatureFlagSchema()
         {
             string json = @"
             {
