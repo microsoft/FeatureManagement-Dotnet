@@ -49,7 +49,7 @@ These cookies are used to correlate telemetry from the browser with telemetry fr
 ### Targeting Id
 In order to connect evaluation events with other metrics from the user, a targeting id needs to be emitted. This can be done multiple ways, but the recommended way is to define a telemetry initializer. This initializer allows the app to modify all telemetry going to Application Insights before it's sent. 
 
-This example uses the provided `TargetingHttpContextMiddleware` and `TargetingTelemetryInitializer`. The middleware adds `TargetingId` (using the targeting context accessor) to the HTTP Context as a request comes in- while the initializer checks for the `TargetingId` on the HTTP Context, and if it exists, adds `TargetingId` to all outgoing Application Insights Telemetry.
+This example uses the provided `TargetingHttpContextMiddleware` and `TargetingTelemetryInitializer`. The middleware adds `TargetingId` (using the targeting context accessor) to the HTTP Context as a request comes in. The initializer checks for the `TargetingId` on the HTTP Context, and if it exists, adds `TargetingId` to all outgoing Application Insights Telemetry.
 
 ## Sample App Usage
 Sample steps to try out the app:
