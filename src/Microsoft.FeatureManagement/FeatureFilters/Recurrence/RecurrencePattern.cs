@@ -30,20 +30,5 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// The first day of the week.
         /// </summary>
         public DayOfWeek FirstDayOfWeek { get; set; }
-
-        /// <summary>
-        /// Specifies on which instance of the allowed days specified in DaysOfWeek the recurrence occurs, counted from the first instance in the month.
-        /// </summary>
-        public WeekIndex Index { get; set; }
-
-        /// <summary>
-        /// The day of the month on which the time window occurs.
-        /// </summary>
-        public int? DayOfMonth { get; set; }
-
-        /// <summary>
-        /// The month on which the time window occurs.
-        /// </summary>
-        public int? Month { get; set; }
     }
 }
