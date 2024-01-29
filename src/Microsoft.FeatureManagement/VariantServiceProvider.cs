@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -18,6 +19,7 @@ namespace Microsoft.FeatureManagement
         private readonly IEnumerable<TService> _services;
         private readonly IVariantFeatureManager _featureManager;
         private readonly string _variantFeatureName;
+        private readonly ConcurrentDictionary<string, TService> _variantServiceCache;
 
         /// <summary>
         /// Creates a variant service provider.
@@ -30,6 +32,7 @@ namespace Microsoft.FeatureManagement
         {
             _services = services ?? throw new ArgumentNullException(nameof(services));
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
+            _variantServiceCache = new ConcurrentDictionary<string, TService>();
         }
 
         /// <summary>
@@ -60,19 +63,20 @@ namespace Microsoft.FeatureManagement
 
             if (variant != null)
             {
-                implementation = _services.FirstOrDefault(service => 
-                    IsMatchingVariant(
-                        service.GetType(),
-                        variant));
+                implementation = _variantServiceCache.GetOrAdd(
+                    variant.Name,
+                    (_) => _services.FirstOrDefault(
+                        service => IsMatchingVariantName(
+                            service.GetType(),
+                            variant.Name))
+                );
             }
 
             return implementation;
         }
 
-        private bool IsMatchingVariant(Type implementationType, Variant variant)
+        private bool IsMatchingVariantName(Type implementationType, string variantName)
         {
-            Debug.Assert(variant != null);
-
             string implementationName = ((VariantServiceAliasAttribute)Attribute.GetCustomAttribute(implementationType, typeof(VariantServiceAliasAttribute)))?.Alias;
 
             if (implementationName == null)
@@ -80,7 +84,7 @@ namespace Microsoft.FeatureManagement
                 implementationName = implementationType.Name;
             }
 
-            return string.Equals(implementationName, variant.Name, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(implementationName, variantName, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
