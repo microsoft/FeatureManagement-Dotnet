@@ -200,6 +200,58 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task ReadsFeatureDefinition()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("MicrosoftFeatureFlag.json").Build();
+
+            var featureDefinitionProvider = new ConfigurationFeatureDefinitionProvider(config);
+
+            FeatureDefinition featureDefinition = await featureDefinitionProvider.GetFeatureDefinitionAsync(Features.AlwaysOnTestFeature);
+
+            Assert.NotNull(featureDefinition);
+
+            Assert.Equal(RequirementType.All, featureDefinition.RequirementType);
+
+            Assert.Equal(FeatureStatus.Conditional, featureDefinition.Status);
+
+            Assert.Equal("Small", featureDefinition.Allocation.DefaultWhenEnabled);
+
+            Assert.Equal("Big", featureDefinition.Allocation.DefaultWhenDisabled);
+
+            Assert.Equal("Small", featureDefinition.Allocation.User.First().Variant);
+
+            Assert.Equal("Jeff", featureDefinition.Allocation.User.First().Users.First());
+
+            Assert.Equal("Big", featureDefinition.Allocation.Group.First().Variant);
+
+            Assert.Equal("Group1", featureDefinition.Allocation.Group.First().Groups.First());
+
+            Assert.Equal("Small", featureDefinition.Allocation.Percentile.First().Variant);
+
+            Assert.Equal(0, featureDefinition.Allocation.Percentile.First().From);
+
+            Assert.Equal(50, featureDefinition.Allocation.Percentile.First().To);
+
+            Assert.Equal("12345", featureDefinition.Allocation.Seed);
+
+            VariantDefinition smallVariant = featureDefinition.Variants.FirstOrDefault(variant => string.Equals(variant.Name, "Small"));
+
+            Assert.NotNull(smallVariant);
+
+            Assert.Equal("300px", smallVariant.ConfigurationValue.Value);
+
+            Assert.Equal(StatusOverride.None, smallVariant.StatusOverride);
+
+            VariantDefinition bigVariant = featureDefinition.Variants.FirstOrDefault(variant => string.Equals(variant.Name, "Big"));
+
+            Assert.NotNull(bigVariant);
+
+            Assert.Equal("ShoppingCart:Big", bigVariant.ConfigurationReference);
+
+            Assert.Equal(StatusOverride.Disabled, bigVariant.StatusOverride);
+        }
+
+        [Fact]
         public async Task ReadsFeatureFilterConfiguration()
         {
             string json = @"
@@ -261,110 +313,6 @@ namespace Tests.FeatureManagement
             await featureManager.IsEnabledAsync(Features.ConditionalFeature);
 
             Assert.True(called);
-
-            json = @"
-            {
-              ""AllowedHosts"": ""*"",
-              ""FeatureManagement"": {
-                ""FeatureFlags"": [
-                  {
-                    ""id"": ""Alpha"",
-                    ""enabled"": true,
-                    ""conditions"": {
-                      ""client_filters"": []
-                    }
-                  },
-                  {
-                    ""id"": ""Beta"",
-                    ""enabled"": true,
-                    ""conditions"": {
-                      ""client_filters"": [
-                        {
-                          ""name"": ""Percentage"",
-                          ""parameters"": {
-                            ""Value"": 100
-                           }
-                        },
-                        {
-                          ""name"": ""Targeting"",
-                          ""parameters"": {
-                            ""Audience"": {
-                              ""Users"": [""Jeff""],
-                              ""Groups"": [],
-                              ""DefaultRolloutPercentage"": 0
-                            }
-                          }
-                        }
-					  ],
-                      ""requirement_type"" : ""all""
-                    }
-                  },
-                  {
-                    ""id"": ""Sigma"",
-                    ""enabled"": false,
-                    ""conditions"": {
-					  ""client_filters"": [
-                        {
-                          ""name"": ""Percentage"",
-                          ""parameters"": {
-                            ""Value"": 100
-                           }
-                        }
-			          ]
-                    }
-                  },
-                  {
-                    ""id"": ""Omega"",
-                    ""enabled"": true,
-                    ""conditions"": {
-                      ""client_filters"": [
-                        {
-                          ""name"": ""Percentage"",
-                          ""parameters"": {
-                            ""Value"": 100
-                          }
-                        },
-                        {
-                          ""name"": ""Percentage"",
-                          ""parameters"": {
-                            ""Value"": 0
-                          }
-                        }
-                      ]
-                    }
-                  }
-                ]
-              }
-            }";
-
-            stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-
-            config = new ConfigurationBuilder().AddJsonStream(stream).Build();
-
-            services = new ServiceCollection();
-
-            services.AddSingleton(config)
-                    .AddFeatureManagement();
-
-            serviceProvider = services.BuildServiceProvider();
-
-            featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
-
-            Assert.True(await featureManager.IsEnabledAsync("Alpha"));
-
-            Assert.True(await featureManager.IsEnabledAsync("Beta", new TargetingContext
-            {
-                UserId = "Jeff"
-            }));
-
-            Assert.False(await featureManager.IsEnabledAsync("Beta", new TargetingContext
-            {
-                UserId = "Sam"
-            }));
-
-            Assert.False(await featureManager.IsEnabledAsync("Sigma"));
-
-            Assert.True(await featureManager.IsEnabledAsync("Omega"));
         }
     }
 }
