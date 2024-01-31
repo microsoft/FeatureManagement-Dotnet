@@ -44,9 +44,9 @@ namespace Microsoft.FeatureManagement
         /// Adds a <see cref="VariantServiceProvider{TService}"/> to the feature management system.
         /// </summary>
         /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
-        /// <param name="featureName">The variant feature flag used to assign variants. The <see cref="VariantServiceProvider{TService}"/> will return different implementations of TService according to the assigned variant.</param>
+        /// <param name="featureName">The feature flag that should be used to determine which variant of the service should be used. The <see cref="VariantServiceProvider{TService}"/> will return different implementations of TService according to the assigned variant.</param>
         /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
-        public static IFeatureManagementBuilder AddVariantServiceProvider<TService>(this IFeatureManagementBuilder builder, string featureName) where TService : class
+        public static IFeatureManagementBuilder WithVariantService<TService>(this IFeatureManagementBuilder builder, string featureName) where TService : class
         {
             if (string.IsNullOrEmpty(featureName))
             {
@@ -59,7 +59,7 @@ namespace Microsoft.FeatureManagement
                     sp.GetRequiredService<IEnumerable<TService>>(),
                     sp.GetRequiredService<IVariantFeatureManager>())
                 {
-                    VariantFeatureName = featureName,
+                    FeatureName = featureName,
                 });
             }
             else
@@ -68,7 +68,7 @@ namespace Microsoft.FeatureManagement
                     sp.GetRequiredService<IEnumerable<TService>>(),
                     sp.GetRequiredService<IVariantFeatureManager>())
                 {
-                    VariantFeatureName = featureName,
+                    FeatureName = featureName,
                 });
             }
 

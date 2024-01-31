@@ -18,7 +18,7 @@ namespace Microsoft.FeatureManagement
     {
         private readonly IEnumerable<TService> _services;
         private readonly IVariantFeatureManager _featureManager;
-        private readonly string _variantFeatureName;
+        private readonly string _featureName;
         private readonly ConcurrentDictionary<string, TService> _variantServiceCache;
 
         /// <summary>
@@ -38,13 +38,13 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The variant feature flag used to assign variants.
         /// </summary>
-        public string VariantFeatureName
+        public string FeatureName
         {
-            get => _variantFeatureName;
+            get => _featureName;
 
             init
             {
-                _variantFeatureName = value ?? throw new ArgumentNullException(nameof(value));
+                _featureName = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
 
@@ -55,9 +55,9 @@ namespace Microsoft.FeatureManagement
         /// <returns>An implementation matched with the assigned variant. If there is no matched implementation, it will return null.</returns>
         public async ValueTask<TService> GetServiceAsync(CancellationToken cancellationToken)
         {
-            Debug.Assert(_variantFeatureName != null);
+            Debug.Assert(_featureName != null);
 
-            Variant variant = await _featureManager.GetVariantAsync(_variantFeatureName, cancellationToken);
+            Variant variant = await _featureManager.GetVariantAsync(_featureName, cancellationToken);
 
             TService implementation = null;
 

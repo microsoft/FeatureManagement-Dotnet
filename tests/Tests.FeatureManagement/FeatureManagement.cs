@@ -1279,7 +1279,7 @@ namespace Tests.FeatureManagement
             services.AddSingleton(configuration)
                 .AddFeatureManagement()
                 .AddFeatureFilter<TargetingFilter>()
-                .AddVariantServiceProvider<IAlgorithm>(Features.VariantImplementationFeature);
+                .WithVariantService<IAlgorithm>(Features.VariantImplementationFeature);
 
             var targetingContextAccessor = new OnDemandTargetingContextAccessor();
 
