@@ -1328,6 +1328,16 @@ namespace Tests.FeatureManagement
 
             Assert.NotNull(algorithm);
             Assert.Equal("OMEGA", algorithm.Style);
+
+            services = new ServiceCollection();
+
+            Assert.Throws<InvalidOperationException>(() =>
+                {
+                    services.AddFeatureManagement()
+                        .WithVariantService<IAlgorithm>("DummyFeature1")
+                        .WithVariantService<IAlgorithm>("DummyFeature2");
+                }
+            );
         }
     }
 }
