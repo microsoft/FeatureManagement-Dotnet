@@ -91,6 +91,8 @@ The feature management library supports appsettings.json as a feature flag sourc
 
 The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided three different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration, so it only has the `Name` property. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
 
+The detailed schema of the `FeatureManagement` section can be found [here](./schemas/FeatureManagement.Dotnet.v1.0.0.schema.json).
+
 **Advanced:** The usage of colon ':' in feature flag names is forbidden.
 
 #### On/Off Declaration
@@ -143,6 +145,12 @@ A `RequirementType` of `All` changes the traversal. First, if there are no filte
 ```
 
 In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning all of its filters must evaluate to true for the feature to be enabled. In this case, the feature will be enabled for 50% of users during the specified time window.
+
+#### Microsoft Feature Flag Schema
+
+The feature management library also supports the usage of [`Microsoft Feature Flag schema``](https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureFlag.v1.1.0.schema.json) to declare feature flags.
+
+If you want to use the `Microsoft Feature Flag schema`, you will need to follow [this schema](./schemas/FeatureManagement.Dotnet.v2.0.0.schema.json) to set up the `FeatureManagement` section of the configuration.
 
 ## Consumption
 
