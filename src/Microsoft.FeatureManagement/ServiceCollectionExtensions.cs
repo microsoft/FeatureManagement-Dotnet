@@ -43,9 +43,9 @@ namespace Microsoft.FeatureManagement
             services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
 
             services.AddSingleton<IFeatureManager>(sp => new FeatureManager(
-                sp.GetRequiredService<IFeatureDefinitionProvider>(),
-                sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
+                sp.GetRequiredService<IFeatureDefinitionProvider>())
             {
+                Options = sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value,
                 FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
                 SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
                 Cache = sp.GetRequiredService<IMemoryCache>(),
@@ -115,9 +115,9 @@ namespace Microsoft.FeatureManagement
             services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
 
             services.AddScoped<IFeatureManager>(sp => new FeatureManager(
-                sp.GetRequiredService<IFeatureDefinitionProvider>(),
-                sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
+                sp.GetRequiredService<IFeatureDefinitionProvider>())
             {
+                Options = sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value,
                 FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
                 SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
                 Cache = sp.GetRequiredService<IMemoryCache>(),
