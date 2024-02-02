@@ -1,0 +1,19 @@
+{
+    "definitions": {},
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "title": ".NET Feature Management Configuration",
+    "required": [
+        "FeatureFlags"
+    ],
+    "properties": {
+        "FeatureFlags": {
+            "type": "array",
+            "title": "Feature Flags",
+            "description": "Declares feature flags based on Microsoft Feature Flag schema v1.1.0.",
+            "items": {
+                "$ref": "https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureFlag.v1.1.0.schema.json"
+            }
+        }
+    }
+}
