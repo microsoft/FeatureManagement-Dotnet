@@ -1,0 +1,49 @@
+﻿@page "/"
+
+<PageTitle>Index</PageTitle>
+
+<h1>Hello, world!</h1>
+
+<p>@authMessage</p>
+
+<AuthorizeView>
+    <Authorized>
+        Welcome to your new app.
+
+        @if (isBetaEnabled)
+        {
+            <h2>You are able to see the BETA content!</h2>
+            <img src="https://www.betalabservices.com/wp-content/uploads/2018/06/beta-1000x506-72dpi-color.png" />
+        }
+    </Authorized>
+</AuthorizeView>
+
+<SurveyPrompt Title="How is Blazor working for you?" />
+
+@inject IFeatureManagerSnapshot _featureManager
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationState { get; set; }
+
+    private string authMessage = "The user is NOT authenticated.";
+
+    private bool isBetaEnabled;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (authenticationState != null)
+        {
+            var authState = await authenticationState;
+
+            var user = authState?.User;
+
+            if (user?.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                authMessage = $"The user {user.Identity.Name} is authenticated.";
+            }
+        }
+
+        isBetaEnabled = await _featureManager.IsEnabledAsync("Beta");
+    }
+}

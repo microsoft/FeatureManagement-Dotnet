@@ -32,9 +32,7 @@ namespace Microsoft.FeatureManagement
 
             if (await featureManager.IsEnabledAsync(FeatureName).ConfigureAwait(false))
             {
-                IServiceProvider serviceProvider = context.HttpContext.RequestServices.GetRequiredService<IServiceProvider>();
-
-                IAsyncActionFilter filter = ActivatorUtilities.CreateInstance<T>(serviceProvider);
+                IAsyncActionFilter filter = ActivatorUtilities.CreateInstance<T>(context.HttpContext.RequestServices);
 
                 await filter.OnActionExecutionAsync(context, next).ConfigureAwait(false);
             }

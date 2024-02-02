@@ -29,6 +29,8 @@ namespace EvaluationDataToApplicationInsights
                 return new ValueTask<TargetingContext>((TargetingContext)value);
             }
 
+            //
+            // Grab username from cookie
             string username = httpContext.Request.Cookies["username"];
 
             var groups = new List<string>();
