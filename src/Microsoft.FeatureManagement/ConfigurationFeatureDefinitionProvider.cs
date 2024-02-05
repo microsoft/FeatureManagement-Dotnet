@@ -192,7 +192,7 @@ namespace Microsoft.FeatureManagement
             We support
             
             myFeature: {
-              enabledFor: [ "myFeatureFilter1", "myFeatureFilter2" ]
+              enabledFor: [{name: "myFeatureFilter1"}, {name: "myFeatureFilter2"}]
             },
             myDisabledFeature: {
               enabledFor: [  ]
@@ -206,8 +206,8 @@ namespace Microsoft.FeatureManagement
               enabledFor: false
             },
             myAllRequiredFilterFeature: {
-                requirementType: "all"
-                enabledFor: [ "myFeatureFilter1", "myFeatureFilter2" ],
+                requirementType: "all",
+                enabledFor: [{name: "myFeatureFilter1"}, {name: "myFeatureFilter2"}]
             }
 
             */
