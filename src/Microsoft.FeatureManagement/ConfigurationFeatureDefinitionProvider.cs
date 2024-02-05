@@ -197,14 +197,6 @@ namespace Microsoft.FeatureManagement
             myDisabledFeature: {
               enabledFor: [  ]
             },
-            myFeature2: {
-              enabledFor: "myFeatureFilter1;myFeatureFilter2"
-            },
-            myDisabledFeature2: {
-              enabledFor: ""
-            },
-            myFeature3: "myFeatureFilter1;myFeatureFilter2",
-            myDisabledFeature3: "",
             myAlwaysEnabledFeature: true,
             myAlwaysDisabledFeature: false // removing this line would be the same as setting it to false
             myAlwaysEnabledFeature2: {
@@ -216,7 +208,7 @@ namespace Microsoft.FeatureManagement
             myAllRequiredFilterFeature: {
                 requirementType: "all"
                 enabledFor: [ "myFeatureFilter1", "myFeatureFilter2" ],
-            },
+            }
 
             */
 

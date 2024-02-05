@@ -28,59 +28,66 @@
               "default": "Any"
             },
             "EnabledFor": {
-              "type": "array",
-              "title": "Feature Filter Collection",
-              "description": "Feature Filters that must be evaluated as true for the feature to be considered enabled.",
-              "items": {
-                "type": "object",
-                "title": "Feature Filter Declaration",
-                "required": [
-                  "Name"
-                ],
-                "properties": {
-                  "Name": {
-                    "type": "string",
-                    "title": "Feature Filter Name",
-                    "description": "The name used to refer to and require a feature filter.",
-                    "default": "",
-                    "examples": [
-                      "Percentage",
-                      "TimeWindow"
-                    ],
-                    "pattern": "^[^:]*$"
-                  },
-                  "Parameters": {
+              "oneOf": [
+                {
+                  "type": "array",
+                  "title": "Feature Filter Collection",
+                  "description": "Feature Filters that must be evaluated as true for the feature to be considered enabled.",
+                  "items": {
                     "type": "object",
-                    "title": "Feature Filter Parameters",
-                    "description": "Custom parameters for a given feature filter. A feature filter can require any set of parameters of any type.",
-                    "required": [],
-                    "patternProperties": {
-                      "^.*$": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "object"
-                          },
-                          {
-                            "type": "number"
-                          },
-                          {
-                            "type": "array"
-                          },
-                          {
-                            "type": "boolean"
+                    "title": "Feature Filter Declaration",
+                    "required": [
+                      "Name"
+                    ],
+                    "properties": {
+                      "Name": {
+                        "type": "string",
+                        "title": "Feature Filter Name",
+                        "description": "The name used to refer to and require a feature filter.",
+                        "default": "",
+                        "examples": [
+                          "Percentage",
+                          "TimeWindow"
+                        ],
+                        "pattern": "^[^:]*$"
+                      },
+                      "Parameters": {
+                        "type": "object",
+                        "title": "Feature Filter Parameters",
+                        "description": "Custom parameters for a given feature filter. A feature filter can require any set of parameters of any type.",
+                        "required": [],
+                        "patternProperties": {
+                          "^.*$": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "object"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "array"
+                              },
+                              {
+                                "type": "boolean"
+                              }
+                            ]
                           }
-                        ]
+                        }
                       }
                     }
                   }
+                },
+                {
+                  "type": "boolean"
                 }
-              }
+              ]
             },
             "additionalProperties": false
           }

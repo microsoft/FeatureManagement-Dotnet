@@ -148,7 +148,7 @@ In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning
 
 #### Microsoft Feature Flag Schema
 
-The feature management library also supports the usage of [`Microsoft Feature Flag schema``](https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureFlag.v1.1.0.schema.json) to declare feature flags.
+The feature management library also supports the usage of [`Microsoft Feature Flag schema`](https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureFlag.v1.1.0.schema.json) to declare feature flags.
 
 If you want to use the `Microsoft Feature Flag schema`, you will need to follow [this schema](./schemas/FeatureManagement.Dotnet.v2.0.0.schema.json) to set up the `FeatureManagement` section of the configuration.
 
