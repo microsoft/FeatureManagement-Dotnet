@@ -2,17 +2,21 @@
   "definitions": {},
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "title": ".NET Feature Management Configuration",
+  "title": "A.NET Feature Management Configuration",
   "required": [],
   "patternProperties": {
     "^[^:]*$": {
       "description": "Declares a feature flag.",
-      "oneOf": [
+      "anyOf": [
         {
-          "type": "boolean"
+          "type": "boolean",
+          "title": "On/Off Feature Flag",
+          "description": "A feature flag that always returns the same value."
         },
         {
           "type": "object",
+          "title": "Conditional Feature Flag",
+          "description": "A feature flag which value is dynamic based on a set of feature filters",
           "required": [
             "EnabledFor"
           ],
