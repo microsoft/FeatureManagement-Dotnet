@@ -46,7 +46,7 @@ namespace Microsoft.FeatureManagement
         /// <param name="featureName">The feature flag that should be used to determine which variant of the service should be used. The <see cref="VariantServiceProvider{TService}"/> will return different implementations of TService according to the assigned variant.</param>
         /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
         /// <exception cref="ArgumentNullException">Thrown if feature name parameter is null.</exception>
-        /// <exception cref="InvalidOperationException">Thrown if the variant service of the type has been added.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if a variant service of the type has already been added.</exception>
         public static IFeatureManagementBuilder WithVariantService<TService>(this IFeatureManagementBuilder builder, string featureName) where TService : class
         {
             if (string.IsNullOrEmpty(featureName))
