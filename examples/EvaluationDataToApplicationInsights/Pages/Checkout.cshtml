@@ -7,6 +7,14 @@
 
 <p>Click Below To Check Out!</p>
 
-<button id="checkout" name="checkout" onclick="appInsights.trackEvent({ name: 'checkout', properties: { 'success' : 'yes' } }); appInsights.trackMetric({ name: 'checkoutAmount', average: Math.floor(Math.random() * 100) }); alert('Checked Out!');">
+<script>
+    function checkOut() {
+        appInsights.trackEvent({ name: 'checkout', properties: { 'success': 'yes' } });
+        appInsights.trackMetric({ name: 'checkoutAmount', average: Math.floor(Math.random() * 100) });
+        alert('Checked Out!');
+    }
+</script>
+
+<button id="checkout" name="checkout" onclick="checkOut()">
     Check Out
 </button>

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\..\build\NugetProperties.props" />
 
   <!-- Official Version -->
@@ -12,33 +12,32 @@
   <Import Project="..\..\build\Versioning.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>..\..\build\Microsoft.FeatureManagement.snk</AssemblyOriginatorKeyFile>
-    <LangVersion>9.0</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup>
-    <Description>Microsoft.FeatureManagement provides a way to develop and expose application functionality based on features. Many applications have special requirements when a new feature is developed such as when the feature should be enabled and under what conditions. This library provides a way to define these relationships, and also integrates into common .NET code patterns to make exposing these features possible.</Description>
+    <Description>Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore provides a solution for tagging Application Insights telemetry with Microsoft.FeatureManagement targeting information.</Description>
     <Authors>Microsoft</Authors>
     <Company>Microsoft</Company>
-    <PackageProjectUrl>https://github.com/Azure/AppConfiguration</PackageProjectUrl>
     <PackageLicenseUrl>https://licenses.nuget.org/MIT</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/Azure/AppConfiguration</PackageProjectUrl>
     <PackageReleaseNotes>Release notes can be found at https://aka.ms/MicrosoftFeatureManagementReleaseNotes</PackageReleaseNotes>
-    <PackageTags>Microsoft FeatureManagement FeatureFlags AzureAppConfiguration</PackageTags>
+    <PackageTags>Microsoft FeatureManagement FeatureFlags ApplicationInsights</PackageTags>
     <PackageIconUrl>https://aka.ms/AzureAppConfigurationPackageIcon</PackageIconUrl>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.1.1" />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.22.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.1.23" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.1.10" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
+    <ProjectReference Include="..\Microsoft.FeatureManagement\Microsoft.FeatureManagement.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

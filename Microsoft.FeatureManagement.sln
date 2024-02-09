@@ -27,6 +27,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.FeatureManagement
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvaluationDataToApplicationInsights", "examples\EvaluationDataToApplicationInsights\EvaluationDataToApplicationInsights.csproj", "{1502529E-47E9-4306-98C4-BF6CF7C7C275}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore", "src\Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore\Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore.csproj", "{C647611B-A8E5-4AD7-9DBA-60DDE276644B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorServerApp", "examples\BlazorServerApp\BlazorServerApp.csproj", "{12BAB5A6-4EEB-4917-B5D9-4AFB6253008E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -73,6 +77,14 @@ Global
 		{1502529E-47E9-4306-98C4-BF6CF7C7C275}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1502529E-47E9-4306-98C4-BF6CF7C7C275}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1502529E-47E9-4306-98C4-BF6CF7C7C275}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C647611B-A8E5-4AD7-9DBA-60DDE276644B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C647611B-A8E5-4AD7-9DBA-60DDE276644B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C647611B-A8E5-4AD7-9DBA-60DDE276644B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C647611B-A8E5-4AD7-9DBA-60DDE276644B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12BAB5A6-4EEB-4917-B5D9-4AFB6253008E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12BAB5A6-4EEB-4917-B5D9-4AFB6253008E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12BAB5A6-4EEB-4917-B5D9-4AFB6253008E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12BAB5A6-4EEB-4917-B5D9-4AFB6253008E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -85,6 +97,7 @@ Global
 		{DACAB624-4611-42E8-844C-529F93A54980} = {FB5C34DF-695C-4DF9-8AED-B3EA2516EA72}
 		{283D3EBB-4716-4F1D-BA51-A435F7E2AB82} = {FB5C34DF-695C-4DF9-8AED-B3EA2516EA72}
 		{1502529E-47E9-4306-98C4-BF6CF7C7C275} = {FB5C34DF-695C-4DF9-8AED-B3EA2516EA72}
+		{12BAB5A6-4EEB-4917-B5D9-4AFB6253008E} = {FB5C34DF-695C-4DF9-8AED-B3EA2516EA72}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {84DA6C54-F140-4518-A1B4-E4CF42117FBD}

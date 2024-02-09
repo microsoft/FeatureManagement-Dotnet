@@ -1,0 +1,42 @@
+﻿@page "/"
+@namespace BlazorServerApp.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@using System.Security.Claims;
+@using Microsoft.AspNetCore.Authentication;
+@using Microsoft.AspNetCore.Authentication.Cookies;
+@{
+    Layout = "_Layout";
+
+    int randomNum = Random.Shared.Next();
+
+    //
+    // It has 2/3 chance to be logged in.
+    if (randomNum % 3 != 0)
+    {
+        string username = randomNum.ToString();
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, username)
+        };
+
+        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(claimsIdentity),
+            new AuthenticationProperties());
+    }
+    else
+    {
+        await HttpContext.SignOutAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme);
+    }
+
+    //
+    // The user agent context will be set to the parameter UserAgent in App.razor.
+    // This is the recommended way to work with HttpContext in Blazor server apps. For more details, please refer to: https://learn.microsoft.com/en-us/aspnet/core/blazor/security/server/interactive-server-side-rendering?view=aspnetcore-7.0#ihttpcontextaccessorhttpcontext-in-razor-components
+    string userAgent = HttpContext.Request.Headers["User-Agent"];
+}
+
+<component param-UserAgent="userAgent" type="typeof(App)" render-mode="Server" />
