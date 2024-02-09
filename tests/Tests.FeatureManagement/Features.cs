@@ -30,5 +30,6 @@ namespace Tests.FeatureManagement
         public const string VariantFeatureBothConfigurations = "VariantFeatureBothConfigurations";
         public const string VariantFeatureInvalidStatusOverride = "VariantFeatureInvalidStatusOverride";
         public const string VariantFeatureInvalidFromTo = "VariantFeatureInvalidFromTo";
+        public const string VariantImplementationFeature = "VariantImplementationFeature";
     }
 }

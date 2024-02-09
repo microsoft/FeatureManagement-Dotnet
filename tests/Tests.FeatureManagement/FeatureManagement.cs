@@ -1459,5 +1459,82 @@ namespace Tests.FeatureManagement
             Assert.Equal(FeatureManagementError.InvalidConfigurationSetting, e.Error);
             Assert.Contains(ConfigurationFields.PercentileAllocationFrom, e.Message);
         }
+
+        [Fact]
+        public async Task VariantBasedInjection()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            IServiceCollection services = new ServiceCollection();
+
+            services.AddSingleton<IAlgorithm, AlgorithmBeta>();
+            services.AddSingleton<IAlgorithm, AlgorithmSigma>();
+            services.AddSingleton<IAlgorithm>(sp => new AlgorithmOmega("OMEGA"));
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TargetingFilter>()
+                .WithVariantService<IAlgorithm>(Features.VariantImplementationFeature);
+
+            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
+
+            services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor);
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            IVariantServiceProvider<IAlgorithm> featuredAlgorithm = serviceProvider.GetRequiredService<IVariantServiceProvider<IAlgorithm>>();
+
+            targetingContextAccessor.Current = new TargetingContext
+            {
+                UserId = "Guest"
+            };
+
+            IAlgorithm algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+
+            Assert.Null(algorithm);
+
+            targetingContextAccessor.Current = new TargetingContext
+            {
+                UserId = "UserSigma"
+            };
+
+            algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+
+            Assert.Null(algorithm);
+
+            targetingContextAccessor.Current = new TargetingContext
+            {
+                UserId = "UserBeta"
+            };
+
+            algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+
+            Assert.NotNull(algorithm);
+            Assert.Equal("Beta", algorithm.Style);
+
+            targetingContextAccessor.Current = new TargetingContext
+            {
+                UserId = "UserOmega"
+            };
+
+            algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+
+            Assert.NotNull(algorithm);
+            Assert.Equal("OMEGA", algorithm.Style);
+
+            services = new ServiceCollection();
+
+            Assert.Throws<InvalidOperationException>(() =>
+                {
+                    services.AddFeatureManagement()
+                        .WithVariantService<IAlgorithm>("DummyFeature1")
+                        .WithVariantService<IAlgorithm>("DummyFeature2");
+                }
+            );
+        }
     }
 }
