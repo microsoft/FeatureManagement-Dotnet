@@ -56,26 +56,22 @@ namespace Microsoft.FeatureManagement
             
             if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IVariantServiceProvider<TService>)))
             {
-                throw new InvalidOperationException($"Variant services of {typeof(TService)} has been added.");
+                throw new InvalidOperationException($"A variant service of {typeof(TService).FullName} has already been added.");
             }
 
             if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
             {
                 builder.Services.AddScoped<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
-                    sp.GetRequiredService<IEnumerable<TService>>(),
-                    sp.GetRequiredService<IVariantFeatureManager>())
-                {
-                    FeatureName = featureName,
-                });
+                    featureName,
+                    sp.GetRequiredService<IVariantFeatureManager>(),
+                    sp.GetRequiredService<IEnumerable<TService>>()));
             }
             else
             {
                 builder.Services.AddSingleton<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
-                    sp.GetRequiredService<IEnumerable<TService>>(),
-                    sp.GetRequiredService<IVariantFeatureManager>())
-                {
-                    FeatureName = featureName,
-                });
+                    featureName,
+                    sp.GetRequiredService<IVariantFeatureManager>(),
+                    sp.GetRequiredService<IEnumerable<TService>>()));
             }
 
             return builder;

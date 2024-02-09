@@ -24,28 +24,18 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// Creates a variant service provider.
         /// </summary>
+        /// <param name="featureName">The feature flag that should be used to determine which variant of the service should be used.</param>
+        /// <param name="featureManager">The feature manager to get the assigned variant of the feature flag.</param>
         /// <param name="services">Implementation variants of TService.</param>
-        /// <param name="featureManager">Feature manager to get the assigned variant of the variant feature flag.</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="services"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureName"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureManager"/> is null.</exception>
-        public VariantServiceProvider(IEnumerable<TService> services, IVariantFeatureManager featureManager)
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="services"/> is null.</exception>
+        public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IEnumerable<TService> services)
         {
-            _services = services ?? throw new ArgumentNullException(nameof(services));
+            _featureName = featureName ?? throw new ArgumentNullException(nameof(featureName));
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
+            _services = services ?? throw new ArgumentNullException(nameof(services));
             _variantServiceCache = new ConcurrentDictionary<string, TService>();
-        }
-
-        /// <summary>
-        /// The variant feature flag used to assign variants.
-        /// </summary>
-        public string FeatureName
-        {
-            get => _featureName;
-
-            init
-            {
-                _featureName = value ?? throw new ArgumentNullException(nameof(value));
-            }
         }
 
         /// <summary>
