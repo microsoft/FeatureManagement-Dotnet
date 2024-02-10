@@ -17,7 +17,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         public RecurrencePatternType Type { get; set; }
 
         /// <summary>
-        /// The number of units between occurrences, where units can be in days, weeks, months, or years, depending on the pattern type.
+        /// The number of units between occurrences, where units can be in days or weeks, depending on the pattern type.
         /// </summary>
         public int Interval { get; set; } = 1;
 
