@@ -1,0 +1,19 @@
+.progress-bar {
+    width: 100%;
+    background-color: grey;
+}
+
+.progress {
+    width: 1%;
+    height: 30px;
+    background-color: green;
+}
+
+.progress-bars-container {
+    display: grid;
+    grid-template-columns: 33.3% 33.3% 33.3%;
+}
+
+.progress-bar-container {
+    padding: 16px 32px;
+}
