@@ -54,7 +54,7 @@ The .NET Core configuration system is used to determine the state of feature fla
 
 The feature management library supports appsettings.json as a feature flag source since it is a provider for .NET Core's IConfiguration system. Below we have an example of the format used to set up feature flags in a json file.
 
-``` json
+``` JavaScript
 {
     "Logging": {
         "LogLevel": {
@@ -98,7 +98,7 @@ The detailed schema of the `FeatureManagement` section can be found [here](./sch
 #### On/Off Declaration
  
 The following snippet demonstrates an alternative way to define a feature that can be used for on/off features. 
-``` Json
+``` JavaScript
 {
     "Logging": {
         "LogLevel": {
@@ -123,7 +123,7 @@ The `RequirementType` property of a feature flag is used to determine if the fil
 
 A `RequirementType` of `All` changes the traversal. First, if there are no filters, the feature will be disabled. Then, the feature-filters are traversed until one of the filters decides that the feature should be disabled. If no filter indicates that the feature should be disabled, then it will be considered enabled.
 
-``` json
+``` JavaScript
 "FeatureW": {
     "RequirementType": "All",
     "EnabledFor": [
@@ -150,37 +150,22 @@ In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning
 
 The feature management library also supports the usage of [`Microsoft Feature Flag schema`](https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureFlag.v1.1.0.schema.json) to declare feature flags.
 
-If you want to use the `Microsoft Feature Flag schema`, you will need to follow the Azure App Configuration Feature Management Configuration schema to set up feature flags. The schema can be found [here](https://github.com/Azure/AppConfiguration/tree/main/docs/FeatureManagement). The feature flag declarations should be listed in the `FeatureFlags` array under the `FeatureManagement` section, as shown in the example below:
+If you want to use the `Microsoft Feature Flag schema`, you will need to follow the `Microsoft Feature Management Configuration schema` to set up feature flags. The schema can be found [here](https://github.com/Azure/AppConfiguration/tree/main/docs/FeatureManagement). The feature flag declarations should be listed in the `feature_flags` array under the `feature_management` section, as shown in the example below:
 
-```json
+```JavaScript
 {
-    "FeatureManagement": {
-        "FeatureFlags": [
+    "feature_management": {
+        "feature_flags": [
             {
-                "id": "AlwaysEnabledFeatureFlag",
-                "enabled": true
-            },
-            {
-                "id": "AlwaysDisabledFeatureFlag",
-                "enabled": false
-            },
-            {
-                "id": "ConditionalFeatureFlag",
+                "id": "FeatureT",
                 "enabled": true,
                 "conditions": {
-                    "requirement_type": "All",
                     "client_filters": [
                         {  
-                            "name": "TimeWindow",
+                            "name": "Microsoft.TimeWindow",
                             "parameters": {
                                 "Start": "Mon, 01 May 2023 13:59:59 GMT",
                                 "End": "Sat, 01 July 2023 00:00:00 GMT"
-                            }
-                        },
-                        {
-                            "name": "Percentage",
-                            "parameters": {
-                                "Value": "50"
                             }
                         }
                     ]
@@ -190,6 +175,8 @@ If you want to use the `Microsoft Feature Flag schema`, you will need to follow 
     }
 }
 ```
+
+**Note:** If `feature_management` section can be found in the configuration, the `FeatureManagement` section will be ignored.
 
 ## Consumption
 
@@ -438,7 +425,7 @@ public class BrowserFilter : IFeatureFilter
 
 When a feature filter is registered to be used for a feature flag, the alias used in configuration is the name of the feature filter type with the _Filter_ suffix, if any, removed. For example, `MyCriteriaFilter` would be referred to as _MyCriteria_ in configuration.
 
-``` json
+``` JavaScript
 "MyFeature": {
     "EnabledFor": [
         {
@@ -556,7 +543,7 @@ Each of the built-in feature filters have their own parameters. Here is the list
 
 This filter provides the capability to enable a feature based on a set percentage.
 
-``` json
+``` JavaScript
 "EnhancedPipeline": {
     "EnabledFor": [
         {
@@ -573,7 +560,7 @@ This filter provides the capability to enable a feature based on a set percentag
 
 This filter provides the capability to enable a feature based on a time window. If only `End` is specified, the feature will be considered on until that time. If only `Start` is specified, the feature will be considered on at all points after that time.
 
-``` json
+``` JavaScript
 "EnhancedPipeline": {
     "EnabledFor": [
         {
@@ -591,7 +578,7 @@ This filter provides the capability to enable a feature based on a time window. 
 
 This filter provides the capability to enable a feature for a target audience. An in-depth explanation of targeting is explained in the [targeting](./README.md#Targeting) section below. The filter parameters include an audience object which describes users, groups, excluded users/groups, and a default percentage of the user base that should have access to the feature. Each group object that is listed in the target audience must also specify what percentage of the group's members should have access. If a user is specified in the exclusion section, either directly or if the user is in an excluded group, the feature will be disabled. Otherwise, if a user is specified in the users section directly, or if the user is in the included percentage of any of the group rollouts, or if the user falls into the default rollout percentage then that user will have the feature enabled.
 
-``` json
+``` JavaScript
 "EnhancedPipeline": {
     "EnabledFor": [
         {
@@ -705,7 +692,7 @@ services.Configure<TargetingEvaluationOptions>(options =>
 ### Targeting Exclusion
 
 When defining an Audience, users and groups can be excluded from the audience. This is useful when a feature is being rolled out to a group of users, but a few users or groups need to be excluded from the rollout. Exclusion is defined by adding a list of users and groups to the `Exclusion` property of the audience.
-``` json
+``` JavaScript
 "Audience": {
     "Users": [
         "Jeff",
