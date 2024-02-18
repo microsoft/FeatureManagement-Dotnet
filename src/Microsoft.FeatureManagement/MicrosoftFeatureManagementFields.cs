@@ -4,14 +4,13 @@
 
 namespace Microsoft.FeatureManagement
 {
-    //
-    // Microsoft feature flag schema: https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureFlag.v1.1.0.schema.json
-    internal static class MicrosoftFeatureFlagFields
+    internal static class MicrosoftFeatureManagementFields
     {
-        public const string FeatureFlagsSectionName = "FeatureFlags";
+        public const string FeatureManagementSectionName = "feature_management";
+        public const string FeatureFlagsSectionName = "feature_flags";
 
         //
-        // Feature flag keywords
+        // Microsoft feature flag keywords
         public const string Id = "id";
         public const string Enabled = "enabled";
         public const string Conditions = "conditions";

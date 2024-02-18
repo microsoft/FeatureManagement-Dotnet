@@ -134,21 +134,38 @@ namespace Microsoft.FeatureManagement
         {
             if (_initialized == 0)
             {
+                bool hasMicrosoftFeatureFlagSchema = false;
+
                 IConfiguration featureManagementConfigurationSection = _configuration
+                    .GetChildren()
+                    .FirstOrDefault(section =>
+                        string.Equals(
+                            section.Key,
+                            MicrosoftFeatureManagementFields.FeatureManagementSectionName,
+                            StringComparison.OrdinalIgnoreCase));
+
+                if (featureManagementConfigurationSection != null)
+                { 
+                    hasMicrosoftFeatureFlagSchema = true;
+                }
+                else
+                {
+                    featureManagementConfigurationSection = _configuration
                     .GetChildren()
                     .FirstOrDefault(section =>
                         string.Equals(
                             section.Key,
                             ConfigurationFields.FeatureManagementSectionName,
                             StringComparison.OrdinalIgnoreCase));
+                }
 
                 if (featureManagementConfigurationSection == null && RootConfigurationFallbackEnabled)
                 {
                     featureManagementConfigurationSection = _configuration;
-                }
 
-                bool hasMicrosoftFeatureFlagSchema = featureManagementConfigurationSection != null && 
-                    HasMicrosoftFeatureFlagSchema(featureManagementConfigurationSection);
+                    hasMicrosoftFeatureFlagSchema = featureManagementConfigurationSection != null &&
+                        HasMicrosoftFeatureFlagSchema(featureManagementConfigurationSection);
+                }
 
                 lock (_lock)
                 {
@@ -321,20 +338,9 @@ namespace Microsoft.FeatureManagement
 
             RequirementType requirementType = RequirementType.Any;
 
-            IConfigurationSection conditions = configurationSection.GetSection(MicrosoftFeatureFlagFields.Conditions);
+            IConfigurationSection conditions = configurationSection.GetSection(MicrosoftFeatureManagementFields.Conditions);
 
-            string rawRequirementType = conditions[MicrosoftFeatureFlagFields.RequirementType];
-
-            //
-            // If requirement type is specified, parse it and set the requirementType variable
-            if (!string.IsNullOrEmpty(rawRequirementType) && !Enum.TryParse(rawRequirementType, ignoreCase: true, out requirementType))
-            {
-                throw new FeatureManagementException(
-                    FeatureManagementError.InvalidConfigurationSetting,
-                    $"Invalid value '{rawRequirementType}' for field '{MicrosoftFeatureFlagFields.RequirementType}' of feature '{featureName}'.");
-            }
-
-            string rawEnabled = configurationSection[MicrosoftFeatureFlagFields.Enabled];
+            string rawEnabled = configurationSection[MicrosoftFeatureManagementFields.Enabled];
 
             bool enabled = false;
 
@@ -342,12 +348,23 @@ namespace Microsoft.FeatureManagement
             {
                 throw new FeatureManagementException(
                     FeatureManagementError.InvalidConfigurationSetting,
-                    $"Invalid value '{rawEnabled}' for field '{MicrosoftFeatureFlagFields.Enabled}' of feature '{featureName}'.");
+                    $"Invalid value '{rawEnabled}' for field '{MicrosoftFeatureManagementFields.Enabled}' of feature '{featureName}'.");
             }
 
             if (enabled)
             {
-                IEnumerable<IConfigurationSection> filterSections = conditions.GetSection(MicrosoftFeatureFlagFields.ClientFilters).GetChildren();
+                string rawRequirementType = conditions[MicrosoftFeatureManagementFields.RequirementType];
+
+                //
+                // If requirement type is specified, parse it and set the requirementType variable
+                if (!string.IsNullOrEmpty(rawRequirementType) && !Enum.TryParse(rawRequirementType, ignoreCase: true, out requirementType))
+                {
+                    throw new FeatureManagementException(
+                        FeatureManagementError.InvalidConfigurationSetting,
+                        $"Invalid value '{rawRequirementType}' for field '{MicrosoftFeatureManagementFields.RequirementType}' of feature '{featureName}'.");
+                }
+
+                IEnumerable<IConfigurationSection> filterSections = conditions.GetSection(MicrosoftFeatureManagementFields.ClientFilters).GetChildren();
 
                 if (filterSections.Any())
                 {
@@ -356,12 +373,12 @@ namespace Microsoft.FeatureManagement
                         //
                         // Arrays in json such as "myKey": [ "some", "values" ]
                         // Are accessed through the configuration system by using the array index as the property name, e.g. "myKey": { "0": "some", "1": "values" }
-                        if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[MicrosoftFeatureFlagFields.Name]))
+                        if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[MicrosoftFeatureManagementFields.Name]))
                         {
                             enabledFor.Add(new FeatureFilterConfiguration()
                             {
-                                Name = section[MicrosoftFeatureFlagFields.Name],
-                                Parameters = new ConfigurationWrapper(section.GetSection(MicrosoftFeatureFlagFields.Parameters))
+                                Name = section[MicrosoftFeatureManagementFields.Name],
+                                Parameters = new ConfigurationWrapper(section.GetSection(MicrosoftFeatureManagementFields.Parameters))
                             });
                         }
                     }
@@ -387,7 +404,7 @@ namespace Microsoft.FeatureManagement
         {
             if (_microsoftFeatureFlagSchemaEnabled)
             {
-                return section[MicrosoftFeatureFlagFields.Id];
+                return section[MicrosoftFeatureManagementFields.Id];
             }
 
             return section.Key;
@@ -407,7 +424,9 @@ namespace Microsoft.FeatureManagement
                     .FirstOrDefault(section =>
                         string.Equals(
                             section.Key,
-                            ConfigurationFields.FeatureManagementSectionName,
+                            _microsoftFeatureFlagSchemaEnabled ? 
+                                MicrosoftFeatureManagementFields.FeatureManagementSectionName : 
+                                ConfigurationFields.FeatureManagementSectionName,
                             StringComparison.OrdinalIgnoreCase));
 
             if (featureManagementConfigurationSection == null)
@@ -426,7 +445,7 @@ namespace Microsoft.FeatureManagement
 
             if (_microsoftFeatureFlagSchemaEnabled)
             {
-                IConfigurationSection featureFlagsSection = featureManagementConfigurationSection.GetSection(MicrosoftFeatureFlagFields.FeatureFlagsSectionName);
+                IConfigurationSection featureFlagsSection = featureManagementConfigurationSection.GetSection(MicrosoftFeatureManagementFields.FeatureFlagsSectionName);
 
                 return featureFlagsSection.GetChildren();
             }
@@ -441,7 +460,7 @@ namespace Microsoft.FeatureManagement
               .FirstOrDefault(section =>
                   string.Equals(
                       section.Key,
-                      MicrosoftFeatureFlagFields.FeatureFlagsSectionName,
+                      MicrosoftFeatureManagementFields.FeatureFlagsSectionName,
                       StringComparison.OrdinalIgnoreCase));
 
             if (featureFlagsConfigurationSection != null)
