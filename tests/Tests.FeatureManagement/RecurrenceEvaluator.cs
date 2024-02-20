@@ -865,6 +865,25 @@ namespace Tests.FeatureManagement
                 },
                 true ),
 
+                ( DateTimeOffset.Parse("2024-2-12T08:00:00+08:00"), // Monday in the 3rd week after the Start date
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-2T12:00:00+08:00"), // Friday
+                    End = DateTimeOffset.Parse("2024-2-3T12:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Weekly,
+                            Interval = 2,
+                            FirstDayOfWeek = DayOfWeek.Sunday,
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Friday }
+                        },
+                        Range = new RecurrenceRange()
+                    }
+                },
+                false ),
+
                 ( DateTimeOffset.Parse("2023-9-13T00:00:00+08:00"), // Within the recurring time window 2023-9-11T:00:00:00+08:00 ~ 2023-9-15T:00:00:00+08:00
                 new TimeWindowFilterSettings()
                 {
