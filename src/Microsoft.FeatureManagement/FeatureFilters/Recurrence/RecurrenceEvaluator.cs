@@ -463,7 +463,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 TimeSpan.FromDays(
                     Math.Floor((alignedTime.Date - firstDayOfStartWeek.Date).TotalSeconds / TimeSpan.FromDays(interval * DaysPerWeek).TotalSeconds) * (interval * DaysPerWeek));
 
-            List<DayOfWeek> sortedDaysOfWeek = SortDayOfWeek(pattern.DaysOfWeek, pattern.FirstDayOfWeek);
+            List<DayOfWeek> sortedDaysOfWeek = SortDaysOfWeek(pattern.DaysOfWeek, pattern.FirstDayOfWeek);
 
             numberOfOccurrences = (int)Math.Floor((alignedTime.Date - firstDayOfStartWeek.Date).TotalSeconds / TimeSpan.FromDays(interval * DaysPerWeek).TotalSeconds) * sortedDaysOfWeek.Count - sortedDaysOfWeek.IndexOf(start.DayOfWeek);
 
@@ -533,7 +533,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             DateTime firstDayOfThisWeek = DateTime.Today.AddDays(
                 RemainingDaysOfTheWeek(DateTime.Today.DayOfWeek, firstDayOfWeek));
 
-            List<DayOfWeek> sortedDaysOfWeek = SortDayOfWeek(daysOfWeek, firstDayOfWeek);
+            List<DayOfWeek> sortedDaysOfWeek = SortDaysOfWeek(daysOfWeek, firstDayOfWeek);
 
             DateTime prev = DateTime.MinValue;
 
@@ -600,7 +600,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             return ((int)dayOfWeek - (int)firstDayOfWeek + DaysPerWeek) % DaysPerWeek;
         }
 
-        private static List<DayOfWeek> SortDayOfWeek(IEnumerable<DayOfWeek> daysOfWeek, DayOfWeek firstDayOfWeek)
+        private static List<DayOfWeek> SortDaysOfWeek(IEnumerable<DayOfWeek> daysOfWeek, DayOfWeek firstDayOfWeek)
         {
             List<DayOfWeek> result = daysOfWeek.ToList();
 
