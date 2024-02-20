@@ -22,12 +22,12 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         public int Interval { get; set; } = 1;
 
         /// <summary>
-        /// The days of the week on which the time window occurs.
+        /// The days of the week on which the time window occurs. This property is only applicable for weekly pattern.
         /// </summary>
         public IEnumerable<DayOfWeek> DaysOfWeek { get; set; }
 
         /// <summary>
-        /// The first day of the week.
+        /// The first day of the week. This property is only applicable for weekly pattern.
         /// </summary>
         public DayOfWeek FirstDayOfWeek { get; set; }
     }
