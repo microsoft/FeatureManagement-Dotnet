@@ -516,12 +516,12 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             else
             {
                 //
-                // the last occurring week
-                DateTimeOffset firstDayOfLastOccurringWeek = firstDayOfMostRecentOccurringWeek.AddDays(-interval * DaysPerWeek);
+                // the previous occurring week
+                DateTimeOffset firstDayOfPreviousOccurringWeek = firstDayOfMostRecentOccurringWeek.AddDays(-interval * DaysPerWeek);
 
                 //
                 // day with max offset in the last occurring week
-                previousOccurrence = firstDayOfLastOccurringWeek.AddDays(DayOfWeekOffset(sortedDaysOfWeek.Last(), pattern.FirstDayOfWeek));
+                previousOccurrence = firstDayOfPreviousOccurringWeek.AddDays(DayOfWeekOffset(sortedDaysOfWeek.Last(), pattern.FirstDayOfWeek));
             }
         }
 
