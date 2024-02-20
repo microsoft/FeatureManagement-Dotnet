@@ -429,7 +429,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             //
             // netstandard2.0 does not support '/' operator for TimeSpan. After we stop supporting netstandard2.0, we can remove .TotalSeconds.
-            int numberOfInterval = (int) Math.Floor(timeGap.TotalSeconds / TimeSpan.FromDays(interval).TotalSeconds);
+            int numberOfInterval = (int)Math.Floor(timeGap.TotalSeconds / TimeSpan.FromDays(interval).TotalSeconds);
 
             previousOccurrence = start.AddDays(numberOfInterval * interval);
 
@@ -453,63 +453,75 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             int interval = pattern.Interval;
 
-            DateTimeOffset firstDayOfStartWeek = start - TimeSpan.FromDays(DaysPerWeek - RemainingDaysOfTheWeek(start.DayOfWeek, pattern.FirstDayOfWeek));
-
-            DateTimeOffset alignedTime = start + (time - start);
+            DateTimeOffset firstDayOfStartWeek = start.AddDays(RemainingDaysOfTheWeek(start.DayOfWeek, pattern.FirstDayOfWeek) - DaysPerWeek);
 
             //
             // netstandard2.0 does not support '/' operator for TimeSpan. After we stop supporting netstandard2.0, we can remove .TotalSeconds.
-            DateTimeOffset firstDayOfMostRecentOccurringWeek = firstDayOfStartWeek +
-                TimeSpan.FromDays(
-                    Math.Floor((alignedTime.Date - firstDayOfStartWeek.Date).TotalSeconds / TimeSpan.FromDays(interval * DaysPerWeek).TotalSeconds) * (interval * DaysPerWeek));
+            int numberOfInterval = (int)Math.Floor((time - firstDayOfStartWeek).TotalSeconds / TimeSpan.FromDays(interval * DaysPerWeek).TotalSeconds);
+
+            DateTimeOffset firstDayOfMostRecentOccurringWeek = firstDayOfStartWeek.AddDays(numberOfInterval * (interval * DaysPerWeek));
 
             List<DayOfWeek> sortedDaysOfWeek = SortDaysOfWeek(pattern.DaysOfWeek, pattern.FirstDayOfWeek);
 
-            numberOfOccurrences = (int)Math.Floor((alignedTime.Date - firstDayOfStartWeek.Date).TotalSeconds / TimeSpan.FromDays(interval * DaysPerWeek).TotalSeconds) * sortedDaysOfWeek.Count - sortedDaysOfWeek.IndexOf(start.DayOfWeek);
+            //
+            // substract the day before the start in the first week
+            numberOfOccurrences = numberOfInterval * sortedDaysOfWeek.Count - sortedDaysOfWeek.IndexOf(start.DayOfWeek);
 
+            //
+            // The current time is not within the most recent occurring week.
             if (time - firstDayOfMostRecentOccurringWeek > TimeSpan.FromDays(DaysPerWeek))
             {
                 numberOfOccurrences += sortedDaysOfWeek.Count;
 
-                previousOccurrence = firstDayOfMostRecentOccurringWeek + TimeSpan.FromDays(DayOfWeekOffset(sortedDaysOfWeek.Last(), pattern.FirstDayOfWeek));
+                //
+                // day with max offset in the most recent occurring week
+                previousOccurrence = firstDayOfMostRecentOccurringWeek.AddDays(DayOfWeekOffset(sortedDaysOfWeek.Last(), pattern.FirstDayOfWeek));
 
                 return;
             }
 
-            DateTimeOffset minOffset = firstDayOfMostRecentOccurringWeek + TimeSpan.FromDays(DayOfWeekOffset(sortedDaysOfWeek.First(), pattern.FirstDayOfWeek));
+            //
+            // day with the min offset in the most recent occurring week
+            DateTimeOffset dayWithMinOffset = firstDayOfMostRecentOccurringWeek.AddDays(DayOfWeekOffset(sortedDaysOfWeek.First(), pattern.FirstDayOfWeek));
 
-            if (minOffset < start)
+            if (dayWithMinOffset < start)
             {
                 numberOfOccurrences = 0;
 
-                minOffset = start;
+                dayWithMinOffset = start;
             }
 
-            if (time >= minOffset)
+            if (time >= dayWithMinOffset)
             {
-                previousOccurrence = minOffset;
+                previousOccurrence = dayWithMinOffset;
 
                 numberOfOccurrences++;
 
-                for (int i = sortedDaysOfWeek.IndexOf(minOffset.DayOfWeek) + 1; i < sortedDaysOfWeek.Count; i++)
+                //
+                // Find the day with the max offset that is less than the current time.
+                for (int i = sortedDaysOfWeek.IndexOf(dayWithMinOffset.DayOfWeek) + 1; i < sortedDaysOfWeek.Count; i++)
                 {
-                    DateTimeOffset offset = firstDayOfMostRecentOccurringWeek + TimeSpan.FromDays(DayOfWeekOffset(sortedDaysOfWeek[i], pattern.FirstDayOfWeek));
+                    DateTimeOffset dayOfWeek = firstDayOfMostRecentOccurringWeek.AddDays(DayOfWeekOffset(sortedDaysOfWeek[i], pattern.FirstDayOfWeek));
 
-                    if (time < offset)
+                    if (time < dayOfWeek)
                     {
                         break;
                     }
 
-                    previousOccurrence = offset;
+                    previousOccurrence = dayOfWeek;
 
                     numberOfOccurrences++;
                 }
             }
             else
             {
-                DateTimeOffset firstDayOfLastOccurringWeek = firstDayOfMostRecentOccurringWeek - TimeSpan.FromDays(interval * DaysPerWeek);
+                //
+                // the last occurring week
+                DateTimeOffset firstDayOfLastOccurringWeek = firstDayOfMostRecentOccurringWeek.AddDays(-interval * DaysPerWeek);
 
-                previousOccurrence = firstDayOfLastOccurringWeek + TimeSpan.FromDays(DayOfWeekOffset(sortedDaysOfWeek.Last(), pattern.FirstDayOfWeek));
+                //
+                // day with max offset in the last occurring week
+                previousOccurrence = firstDayOfLastOccurringWeek.AddDays(DayOfWeekOffset(sortedDaysOfWeek.Last(), pattern.FirstDayOfWeek));
             }
         }
 
@@ -543,11 +555,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 if (prev == DateTime.MinValue)
                 {
-                    prev = firstDayOfThisWeek + TimeSpan.FromDays(DayOfWeekOffset(dayOfWeek, firstDayOfWeek));
+                    prev = firstDayOfThisWeek.AddDays(DayOfWeekOffset(dayOfWeek, firstDayOfWeek));
                 }
                 else
                 {
-                    DateTime date = firstDayOfThisWeek + TimeSpan.FromDays(DayOfWeekOffset(dayOfWeek, firstDayOfWeek));
+                    DateTime date = firstDayOfThisWeek.AddDays(DayOfWeekOffset(dayOfWeek, firstDayOfWeek));
 
                     TimeSpan gap = date - prev;
 
@@ -564,9 +576,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // It may across weeks. Check the next week if the interval is one week.
             if (interval == 1)
             {
-                DateTime firstDayOfNextWeek = firstDayOfThisWeek + TimeSpan.FromDays(7);
+                DateTime firstDayOfNextWeek = firstDayOfThisWeek.AddDays(DaysPerWeek);
 
-                DateTime firstOccurrenceInNextWeek = firstDayOfNextWeek + TimeSpan.FromDays(DayOfWeekOffset(sortedDaysOfWeek.First(), firstDayOfWeek));
+                DateTime firstOccurrenceInNextWeek = firstDayOfNextWeek.AddDays(DayOfWeekOffset(sortedDaysOfWeek.First(), firstDayOfWeek));
 
                 TimeSpan gap = firstOccurrenceInNextWeek - prev;
 
@@ -581,7 +593,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
         private static int RemainingDaysOfTheWeek(DayOfWeek dayOfWeek, DayOfWeek firstDayOfWeek)
         {
-            int remainingDays = (int) dayOfWeek - (int) firstDayOfWeek;
+            int remainingDays = (int)dayOfWeek - (int)firstDayOfWeek;
 
             if (remainingDays < 0)
             {
