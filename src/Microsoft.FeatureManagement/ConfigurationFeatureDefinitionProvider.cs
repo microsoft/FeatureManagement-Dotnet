@@ -26,7 +26,7 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
-        private bool _microsoftFeatureFlagSchemaEnabled;
+        private readonly bool _microsoftFeatureManagementSchemaEnabled;
 
         /// <summary>
         /// Creates a configuration feature definition provider.
@@ -51,7 +51,7 @@ namespace Microsoft.FeatureManagement
 
             if (MicrosoftFeatureManagementConfigurationSection != null)
             {
-                _microsoftFeatureFlagSchemaEnabled = true;
+                _microsoftFeatureManagementSchemaEnabled = true;
             }
         }
 
@@ -152,7 +152,7 @@ namespace Microsoft.FeatureManagement
 
         private FeatureDefinition ReadFeatureDefinition(IConfigurationSection configurationSection)
         {
-            if (_microsoftFeatureFlagSchemaEnabled)
+            if (_microsoftFeatureManagementSchemaEnabled)
             {
                 return ParseMicrosoftFeatureDefinition(configurationSection);
             }
@@ -360,7 +360,7 @@ namespace Microsoft.FeatureManagement
 
         private string GetFeatureName(IConfigurationSection section)
         {
-            if (_microsoftFeatureFlagSchemaEnabled)
+            if (_microsoftFeatureManagementSchemaEnabled)
             {
                 return section[MicrosoftFeatureManagementFields.Id];
             }
@@ -382,14 +382,14 @@ namespace Microsoft.FeatureManagement
                     .FirstOrDefault(section =>
                         string.Equals(
                             section.Key,
-                            _microsoftFeatureFlagSchemaEnabled ? 
+                            _microsoftFeatureManagementSchemaEnabled ? 
                                 MicrosoftFeatureManagementFields.FeatureManagementSectionName : 
                                 ConfigurationFields.FeatureManagementSectionName,
                             StringComparison.OrdinalIgnoreCase));
 
             if (featureManagementConfigurationSection == null)
             {
-                if (RootConfigurationFallbackEnabled && !_microsoftFeatureFlagSchemaEnabled)
+                if (RootConfigurationFallbackEnabled && !_microsoftFeatureManagementSchemaEnabled)
                 {
                     featureManagementConfigurationSection = _configuration;
                 }
@@ -401,7 +401,7 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            if (_microsoftFeatureFlagSchemaEnabled)
+            if (_microsoftFeatureManagementSchemaEnabled)
             {
                 IConfigurationSection featureFlagsSection = featureManagementConfigurationSection.GetSection(MicrosoftFeatureManagementFields.FeatureFlagsSectionName);
 
