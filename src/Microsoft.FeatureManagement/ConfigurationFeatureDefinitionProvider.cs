@@ -26,9 +26,7 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
-        private long _initialized = 0;
         private bool _microsoftFeatureFlagSchemaEnabled;
-        private readonly object _lock = new object();
 
         /// <summary>
         /// Creates a configuration feature definition provider.
@@ -42,6 +40,19 @@ namespace Microsoft.FeatureManagement
             _changeSubscription = ChangeToken.OnChange(
                 () => _configuration.GetReloadToken(),
                 () => _stale = 1);
+
+            IConfiguration MicrosoftFeatureManagementConfigurationSection = _configuration
+                .GetChildren()
+                .FirstOrDefault(section =>
+                    string.Equals(
+                        section.Key,
+                        MicrosoftFeatureManagementFields.FeatureManagementSectionName,
+                        StringComparison.OrdinalIgnoreCase));
+
+            if (MicrosoftFeatureManagementConfigurationSection != null)
+            {
+                _microsoftFeatureFlagSchemaEnabled = true;
+            }
         }
 
         /// <summary>
@@ -81,8 +92,6 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentException($"The value '{ConfigurationPath.KeyDelimiter}' is not allowed in the feature name.", nameof(featureName));
             }
 
-            EnsureInit();
-
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
                 _definitions.Clear();
@@ -106,8 +115,6 @@ namespace Microsoft.FeatureManagement
         public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998
         {
-            EnsureInit();
-
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
                 _definitions.Clear();
@@ -127,55 +134,6 @@ namespace Microsoft.FeatureManagement
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
                 yield return  _definitions.GetOrAdd(featureName, (_) => ReadFeatureDefinition(featureSection));
-            }
-        }
-
-        private void EnsureInit()
-        {
-            if (_initialized == 0)
-            {
-                bool hasMicrosoftFeatureFlagSchema = false;
-
-                IConfiguration featureManagementConfigurationSection = _configuration
-                    .GetChildren()
-                    .FirstOrDefault(section =>
-                        string.Equals(
-                            section.Key,
-                            MicrosoftFeatureManagementFields.FeatureManagementSectionName,
-                            StringComparison.OrdinalIgnoreCase));
-
-                if (featureManagementConfigurationSection != null)
-                { 
-                    hasMicrosoftFeatureFlagSchema = true;
-                }
-                else
-                {
-                    featureManagementConfigurationSection = _configuration
-                    .GetChildren()
-                    .FirstOrDefault(section =>
-                        string.Equals(
-                            section.Key,
-                            ConfigurationFields.FeatureManagementSectionName,
-                            StringComparison.OrdinalIgnoreCase));
-                }
-
-                if (featureManagementConfigurationSection == null && RootConfigurationFallbackEnabled)
-                {
-                    featureManagementConfigurationSection = _configuration;
-
-                    hasMicrosoftFeatureFlagSchema = featureManagementConfigurationSection != null &&
-                        HasMicrosoftFeatureFlagSchema(featureManagementConfigurationSection);
-                }
-
-                lock (_lock)
-                {
-                    if (Interlocked.Read(ref _initialized) == 0)
-                    {
-                        _microsoftFeatureFlagSchemaEnabled = hasMicrosoftFeatureFlagSchema;
-
-                        Interlocked.Exchange(ref _initialized, 1);
-                    }
-                }
             }
         }
 
@@ -451,31 +409,6 @@ namespace Microsoft.FeatureManagement
             }
 
             return featureManagementConfigurationSection.GetChildren();
-        }
-
-        private static bool HasMicrosoftFeatureFlagSchema(IConfiguration featureManagementConfiguration)
-        {
-            IConfigurationSection featureFlagsConfigurationSection = featureManagementConfiguration
-              .GetChildren()
-              .FirstOrDefault(section =>
-                  string.Equals(
-                      section.Key,
-                      MicrosoftFeatureManagementFields.FeatureFlagsSectionName,
-                      StringComparison.OrdinalIgnoreCase));
-
-            if (featureFlagsConfigurationSection != null)
-            {
-                if (!string.IsNullOrEmpty(featureFlagsConfigurationSection.Value))
-                {
-                    return false;
-                }
-
-                IEnumerable<IConfigurationSection> featureFlagsChildren = featureFlagsConfigurationSection.GetChildren();
-
-                return featureFlagsChildren.Any() && featureFlagsChildren.All(section => int.TryParse(section.Key, out int _));
-            }
-
-            return false;
         }
     }
 }
