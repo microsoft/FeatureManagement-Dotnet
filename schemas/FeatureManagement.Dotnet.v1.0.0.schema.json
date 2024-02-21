@@ -2,7 +2,7 @@
   "definitions": {},
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "title": "A.NET Feature Management Configuration",
+  "title": "The .NET Feature Management Schema",
   "required": [],
   "patternProperties": {
     "^[^:]*$": {
@@ -36,7 +36,7 @@
                 {
                   "type": "array",
                   "title": "Feature Filter Collection",
-                  "description": "Feature Filters that must be evaluated as true for the feature to be considered enabled.",
+                  "description": "Feature filters that are evaluated to conditionally enable the flag.",
                   "items": {
                     "type": "object",
                     "title": "Feature Filter Declaration",

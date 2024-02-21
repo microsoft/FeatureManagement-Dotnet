@@ -146,11 +146,9 @@ A `RequirementType` of `All` changes the traversal. First, if there are no filte
 
 In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning all of its filters must evaluate to true for the feature to be enabled. In this case, the feature will be enabled for 50% of users during the specified time window.
 
-#### Microsoft Feature Flag Schema
+#### Microsoft Feature Management Schema
 
-The feature management library also supports the usage of [`Microsoft Feature Flag schema`](https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureFlag.v1.1.0.schema.json) to declare feature flags.
-
-If you want to use the `Microsoft Feature Flag schema`, you will need to follow the `Microsoft Feature Management Configuration schema` to set up feature flags. The schema can be found [here](https://github.com/Azure/AppConfiguration/tree/main/docs/FeatureManagement). The feature flag declarations should be listed in the `feature_flags` array under the `feature_management` section, as shown in the example below:
+The feature management library also supports the usage of the [`Microsoft Feature Management schema`](https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureManagement.v1.0.0.schema.json) to declare feature flags. This schema is language agnostic in origin and is supported by all Microsoft feature management libraries.
 
 ```JavaScript
 {
@@ -176,7 +174,7 @@ If you want to use the `Microsoft Feature Flag schema`, you will need to follow 
 }
 ```
 
-**Note:** If `feature_management` section can be found in the configuration, the `FeatureManagement` section will be ignored.
+**Note:** If the `feature_management` section can be found in the configuration, the `FeatureManagement` section will be ignored.
 
 ## Consumption
 
