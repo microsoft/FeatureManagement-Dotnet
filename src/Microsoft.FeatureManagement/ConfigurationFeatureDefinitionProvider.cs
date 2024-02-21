@@ -389,13 +389,13 @@ namespace Microsoft.FeatureManagement
 
             if (featureManagementConfigurationSection == null)
             {
-                if (RootConfigurationFallbackEnabled)
+                if (RootConfigurationFallbackEnabled && !_microsoftFeatureFlagSchemaEnabled)
                 {
                     featureManagementConfigurationSection = _configuration;
                 }
                 else
                 {
-                    Logger?.LogDebug($"No configuration section named '{ConfigurationFields.FeatureManagementSectionName}' was found.");
+                    Logger?.LogDebug($"No feature management configuration section was found.");
 
                     return Enumerable.Empty<IConfigurationSection>();
                 }
