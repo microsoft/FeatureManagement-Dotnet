@@ -206,7 +206,7 @@ namespace Microsoft.FeatureManagement
               enabledFor: false
             },
             myAllRequiredFilterFeature: {
-                requirementType: "all",
+                requirementType: "All",
                 enabledFor: [{name: "myFeatureFilter1"}, {name: "myFeatureFilter2"}]
             }
 
