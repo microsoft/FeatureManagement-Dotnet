@@ -167,19 +167,11 @@ namespace Microsoft.FeatureManagement
             We support
             
             myFeature: {
-              enabledFor: [ "myFeatureFilter1", "myFeatureFilter2" ]
+              enabledFor: [{name: "myFeatureFilter1"}, {name: "myFeatureFilter2"}]
             },
             myDisabledFeature: {
               enabledFor: [  ]
             },
-            myFeature2: {
-              enabledFor: "myFeatureFilter1;myFeatureFilter2"
-            },
-            myDisabledFeature2: {
-              enabledFor: ""
-            },
-            myFeature3: "myFeatureFilter1;myFeatureFilter2",
-            myDisabledFeature3: "",
             myAlwaysEnabledFeature: true,
             myAlwaysDisabledFeature: false // removing this line would be the same as setting it to false
             myAlwaysEnabledFeature2: {
@@ -189,9 +181,9 @@ namespace Microsoft.FeatureManagement
               enabledFor: false
             },
             myAllRequiredFilterFeature: {
-                requirementType: "all"
-                enabledFor: [ "myFeatureFilter1", "myFeatureFilter2" ],
-            },
+                requirementType: "all",
+                enabledFor: [{name: "myFeatureFilter1"}, {name: "myFeatureFilter2"}]
+            }
 
             */
 
