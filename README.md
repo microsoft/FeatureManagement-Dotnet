@@ -156,7 +156,7 @@ In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning
 `Status` is an optional property of a feature flag that controls how a flag's enabled state is evaluated. By default, the status of a flag is `Conditional`, meaning that feature filters should be evaluated to determine if the flag is enabled. If the `Status` of a flag is set to `Disabled` then feature filters are not evaluated and the flag is always considered to be disabled.
 
 
-```
+``` JavaScript
 "FeatureX": {
     "Status": "Disabled",
     "EnabledFor": [
