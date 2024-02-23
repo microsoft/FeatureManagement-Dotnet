@@ -4,6 +4,8 @@
 
 namespace Microsoft.FeatureManagement
 {
+    //
+    // Microsoft Feature Management schema: https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureManagement.v1.0.0.schema.json
     internal static class MicrosoftFeatureManagementFields
     {
         public const string FeatureManagementSectionName = "feature_management";
