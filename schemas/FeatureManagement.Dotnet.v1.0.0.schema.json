@@ -3,100 +3,110 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "title": "A .NET Feature Management Configuration",
-  "required": [],
-  "patternProperties": {
-    "^[^:]*$": {
-      "description": "Declares a feature flag.",
-      "anyOf": [
-        {
-          "type": "boolean",
-          "title": "On/Off Feature Flag",
-          "description": "A feature flag that always returns the same value."
-        },
-        {
-          "type": "object",
-          "title": "Conditional Feature Flag",
-          "description": "A feature flag which value is dynamic based on a set of feature filters",
-          "required": [
-            "EnabledFor"
-          ],
-          "properties": {
-            "RequirementType": {
-              "type": "string",
-              "title": "Requirement Type",
-              "description": "Determines whether any or all registered feature filters must be enabled for the feature to be considered enabled.",
-              "enum": [
-                "Any",
-                "All"
-              ],
-              "default": "Any"
+  "required": [
+    "FeatureManagement"
+  ],
+  "properties":{
+    "FeatureManagement": {
+      "type": "object",
+      "title": "Feature Management",
+      "description": "Declares feature management configuration.",
+      "required": [],
+      "patternProperties": {
+        "^[^:]*$": {
+          "description": "Declares a feature flag.",
+          "anyOf": [
+            {
+              "type": "boolean",
+              "title": "On/Off Feature Flag",
+              "description": "A feature flag that always returns the same value."
             },
-            "EnabledFor": {
-              "oneOf": [
-                {
-                  "type": "array",
-                  "title": "Feature Filter Collection",
-                  "description": "Feature filters that are evaluated to conditionally enable the flag.",
-                  "items": {
-                    "type": "object",
-                    "title": "Feature Filter Declaration",
-                    "required": [
-                      "Name"
-                    ],
-                    "properties": {
-                      "Name": {
-                        "type": "string",
-                        "title": "Feature Filter Name",
-                        "description": "The name used to refer to and require a feature filter.",
-                        "default": "",
-                        "examples": [
-                          "Percentage",
-                          "TimeWindow"
-                        ],
-                        "pattern": "^[^:]*$"
-                      },
-                      "Parameters": {
+            {
+              "type": "object",
+              "title": "Conditional Feature Flag",
+              "description": "A feature flag which value is dynamic based on a set of feature filters",
+              "required": [
+                "EnabledFor"
+              ],
+              "properties": {
+                "RequirementType": {
+                  "type": "string",
+                  "title": "Requirement Type",
+                  "description": "Determines whether any or all registered feature filters must be enabled for the feature to be considered enabled.",
+                  "enum": [
+                    "Any",
+                    "All"
+                  ],
+                  "default": "Any"
+                },
+                "EnabledFor": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "title": "Feature Filter Collection",
+                      "description": "Feature filters that are evaluated to conditionally enable the flag.",
+                      "items": {
                         "type": "object",
-                        "title": "Feature Filter Parameters",
-                        "description": "Custom parameters for a given feature filter. A feature filter can require any set of parameters of any type.",
-                        "required": [],
-                        "patternProperties": {
-                          "^.*$": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              },
-                              {
-                                "type": "object"
-                              },
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "array"
-                              },
-                              {
-                                "type": "boolean"
+                        "title": "Feature Filter Declaration",
+                        "required": [
+                          "Name"
+                        ],
+                        "properties": {
+                          "Name": {
+                            "type": "string",
+                            "title": "Feature Filter Name",
+                            "description": "The name used to refer to and require a feature filter.",
+                            "default": "",
+                            "examples": [
+                              "Percentage",
+                              "TimeWindow"
+                            ],
+                            "pattern": "^[^:]*$"
+                          },
+                          "Parameters": {
+                            "type": "object",
+                            "title": "Feature Filter Parameters",
+                            "description": "Custom parameters for a given feature filter. A feature filter can require any set of parameters of any type.",
+                            "required": [],
+                            "patternProperties": {
+                              "^.*$": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "array"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ]
                               }
-                            ]
+                            }
                           }
                         }
                       }
+                    },
+                    {
+                      "type": "boolean"
                     }
-                  }
+                  ]
                 },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "additionalProperties": false
-          }
+                "additionalProperties": false
+              }
+            }
+          ]
         }
-      ]
+      }
     }
   }
 }
