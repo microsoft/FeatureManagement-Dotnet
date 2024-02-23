@@ -17,3 +17,19 @@
 .progress-bar-container {
     padding: 16px 32px;
 }
+
+.progress-bar-labels {
+    display: flex;
+}
+
+.progress-bar-labels>div {
+    flex-grow: 1;
+}
+
+.progress-bar-name{
+    text-align: left;
+}
+
+.progress-bar-variant {
+    text-align: right;
+}

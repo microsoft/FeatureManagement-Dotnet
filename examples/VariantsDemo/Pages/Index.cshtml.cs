@@ -22,36 +22,7 @@ namespace VariantsDemo.Pages
 
         public async Task<IActionResult> OnGet()
         {
-            UserInfo info = await GenerateRandomUserInfo();
-
-            string result = JsonSerializer.Serialize<UserInfo>(info);
-
-            return Content(result, "application/json");
-        }
-
-        public class UserInfo
-        {
-            public string Username { get; set; }
-            public string Variant { get; set; }
-        }
-
-        private async Task<UserInfo> GenerateRandomUserInfo()
-        {
-            var random = new Random();
-            var username = random.Next().ToString();
-
-            TargetingContext targetingContext = new TargetingContext
-            {
-                UserId = username
-            };
-
-            Variant variant = await _featureManager.GetVariantAsync("Algorithm", targetingContext, CancellationToken.None);
-
-            return new UserInfo
-            {
-                Username = username,
-                Variant = variant.Configuration.Get<string>()
-            };
+            return Page();
         }
     }
 }

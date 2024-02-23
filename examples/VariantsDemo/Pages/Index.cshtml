@@ -8,34 +8,90 @@
 </h1>
 
 <div class="progress-bars-container">
-    <div class="progress-bar-container">
-        <div class="progress-bar">
-            <div class="progress"></div>
-        </div>
-    </div>
-    <div class="progress-bar-container">
-        <div class="progress-bar">
-            <div class="progress"></div>
-        </div>
-    </div>
-    <div class="progress-bar-container">
-        <div class="progress-bar">
-            <div class="progress"></div>
-        </div>
-    </div>
-    <div class="progress-bar-container">
-        <div class="progress-bar">
-            <div class="progress"></div>
-        </div>
-    </div>
-    <div class="progress-bar-container">
-        <div class="progress-bar">
-            <div class="progress"></div>
-        </div>
-    </div>
-    <div class="progress-bar-container">
-        <div class="progress-bar">
-            <div class="progress"></div>
-        </div>
-    </div>
+    
 </div>
+
+<script type="text/javascript">
+    let mainContainer = document.querySelector(".progress-bars-container");
+    const userCount = 6;
+    
+    for (let i = 0; i < userCount; i++) {
+        fetch('./GetUserInfo', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+
+                // Create Progress Bar
+                let container = document.createElement("div");
+                container.className = "progress-bar-container";
+                let labels = document.createElement("div");
+                labels.className = "progress-bar-labels";
+                let name = document.createElement("div");
+                name.className = "progress-bar-name";
+                name.innerHTML = data.Username;
+                let variant = document.createElement("div");
+                variant.className = "progress-bar-variant";
+                variant.innerHTML = data.VariantName;
+                let bar = document.createElement("div");
+                bar.className = "progress-bar";
+                let progress = document.createElement("div");
+                progress.className = "progress";
+
+                labels.appendChild(name);
+                labels.appendChild(variant);
+                container.appendChild(labels);
+                bar.appendChild(progress);
+                container.appendChild(bar);
+                mainContainer.appendChild(container);
+
+
+                // Bind and Store Data
+                BindAndStoreData(container, i, data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+    }
+
+    function GetNewUser(loadingBar) {
+        fetch('./GetUserInfo', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+
+                BindAndStoreData(loadingBar.container, loadingBar.index, data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+    }
+
+    function BindAndStoreData(container, index, data) {
+        let name = container.querySelector(".progress-bar-name");
+        let variant = container.querySelector(".progress-bar-variant");
+
+        name.innerHTML = data.Username;
+        variant.innerHTML = data.VariantName;
+
+        // Store Loading Bar Object
+        loadingBars[index] = {
+            index: index,
+            container: container,
+            element: container.querySelector(".progress"),
+            name: data.Username,
+            variant: data.Variant,
+            progress: 0,
+            randomVariance: 1 - (Math.random() * 2)
+        };
+    }
+</script>

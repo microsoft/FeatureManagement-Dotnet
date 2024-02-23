@@ -1,10 +1,11 @@
 using Microsoft.Extensions.Configuration.AzureAppConfiguration;
 using Microsoft.FeatureManagement;
+using Microsoft.FeatureManagement.Telemetry.ApplicationInsights;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add Razor Pages
 builder.Services.AddRazorPages();
+builder.Services.AddApplicationInsightsTelemetry();
 
 // Add Azure Dynamic Config
 builder.Configuration.AddAzureAppConfiguration(options =>
@@ -14,7 +15,8 @@ builder.Configuration.AddAzureAppConfiguration(options =>
 });
 
 // Add FeatureManagement
-builder.Services.AddFeatureManagement();
+builder.Services.AddFeatureManagement()
+    .AddTelemetryPublisher<ApplicationInsightsTelemetryPublisher>();
 
 var app = builder.Build();
 

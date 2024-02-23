@@ -13,6 +13,8 @@ namespace VariantsDemo.Pages
         private readonly IVariantFeatureManager _featureManager;
         private readonly TelemetryClient _telemetry;
 
+        private readonly string[] commonNames = { "John", "William", "Robert", "Thomas", "James", "David", "Charles", "Michael", "Peter", "Richard", "George", "Paul", "Joseph", "Johann", "Anna", "Henry", "Daniel", "Jan", "Elizabeth", "Edward", "Maria", "Mary", "Hans", "Karl", "Alexander", "Josef", "Martin", "Christian", "Jean", "Walter", "Andrew", "Arthur", "Antonio", "Carl", "Pierre", "Anne", "Friedrich", "Sarah", "Louis", "Albert", "Samuel", "Frank", "Margaret", "Mark", "Wilhelm", "Franz", "Patrick", "Heinrich", "Johannes", "Georg", "Juan", "Alfred", "Christopher", "José", "Francis", "Carlos", "Marie", "Stephen", "Adam", "Aleksandr", "Laura", "Francisco", "Rudolf", "Otto", "Catherine", "Manuel", "Barbara", "Ernst", "František", "Eric", "Benjamin", "Andreas", "Anthony", "Simon", "Hermann", "Matthew", "Jacques", "Max", "Luis", "Frederick", "François", "Jane", "Giovanni", "Karel", "Tom", "Vladimir", "Brian", "Anton", "Jonathan", "Eva", "Francesco", "Giuseppe", "Philip", "Stefan", "Harry", "Ana", "Michel", "Johan", "Pedro", "André" };
+
         public GetUserInfoModel(
             IVariantFeatureManager featureManager,
             TelemetryClient telemetry)
@@ -30,29 +32,29 @@ namespace VariantsDemo.Pages
             return Content(result, "application/json");
         }
 
-
-
         public class UserInfo
         {
             public string Username { get; set; }
+            public string VariantName { get; set; }
             public string Variant { get; set; }
         }
 
         private async Task<UserInfo> GenerateRandomUserInfo()
         {
             var random = new Random();
-            var username = random.Next().ToString();
+            int userId = random.Next();
 
             TargetingContext targetingContext = new TargetingContext
             {
-                UserId = username
+                UserId = userId.ToString()
             };
 
             Variant variant = await _featureManager.GetVariantAsync("Algorithm", targetingContext, CancellationToken.None);
 
             return new UserInfo
             {
-                Username = username,
+                Username = commonNames[Decimal.ToInt32(100 * (decimal)userId / Int32.MaxValue)],
+                VariantName = variant.Name,
                 Variant = variant.Configuration.Get<string>()
             };
         }

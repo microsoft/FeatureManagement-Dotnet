@@ -1,22 +1,32 @@
-
-var elements = document.getElementsByClassName("progress");
+var loadingBars = [];
 var widths = [];
 
-for (var i = 0; i < elements.length; i++)
+for (var i = 0; i < loadingBars.length; i++)
 {
     widths.push(0);
 }
 
 function tick() {
-    for (var i = 0; i < elements.length; i++)
+    for (var i = 0; i < loadingBars.length; i++)
     {
-        widths[i]++;
-        elements[i].style.width = widths[i] + "%";
+        console.log(loadingBars[i].variant);
+        console.log(commonNames.length);
 
-        if (widths[i] >= 100)
-        {
-            widths[i] = 0;
+        let newProgress = 0;
+        if (loadingBars[i].variant > 0) {
+            newProgress = 1 + (4 / (100 / loadingBars[i].variant)) + loadingBars[i].randomVariance;
         }
+
+        loadingBars[i].progress += newProgress;
+
+        if (loadingBars[i].progress >= 100)
+        {
+            loadingBars[i].progress = 0;
+            loadingBars[i].variant = 0;
+            GetNewUser(loadingBars[i]);
+        }
+
+        loadingBars[i].element.style.width = loadingBars[i].progress + "%";
     }
 }
 
