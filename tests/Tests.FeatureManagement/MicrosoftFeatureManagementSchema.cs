@@ -66,6 +66,60 @@ namespace Tests.FeatureManagement
             Assert.Equal("Test", filterConfig.Name);
 
             Assert.Equal("V1", filterConfig.Parameters["P1"]);
+
+            featureDefinition = await featureDefinitionProvider.GetFeatureDefinitionAsync(Features.AlwaysOnTestFeature);
+
+            Assert.NotNull(featureDefinition);
+
+            Assert.True(featureDefinition.Telemetry.Enabled);
+
+            Assert.Equal("Tag1Value", featureDefinition.Telemetry.Metadata["Tags.Tag1"]);
+
+            Assert.Equal("Tag2Value", featureDefinition.Telemetry.Metadata["Tags.Tag2"]);
+
+            Assert.Equal("EtagValue", featureDefinition.Telemetry.Metadata["Etag"]);
+
+            Assert.Equal("LabelValue", featureDefinition.Telemetry.Metadata["Label"]);
+
+            featureDefinition = await featureDefinitionProvider.GetFeatureDefinitionAsync(Features.VariantTestFeature);
+
+            Assert.NotNull(featureDefinition);
+
+            Assert.Equal("Small", featureDefinition.Allocation.DefaultWhenEnabled);
+
+            Assert.Equal("Big", featureDefinition.Allocation.DefaultWhenDisabled);
+
+            Assert.Equal("Small", featureDefinition.Allocation.User.First().Variant);
+
+            Assert.Equal("Jeff", featureDefinition.Allocation.User.First().Users.First());
+
+            Assert.Equal("Big", featureDefinition.Allocation.Group.First().Variant);
+
+            Assert.Equal("Group1", featureDefinition.Allocation.Group.First().Groups.First());
+
+            Assert.Equal("Small", featureDefinition.Allocation.Percentile.First().Variant);
+
+            Assert.Equal(0, featureDefinition.Allocation.Percentile.First().From);
+
+            Assert.Equal(50, featureDefinition.Allocation.Percentile.First().To);
+
+            Assert.Equal("12345", featureDefinition.Allocation.Seed);
+
+            VariantDefinition smallVariant = featureDefinition.Variants.FirstOrDefault(variant => string.Equals(variant.Name, "Small"));
+
+            Assert.NotNull(smallVariant);
+
+            Assert.Equal("300px", smallVariant.ConfigurationValue.Value);
+
+            Assert.Equal(StatusOverride.None, smallVariant.StatusOverride);
+
+            VariantDefinition bigVariant = featureDefinition.Variants.FirstOrDefault(variant => string.Equals(variant.Name, "Big"));
+
+            Assert.NotNull(bigVariant);
+
+            Assert.Equal("ShoppingCart:Big", bigVariant.ConfigurationReference);
+
+            Assert.Equal(StatusOverride.Disabled, bigVariant.StatusOverride);
         }
 
         [Fact]

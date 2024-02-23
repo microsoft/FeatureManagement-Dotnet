@@ -1,4 +1,10 @@
 {
+  "ShoppingCart": {
+    "Big": {
+      "Size": 600,
+      "Color": "green"
+    }
+  },
   "feature_management": {
     "feature_flags": [
       {
@@ -70,6 +76,68 @@
               }
             }
           ]
+        }
+      },
+      {
+        "id": "AlwaysOnTestFeature",
+        "enabled": true,
+        "telemetry": {
+          "enabled": true,
+          "metadata": {
+            "Tags.Tag1": "Tag1Value",
+            "Tags.Tag2": "Tag2Value",
+            "Etag": "EtagValue",
+            "Label": "LabelValue"
+          }
+        },
+        "conditions": {
+          "client_filters": [
+            {
+              "name": "AlwaysOn"
+            }
+          ]
+        }
+      },
+      {
+        "id": "VariantTestFeature",
+        "variants": [
+          {
+            "name": "Small",
+            "configuration_value": "300px"
+          },
+          {
+            "name": "Big",
+            "configuration_reference": "ShoppingCart:Big",
+            "status_override": "Disabled"
+          }
+        ],
+        "allocation": {
+          "default_when_enabled": "Small",
+          "default_when_disabled": "Big",
+          "percentile": [
+            {
+              "variant": "Small",
+              "from": 0,
+              "to": 50
+            }
+          ],
+          "user": [
+            {
+              "variant": "Small",
+              "users": [
+                "Jeff"
+              ]
+            }
+          ],
+          "group": [
+            {
+              "variant": "Big",
+              "groups": [
+                "Group1"
+              ]
+            }
+          ],
+          "seed": 12345
         }
       }
     ]
