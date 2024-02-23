@@ -150,7 +150,7 @@ In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning
 
 The feature management library also supports the usage of the [`Microsoft Feature Management schema`](https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureManagement.v1.0.0.schema.json) to declare feature flags. This schema is language agnostic in origin and is supported by all Microsoft feature management libraries.
 
-```JavaScript
+``` JavaScript
 {
     "feature_management": {
         "feature_flags": [
