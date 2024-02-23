@@ -3,6 +3,10 @@
     "Big": {
       "Size": 600,
       "Color": "green"
+    },
+    "Small": {
+      "Size": 300,
+      "Color": "gray"
     }
   },
   "feature_management": {
@@ -89,38 +93,16 @@
             "Etag": "EtagValue",
             "Label": "LabelValue"
           }
-        },
-        "conditions": {
-          "client_filters": [
-            {
-              "name": "AlwaysOn"
-            }
-          ]
         }
       },
       {
-        "id": "VariantTestFeature",
-        "variants": [
-          {
-            "name": "Small",
-            "configuration_value": "300px"
-          },
-          {
-            "name": "Big",
-            "configuration_reference": "ShoppingCart:Big",
-            "status_override": "Disabled"
-          }
-        ],
+        "id": "VariantFeatureDefaultEnabled",
+        "enabled": true,
+        "telemetry": {
+          "enabled": true
+        },
         "allocation": {
-          "default_when_enabled": "Small",
-          "default_when_disabled": "Big",
-          "percentile": [
-            {
-              "variant": "Small",
-              "from": 0,
-              "to": 50
-            }
-          ],
+          "default_when_enabled": "Medium",
           "user": [
             {
               "variant": "Small",
@@ -128,17 +110,241 @@
                 "Jeff"
               ]
             }
-          ],
-          "group": [
+          ]
+        },
+        "variants": [
+          {
+            "name": "Medium",
+            "configuration_value": {
+              "Size": "450px",
+              "Color": "Purple"
+            }
+          },
+          {
+            "name": "Small",
+            "configuration_value": "300px"
+          }
+        ]
+      },
+      {
+        "id": "VariantFeatureStatusDisabled",
+        "enabled": false,
+        "telemetry": {
+          "enabled": true
+        },
+        "allocation": {
+          "default_when_disabled": "Small"
+        },
+        "variants": [
+          {
+            "name": "Small",
+            "configuration_value": "300px"
+          }
+        ]
+      },
+      {
+        "id": "VariantFeaturePercentileOn",
+        "enabled": true,
+        "telemetry": {
+          "enabled": true
+        },
+        "allocation": {
+          "percentile": [
             {
               "variant": "Big",
+              "from": 0,
+              "to": 50
+            }
+          ],
+          "seed": 1234
+        },
+        "variants": [
+          {
+            "name": "Big",
+            "configuration_reference": "ShoppingCart:Big",
+            "status_override": "Disabled"
+          }
+        ]
+      },
+      {
+        "id": "VariantFeaturePercentileOff",
+        "enabled": true,
+        "telemetry": {
+          "enabled": true
+        },
+        "allocation": {
+          "percentile": [
+            {
+              "variant": "Big",
+              "from": 0,
+              "to": 50
+            }
+          ],
+          "seed": 12345
+        },
+        "variants": [
+          {
+            "name": "Big",
+            "configuration_reference": "ShoppingCart:Big"
+          }
+        ]
+      },
+      {
+        "id": "VariantFeatureAlwaysOff",
+        "enabled": false,
+        "telemetry": {
+          "enabled": true
+        },
+        "allocation": {
+          "percentile": [
+            {
+              "variant": "Big",
+              "from": 0,
+              "to": 100
+            }
+          ],
+          "seed": 12345
+        },
+        "variants": [
+          {
+            "name": "Big",
+            "configuration_reference": "ShoppingCart:Big"
+          }
+        ]
+      },
+      {
+        "id": "VariantFeatureUser",
+        "enabled": true,
+        "telemetry": {
+          "enabled": true
+        },
+        "allocation": {
+          "user": [
+            {
+              "variant": "Small",
+              "users": [
+                "Marsha"
+              ]
+            }
+          ]
+        },
+        "variants": [
+          {
+            "name": "Small",
+            "configuration_value": "300px"
+          }
+        ]
+      },
+      {
+        "id": "VariantFeatureGroup",
+        "enabled": true,
+        "telemetry": {
+          "enabled": true
+        },
+        "allocation": {
+          "group": [
+            {
+              "variant": "Small",
               "groups": [
                 "Group1"
               ]
             }
-          ],
-          "seed": 12345
-        }
+          ]
+        },
+        "variants": [
+          {
+            "name": "Small",
+            "configuration_value": "300px"
+          }
+        ]
+      },
+      {
+        "id": "VariantFeatureNoAllocation",
+        "enabled": true,
+        "telemetry": {
+          "enabled": true
+        },
+        "variants": [
+          {
+            "name": "Small",
+            "configuration_value": "300px"
+          }
+        ]
+      },
+      {
+        "id": "VariantFeatureAlwaysOffNoAllocation",
+        "enabled": false,
+        "telemetry": {
+          "enabled": true
+        },
+        "variants": [
+          {
+            "name": "Small",
+            "configuration_value": "300px"
+          }
+        ]
+      },
+      {
+        "id": "VariantFeatureNoVariants",
+        "enabled": true,
+        "allocation": {
+          "user": [
+            {
+              "variant": "Small",
+              "users": [
+                "Marsha"
+              ]
+            }
+          ]
+        },
+        "variants": []
+      },
+      {
+        "id": "VariantFeatureBothConfigurations",
+        "enabled": true,
+        "allocation": {
+          "default_when_enabled": "Small"
+        },
+        "variants": [
+          {
+            "name": "Small",
+            "configuration_value": "600px",
+            "configuration_reference": "ShoppingCart:Small"
+          }
+        ]
+      },
+      {
+        "id": "VariantFeatureInvalidStatusOverride",
+        "enabled": true,
+        "allocation": {
+          "defaultWhenEnabled": "Small"
+        },
+        "variants": [
+          {
+            "name": "Small",
+            "configuration_value": "300px",
+            "status_override": "InvalidValue"
+          }
+        ]
+      },
+      {
+        "id": "VariantFeatureInvalidFromTo",
+        "enabled": true,
+        "allocation": {
+          "percentile": [
+            {
+              "variant": "Small",
+              "from": "Invalid",
+              "to": "Invalid"
+            }
+          ]
+        },
+        "variants": [
+          {
+            "name": "Small",
+            "configuration_reference": "ShoppingCart:Small"
+          }
+        ]
       }
     ]
   }
