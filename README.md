@@ -96,6 +96,8 @@ The feature management library supports appsettings.json as a feature flag sourc
 
 The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided three different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration, so it only has the `Name` property. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
 
+The detailed schema of the `FeatureManagement` section can be found [here](./schemas/FeatureManagement.Dotnet.v1.0.0.schema.json).
+
 **Advanced:** The usage of colon ':' in feature flag names is forbidden.
 
 #### On/Off Declaration
@@ -126,7 +128,7 @@ The `RequirementType` property of a feature flag is used to determine if the fil
 
 A `RequirementType` of `All` changes the traversal. First, if there are no filters, the feature will be disabled. Then, the feature-filters are traversed until one of the filters decides that the feature should be disabled. If no filter indicates that the feature should be disabled, then it will be considered enabled.
 
-```
+``` JavaScript
 "FeatureW": {
     "RequirementType": "All",
     "EnabledFor": [
@@ -154,7 +156,7 @@ In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning
 `Status` is an optional property of a feature flag that controls how a flag's enabled state is evaluated. By default, the status of a flag is `Conditional`, meaning that feature filters should be evaluated to determine if the flag is enabled. If the `Status` of a flag is set to `Disabled` then feature filters are not evaluated and the flag is always considered to be disabled.
 
 
-```
+``` JavaScript
 "FeatureX": {
     "Status": "Disabled",
     "EnabledFor": [
@@ -166,6 +168,36 @@ In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning
 ```
 
 In this example, even though the `AlwaysOn` filter would normally always make the feature enabled, the `Status` property is set to `Disabled`, so this feature will always be disabled. 
+
+#### Microsoft Feature Management Schema
+
+The feature management library also supports the usage of the [`Microsoft Feature Management schema`](https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureManagement.v1.0.0.schema.json) to declare feature flags. This schema is language agnostic in origin and is supported by all Microsoft feature management libraries.
+
+``` JavaScript
+{
+    "feature_management": {
+        "feature_flags": [
+            {
+                "id": "FeatureT",
+                "enabled": true,
+                "conditions": {
+                    "client_filters": [
+                        {  
+                            "name": "Microsoft.TimeWindow",
+                            "parameters": {
+                                "Start": "Mon, 01 May 2023 13:59:59 GMT",
+                                "End": "Sat, 01 July 2023 00:00:00 GMT"
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
+```
+
+**Note:** If the `feature_management` section can be found in the configuration, the `FeatureManagement` section will be ignored.
 
 ## Consumption
 
