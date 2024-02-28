@@ -506,17 +506,23 @@ namespace Microsoft.FeatureManagement
                     Percentile = allocationSection.GetSection(MicrosoftFeatureManagementFields.PercentileAllocationSectionName).GetChildren().Select(percentileAllocation =>
                     {
                         double from = 0;
+
                         double to = 0;
+
                         string rawFrom = percentileAllocation[MicrosoftFeatureManagementFields.PercentileAllocationFrom];
+
                         string rawTo = percentileAllocation[MicrosoftFeatureManagementFields.PercentileAllocationTo];
+
                         if (!string.IsNullOrEmpty(rawFrom))
                         {
                             from = ParseDouble(featureName, rawFrom, MicrosoftFeatureManagementFields.PercentileAllocationFrom);
                         }
+
                         if (!string.IsNullOrEmpty(rawTo))
                         {
                             to = ParseDouble(featureName, rawTo, MicrosoftFeatureManagementFields.PercentileAllocationTo);
                         }
+
                         return new PercentileAllocation()
                         {
                             Variant = percentileAllocation[MicrosoftFeatureManagementFields.AllocationVariantKeyword],
