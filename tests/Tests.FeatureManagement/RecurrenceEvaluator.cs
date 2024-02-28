@@ -41,16 +41,12 @@ namespace Tests.FeatureManagement
     {
         private static void ConsumeValidationTestData(List<ValueTuple<TimeWindowFilterSettings, string, string>> testData)
         {
-            foreach ((TimeWindowFilterSettings settings, string paramName, string errorMessage) in testData)
+            foreach ((TimeWindowFilterSettings settings, string paramNameRef, string errorMessageRef) in testData)
             {
-                ArgumentException ex = Assert.Throws<ArgumentException>(
-                () =>
-                {
-                    RecurrenceEvaluator.MatchRecurrence(DateTimeOffset.Now, settings);
-                });
+                RecurrenceEvaluator.TryValidateSettings(settings, out string paramName, out string errorMessage);
 
-                Assert.Equal(paramName, ex.ParamName);
-                Assert.Equal(errorMessage, ex.Message.Substring(0, errorMessage.Length));
+                Assert.Equal(paramNameRef, paramName);
+                Assert.Equal(errorMessageRef, errorMessage);
             }
         }
 
@@ -281,7 +277,7 @@ namespace Tests.FeatureManagement
                     }
                 },
                 ParamName.End,
-                ErrorMessage.TimeWindowDurationOutOfRange ),
+                ErrorMessage.TimeWindowDurationOutOfRange )
             };
 
             ConsumeValidationTestData(testData);
@@ -348,13 +344,9 @@ namespace Tests.FeatureManagement
                 }
             };
 
-            //
-            // The settings is invalid, since we change the interval to 1.
-            Assert.Throws<ArgumentException>(
-            () =>
-            {
-                RecurrenceEvaluator.MatchRecurrence(DateTimeOffset.Now, settings);
-            });
+            Assert.False(RecurrenceEvaluator.TryValidateSettings(settings, out string paramName, out string errorMessage));
+            Assert.Equal(ParamName.End, paramName);
+            Assert.Equal(ErrorMessage.TimeWindowDurationOutOfRange, errorMessage);
         }
 
         [Fact]

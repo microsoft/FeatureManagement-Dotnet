@@ -29,36 +29,94 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// </summary>
         public static bool MatchRecurrence(DateTimeOffset time, TimeWindowFilterSettings settings)
         {
-            if (settings == null)
-            {
-                throw new ArgumentNullException(nameof(settings));
-            }
-
-            if (!TryValidateRecurrenceSettings(settings, out string paramName, out string reason))
-            {
-                throw new ArgumentException(reason, paramName);
-            }
-
             if (time < settings.Start.Value)
             {
                 return false;
             }
 
-            // time is before the first occurrence or time is beyond the end of the recurrence range
-            if (!TryGetPreviousOccurrence(time, settings, out DateTimeOffset previousOccurrence))
+            if (TryFindPreviousOccurrence(time, settings, out DateTimeOffset previousOccurrence, out int _))
             {
-                return false;
+                return time <= previousOccurrence + (settings.End.Value - settings.Start.Value);
             }
 
-            if (time <= previousOccurrence + (settings.End.Value - settings.Start.Value))
+            return false;
+        }
+
+        /// <summary>
+        /// Try to find the closest previous recurrence occurrence (if any) before the provided timestamp and the next occurrence behind it.
+        /// <param name="time">A timestamp.</param>
+        /// <param name="settings">The settings of time window filter.</param>
+        /// <param name="prevOccurrence">The closest previous occurrence. If there is no previous occurrence, it will be set to <see cref="DateTimeOffset.MinValue"/>.</param>
+        /// <param name="nextOccurrence">The next occurrence.</param>
+        /// <returns>True if the closest previous occurrence is within the recurrence range or the time is before the first occurrence, false otherwise.</returns>
+        /// </summary>
+        public static bool TryFindPrevAndNextOccurrences(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset prevOccurrence, out DateTimeOffset nextOccurrence)
+        {
+            prevOccurrence = DateTimeOffset.MinValue;
+
+            nextOccurrence = DateTimeOffset.MaxValue;
+
+            if (time < settings.Start.Value)
             {
+                //
+                // The time is before the first occurrence.
+                nextOccurrence = settings.Start.Value;
+
+                return true;
+            }
+
+            if (TryFindPreviousOccurrence(time, settings, out prevOccurrence, out int numberOfOccurrences))
+            {
+                RecurrencePattern pattern = settings.Recurrence.Pattern;
+
+                switch (pattern.Type)
+                {
+                    case RecurrencePatternType.Daily:
+                        nextOccurrence = prevOccurrence.AddDays(pattern.Interval);
+
+                        break;
+
+                    case RecurrencePatternType.Weekly:
+                        nextOccurrence = GetWeeklyNextOccurrence(prevOccurrence, settings);
+
+                        break;
+
+                    default:
+                        return false;
+                }
+
+                RecurrenceRange range = settings.Recurrence.Range;
+
+                if (range.Type == RecurrenceRangeType.EndDate)
+                {
+                    if (nextOccurrence > range.EndDate)
+                    {
+                        nextOccurrence = DateTimeOffset.MaxValue;
+                    }
+                }
+
+                if (range.Type == RecurrenceRangeType.Numbered)
+                {
+                    if (numberOfOccurrences >= range.NumberOfOccurrences)
+                    {
+                        nextOccurrence = DateTimeOffset.MaxValue;
+                    }
+                }
+
                 return true;
             }
 
             return false;
         }
 
-        private static bool TryValidateRecurrenceSettings(TimeWindowFilterSettings settings, out string paramName, out string reason)
+        /// <summary>
+        /// Perform validation of time window settings.
+        /// <param name="settings">The settings of time window filter.</param>
+        /// <param name="paramName">The name of the invalid setting, if any.</param>
+        /// <param name="reason">The reason that the setting is invalid.</param>
+        /// <returns>True if the provided settings are valid. False if the provided settings are invalid.</returns>
+        /// </summary>
+        public static bool TryValidateSettings(TimeWindowFilterSettings settings, out string paramName, out string reason)
         {
             if (settings == null)
             {
@@ -122,7 +180,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 return false;
             }
 
-            if (settings.End.Value - settings.Start.Value <= TimeSpan.Zero)
+            if (settings.End.Value <= settings.Start.Value)
             {
                 paramName = nameof(settings.End);
 
@@ -357,25 +415,20 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <param name="time">A timestamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
+        /// <param name="numberOfOccurrences">The number of occurrences between the time and the recurrence start.</param>
         /// <returns>True if the closest previous occurrence is within the recurrence range, false otherwise.</returns>
         /// </summary>
-        private static bool TryGetPreviousOccurrence(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset previousOccurrence)
+        private static bool TryFindPreviousOccurrence(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset previousOccurrence, out int numberOfOccurrences)
         {
             Debug.Assert(settings.Start != null);
             Debug.Assert(settings.Recurrence != null);
             Debug.Assert(settings.Recurrence.Pattern != null);
             Debug.Assert(settings.Recurrence.Range != null);
+            Debug.Assert(settings.Start.Value <= time);
 
-            previousOccurrence = DateTimeOffset.MaxValue;
+            previousOccurrence = DateTimeOffset.MinValue;
 
-            DateTimeOffset start = settings.Start.Value;
-
-            if (time < start)
-            {
-                return false;
-            }
-
-            int numberOfOccurrences;
+            numberOfOccurrences = 0;
 
             switch (settings.Recurrence.Pattern.Type)
             {
@@ -453,7 +506,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             int interval = pattern.Interval;
 
-            DateTimeOffset firstDayOfStartWeek = start.AddDays(RemainingDaysOfTheWeek(start.DayOfWeek, pattern.FirstDayOfWeek) - DaysPerWeek);
+            DateTimeOffset firstDayOfStartWeek = start.AddDays(
+                -CalculateWeeklyDayOffset(start.DayOfWeek, pattern.FirstDayOfWeek));
 
             //
             // netstandard2.0 does not support '/' operator for TimeSpan. After we stop supporting netstandard2.0, we can remove .TotalSeconds.
@@ -475,14 +529,16 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
                 //
                 // day with max offset in the most recent occurring week
-                previousOccurrence = firstDayOfMostRecentOccurringWeek.AddDays(DayOfWeekOffset(sortedDaysOfWeek.Last(), pattern.FirstDayOfWeek));
+                previousOccurrence = firstDayOfMostRecentOccurringWeek.AddDays(
+                    CalculateWeeklyDayOffset(sortedDaysOfWeek.Last(), pattern.FirstDayOfWeek));
 
                 return;
             }
 
             //
             // day with the min offset in the most recent occurring week
-            DateTimeOffset dayWithMinOffset = firstDayOfMostRecentOccurringWeek.AddDays(DayOfWeekOffset(sortedDaysOfWeek.First(), pattern.FirstDayOfWeek));
+            DateTimeOffset dayWithMinOffset = firstDayOfMostRecentOccurringWeek.AddDays(
+                CalculateWeeklyDayOffset(sortedDaysOfWeek.First(), pattern.FirstDayOfWeek));
 
             if (dayWithMinOffset < start)
             {
@@ -501,7 +557,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 // Find the day with the max offset that is less than the current time.
                 for (int i = sortedDaysOfWeek.IndexOf(dayWithMinOffset.DayOfWeek) + 1; i < sortedDaysOfWeek.Count; i++)
                 {
-                    DateTimeOffset dayOfWeek = firstDayOfMostRecentOccurringWeek.AddDays(DayOfWeekOffset(sortedDaysOfWeek[i], pattern.FirstDayOfWeek));
+                    DateTimeOffset dayOfWeek = firstDayOfMostRecentOccurringWeek.AddDays(
+                        CalculateWeeklyDayOffset(sortedDaysOfWeek[i], pattern.FirstDayOfWeek));
 
                     if (time < dayOfWeek)
                     {
@@ -521,8 +578,32 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
                 //
                 // day with max offset in the last occurring week
-                previousOccurrence = firstDayOfPreviousOccurringWeek.AddDays(DayOfWeekOffset(sortedDaysOfWeek.Last(), pattern.FirstDayOfWeek));
+                previousOccurrence = firstDayOfPreviousOccurringWeek.AddDays(
+                    CalculateWeeklyDayOffset(sortedDaysOfWeek.Last(), pattern.FirstDayOfWeek));
             }
+        }
+
+        /// <summary>
+        /// Find the next recurrence occurrence after the provided previous occurrence according to the "Weekly" recurrence pattern.
+        /// <param name="previousOccurrence">The previous occurrence.</param>
+        /// <param name="settings">The settings of time window filter.</param>
+        /// </summary>
+        private static DateTimeOffset GetWeeklyNextOccurrence(DateTimeOffset previousOccurrence, TimeWindowFilterSettings settings)
+        {
+            RecurrencePattern pattern = settings.Recurrence.Pattern;
+
+            List<DayOfWeek> sortedDaysOfWeek = SortDaysOfWeek(pattern.DaysOfWeek, pattern.FirstDayOfWeek);
+
+            int i = sortedDaysOfWeek.IndexOf(previousOccurrence.DayOfWeek) + 1;
+
+            if (i < sortedDaysOfWeek.Count())
+            {
+                return previousOccurrence.AddDays(
+                    CalculateWeeklyDayOffset(sortedDaysOfWeek[i], previousOccurrence.DayOfWeek));
+            }
+
+            return previousOccurrence.AddDays(
+                pattern.Interval * DaysPerWeek - CalculateWeeklyDayOffset(previousOccurrence.DayOfWeek, sortedDaysOfWeek.First()));
         }
 
         /// <summary>
@@ -543,7 +624,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
 
             DateTime firstDayOfThisWeek = DateTime.Today.AddDays(
-                RemainingDaysOfTheWeek(DateTime.Today.DayOfWeek, firstDayOfWeek));
+                DaysPerWeek - CalculateWeeklyDayOffset(DateTime.Today.DayOfWeek, firstDayOfWeek));
 
             List<DayOfWeek> sortedDaysOfWeek = SortDaysOfWeek(daysOfWeek, firstDayOfWeek);
 
@@ -555,11 +636,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 if (prev == DateTime.MinValue)
                 {
-                    prev = firstDayOfThisWeek.AddDays(DayOfWeekOffset(dayOfWeek, firstDayOfWeek));
+                    prev = firstDayOfThisWeek.AddDays(
+                        CalculateWeeklyDayOffset(dayOfWeek, firstDayOfWeek));
                 }
                 else
                 {
-                    DateTime date = firstDayOfThisWeek.AddDays(DayOfWeekOffset(dayOfWeek, firstDayOfWeek));
+                    DateTime date = firstDayOfThisWeek.AddDays(
+                        CalculateWeeklyDayOffset(dayOfWeek, firstDayOfWeek));
 
                     TimeSpan gap = date - prev;
 
@@ -578,7 +661,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             {
                 DateTime firstDayOfNextWeek = firstDayOfThisWeek.AddDays(DaysPerWeek);
 
-                DateTime firstOccurrenceInNextWeek = firstDayOfNextWeek.AddDays(DayOfWeekOffset(sortedDaysOfWeek.First(), firstDayOfWeek));
+                DateTime firstOccurrenceInNextWeek = firstDayOfNextWeek.AddDays(
+                    CalculateWeeklyDayOffset(sortedDaysOfWeek.First(), firstDayOfWeek));
 
                 TimeSpan gap = firstOccurrenceInNextWeek - prev;
 
@@ -591,25 +675,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             return minGap >= duration;
         }
 
-        private static int RemainingDaysOfTheWeek(DayOfWeek dayOfWeek, DayOfWeek firstDayOfWeek)
+        private static int CalculateWeeklyDayOffset(DayOfWeek day1, DayOfWeek day2)
         {
-            int remainingDays = (int)dayOfWeek - (int)firstDayOfWeek;
-
-            if (remainingDays < 0)
-            {
-                return -remainingDays;
-            }
-            else
-            {
-                //
-                // If the dayOfWeek is the firstDayOfWeek, there will be 7 days remaining in this week.
-                return DaysPerWeek - remainingDays;
-            }
-        }
-
-        private static int DayOfWeekOffset(DayOfWeek dayOfWeek, DayOfWeek firstDayOfWeek)
-        {
-            return ((int)dayOfWeek - (int)firstDayOfWeek + DaysPerWeek) % DaysPerWeek;
+            return ((int)day1 - (int)day2 + DaysPerWeek) % DaysPerWeek;
         }
 
         private static List<DayOfWeek> SortDaysOfWeek(IEnumerable<DayOfWeek> daysOfWeek, DayOfWeek firstDayOfWeek)
@@ -617,9 +685,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             List<DayOfWeek> result = daysOfWeek.ToList();
 
             result.Sort((x, y) =>
-                DayOfWeekOffset(x, firstDayOfWeek)
+                CalculateWeeklyDayOffset(x, firstDayOfWeek)
                     .CompareTo(
-                        DayOfWeekOffset(y, firstDayOfWeek)));
+                        CalculateWeeklyDayOffset(y, firstDayOfWeek)));
 
             return result;
         }

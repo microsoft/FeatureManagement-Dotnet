@@ -4,6 +4,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
@@ -17,6 +19,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
     {
         private const string Alias = "Microsoft.TimeWindow";
         private readonly ILogger _logger;
+        private readonly ConcurrentDictionary<TimeWindowFilterSettings, DateTimeOffset> _recurrenceCache;
 
         /// <summary>
         /// Creates a time window based feature filter.
@@ -25,6 +28,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         public TimeWindowFilter(ILoggerFactory loggerFactory)
         {
             _logger = loggerFactory?.CreateLogger<TimeWindowFilter>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _recurrenceCache = new ConcurrentDictionary<TimeWindowFilterSettings, DateTimeOffset>();
         }
 
         /// <summary>
@@ -34,11 +38,18 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <returns><see cref="TimeWindowFilterSettings"/> that can later be used in feature evaluation.</returns>
         public object BindParameters(IConfiguration filterParameters)
         {
-            return filterParameters.Get<TimeWindowFilterSettings>() ?? new TimeWindowFilterSettings();
+            var settings = filterParameters.Get<TimeWindowFilterSettings>() ?? new TimeWindowFilterSettings();
+
+            if (!RecurrenceEvaluator.TryValidateSettings(settings, out string paramName, out string reason))
+            {
+                throw new ArgumentException(reason, paramName);
+            }
+
+            return settings;
         }
 
         /// <summary>
-        /// Evaluates whether a feature is enabled based on the <see cref="TimeWindowFilterSettings"/> specifed in the configuration.
+        /// Evaluates whether a feature is enabled based on the <see cref="TimeWindowFilterSettings"/> specified in the configuration.
         /// </summary>
         /// <param name="context">The feature evaluation context.</param>
         /// <returns>True if the feature is enabled, false otherwise.</returns>
@@ -66,6 +77,57 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (settings.Recurrence != null)
             {
+                if (context.Settings != null)
+                {
+                    DateTimeOffset cachedTime = _recurrenceCache.GetOrAdd(
+                        settings,
+                        (_) =>
+                        {
+                            if (RecurrenceEvaluator.TryFindPrevAndNextOccurrences(now, settings, out DateTimeOffset prevOccurrence, out DateTimeOffset _))
+                            {
+                                return prevOccurrence;
+                            }
+
+                            //
+                            // There is no previous occurrence within the reccurrence range.
+                            return DateTimeOffset.MaxValue;
+                        });
+
+                    if (now < cachedTime)
+                    {
+                        return Task.FromResult(false);
+                    }
+
+                    if (now <= cachedTime + (settings.End.Value - settings.Start.Value))
+                    {
+                        return Task.FromResult(true);
+                    }
+
+                    if (RecurrenceEvaluator.TryFindPrevAndNextOccurrences(now, settings, out DateTimeOffset prevOccurrence, out DateTimeOffset nextOccurrrence))
+                    {
+                        bool isWithinPreviousTimeWindow =
+                            now <= prevOccurrence + (settings.End.Value - settings.Start.Value);
+
+                        _recurrenceCache.AddOrUpdate(
+                            settings,
+                            (_) => throw new KeyNotFoundException(),
+                            (_, _) => isWithinPreviousTimeWindow ? 
+                                prevOccurrence : 
+                                nextOccurrrence);
+
+                        return Task.FromResult(isWithinPreviousTimeWindow);
+                    }
+
+                    //
+                    // There is no previous occurrence within the reccurrence range.
+                    _recurrenceCache.AddOrUpdate(
+                        settings,
+                        (_) => throw new KeyNotFoundException(),
+                        (_, _) => DateTimeOffset.MaxValue);
+
+                    return Task.FromResult(false);
+                }
+
                 return Task.FromResult(RecurrenceEvaluator.MatchRecurrence(now, settings));
             }
 
