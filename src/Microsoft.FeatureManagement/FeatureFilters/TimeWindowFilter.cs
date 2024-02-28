@@ -77,6 +77,10 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (settings.Recurrence != null)
             {
+                //
+                // The reference of the object will be used for hash key.
+                // If there is no pre-bounded settings attached to the context, there will be no cached filter settings and each call will have a unique settings object.
+                // In this case, the cache for recurrence settings won't work.
                 if (context.Settings != null)
                 {
                     DateTimeOffset cachedTime = _recurrenceCache.GetOrAdd(
