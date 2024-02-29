@@ -22,13 +22,11 @@ namespace Microsoft.FeatureManagement
         // IFeatureDefinitionProviderCacheable interface is only used to mark this provider as cacheable. This allows our test suite's
         // provider to be marked for caching as well.
 
-        private const string FeatureFiltersSectionName = "EnabledFor";
-        private const string RequirementTypeKeyword = "RequirementType";
-        private const string FeatureManagementSectionName = "FeatureManagement";
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
+        private readonly bool _microsoftFeatureManagementSchemaEnabled;
 
         /// <summary>
         /// Creates a configuration feature definition provider.
@@ -42,6 +40,19 @@ namespace Microsoft.FeatureManagement
             _changeSubscription = ChangeToken.OnChange(
                 () => _configuration.GetReloadToken(),
                 () => _stale = 1);
+
+            IConfiguration MicrosoftFeatureManagementConfigurationSection = _configuration
+                .GetChildren()
+                .FirstOrDefault(section =>
+                    string.Equals(
+                        section.Key,
+                        MicrosoftFeatureManagementFields.FeatureManagementSectionName,
+                        StringComparison.OrdinalIgnoreCase));
+
+            if (MicrosoftFeatureManagementConfigurationSection != null)
+            {
+                _microsoftFeatureManagementSchemaEnabled = true;
+            }
         }
 
         /// <summary>
@@ -113,16 +124,23 @@ namespace Microsoft.FeatureManagement
             // Iterate over all features registered in the system at initial invocation time
             foreach (IConfigurationSection featureSection in GetFeatureDefinitionSections())
             {
+                string featureName = GetFeatureName(featureSection);
+
+                if (string.IsNullOrEmpty(featureName))
+                {
+                    continue;
+                }
+
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                yield return  _definitions.GetOrAdd(featureSection.Key, (_) => ReadFeatureDefinition(featureSection));
+                yield return  _definitions.GetOrAdd(featureName, (_) => ReadFeatureDefinition(featureSection));
             }
         }
 
         private FeatureDefinition ReadFeatureDefinition(string featureName)
         {
             IConfigurationSection configuration = GetFeatureDefinitionSections()
-                                                    .FirstOrDefault(section => section.Key.Equals(featureName, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(section => string.Equals(GetFeatureName(section), featureName, StringComparison.OrdinalIgnoreCase));
 
             if (configuration == null)
             {
@@ -134,24 +152,26 @@ namespace Microsoft.FeatureManagement
 
         private FeatureDefinition ReadFeatureDefinition(IConfigurationSection configurationSection)
         {
+            if (_microsoftFeatureManagementSchemaEnabled)
+            {
+                return ParseMicrosoftFeatureDefinition(configurationSection);
+            }
+
+            return ParseFeatureDefinition(configurationSection);
+        }
+
+        private FeatureDefinition ParseFeatureDefinition(IConfigurationSection configurationSection)
+        {
             /*
               
             We support
             
             myFeature: {
-              enabledFor: [ "myFeatureFilter1", "myFeatureFilter2" ]
+              enabledFor: [{name: "myFeatureFilter1"}, {name: "myFeatureFilter2"}]
             },
             myDisabledFeature: {
               enabledFor: [  ]
             },
-            myFeature2: {
-              enabledFor: "myFeatureFilter1;myFeatureFilter2"
-            },
-            myDisabledFeature2: {
-              enabledFor: ""
-            },
-            myFeature3: "myFeatureFilter1;myFeatureFilter2",
-            myDisabledFeature3: "",
             myAlwaysEnabledFeature: true,
             myAlwaysDisabledFeature: false // removing this line would be the same as setting it to false
             myAlwaysEnabledFeature2: {
@@ -161,21 +181,23 @@ namespace Microsoft.FeatureManagement
               enabledFor: false
             },
             myAllRequiredFilterFeature: {
-                requirementType: "all"
-                enabledFor: [ "myFeatureFilter1", "myFeatureFilter2" ],
-            },
+                requirementType: "All",
+                enabledFor: [{name: "myFeatureFilter1"}, {name: "myFeatureFilter2"}]
+            }
 
             */
 
-            RequirementType requirementType = RequirementType.Any;
+            string featureName = GetFeatureName(configurationSection);
 
             var enabledFor = new List<FeatureFilterConfiguration>();
+
+            RequirementType requirementType = RequirementType.Any;
 
             string val = configurationSection.Value; // configuration[$"{featureName}"];
 
             if (string.IsNullOrEmpty(val))
             {
-                val = configurationSection[FeatureFiltersSectionName];
+                val = configurationSection[ConfigurationFields.FeatureFiltersSectionName];
             }
 
             if (!string.IsNullOrEmpty(val) && bool.TryParse(val, out bool result) && result)
@@ -193,30 +215,30 @@ namespace Microsoft.FeatureManagement
             }
             else
             {
-                string rawRequirementType = configurationSection[RequirementTypeKeyword];
+                string rawRequirementType = configurationSection[ConfigurationFields.RequirementType];
 
                 //
                 // If requirement type is specified, parse it and set the requirementType variable
                 if (!string.IsNullOrEmpty(rawRequirementType) && !Enum.TryParse(rawRequirementType, ignoreCase: true, out requirementType))
                 {
                     throw new FeatureManagementException(
-                        FeatureManagementError.InvalidConfigurationSetting, 
-                        $"Invalid requirement type '{rawRequirementType}' for feature '{configurationSection.Key}'.");
+                        FeatureManagementError.InvalidConfigurationSetting,
+                        $"Invalid value '{rawRequirementType}' for field '{ConfigurationFields.RequirementType}' of feature '{featureName}'.");
                 }
 
-                IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(FeatureFiltersSectionName).GetChildren();
+                IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(ConfigurationFields.FeatureFiltersSectionName).GetChildren();
 
                 foreach (IConfigurationSection section in filterSections)
                 {
                     //
                     // Arrays in json such as "myKey": [ "some", "values" ]
                     // Are accessed through the configuration system by using the array index as the property name, e.g. "myKey": { "0": "some", "1": "values" }
-                    if (int.TryParse(section.Key, out int i) && !string.IsNullOrEmpty(section[nameof(FeatureFilterConfiguration.Name)]))
+                    if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[ConfigurationFields.NameKeyword]))
                     {
                         enabledFor.Add(new FeatureFilterConfiguration()
                         {
-                            Name = section[nameof(FeatureFilterConfiguration.Name)],
-                            Parameters = new ConfigurationWrapper(section.GetSection(nameof(FeatureFilterConfiguration.Parameters)))
+                            Name = section[ConfigurationFields.NameKeyword],
+                            Parameters = new ConfigurationWrapper(section.GetSection(ConfigurationFields.FeatureFilterConfigurationParameters))
                         });
                     }
                 }
@@ -224,33 +246,161 @@ namespace Microsoft.FeatureManagement
 
             return new FeatureDefinition()
             {
-                Name = configurationSection.Key,
+                Name = featureName,
                 EnabledFor = enabledFor,
                 RequirementType = requirementType
             };
         }
 
+        private FeatureDefinition ParseMicrosoftFeatureDefinition(IConfigurationSection configurationSection)
+        {
+            /*
+            
+            If Microsoft feature flag schema is enabled, we support
+
+            FeatureFlags: [
+              {
+                id: "myFeature",
+                enabled: true,
+                conditions: {
+                  client_filters: ["myFeatureFilter1", "myFeatureFilter2"],
+                  requirement_type: "All",
+                }
+              },
+              {
+                id: "myAlwaysEnabledFeature",
+                enabled: true,
+                conditions: {
+                  client_filters: [],
+                }
+              },
+              {
+                id: "myAlwaysDisabledFeature",
+                enabled: false,
+              }
+            ]
+
+            */
+
+            string featureName = GetFeatureName(configurationSection);
+
+            var enabledFor = new List<FeatureFilterConfiguration>();
+
+            RequirementType requirementType = RequirementType.Any;
+
+            IConfigurationSection conditions = configurationSection.GetSection(MicrosoftFeatureManagementFields.Conditions);
+
+            string rawEnabled = configurationSection[MicrosoftFeatureManagementFields.Enabled];
+
+            bool enabled = false;
+
+            if (!string.IsNullOrEmpty(rawEnabled) && !bool.TryParse(rawEnabled, out enabled))
+            {
+                throw new FeatureManagementException(
+                    FeatureManagementError.InvalidConfigurationSetting,
+                    $"Invalid value '{rawEnabled}' for field '{MicrosoftFeatureManagementFields.Enabled}' of feature '{featureName}'.");
+            }
+
+            if (enabled)
+            {
+                string rawRequirementType = conditions[MicrosoftFeatureManagementFields.RequirementType];
+
+                //
+                // If requirement type is specified, parse it and set the requirementType variable
+                if (!string.IsNullOrEmpty(rawRequirementType) && !Enum.TryParse(rawRequirementType, ignoreCase: true, out requirementType))
+                {
+                    throw new FeatureManagementException(
+                        FeatureManagementError.InvalidConfigurationSetting,
+                        $"Invalid value '{rawRequirementType}' for field '{MicrosoftFeatureManagementFields.RequirementType}' of feature '{featureName}'.");
+                }
+
+                IEnumerable<IConfigurationSection> filterSections = conditions.GetSection(MicrosoftFeatureManagementFields.ClientFilters).GetChildren();
+
+                if (filterSections.Any())
+                {
+                    foreach (IConfigurationSection section in filterSections)
+                    {
+                        //
+                        // Arrays in json such as "myKey": [ "some", "values" ]
+                        // Are accessed through the configuration system by using the array index as the property name, e.g. "myKey": { "0": "some", "1": "values" }
+                        if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[MicrosoftFeatureManagementFields.Name]))
+                        {
+                            enabledFor.Add(new FeatureFilterConfiguration()
+                            {
+                                Name = section[MicrosoftFeatureManagementFields.Name],
+                                Parameters = new ConfigurationWrapper(section.GetSection(MicrosoftFeatureManagementFields.Parameters))
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    enabledFor.Add(new FeatureFilterConfiguration
+                    {
+                        Name = "AlwaysOn"
+                    });
+                }
+            }
+
+            return new FeatureDefinition()
+            {
+                Name = featureName,
+                EnabledFor = enabledFor,
+                RequirementType = requirementType
+            };
+        }
+
+        private string GetFeatureName(IConfigurationSection section)
+        {
+            if (_microsoftFeatureManagementSchemaEnabled)
+            {
+                return section[MicrosoftFeatureManagementFields.Id];
+            }
+
+            return section.Key;
+        }
+
         private IEnumerable<IConfigurationSection> GetFeatureDefinitionSections()
         {
-            //
-            // Look for feature definitions under the "FeatureManagement" section
-            IConfigurationSection featureManagementConfigurationSection = _configuration.GetSection(FeatureManagementSectionName);
-
-            if (featureManagementConfigurationSection.Exists())
+            if (!_configuration.GetChildren().Any())
             {
-                return featureManagementConfigurationSection.GetChildren();
+                Logger?.LogDebug($"Configuration is empty.");
+
+                return Enumerable.Empty<IConfigurationSection>();
             }
 
-            //
-            // There is no "FeatureManagement" section in the configuration
-            if (RootConfigurationFallbackEnabled)
+            IConfiguration featureManagementConfigurationSection = _configuration
+                    .GetChildren()
+                    .FirstOrDefault(section =>
+                        string.Equals(
+                            section.Key,
+                            _microsoftFeatureManagementSchemaEnabled ? 
+                                MicrosoftFeatureManagementFields.FeatureManagementSectionName : 
+                                ConfigurationFields.FeatureManagementSectionName,
+                            StringComparison.OrdinalIgnoreCase));
+
+            if (featureManagementConfigurationSection == null)
             {
-                return _configuration.GetChildren();
+                if (RootConfigurationFallbackEnabled && !_microsoftFeatureManagementSchemaEnabled)
+                {
+                    featureManagementConfigurationSection = _configuration;
+                }
+                else
+                {
+                    Logger?.LogDebug($"No feature management configuration section was found.");
+
+                    return Enumerable.Empty<IConfigurationSection>();
+                }
             }
 
-            Logger?.LogDebug($"No configuration section named '{FeatureManagementSectionName}' was found.");
+            if (_microsoftFeatureManagementSchemaEnabled)
+            {
+                IConfigurationSection featureFlagsSection = featureManagementConfigurationSection.GetSection(MicrosoftFeatureManagementFields.FeatureFlagsSectionName);
 
-            return Enumerable.Empty<IConfigurationSection>();
+                return featureFlagsSection.GetChildren();
+            }
+
+            return featureManagementConfigurationSection.GetChildren();
         }
     }
 }

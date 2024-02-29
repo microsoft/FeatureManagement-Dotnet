@@ -106,6 +106,7 @@ namespace Tests.FeatureManagement
             Assert.True(await featureManager.IsEnabledAsync(feature));
         }
 
+
         [Fact]
         public void AddsScopedFeatureManagement()
         {

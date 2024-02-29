@@ -91,6 +91,8 @@ The feature management library supports appsettings.json as a feature flag sourc
 
 The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided three different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration, so it only has the `Name` property. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
 
+The detailed schema of the `FeatureManagement` section can be found [here](./schemas/FeatureManagement.Dotnet.v1.0.0.schema.json).
+
 **Advanced:** The usage of colon ':' in feature flag names is forbidden.
 
 #### On/Off Declaration
@@ -121,7 +123,7 @@ The `RequirementType` property of a feature flag is used to determine if the fil
 
 A `RequirementType` of `All` changes the traversal. First, if there are no filters, the feature will be disabled. Then, the feature-filters are traversed until one of the filters decides that the feature should be disabled. If no filter indicates that the feature should be disabled, then it will be considered enabled.
 
-```
+``` JavaScript
 "FeatureW": {
     "RequirementType": "All",
     "EnabledFor": [
@@ -143,6 +145,36 @@ A `RequirementType` of `All` changes the traversal. First, if there are no filte
 ```
 
 In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning all of its filters must evaluate to true for the feature to be enabled. In this case, the feature will be enabled for 50% of users during the specified time window.
+
+#### Microsoft Feature Management Schema
+
+The feature management library also supports the usage of the [`Microsoft Feature Management schema`](https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureManagement.v1.0.0.schema.json) to declare feature flags. This schema is language agnostic in origin and is supported by all Microsoft feature management libraries.
+
+``` JavaScript
+{
+    "feature_management": {
+        "feature_flags": [
+            {
+                "id": "FeatureT",
+                "enabled": true,
+                "conditions": {
+                    "client_filters": [
+                        {  
+                            "name": "Microsoft.TimeWindow",
+                            "parameters": {
+                                "Start": "Mon, 01 May 2023 13:59:59 GMT",
+                                "End": "Sat, 01 July 2023 00:00:00 GMT"
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
+```
+
+**Note:** If the `feature_management` section can be found in the configuration, the `FeatureManagement` section will be ignored.
 
 ## Consumption
 
@@ -604,7 +636,7 @@ This strategy for rolling out a feature is built-in to the library through the i
 
 An example web application that uses the targeting feature filter is available in the [FeatureFlagDemo](./examples/FeatureFlagDemo) example project.
 
-To begin using the `TargetingFilter` in an application it must be added to the application's service collection just as any other feature filter. Unlike other built in filters, the `TargetingFilter` relies on another service to be added to the application's service collection. That service is an `ITargetingContextAccessor`.
+To begin using the `TargetingFilter` in an application it must be added to the application's service collection just as any other feature filter. Unlike other built-in filters, the `TargetingFilter` relies on another service to be added to the application's service collection. That service is an `ITargetingContextAccessor`.
 
 The implementation type used for the `ITargetingContextAccessor` service must be implemented by the application that is using the targeting filter. Here is an example setting up feature management in a web application to use the `TargetingFilter` with an implementation of `ITargetingContextAccessor` called `HttpContextTargetingContextAccessor`.
 
