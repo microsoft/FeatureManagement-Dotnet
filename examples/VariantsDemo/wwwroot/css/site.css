@@ -35,8 +35,9 @@ body {
 
 .progress-bar-label {
     display: inline-block;
-    width: 100px;
+    width: 60px;
     font-weight: bold;
+    padding: 0 0 8px 0;
 }
 
 .disable-transitions {
