@@ -348,7 +348,6 @@ namespace Tests.FeatureManagement
             {
                 Assert.True(await featureManager.IsEnabledAsync(Features.RecurringTimeWindowTestFeature));
             }
-
         }
 
         [Fact]
