@@ -50,11 +50,25 @@ namespace Tests.FeatureManagement
             }
         }
 
-        private static void ConsumeEvalutationTestData(List<ValueTuple<DateTimeOffset, TimeWindowFilterSettings, bool>> testData)
+        private static void ConsumeEvaluationTestData(List<ValueTuple<DateTimeOffset, TimeWindowFilterSettings, bool>> testData)
         {
             foreach ((DateTimeOffset time, TimeWindowFilterSettings settings, bool expected) in testData)
             {
                 Assert.Equal(RecurrenceEvaluator.MatchRecurrence(time, settings), expected);
+            }
+        }
+
+        private static void ConsumeEvalutationTestData(List<ValueTuple<DateTimeOffset, TimeWindowFilterSettings, bool, DateTimeOffset, DateTimeOffset>> testData)
+        {
+            foreach ((DateTimeOffset time, TimeWindowFilterSettings settings, bool expectedRes, DateTimeOffset expectedPrev, DateTimeOffset expectedNext) in testData)
+            {
+                Assert.Equal(expectedRes, RecurrenceEvaluator.TryFindPrevAndNextOccurrences(time, settings, out DateTimeOffset prev, out DateTimeOffset next));
+                
+                if (expectedRes)
+                {
+                    Assert.Equal(expectedPrev, prev);
+                    Assert.Equal(expectedNext, next);
+                }
             }
         }
 
@@ -525,10 +539,30 @@ namespace Tests.FeatureManagement
                         }
                     }
                 },
+                false ),
+
+                ( DateTimeOffset.Parse("2023-9-4T00:00:00+08:00"), // Behind end date
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2023-9-1T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2023-9-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Daily
+                        },
+                        Range = new RecurrenceRange()
+                        {
+                            Type = RecurrenceRangeType.EndDate,
+                            EndDate = DateTimeOffset.Parse("2023-9-3T00:00:00+08:00")
+                        }
+                    }
+                },
                 false )
             };
 
-            ConsumeEvalutationTestData(testData);
+            ConsumeEvaluationTestData(testData);
         }
 
         [Fact]
@@ -942,7 +976,432 @@ namespace Tests.FeatureManagement
                 false )
             };
 
+            ConsumeEvaluationTestData(testData);
+        }
+
+        [Fact]
+        public void FindDailyPrevAndNextOccurrenceTest()
+        {
+            var testData = new List<ValueTuple<DateTimeOffset, TimeWindowFilterSettings, bool, DateTimeOffset, DateTimeOffset>>()
+            {
+                ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-3-1T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2024-3-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Daily
+                        },
+                        Range = new RecurrenceRange()
+                    }
+                },
+                true,
+                DateTimeOffset.MinValue,
+                DateTimeOffset.Parse("2024-3-1T00:00:00+08:00")),
+
+                ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2024-2-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Daily
+                        },
+                        Range = new RecurrenceRange()
+                    }
+                },
+                true,
+                DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
+                DateTimeOffset.Parse("2024-2-29T00:00:00+08:00")),
+
+                ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2024-2-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Daily,
+                            Interval = 2
+                        },
+                        Range = new RecurrenceRange()
+                    }
+                },
+                true,
+                DateTimeOffset.Parse("2024-2-27T00:00:00+08:00"),
+                DateTimeOffset.Parse("2024-2-29T00:00:00+08:00")),
+
+                ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2024-2-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Daily,
+                            Interval = 3
+                        },
+                        Range = new RecurrenceRange()
+                    }
+                },
+                true,
+                DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
+                DateTimeOffset.Parse("2024-3-2T00:00:00+08:00")),
+
+                ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2024-2-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Daily,
+                        },
+                        Range = new RecurrenceRange()
+                        {
+                            Type = RecurrenceRangeType.Numbered,
+                            NumberOfOccurrences = 27
+                        }
+                    }
+                },
+                false,
+                default,
+                default),
+
+                ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2024-2-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Daily,
+                        },
+                        Range = new RecurrenceRange()
+                        {
+                            Type = RecurrenceRangeType.Numbered,
+                            NumberOfOccurrences = 28
+                        }
+                    }
+                },
+                true,
+                DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
+                DateTimeOffset.MaxValue),
+
+                ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2024-2-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Daily,
+                        },
+                        Range = new RecurrenceRange()
+                        {
+                            Type = RecurrenceRangeType.EndDate,
+                            EndDate = DateTimeOffset.Parse("2024-2-27T00:00:00+08:00")
+                        }
+                    }
+                },
+                false,
+                default,
+                default),
+
+                ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
+                    End = DateTimeOffset.Parse("2024-2-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Daily,
+                        },
+                        Range = new RecurrenceRange()
+                        {
+                            Type = RecurrenceRangeType.EndDate,
+                            EndDate = DateTimeOffset.Parse("2024-2-28T00:00:00+08:00")
+                        }
+                    }
+                },
+                true,
+                DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
+                DateTimeOffset.MaxValue)
+            };
+
             ConsumeEvalutationTestData(testData);
+        }
+
+        [Fact]
+        public void FindWeeklyPrevAndNextOccurrenceTest()
+        {
+            var testData = new List<ValueTuple<DateTimeOffset, TimeWindowFilterSettings, bool, DateTimeOffset, DateTimeOffset>>()
+            {
+                ( DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-29T00:00:00+08:00"), // Thursday
+                    End = DateTimeOffset.Parse("2024-2-29T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Weekly,
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Thursday }
+                        },
+                        Range = new RecurrenceRange()
+                    }
+                },
+                true,
+                DateTimeOffset.MinValue,
+                DateTimeOffset.Parse("2024-2-29T00:00:00+08:00")),
+
+                ( DateTimeOffset.Parse("2024-2-29T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-29T00:00:00+08:00"), // Thursday
+                    End = DateTimeOffset.Parse("2024-2-29T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Weekly,
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Thursday }
+                        },
+                        Range = new RecurrenceRange()
+                    }
+                },
+                true,
+                DateTimeOffset.Parse("2024-2-29T00:00:00+08:00"),
+                DateTimeOffset.Parse("2024-3-7T00:00:00+08:00")),
+
+                ( DateTimeOffset.Parse("2024-2-29T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-1T12:00:00+08:00"), // Thursday
+                    End = DateTimeOffset.Parse("2024-2-1T12:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Weekly,
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Thursday }
+                        },
+                        Range = new RecurrenceRange()
+                    }
+                },
+                true,
+                DateTimeOffset.Parse("2024-2-22T12:00:00+08:00"),
+                DateTimeOffset.Parse("2024-2-29T12:00:00+08:00")),
+
+                ( DateTimeOffset.Parse("2024-3-1T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"), // Thursday
+                    End = DateTimeOffset.Parse("2024-2-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Weekly,
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Thursday, DayOfWeek.Sunday }
+                        },
+                        Range = new RecurrenceRange()
+                    }
+                },
+                true,
+                DateTimeOffset.Parse("2024-2-29T00:00:00+08:00"),
+                DateTimeOffset.Parse("2024-3-3T00:00:00+08:00")),
+
+                ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"), // Thursday
+                    End = DateTimeOffset.Parse("2024-2-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Weekly,
+                            Interval = 2,
+                            // FirstDayOfWeek is Sunday by default.
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Thursday, DayOfWeek.Sunday }
+                        },
+                        Range = new RecurrenceRange()
+                    }
+                },
+                true,
+                DateTimeOffset.Parse("2024-2-25T00:00:00+08:00"),
+                DateTimeOffset.Parse("2024-2-29T00:00:00+08:00")),
+
+                ( DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"), // Thursday
+                    End = DateTimeOffset.Parse("2024-2-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Weekly,
+                            Interval = 2,
+                            // FirstDayOfWeek is Sunday by default.
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Thursday, DayOfWeek.Sunday }
+                        },
+                        Range = new RecurrenceRange()
+                    }
+                },
+                true,
+                DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
+                DateTimeOffset.Parse("2024-2-11T00:00:00+08:00")), // Sunday in the third week
+
+                ( DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"), // Thursday
+                    End = DateTimeOffset.Parse("2024-2-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Weekly,
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday }
+                        },
+                        Range = new RecurrenceRange()
+                        {
+                            Type = RecurrenceRangeType.Numbered,
+                            NumberOfOccurrences = 1
+                        }
+                    }
+                },
+                true,
+                DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
+                DateTimeOffset.MaxValue),
+
+                ( DateTimeOffset.Parse("2024-2-2T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"), // Thursday
+                    End = DateTimeOffset.Parse("2024-2-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Weekly,
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday }
+                        },
+                        Range = new RecurrenceRange()
+                        {
+                            Type = RecurrenceRangeType.Numbered,
+                            NumberOfOccurrences = 1
+                        }
+                    }
+                },
+                false,
+                default,
+                default),
+
+                ( DateTimeOffset.Parse("2024-2-11T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"), // Thursday
+                    End = DateTimeOffset.Parse("2024-2-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Weekly,
+                            Interval = 2,
+                            // FirstDayOfWeek is Sunday by default.
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Thursday, DayOfWeek.Sunday }
+                        },
+                        Range = new RecurrenceRange()
+                        {
+                            Type = RecurrenceRangeType.Numbered,
+                            NumberOfOccurrences = 2
+                        }
+                    }
+                },
+                true,
+                DateTimeOffset.Parse("2024-2-11T00:00:00+08:00"),
+                DateTimeOffset.MaxValue), // Sunday in the third week
+
+                ( DateTimeOffset.Parse("2024-2-11T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"), // Thursday
+                    End = DateTimeOffset.Parse("2024-2-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Weekly,
+                            Interval = 2,
+                            FirstDayOfWeek = DayOfWeek.Monday,
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Thursday, DayOfWeek.Sunday }
+                        },
+                        Range = new RecurrenceRange()
+                        {
+                            Type = RecurrenceRangeType.Numbered,
+                            NumberOfOccurrences = 2
+                        }
+                    }
+                },
+                true,
+                DateTimeOffset.Parse("2024-2-11T00:00:00+08:00"),
+                DateTimeOffset.MaxValue), // Sunday in the third week
+
+                ( DateTimeOffset.Parse("2024-2-11T00:00:00+08:00"),
+                new TimeWindowFilterSettings()
+                {
+                    Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"), // Thursday
+                    End = DateTimeOffset.Parse("2024-2-1T00:00:01+08:00"),
+                    Recurrence = new Recurrence()
+                    {
+                        Pattern = new RecurrencePattern()
+                        {
+                            Type = RecurrencePatternType.Weekly,
+                            DaysOfWeek = new List<DayOfWeek>(){ DayOfWeek.Thursday, DayOfWeek.Sunday }
+                        },
+                        Range = new RecurrenceRange()
+                        {
+                            Type = RecurrenceRangeType.EndDate,
+                            EndDate = DateTimeOffset.Parse("2024-2-8T00:00:00+08:00")
+                        }
+                    }
+                },
+                false,
+                default,
+                default),
+            };
+
+            ConsumeEvalutationTestData(testData);
+        }
+
+        [Fact]
+        public void RecurrenceEvaluationThroughCacheTest()
+        {
+            var mockedTimeWindowFilter = new MockedTimeWindowFilter();
+
+
         }
     }
 }

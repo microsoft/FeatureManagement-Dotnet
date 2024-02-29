@@ -5,7 +5,7 @@ namespace Tests.FeatureManagement
 {
     static class Features
     {
-        public const string TimeWindowTestFeature = "TimeWindowTestFeature";
+        public const string RecurringTimeWindowTestFeature = "TimeWindowTestFeature";
         public const string TargetingTestFeature = "TargetingTestFeature";
         public const string TargetingTestFeatureWithExclusion = "TargetingTestFeatureWithExclusion";
         public const string OnTestFeature = "OnTestFeature";
