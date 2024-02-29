@@ -4,7 +4,7 @@
 }
 
 <h1>
-    Variants Example
+    Experimentation Example
 </h1>
 
 <div class="progress-bars-container">
@@ -14,12 +14,18 @@
 <script type="text/javascript">
     let mainContainer = document.querySelector(".progress-bars-container");
     const userCount = 6;
+
+    const variantColors = {
+        "Control": "#C9E4DE",
+        "Cheap": "#C6DEF1",
+        "Expensive": "#FAEDCB",
+    }
     
     for (let i = 0; i < userCount; i++) {
         fetch('./GetUserInfo', {
-            method: 'GET',
+            method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
         })
             .then(response => response.json())
@@ -31,19 +37,38 @@
                 container.className = "progress-bar-container";
                 let labels = document.createElement("div");
                 labels.className = "progress-bar-labels";
-                let name = document.createElement("div");
+                let nameHolder = document.createElement("div");
+
+                let nameLabel = document.createElement("span");
+                nameLabel.className = "progress-bar-label";
+                nameLabel.innerHTML = "Name";
+
+                let name = document.createElement("span");
                 name.className = "progress-bar-name";
                 name.innerHTML = data.Username;
-                let variant = document.createElement("div");
+
+                let variantHolder = document.createElement("div");
+
+                let variantLabel = document.createElement("span");
+                variantLabel.className = "progress-bar-label";
+                variantLabel.innerHTML = "Variant";
+
+                let variant = document.createElement("span");
                 variant.className = "progress-bar-variant";
-                variant.innerHTML = data.VariantName;
+                variant.innerHTML = data.Username;
+
                 let bar = document.createElement("div");
                 bar.className = "progress-bar";
                 let progress = document.createElement("div");
                 progress.className = "progress";
+                progress.style.backgroundColor = variantColors[data.VariantName];
 
-                labels.appendChild(name);
-                labels.appendChild(variant);
+                nameHolder.appendChild(nameLabel);
+                nameHolder.appendChild(name);
+                labels.appendChild(nameHolder);
+                variantHolder.appendChild(variantLabel);
+                variantHolder.appendChild(variant);
+                labels.appendChild(variantHolder);
                 container.appendChild(labels);
                 bar.appendChild(progress);
                 container.appendChild(bar);
@@ -56,42 +81,5 @@
             .catch((error) => {
                 console.error('Error:', error);
             });
-    }
-
-    function GetNewUser(loadingBar) {
-        fetch('./GetUserInfo', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-
-                BindAndStoreData(loadingBar.container, loadingBar.index, data);
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
-    }
-
-    function BindAndStoreData(container, index, data) {
-        let name = container.querySelector(".progress-bar-name");
-        let variant = container.querySelector(".progress-bar-variant");
-
-        name.innerHTML = data.Username;
-        variant.innerHTML = data.VariantName;
-
-        // Store Loading Bar Object
-        loadingBars[index] = {
-            index: index,
-            container: container,
-            element: container.querySelector(".progress"),
-            name: data.Username,
-            variant: data.Variant,
-            progress: 0,
-            randomVariance: 1 - (Math.random() * 2)
-        };
     }
 </script>

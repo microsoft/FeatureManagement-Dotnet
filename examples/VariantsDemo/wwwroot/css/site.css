@@ -1,3 +1,8 @@
+body {
+    font-family: "Segoe UI";
+    color: #242526;
+}
+
 .progress-bar {
     width: 100%;
     background-color: grey;
@@ -6,7 +11,8 @@
 .progress {
     width: 1%;
     height: 30px;
-    background-color: green;
+    background-color: #04AA6D;
+    transition: width 0.2s linear;
 }
 
 .progress-bars-container {
@@ -15,21 +21,28 @@
 }
 
 .progress-bar-container {
-    padding: 16px 32px;
+    padding: 32px 64px;
+}
+
+.progress-bar {
+    border-radius: 5px;
+    overflow: hidden;
 }
 
 .progress-bar-labels {
-    display: flex;
+    padding: 8px 8px;
 }
 
-.progress-bar-labels>div {
-    flex-grow: 1;
+.progress-bar-label {
+    display: inline-block;
+    width: 100px;
+    font-weight: bold;
 }
 
-.progress-bar-name{
-    text-align: left;
+.disable-transitions {
+    -webkit-transition: none !important;
+    -moz-transition: none !important;
+    -o-transition: none !important;
+    transition: none !important;
 }
-
-.progress-bar-variant {
-    text-align: right;
 }

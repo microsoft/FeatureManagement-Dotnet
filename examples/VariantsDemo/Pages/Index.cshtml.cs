@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.FeatureManagement.FeatureFilters;
 using Microsoft.FeatureManagement;
-using System.Text.Json;
 using Microsoft.ApplicationInsights;
 
 namespace VariantsDemo.Pages

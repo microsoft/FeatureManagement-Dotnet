@@ -33,6 +33,10 @@ namespace FeatureFlagDemo
                             o.UseFeatureFlags();
                         });
                     }
+
+                    var keys = settings.AsEnumerable().ToList();
+
+                    var test = "1";
                 })
                 .UseStartup<Startup>();
         }
