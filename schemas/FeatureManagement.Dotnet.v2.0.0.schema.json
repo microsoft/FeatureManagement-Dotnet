@@ -29,6 +29,16 @@
                 "EnabledFor"
               ],
               "properties": {
+                "Status": {
+                  "type": "string",
+                  "title": "Feature Status",
+                  "description": "Describes how a feature's state will be evaluated. When set to Conditional, the state of the feature is conditional upon the feature evaluation pipeline. When set to Disabled, the state of feature is always disabled.",
+                  "enum": [
+                    "Conditional",
+                    "Disabled"
+                  ],
+                  "default": "Conditional"
+                },
                 "RequirementType": {
                   "type": "string",
                   "title": "Requirement Type",
