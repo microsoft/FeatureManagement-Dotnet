@@ -55,7 +55,10 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
                 // Telemetry.Properties is deprecated in favor of ISupportProperties
                 if (telemetry is ISupportProperties telemetryWithSupportProperties)
                 {
-                    telemetryWithSupportProperties.Properties["TargetingId"] = targetingId;
+                    if (!telemetryWithSupportProperties.Properties.ContainsKey("TargetingId"))
+                    {
+                        telemetryWithSupportProperties.Properties["TargetingId"] = targetingId;
+                    }
                 }
             }
         }
