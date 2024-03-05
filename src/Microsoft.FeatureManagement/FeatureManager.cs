@@ -48,13 +48,12 @@ namespace Microsoft.FeatureManagement
         /// <param name="featureDefinitionProvider">The provider of feature flag definitions.</param>
         /// <param name="options">Options controlling the behavior of the feature manager.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureDefinitionProvider"/> is null.</exception>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="options"/> is null.</exception>
         public FeatureManager(
             IFeatureDefinitionProvider featureDefinitionProvider,
-            FeatureManagementOptions options)
+            FeatureManagementOptions options = null)
         {
             _featureDefinitionProvider = featureDefinitionProvider ?? throw new ArgumentNullException(nameof(featureDefinitionProvider));
-            _options = options ?? throw new ArgumentNullException(nameof(options));
+            _options = options ?? new FeatureManagementOptions();
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
             _featureFilters = Enumerable.Empty<IFeatureFilterMetadata>();
@@ -256,12 +255,27 @@ namespace Microsoft.FeatureManagement
             return evaluationEvent.Variant;
         }
 
-        private async Task<EvaluationEvent> EvaluateFeature<TContext>(string feature, TContext context, bool useContext, CancellationToken cancellationToken)
+        private async ValueTask<EvaluationEvent> EvaluateFeature<TContext>(string feature, TContext context, bool useContext, CancellationToken cancellationToken)
         {
             var evaluationEvent = new EvaluationEvent
             {
                 FeatureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false)
             };
+
+            //
+            // Determine Targeting Context
+            TargetingContext targetingContext;
+
+            if (useContext)
+            {
+                targetingContext = context as TargetingContext;
+            }
+            else
+            {
+                targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            evaluationEvent.TargetingContext = targetingContext;
 
             if (evaluationEvent.FeatureDefinition != null)
             {
@@ -296,17 +310,6 @@ namespace Microsoft.FeatureManagement
                     }
                     else
                     {
-                        TargetingContext targetingContext;
-
-                        if (useContext)
-                        {
-                            targetingContext = context as TargetingContext;
-                        }
-                        else
-                        {
-                            targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
-                        }
-
                         if (targetingContext != null && evaluationEvent.FeatureDefinition.Allocation != null)
                         {
                             variantDefinition = await AssignVariantAsync(evaluationEvent, targetingContext, cancellationToken).ConfigureAwait(false);
@@ -358,7 +361,7 @@ namespace Microsoft.FeatureManagement
             return evaluationEvent;
         }
 
-        private async Task<bool> IsEnabledAsync<TContext>(FeatureDefinition featureDefinition, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
+        private async ValueTask<bool> IsEnabledAsync<TContext>(FeatureDefinition featureDefinition, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
         {
             Debug.Assert(featureDefinition != null);
 

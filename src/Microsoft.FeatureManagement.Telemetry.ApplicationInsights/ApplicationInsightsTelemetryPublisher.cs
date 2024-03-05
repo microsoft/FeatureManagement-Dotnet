@@ -42,6 +42,11 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
                 { "Enabled", evaluationEvent.Enabled.ToString() }
             };
 
+            if (evaluationEvent.TargetingContext != null)
+            {
+                properties["TargetingId"] = evaluationEvent.TargetingContext.UserId;
+            }
+
             if (evaluationEvent.VariantAssignmentReason != VariantAssignmentReason.None)
             {
                 properties["Variant"] = evaluationEvent.Variant?.Name;

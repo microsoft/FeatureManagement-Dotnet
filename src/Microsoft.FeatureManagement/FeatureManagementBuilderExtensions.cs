@@ -17,6 +17,67 @@ namespace Microsoft.FeatureManagement
     public static class FeatureManagementBuilderExtensions
     {
         /// <summary>
+        /// Adds an <see cref="ITargetingContextAccessor"/> to be used for targeting and registers the targeting filter to the feature management system.
+        /// </summary>
+        /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
+        /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
+        public static IFeatureManagementBuilder WithTargeting<T>(this IFeatureManagementBuilder builder) where T : ITargetingContextAccessor
+        {
+            //
+            // Register the targeting context accessor with the same lifetime as the feature manager
+            if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
+            {
+                builder.Services.TryAddScoped(typeof(ITargetingContextAccessor), typeof(T));
+            }
+            else
+            {
+                builder.Services.TryAddSingleton(typeof(ITargetingContextAccessor), typeof(T));
+            }
+
+            builder.AddFeatureFilter<TargetingFilter>();
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Adds a <see cref="VariantServiceProvider{TService}"/> to the feature management system.
+        /// </summary>
+        /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
+        /// <param name="featureName">The feature flag that should be used to determine which variant of the service should be used. The <see cref="VariantServiceProvider{TService}"/> will return different implementations of TService according to the assigned variant.</param>
+        /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if feature name parameter is null.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if a variant service of the type has already been added.</exception>
+        public static IFeatureManagementBuilder WithVariantService<TService>(this IFeatureManagementBuilder builder, string featureName) where TService : class
+        {
+            if (string.IsNullOrEmpty(featureName))
+            {
+                throw new ArgumentNullException(nameof(featureName));
+            }
+            
+            if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IVariantServiceProvider<TService>)))
+            {
+                throw new InvalidOperationException($"A variant service of {typeof(TService).FullName} has already been added.");
+            }
+
+            if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
+            {
+                builder.Services.AddScoped<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
+                    featureName,
+                    sp.GetRequiredService<IVariantFeatureManager>(),
+                    sp.GetRequiredService<IEnumerable<TService>>()));
+            }
+            else
+            {
+                builder.Services.AddSingleton<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
+                    featureName,
+                    sp.GetRequiredService<IVariantFeatureManager>(),
+                    sp.GetRequiredService<IEnumerable<TService>>()));
+            }
+
+            return builder;
+        }
+
+        /// <summary>
         /// Adds a telemetry publisher to the feature management system.
         /// </summary>
         /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
@@ -39,29 +100,6 @@ namespace Microsoft.FeatureManagement
 
                 options.TelemetryPublisherFactories.Add(factory);
             });
-
-            return builder;
-        }
-
-        /// <summary>
-        /// Adds an <see cref="ITargetingContextAccessor"/> to be used for targeting and registers the targeting filter to the feature management system.
-        /// </summary>
-        /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
-        /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
-        public static IFeatureManagementBuilder WithTargeting<T>(this IFeatureManagementBuilder builder) where T : ITargetingContextAccessor
-        {
-            //
-            // Register the targeting context accessor with the same lifetime as the feature manager
-            if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
-            {
-                builder.Services.TryAddScoped(typeof(ITargetingContextAccessor), typeof(T));
-            }
-            else
-            {
-                builder.Services.TryAddSingleton(typeof(ITargetingContextAccessor), typeof(T));
-            }
-
-            builder.AddFeatureFilter<TargetingFilter>();
 
             return builder;
         }
