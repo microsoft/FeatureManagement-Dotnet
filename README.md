@@ -96,6 +96,8 @@ The feature management library supports appsettings.json as a feature flag sourc
 
 The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided three different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration, so it only has the `Name` property. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
 
+The detailed schema of the `FeatureManagement` section can be found [here](./schemas/FeatureManagement.Dotnet.v1.0.0.schema.json).
+
 **Advanced:** The usage of colon ':' in feature flag names is forbidden.
 
 #### On/Off Declaration
@@ -126,7 +128,7 @@ The `RequirementType` property of a feature flag is used to determine if the fil
 
 A `RequirementType` of `All` changes the traversal. First, if there are no filters, the feature will be disabled. Then, the feature-filters are traversed until one of the filters decides that the feature should be disabled. If no filter indicates that the feature should be disabled, then it will be considered enabled.
 
-```
+``` JavaScript
 "FeatureW": {
     "RequirementType": "All",
     "EnabledFor": [
@@ -154,7 +156,7 @@ In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning
 `Status` is an optional property of a feature flag that controls how a flag's enabled state is evaluated. By default, the status of a flag is `Conditional`, meaning that feature filters should be evaluated to determine if the flag is enabled. If the `Status` of a flag is set to `Disabled` then feature filters are not evaluated and the flag is always considered to be disabled.
 
 
-```
+``` JavaScript
 "FeatureX": {
     "Status": "Disabled",
     "EnabledFor": [
@@ -166,6 +168,36 @@ In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning
 ```
 
 In this example, even though the `AlwaysOn` filter would normally always make the feature enabled, the `Status` property is set to `Disabled`, so this feature will always be disabled. 
+
+#### Microsoft Feature Management Schema
+
+The feature management library also supports the usage of the [`Microsoft Feature Management schema`](https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureManagement.v1.0.0.schema.json) to declare feature flags. This schema is language agnostic in origin and is supported by all Microsoft feature management libraries.
+
+``` JavaScript
+{
+    "feature_management": {
+        "feature_flags": [
+            {
+                "id": "FeatureT",
+                "enabled": true,
+                "conditions": {
+                    "client_filters": [
+                        {  
+                            "name": "Microsoft.TimeWindow",
+                            "parameters": {
+                                "Start": "Mon, 01 May 2023 13:59:59 GMT",
+                                "End": "Sat, 01 July 2023 00:00:00 GMT"
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
+```
+
+**Note:** If the `feature_management` section can be found in the configuration, the `FeatureManagement` section will be ignored.
 
 ## Consumption
 
@@ -627,7 +659,7 @@ This strategy for rolling out a feature is built-in to the library through the i
 
 An example web application that uses the targeting feature filter is available in the [FeatureFlagDemo](./examples/FeatureFlagDemo) example project.
 
-To begin using the `TargetingFilter` in an application it must be added to the application's service collection just as any other feature filter. Unlike other built in filters, the `TargetingFilter` relies on another service to be added to the application's service collection. That service is an `ITargetingContextAccessor`.
+To begin using the `TargetingFilter` in an application it must be added to the application's service collection just as any other feature filter. Unlike other built-in filters, the `TargetingFilter` relies on another service to be added to the application's service collection. That service is an `ITargetingContextAccessor`.
 
 The implementation type used for the `ITargetingContextAccessor` service must be implemented by the application that is using the targeting filter. Here is an example setting up feature management in a web application to use the `TargetingFilter` with an implementation of `ITargetingContextAccessor` called `HttpContextTargetingContextAccessor`.
 
@@ -708,7 +740,7 @@ In the above example, the feature will be enabled for users named `Jeff` and `Al
 
 When new features are added to an application, there may come a time when a feature has multiple different proposed design options. A common solution for deciding on a design is some form of A/B testing, which involves providing a different version of the feature to different segments of the user base and choosing a version based on user interaction. In this library, this functionality is enabled by representing different configurations of a feature with variants.
 
-Variants enable a feature flag to become more than a simple on/off flag. A variant represents a value of a feature flag that can be a string, a number, a boolean, or even a configuration object. A feature flag that declares variants should define under what circumstances each variant should be used, which is covered in greater detail in the [Allocating a Variant](./README.md#allocating-a-variant) section.
+Variants enable a feature flag to become more than a simple on/off flag. A variant represents a value of a feature flag that can be a string, a number, a boolean, or even a configuration object. A feature flag that declares variants should define under what circumstances each variant should be used, which is covered in greater detail in the [Allocating Variants](./README.md#allocating-variants) section.
 
 ``` C#
 public class Variant
@@ -725,43 +757,70 @@ public class Variant
 }
 ```
 
-### Getting a Feature's Variant
+### Getting Variants
 
-A feature's variant can be retrieved using the `IVariantFeatureManager`'s `GetVariantAsync` method.
+For each feature, a variant can be retrieved using the `IVariantFeatureManager`'s `GetVariantAsync` method.
 
 ``` C#
 …
 IVariantFeatureManager featureManager;
 …
-Variant variant = await featureManager.GetVariantAsync(MyFeatureFlags.FeatureU);
+Variant variant = await featureManager.GetVariantAsync(MyFeatureFlags.FeatureU, CancellationToken.None);
 
 IConfigurationSection variantConfiguration = variant.Configuration;
 
 // Do something with the resulting variant and its configuration
 ```
 
-### Setting a Variant's Configuration
+Once a variant is retrieved, the configuration of a variant can be used directly as an `IConfigurationSection` from the variant's `Configuration` property. Another option is to bind the configuration to an object using .NET's configuration binding pattern.
 
-For each of the variants in the `Variants` property of a feature, there is a specified configuration. This can be set using either the `ConfigurationReference` or `ConfigurationValue` properties. `ConfigurationReference` is a string path that references a section of the current configuration that contains the feature flag declaration. `ConfigurationValue` is an inline configuration that can be a string, number, boolean, or configuration object. If both are specified, `ConfigurationValue` is used. If neither are specified, the returned variant's `Configuration` property will be null.
+``` C#
+IConfigurationSection variantConfiguration = variant.Configuration;
+
+MyFeatureSettings settings = new MyFeatureSettings();
+
+variantConfiguration.Bind(settings);
+```
+
+The variant returned is dependent on the user currently being evaluated, and that information is obtained from an instance of `TargetingContext`. This context can either be passed in when calling `GetVariantAsync` or it can be automatically retrieved from an implementation of [`ITargetingContextAccessor`](#itargetingcontextaccessor) if one is registered.
+
+### Defining Variants
+
+Each variant has two properties: a name and a configuration. The name is used to refer to a specific variant, and the configuration is the value of that variant. The configuration can be set using either the `ConfigurationReference` or `ConfigurationValue` properties. `ConfigurationReference` is a string path that references a section of the current configuration that contains the feature flag declaration. `ConfigurationValue` is an inline configuration that can be a string, number, boolean, or configuration object. If both are specified, `ConfigurationValue` is used. If neither are specified, the returned variant's `Configuration` property will be null.
+
+A list of all possible variants is defined for each feature under the `Variants` property.
 
 ```
-"Variants": [
-    { 
-        "Name": "Big", 
-        "ConfigurationReference": "ShoppingCart:Big" 
-    },  
-    { 
-        "Name": "Small", 
-        "ConfigurationValue": {
-            "Size": 300
+{
+    "FeatureManagement":
+    {
+        "MyFlag":
+        {   
+            "Variants": [
+                { 
+                    "Name": "Big", 
+                    "ConfigurationReference": "ShoppingCart:Big" 
+                },  
+                { 
+                    "Name": "Small", 
+                    "ConfigurationValue": {
+                        "Size": 300
+                    }
+                } 
+            ],
+            "EnabledFor": [
+                {
+                    "Name": "AlwaysOn"
+                }
+            ]
         }
-    } 
-]
+    }
+}
 ```
 
-### Allocating a Variant
+### Allocating Variants
 
-The process of allocating a variant to a specific feature is determined by the `Allocation` property of the feature.
+The process of allocating a feature's variants is determined by the `Allocation` property of the feature.
 
 ```
 "Allocation": { 
@@ -809,21 +868,21 @@ The `Allocation` setting of a feature flag has the following properties:
 | Property | Description |
 | ---------------- | ---------------- |
 | `DefaultWhenDisabled` | Specifies which variant should be used when a variant is requested while the feature is considered disabled. |
-| `DefaultWhenEnabled` | Specifies which variant should be used when a variant is requested while the feature is considered enabled and no variant was allocated to the user. |
-| `User` | Specifies a variant and a list of users for which that variant should be used. | 
-| `Group` | Specifies a variant and a list of groups the current user has to be in for that variant to be used. |
-| `Percentile` | Specifies a variant and a percentage range the user's calculated percentage has to fit into for that variant to be used. |
+| `DefaultWhenEnabled` | Specifies which variant should be used when a variant is requested while the feature is considered enabled and no other variant was assigned to the user. |
+| `User` | Specifies a variant and a list of users to whom that variant should be assigned. | 
+| `Group` | Specifies a variant and a list of groups the current user has to be in for that variant to be assigned. |
+| `Percentile` | Specifies a variant and a percentage range the user's calculated percentage has to fit into for that variant to be assigned. |
 | `Seed` | The value which percentage calculations for `Percentile` are based on. The percentage calculation for a specific user will be the same across all features if the same `Seed` value is used. If no `Seed` is specified, then a default seed is created based on the feature name. |
 
-In the above example, if the feature is not enabled, `GetVariantAsync` would return the variant allocated by `DefaultWhenDisabled`, which is `Small` in this case. 
+In the above example, if the feature is not enabled, the feature manager will assign the variant marked as `DefaultWhenDisabled` to the current user, which is `Small` in this case.
 
-If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to allocate a variant for this feature. If the user being evaluated is named `Marsha`, in the group named `Ring1`, or the user happens to fall between the 0 and 10th percentile calculated with the given `Seed`, then the specified variant is returned for that allocation. In this case, all of these would return the `Big` variant. If none of these allocations match, the `DefaultWhenEnabled` variant is returned, which is `Small`.
+If the feature is enabled, the feature manager will check the `User`, `Group`, and `Percentile` allocations in that order to assign a variant. For this particular example, if the user being evaluated is named `Marsha`, in the group named `Ring1`, or the user happens to fall between the 0 and 10th percentile, then the specified variant is assigned to the user. In this case, all of these would return the `Big` variant. If none of these allocations match, the user is assigned the `DefaultWhenEnabled` variant, which is `Small`.
 
 Allocation logic is similar to the [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter, but there are some parameters that are present in targeting that aren't in allocation, and vice versa. The outcomes of targeting and allocation are not related.
 
 ### Overriding Enabled State with a Variant
 
-You can use variants to override the enabled state of a feature flag. This gives variants an opportunity to extend the evaluation of a feature flag. If a caller is checking whether a flag that has variants is enabled, then variant allocation will be performed to see if an allocated variant is set up to override the result. This is done using the optional variant property `StatusOverride`. By default, this property is set to `None`, which means the variant doesn't affect whether the flag is considered enabled or disabled. Setting `StatusOverride` to `Enabled` allows the variant, when chosen, to override a flag to be enabled. Setting `StatusOverride` to `Disabled` provides the opposite functionality, therefore disabling the flag when the variant is chosen. A feature with a `Status` of `Disabled` cannot be overridden.
+You can use variants to override the enabled state of a feature flag. This gives variants an opportunity to extend the evaluation of a feature flag. If a caller is checking whether a flag that has variants is enabled, the feature manager will check if the variant assigned to the current user is set up to override the result. This is done using the optional variant property `StatusOverride`. By default, this property is set to `None`, which means the variant doesn't affect whether the flag is considered enabled or disabled. Setting `StatusOverride` to `Enabled` allows the variant, when chosen, to override a flag to be enabled. Setting `StatusOverride` to `Disabled` provides the opposite functionality, therefore disabling the flag when the variant is chosen. A feature with a `Status` of `Disabled` cannot be overridden.
 
 If you are using a feature flag with binary variants, the `StatusOverride` property can be very helpful. It allows you to continue using APIs like `IsEnabledAsync` and `FeatureGateAttribute` in your application, all while benefiting from the new features that come with variants, such as percentile allocation and seed.
 
