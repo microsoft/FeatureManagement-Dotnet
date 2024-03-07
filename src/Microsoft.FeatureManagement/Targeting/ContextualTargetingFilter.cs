@@ -28,10 +28,10 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// </summary>
         /// <param name="options">Options controlling the behavior of the targeting evaluation performed by the filter.</param>
         /// <param name="loggerFactory">A logger factory for creating loggers.</param>
-        public ContextualTargetingFilter(IOptions<TargetingEvaluationOptions> options, ILoggerFactory loggerFactory)
+        public ContextualTargetingFilter(IOptions<TargetingEvaluationOptions> options, ILoggerFactory loggerFactory = null)
         {
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
-            _logger = loggerFactory?.CreateLogger<ContextualTargetingFilter>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _logger = loggerFactory?.CreateLogger<ContextualTargetingFilter>();
         }
 
         private StringComparison ComparisonType => _options.IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
