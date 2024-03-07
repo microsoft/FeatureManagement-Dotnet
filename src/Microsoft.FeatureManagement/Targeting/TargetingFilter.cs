@@ -26,7 +26,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <param name="options">Options controlling the behavior of the targeting evaluation performed by the filter.</param>
         /// <param name="contextAccessor">An accessor used to acquire the targeting context for use in feature evaluation.</param>
         /// <param name="loggerFactory">A logger factory for creating loggers.</param>
-        public TargetingFilter(IOptions<TargetingEvaluationOptions> options, ITargetingContextAccessor contextAccessor, ILoggerFactory loggerFactory = null)
+        public TargetingFilter(ITargetingContextAccessor contextAccessor, IOptions<TargetingEvaluationOptions> options = null, ILoggerFactory loggerFactory = null)
         {
             _contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
             _contextualFilter = new ContextualTargetingFilter(options, loggerFactory);
