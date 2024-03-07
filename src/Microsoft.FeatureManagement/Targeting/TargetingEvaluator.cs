@@ -35,11 +35,6 @@ namespace Microsoft.FeatureManagement.Targeting
                 throw new ArgumentNullException(nameof(targetingContext));
             }
 
-            if (!TryValidateSettings(settings, out string paramName, out string reason))
-            {
-                throw new ArgumentException(reason, paramName);
-            }
-
             if (settings.Audience.Exclusion != null)
             {
                 //
@@ -236,7 +231,7 @@ namespace Microsoft.FeatureManagement.Targeting
         /// <param name="paramName">The name of the invalid setting, if any.</param>
         /// <param name="reason">The reason that the setting is invalid.</param>
         /// <returns>True if the provided settings are valid. False if the provided settings are invalid.</returns>
-        private static bool TryValidateSettings(TargetingFilterSettings targetingSettings, out string paramName, out string reason)
+        public static bool TryValidateSettings(TargetingFilterSettings targetingSettings, out string paramName, out string reason)
         {
             paramName = null;
 
