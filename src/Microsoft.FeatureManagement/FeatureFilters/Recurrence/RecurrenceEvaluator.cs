@@ -36,7 +36,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (TryFindPreviousOccurrence(time, settings, out DateTimeOffset previousOccurrence, out int _))
             {
-                return time <= previousOccurrence + (settings.End.Value - settings.Start.Value);
+                return time < previousOccurrence + (settings.End.Value - settings.Start.Value);
             }
 
             return false;

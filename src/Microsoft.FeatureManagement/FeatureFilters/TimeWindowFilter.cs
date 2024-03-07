@@ -102,7 +102,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                         return Task.FromResult(false);
                     }
 
-                    if (now <= cachedTime + (settings.End.Value - settings.Start.Value))
+                    if (now < cachedTime + (settings.End.Value - settings.Start.Value))
                     {
                         return Task.FromResult(true);
                     }
