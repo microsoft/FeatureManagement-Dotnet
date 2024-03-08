@@ -790,7 +790,7 @@ Each variant has two properties: a name and a configuration. The name is used to
 
 A list of all possible variants is defined for each feature under the `Variants` property.
 
-```
+``` javascript
 {
     "FeatureManagement":
     {
@@ -822,7 +822,7 @@ A list of all possible variants is defined for each feature under the `Variants`
 
 The process of allocating a feature's variants is determined by the `Allocation` property of the feature.
 
-```
+``` javascript
 "Allocation": { 
     "DefaultWhenEnabled": "Small", 
     "DefaultWhenDisabled": "Small",  
@@ -880,13 +880,15 @@ If the feature is enabled, the feature manager will check the `User`, `Group`, a
 
 Allocation logic is similar to the [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter, but there are some parameters that are present in targeting that aren't in allocation, and vice versa. The outcomes of targeting and allocation are not related.
 
+**Note:** To allow allocating feature variants, you need to register `ITargetingContextAccessor`. This could be done by calling `WithTargeting<T>` method.
+
 ### Overriding Enabled State with a Variant
 
 You can use variants to override the enabled state of a feature flag. This gives variants an opportunity to extend the evaluation of a feature flag. If a caller is checking whether a flag that has variants is enabled, the feature manager will check if the variant assigned to the current user is set up to override the result. This is done using the optional variant property `StatusOverride`. By default, this property is set to `None`, which means the variant doesn't affect whether the flag is considered enabled or disabled. Setting `StatusOverride` to `Enabled` allows the variant, when chosen, to override a flag to be enabled. Setting `StatusOverride` to `Disabled` provides the opposite functionality, therefore disabling the flag when the variant is chosen. A feature with a `Status` of `Disabled` cannot be overridden.
 
 If you are using a feature flag with binary variants, the `StatusOverride` property can be very helpful. It allows you to continue using APIs like `IsEnabledAsync` and `FeatureGateAttribute` in your application, all while benefiting from the new features that come with variants, such as percentile allocation and seed.
 
-```
+``` javascript
 "Allocation": {
     "Percentile": [{
         "Variant": "On",
@@ -914,6 +916,52 @@ If you are using a feature flag with binary variants, the `StatusOverride` prope
 
 In the above example, the feature is enabled by the `AlwaysOn` filter. If the current user is in the calculated percentile range of 10 to 20, then the `On` variant is returned. Otherwise, the `Off` variant is returned and because `StatusOverride` is equal to `Disabled`, the feature will now be considered disabled.
 
+### Variant Service
+
+Dependency injection can be wired up with the variant feature flag. Different implementations of a service interface can be considered as variant services. Specific variant of an interface can be retrieved from the dependency injection container based on the allocated variant of a variant feature flag. This could be done by using `IVariantServiceProvider<TService>`.
+
+``` C#
+    IVariantServiceProvider<IAlgorithm> algorithmServiceProvider;
+    ...
+
+    IAlgorithm forecastAlgorithm = await algorithmServiceProvider.GetServiceAsync(cancellationToken); 
+```
+
+The `IVaraintServiceProvider<IAlgorithm>` will retrieve a specific implementation of `IAlgorithm` from the dependency injection container. It can be registered by calling `WithvariantService<TService>` on the `IFeatureManagementBuilder`.
+
+``` C#
+services.AddFeatureManagement() 
+        .WithVariantService<IAlgorithm>("ForecastAlgorithm");
+```
+
+With the call above, `IAlgorithm` will be wired up with the variant feature flag `ForecastAlgorithm`. The `GetServiceAsync` method of `IVariantService<IAlgorithm>` will retrieve the variant service of `IAlgorithm` which matches the name of allocated variant of the `ForecastAlgorithm` flag, from the dependency injection container.
+
+``` javascript
+{
+    "ForecastAlgorithm": {
+        "Variants": [ 
+            { 
+                "Name": "AlgorithmBeta" 
+            }
+        ] 
+    }
+}
+```
+
+**Note:** The `WithvariantService<TService>` method will not register any implementation of `TService`. You need to register variant serices as `TService` to allow `IVariantServiceProvider<TService>` to retrieve them from the dependency injection container.
+
+#### Variant Service Alias Attribute
+
+``` C#
+[VariantServiceAlias("Beta")]
+public class AlgorithmBeta : IAlgorithm
+{
+    ...
+}
+```
+
+The variant service provider will use the type names of variant services to match the allocated variant. If a variant service isdecorated with the `VariantServiceAliasAttribute`, the name declared in this attribute should be used in configuration to reference this variant service.
+
 ## Telemetry
 
 When a feature flag change is deployed, it is often important to analyze its effect on an application. For example, here are a few questions that may arise:
@@ -931,7 +979,7 @@ By default, feature flags will not have telemetry emitted. To publish telemetry 
 
 For flags defined in `appsettings.json`, that is done by using the `Telemetry` property on feature flags.
 
-```
+``` javascript
 {
     "FeatureManagement":
     {
