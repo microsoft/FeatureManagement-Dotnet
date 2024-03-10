@@ -18,10 +18,18 @@ public class FeatureService : IFeatureService
         return feature;
     }
     
-    public async Task<IEnumerable<Feature>> GetFeatureAsync()
+    public async Task<IReadOnlyCollection<Feature>> GetFeatureAsync()
     {
         var features = await _sqliteDbContext.Set<Feature>().ToListAsync();
 
         return features;
+    }
+    
+    public async Task UpdateFeatureAsync(string featureName, bool isEnabled)
+    {
+        var feature = await _sqliteDbContext.Set<Feature>().FindAsync(featureName);
+        if (feature != null) feature.IsEnabled = isEnabled;
+
+        await _sqliteDbContext.SaveChangesAsync();
     }
 }

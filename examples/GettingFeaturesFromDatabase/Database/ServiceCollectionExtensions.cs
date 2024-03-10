@@ -11,6 +11,11 @@ public static class ServiceCollectionExtensions
         {
             options.UseSqlite("Data Source=example.db");
         });
+        
+        /* Create Database On Start */
+        var databaseContext = services.BuildServiceProvider().GetRequiredService<SqliteDbContext>();
+        databaseContext.Database.EnsureDeleted();
+        databaseContext.Database.EnsureCreated();
     }
     
     public static void AddFeatureService(this IServiceCollection services)

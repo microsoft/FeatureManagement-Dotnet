@@ -9,9 +9,11 @@ public class SqliteDbContext : DbContext
     public SqliteDbContext(DbContextOptions<SqliteDbContext> options) : base(options)
     {
     }
-    
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Feature>().HasKey(x => x.Name);
+        base.OnModelCreating(modelBuilder);
+        
+        modelBuilder.ApplyConfiguration(new FeatureConfiguration());
     }
 }
