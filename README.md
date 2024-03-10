@@ -870,7 +870,7 @@ The `Allocation` setting of a feature flag has the following properties:
 | `DefaultWhenDisabled` | Specifies which variant should be used when a variant is requested while the feature is considered disabled. |
 | `DefaultWhenEnabled` | Specifies which variant should be used when a variant is requested while the feature is considered enabled and no other variant was assigned to the user. |
 | `User` | Specifies a variant and a list of users to whom that variant should be assigned. | 
-| `Group` | Specifies a variant and a list of groups the current user has to be in for that variant to be assigned. |
+| `Group` | Specifies a variant and a list of groups the current user has to be in at least one of for that variant to be used. |
 | `Percentile` | Specifies a variant and a percentage range the user's calculated percentage has to fit into for that variant to be assigned. |
 | `Seed` | The value which percentage calculations for `Percentile` are based on. The percentage calculation for a specific user will be the same across all features if the same `Seed` value is used. If no `Seed` is specified, then a default seed is created based on the feature name. |
 
