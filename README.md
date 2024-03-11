@@ -96,7 +96,7 @@ The feature management library supports appsettings.json as a feature flag sourc
 
 The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided three different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration, so it only has the `Name` property. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
 
-The detailed schema of the `FeatureManagement` section can be found [here](./schemas/FeatureManagement.Dotnet.v1.0.0.schema.json).
+The detailed schema of the `FeatureManagement` section can be found [here](./schemas/FeatureManagement.Dotnet.v2.0.0.schema.json).
 
 **Advanced:** The usage of colon ':' in feature flag names is forbidden.
 
@@ -784,7 +784,50 @@ variantConfiguration.Bind(settings);
 
 The variant returned is dependent on the user currently being evaluated, and that information is obtained from an instance of `TargetingContext`. This context can either be passed in when calling `GetVariantAsync` or it can be automatically retrieved from an implementation of [`ITargetingContextAccessor`](#itargetingcontextaccessor) if one is registered.
 
-### Defining Variants
+### Variant Feature Flag Declaration
+
+Compared to normal feature flags, variant feature flags have two additional properties: `Variants` and `Allocation`. The `Variants` property is an array that contains the variants defined for this feature. The `Allocation` property defines how these variants should be allocated for the feature. Just like declaring normal feature flags, you can set up variant feature flags in a json file. Here is an example of a variant feature flag.
+
+``` javascript
+
+{
+    "FeatureManagement":
+    {
+        "MyVariantFeatureFlag":
+        {   
+            "Allocation": {
+                "DefaultWhenEnabled": "Small",
+                "Group": [
+                    {
+                        "Variant": "Big",
+                        "Groups": [
+                            "Ring1"
+                        ]
+                    }
+                ]
+            },
+            "Variants": [
+                { 
+                    "Name": "Big"
+                },  
+                { 
+                    "Name": "Small"
+                } 
+            ],
+            "EnabledFor": [
+                {
+                    "Name": "AlwaysOn"
+                }
+            ]
+        }
+    }
+}
+
+```
+
+For more details about how to configure variant feature flags, please see [here](./schemas/FeatureManagement.Dotnet.v2.0.0.schema.json).
+
+#### Defining Variants
 
 Each variant has two properties: a name and a configuration. The name is used to refer to a specific variant, and the configuration is the value of that variant. The configuration can be set using either the `ConfigurationReference` or `ConfigurationValue` properties. `ConfigurationReference` is a string path that references a section of the current configuration that contains the feature flag declaration. `ConfigurationValue` is an inline configuration that can be a string, number, boolean, or configuration object. If both are specified, `ConfigurationValue` is used. If neither are specified, the returned variant's `Configuration` property will be null.
 
@@ -794,7 +837,7 @@ A list of all possible variants is defined for each feature under the `Variants`
 {
     "FeatureManagement":
     {
-        "MyFlag":
+        "MyVariantFeatureFlag":
         {   
             "Variants": [
                 { 
@@ -815,10 +858,21 @@ A list of all possible variants is defined for each feature under the `Variants`
             ]
         }
     }
+
+    "ShoppingCart": {
+        "Big": {
+            "Size": 600,
+            "Color": "green"
+        },
+        "Small": {
+            "Size": 300,
+            "Color": "gray"
+        }
+    }
 }
 ```
 
-### Allocating Variants
+#### Allocating Variants
 
 The process of allocating a feature's variants is determined by the `Allocation` property of the feature.
 
@@ -890,28 +944,30 @@ If you are using a feature flag with binary variants, the `StatusOverride` prope
 
 ``` javascript
 "Allocation": {
-    "Percentile": [{
-        "Variant": "On",
-        "From": 10,
-        "To": 20
-    }],
+    "Percentile": [
+        {
+            "Variant": "On",
+            "From": 10,
+            "To": 20
+        }
+    ],
     "DefaultWhenEnabled":  "Off",
     "Seed": "Enhanced-Feature-Group"
 },
 "Variants": [
-    { 
+    {
         "Name": "On"
     },
-    { 
+    {
         "Name": "Off",
         "StatusOverride": "Disabled"
-    }    
+    }
 ],
-"EnabledFor": [ 
-    { 
-        "Name": "AlwaysOn" 
-    } 
-] 
+"EnabledFor": [
+    {
+        "Name": "AlwaysOn"
+    }
+]
 ```
 
 In the above example, the feature is enabled by the `AlwaysOn` filter. If the current user is in the calculated percentile range of 10 to 20, then the `On` variant is returned. Otherwise, the `Off` variant is returned and because `StatusOverride` is equal to `Disabled`, the feature will now be considered disabled.
