@@ -36,6 +36,7 @@ Here are some of the benefits of using this library:
 * [Targeting](#targeting)
   * [Targeting Exclusion](#targeting-exclusion)
 * [Variants](#variants)
+* [Variants in Dependency Injection](#variants-in-dependency-injection)
 * [Telemetry](#telemetry)
     * [Enabling Telemetry](#enabling-telemetry)
     * [Custom Telemetry Publishers](#custom-telemetry-publishers)
@@ -972,15 +973,15 @@ If you are using a feature flag with binary variants, the `StatusOverride` prope
 
 In the above example, the feature is enabled by the `AlwaysOn` filter. If the current user is in the calculated percentile range of 10 to 20, then the `On` variant is returned. Otherwise, the `Off` variant is returned and because `StatusOverride` is equal to `Disabled`, the feature will now be considered disabled.
 
-### Variant Service
+## Variants in Dependency Injection
 
-Dependency injection can be wired up with the variant feature flag. Different implementations of a service interface can be considered as variant services. Specific variant of an interface can be retrieved from the dependency injection container based on the allocated variant of a variant feature flag. This could be done by using `IVariantServiceProvider<TService>`.
+Dependency injection can be wired up with a variant feature flag. Different implementations of a service interface can be considered as variant services. Specific variant of an interface can be retrieved from the dependency injection container based on the allocated variant of a variant feature flag. This could be done by using `IVariantServiceProvider<TService>`.
 
 ``` C#
-    IVariantServiceProvider<IAlgorithm> algorithmServiceProvider;
-    ...
+IVariantServiceProvider<IAlgorithm> algorithmServiceProvider;
+...
 
-    IAlgorithm forecastAlgorithm = await algorithmServiceProvider.GetServiceAsync(cancellationToken); 
+IAlgorithm forecastAlgorithm = await algorithmServiceProvider.GetServiceAsync(cancellationToken); 
 ```
 
 The `IVaraintServiceProvider<IAlgorithm>` will retrieve a specific implementation of `IAlgorithm` from the dependency injection container. It can be registered by calling `WithvariantService<TService>` on the `IFeatureManagementBuilder`.
