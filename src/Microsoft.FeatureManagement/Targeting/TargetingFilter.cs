@@ -64,10 +64,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Ensure targeting can be performed
             if (targetingContext == null)
             {
-                if (_logger != null)
-                {
-                    _logger.LogWarning("No targeting context available for targeting evaluation.");
-                }
+                _logger?.LogWarning("No targeting context available for targeting evaluation.");
 
                 return false;
             }
