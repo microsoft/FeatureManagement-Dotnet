@@ -348,7 +348,7 @@ namespace Microsoft.FeatureManagement
 
                 foreach (ISessionManager sessionManager in _sessionManagers)
                 {
-                    await sessionManager.SetAsync(evaluationEvent.FeatureDefinition.Name, evaluationEvent.Enabled, cancellationToken).ConfigureAwait(false);
+                    await sessionManager.SetAsync(evaluationEvent.FeatureDefinition.Name, evaluationEvent.Enabled).ConfigureAwait(false);
                 }
 
                 if (evaluationEvent.FeatureDefinition.Telemetry != null &&
@@ -367,7 +367,7 @@ namespace Microsoft.FeatureManagement
 
             foreach (ISessionManager sessionManager in _sessionManagers)
             {
-                bool? readSessionResult = await sessionManager.GetAsync(featureDefinition.Name, cancellationToken).ConfigureAwait(false);
+                bool? readSessionResult = await sessionManager.GetAsync(featureDefinition.Name).ConfigureAwait(false);
 
                 if (readSessionResult.HasValue)
                 {

@@ -18,7 +18,7 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>An enumerator which provides asynchronous iteration over the feature names registered in the feature manager.</returns>
-        IAsyncEnumerable<string> GetFeatureNamesAsync(CancellationToken cancellationToken);
+        IAsyncEnumerable<string> GetFeatureNamesAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Checks whether a given feature is enabled.
