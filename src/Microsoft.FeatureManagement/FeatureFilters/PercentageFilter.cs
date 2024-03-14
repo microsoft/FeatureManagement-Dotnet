@@ -51,10 +51,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (settings.Value < 0)
             {
-                if (_logger != null)
-                {
-                    _logger.LogWarning($"The '{Alias}' feature filter does not have a valid '{nameof(settings.Value)}' value for feature '{context.FeatureName}'");
-                }
+                _logger?.LogWarning($"The '{Alias}' feature filter does not have a valid '{nameof(settings.Value)}' value for feature '{context.FeatureName}'");
 
                 result = false;
             }
