@@ -51,7 +51,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (!settings.Start.HasValue && !settings.End.HasValue)
             {
-                _logger?.LogWarning($"The '{Alias}' feature filter is not valid for feature '{context.FeatureName}'. It must have have specify either '{nameof(settings.Start)}', '{nameof(settings.End)}', or both.");
+                _logger?.LogWarning($"The '{Alias}' feature filter is not valid for feature '{context.FeatureName}'. It must specify either '{nameof(settings.Start)}', '{nameof(settings.End)}', or both.");
 
                 return Task.FromResult(false);
             }
