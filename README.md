@@ -925,7 +925,7 @@ The `Allocation` setting of a feature flag has the following properties:
 | `DefaultWhenDisabled` | Specifies which variant should be used when a variant is requested while the feature is considered disabled. |
 | `DefaultWhenEnabled` | Specifies which variant should be used when a variant is requested while the feature is considered enabled and no other variant was assigned to the user. |
 | `User` | Specifies a variant and a list of users to whom that variant should be assigned. | 
-| `Group` | Specifies a variant and a list of groups the current user has to be in at least one of for that variant to be used. |
+| `Group` | Specifies a variant and a list of groups. The variant will be assigned if the user is in at least one of the groups. |
 | `Percentile` | Specifies a variant and a percentage range the user's calculated percentage has to fit into for that variant to be assigned. |
 | `Seed` | The value which percentage calculations for `Percentile` are based on. The percentage calculation for a specific user will be the same across all features if the same `Seed` value is used. If no `Seed` is specified, then a default seed is created based on the feature name. |
 
@@ -975,7 +975,7 @@ In the above example, the feature is enabled by the `AlwaysOn` filter. If the cu
 
 ## Variants in Dependency Injection
 
-Dependency injection can be wired up with a variant feature flag. Different implementations of a service interface can be considered as variant services. Specific variant of an interface can be retrieved from the dependency injection container based on the allocated variant of a variant feature flag. This could be done by using `IVariantServiceProvider<TService>`.
+Dependency injection can be wired up with a variant feature flag. You can use a variant feature flag to control which implementation of a service should be used by the dependency injection, based on the allocated variant of the feature flag. This could be done by using `IVariantServiceProvider<TService>`.
 
 ``` C#
 IVariantServiceProvider<IAlgorithm> algorithmServiceProvider;
@@ -984,7 +984,7 @@ IVariantServiceProvider<IAlgorithm> algorithmServiceProvider;
 IAlgorithm forecastAlgorithm = await algorithmServiceProvider.GetServiceAsync(cancellationToken); 
 ```
 
-The `IVaraintServiceProvider<IAlgorithm>` will retrieve a specific implementation of `IAlgorithm` from the dependency injection container. It can be registered by calling `WithvariantService<TService>` on the `IFeatureManagementBuilder`.
+The `IVaraintServiceProvider<IAlgorithm>` will retrieve a specific implementation of `IAlgorithm` from the dependency injection container. It can be registered by calling `WithVariantService<TService>` on the `IFeatureManagementBuilder`.
 
 ``` C#
 services.AddFeatureManagement() 
