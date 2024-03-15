@@ -1022,7 +1022,7 @@ public class AlgorithmBeta : IAlgorithm
 }
 ```
 
-The variant service provider will use the type names of variant services to match the allocated variant. If a variant service isdecorated with the `VariantServiceAliasAttribute`, the name declared in this attribute should be used in configuration to reference this variant service.
+The variant service provider will use the type names of implementations to match the allocated variant. If a variant service is decorated with the `VariantServiceAliasAttribute`, the name declared in this attribute should be used in configuration to reference this variant service.
 
 ## Telemetry
 
