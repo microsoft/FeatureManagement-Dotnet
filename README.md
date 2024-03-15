@@ -996,16 +996,21 @@ With the call above, `IAlgorithm` will be wired up with the variant feature flag
 ``` javascript
 {
     "ForecastAlgorithm": {
-        "Variants": [ 
+        "Variants": [
             { 
                 "Name": "AlgorithmBeta" 
-            }
+            },
+            ...
         ] 
     }
 }
 ```
 
-**Note:** The `WithvariantService<TService>` method will not register any implementation of `TService`. You need to register variant serices as `TService` to allow `IVariantServiceProvider<TService>` to retrieve them from the dependency injection container.
+**Note:** The `WithvariantService<TService>` method will not register any implementation of `TService`. You need to register variant serices as `TService` to allow `IVariantServiceProvider<TService>` to retrieve them from the dependency injection container. Which extension method to use for registration depends on your needs. Here is an example.
+
+``` C#
+services.AddSingleton<IAlgorithm, AlgorithmBeta>();
+```
 
 #### Variant Service Alias Attribute
 
