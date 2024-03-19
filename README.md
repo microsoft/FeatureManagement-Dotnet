@@ -36,7 +36,7 @@ Here are some of the benefits of using this library:
 * [Targeting](#targeting)
   * [Targeting Exclusion](#targeting-exclusion)
 * [Variants](#variants)
-* [Variants in Dependency Injection](#variants-in-dependency-injection)
+    * [Variants in Dependency Injection](#variants-in-dependency-injection)
 * [Telemetry](#telemetry)
     * [Enabling Telemetry](#enabling-telemetry)
     * [Custom Telemetry Publishers](#custom-telemetry-publishers)
@@ -935,7 +935,7 @@ If the feature is enabled, the feature manager will check the `User`, `Group`, a
 
 Allocation logic is similar to the [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter, but there are some parameters that are present in targeting that aren't in allocation, and vice versa. The outcomes of targeting and allocation are not related.
 
-**Note:** To allow allocating feature variants, you need to register `ITargetingContextAccessor`. This could be done by calling `WithTargeting<T>` method.
+**Note:** To allow allocating feature variants, you need to register `ITargetingContextAccessor`. This can be done by calling the `WithTargeting<T>` method.
 
 ### Overriding Enabled State with a Variant
 
@@ -973,9 +973,9 @@ If you are using a feature flag with binary variants, the `StatusOverride` prope
 
 In the above example, the feature is enabled by the `AlwaysOn` filter. If the current user is in the calculated percentile range of 10 to 20, then the `On` variant is returned. Otherwise, the `Off` variant is returned and because `StatusOverride` is equal to `Disabled`, the feature will now be considered disabled.
 
-## Variants in Dependency Injection
+### Variants in Dependency Injection
 
-Dependency injection can be wired up with a variant feature flag. You can use a variant feature flag to control which implementation of a service should be used by the dependency injection, based on the allocated variant of the feature flag. This could be done by using `IVariantServiceProvider<TService>`.
+Variant feature flags can be used in conjunction with dependency injection to surface different implementations of a service for different users. This is accomplished through the use of the `IVariantServiceProvider<TService>` interface.
 
 ``` C#
 IVariantServiceProvider<IAlgorithm> algorithmServiceProvider;
@@ -984,17 +984,22 @@ IVariantServiceProvider<IAlgorithm> algorithmServiceProvider;
 IAlgorithm forecastAlgorithm = await algorithmServiceProvider.GetServiceAsync(cancellationToken); 
 ```
 
-The `IVaraintServiceProvider<IAlgorithm>` will retrieve a specific implementation of `IAlgorithm` from the dependency injection container. It can be registered by calling `WithVariantService<TService>` on the `IFeatureManagementBuilder`.
+In the snippet above, the `IVariantServiceProvider<IAlgorithm>` will retrieve an implementation of `IAlgorithm` from the dependency injection container. The chosen implementation is dependent upon:
+* The feature that the `IAlgorithm` service was registered with.
+* The allocated variant for that feature.
+
+The `IVariantServiceProvider<T>` is made available to the application by calling `IFeatureManagementBuilder.WithVariantService<T>(string featureName)`. See below for an example.
 
 ``` C#
 services.AddFeatureManagement() 
         .WithVariantService<IAlgorithm>("ForecastAlgorithm");
 ```
 
-With the call above, `IAlgorithm` will be wired up with the variant feature flag `ForecastAlgorithm`. The `GetServiceAsync` method of `IVariantService<IAlgorithm>` will retrieve the variant service of `IAlgorithm` which matches the name of allocated variant of the `ForecastAlgorithm` flag, from the dependency injection container.
+With the call above, `IAlgorithm` will be wired up with the variant feature flag `ForecastAlgorithm`. The `GetServiceAsync` method of `IVariantService<IAlgorithm>` will retrieve the variant service of `IAlgorithm` which matches the name of allocated variant of the `ForecastAlgorithm` flag, from the dependency injection container. If there is no appropriate variant service found, the `GetServiceAsync` method will return null.
 
 ``` javascript
 {
+    // The example variant feature flag
     "ForecastAlgorithm": {
         "Variants": [
             { 
@@ -1006,9 +1011,10 @@ With the call above, `IAlgorithm` will be wired up with the variant feature flag
 }
 ```
 
-**Note:** The `WithvariantService<TService>` method will not register any implementation of `TService`. You need to register variant serices as `TService` to allow `IVariantServiceProvider<TService>` to retrieve them from the dependency injection container. Which extension method to use for registration depends on your needs. Here is an example.
+**Note:** The `WithVariantService<TService>` method will not register any implementation(s) of `TService`. You need to register variant services as `TService` to allow `IVariantServiceProvider<TService>` to retrieve them from the dependency injection container. Which extension method to use for registration depends on your needs. Here is an example.
 
 ``` C#
+// Adds an implementation for `IAlgorithm`, which is consumed as a variant service above.
 services.AddSingleton<IAlgorithm, AlgorithmBeta>();
 ```
 
