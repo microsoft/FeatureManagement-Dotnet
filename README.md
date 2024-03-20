@@ -199,6 +199,36 @@ The feature management library also supports the usage of the [`Microsoft Featur
 
 **Note:** If the `feature_management` section can be found in the configuration, the `FeatureManagement` section will be ignored.
 
+#### Microsoft Feature Management Schema
+
+The feature management library also supports the usage of the [`Microsoft Feature Management schema`](https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureManagement.v1.0.0.schema.json) to declare feature flags. This schema is language agnostic in origin and is supported by all Microsoft feature management libraries.
+
+``` JavaScript
+{
+    "feature_management": {
+        "feature_flags": [
+            {
+                "id": "FeatureT",
+                "enabled": true,
+                "conditions": {
+                    "client_filters": [
+                        {  
+                            "name": "Microsoft.TimeWindow",
+                            "parameters": {
+                                "Start": "Mon, 01 May 2023 13:59:59 GMT",
+                                "End": "Sat, 01 July 2023 00:00:00 GMT"
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
+```
+
+**Note:** If the `feature_management` section can be found in the configuration, the `FeatureManagement` section will be ignored.
+
 ## Consumption
 
 The basic form of feature management is checking if a feature flag is enabled and then performing actions based on the result. This is done through the `IFeatureManager`'s `IsEnabledAsync` method.
