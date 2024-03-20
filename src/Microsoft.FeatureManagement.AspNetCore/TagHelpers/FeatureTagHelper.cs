@@ -2,7 +2,6 @@
 // Licensed under the MIT license.
 //
 using Microsoft.AspNetCore.Razor.TagHelpers;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -82,11 +81,12 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
 
                     IEnumerable<string> variants = Variant.Split(',').Select(n => n.Trim());
 
-                    enabled = await variants.Any(async variant => {
-                        Variant assignedVariant = await _featureManager.GetVariantAsync(features.First());
+                    enabled = await variants.Any(
+                        async variant => {
+                            Variant assignedVariant = await _featureManager.GetVariantAsync(features.First());
 
-                        return variant == assignedVariant?.Name;    
-                    });
+                            return variant == assignedVariant?.Name;    
+                        });
                 }
             }
 
