@@ -355,7 +355,7 @@ namespace Microsoft.FeatureManagement.Targeting
             Array.Copy(hash, 0, relevantBytes, 0, 4);
 
             //
-            // If the system is not little-endian, reverse the bytes.
+            // If the system is not little-endian, reverse the bytes
             if (!BitConverter.IsLittleEndian)
             {
                 Array.Reverse(relevantBytes);
