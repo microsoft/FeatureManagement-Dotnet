@@ -1,11 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
 {
@@ -22,7 +20,7 @@ namespace Tests.FeatureManagement
         {
             var settings = filterParameters.Get<TimeWindowFilterSettings>() ?? new TimeWindowFilterSettings();
 
-            if (!RecurrenceEvaluator.TryValidateSettings(settings, out string paramName, out string reason))
+            if (!RecurrenceValidator.TryValidateSettings(settings, out string paramName, out string reason))
             {
                 throw new ArgumentException(reason, paramName);
             }

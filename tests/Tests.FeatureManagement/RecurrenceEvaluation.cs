@@ -38,38 +38,16 @@ namespace Tests.FeatureManagement
         public const string EndDate = "Recurrence.Range.EndDate";
     }
 
-    public class RecurrenceEvaluatorTest
+    public class RecurrenceValidatorTest
     {
         private static void ConsumeValidationTestData(List<ValueTuple<TimeWindowFilterSettings, string, string>> testData)
         {
             foreach ((TimeWindowFilterSettings settings, string paramNameRef, string errorMessageRef) in testData)
             {
-                RecurrenceEvaluator.TryValidateSettings(settings, out string paramName, out string errorMessage);
+                RecurrenceValidator.TryValidateSettings(settings, out string paramName, out string errorMessage);
 
                 Assert.Equal(paramNameRef, paramName);
                 Assert.Equal(errorMessageRef, errorMessage);
-            }
-        }
-
-        private static void ConsumeEvaluationTestData(List<ValueTuple<DateTimeOffset, TimeWindowFilterSettings, bool>> testData)
-        {
-            foreach ((DateTimeOffset time, TimeWindowFilterSettings settings, bool expected) in testData)
-            {
-                Assert.Equal(RecurrenceEvaluator.MatchRecurrence(time, settings), expected);
-            }
-        }
-
-        private static void ConsumeEvalutationTestData(List<ValueTuple<DateTimeOffset, TimeWindowFilterSettings, bool, DateTimeOffset, DateTimeOffset>> testData)
-        {
-            foreach ((DateTimeOffset time, TimeWindowFilterSettings settings, bool expectedRes, DateTimeOffset expectedPrev, DateTimeOffset expectedNext) in testData)
-            {
-                Assert.Equal(expectedRes, RecurrenceEvaluator.TryFindPrevAndNextOccurrences(time, settings, out DateTimeOffset prev, out DateTimeOffset next));
-                
-                if (expectedRes)
-                {
-                    Assert.Equal(expectedPrev, prev);
-                    Assert.Equal(expectedNext, next);
-                }
             }
         }
 
@@ -359,7 +337,7 @@ namespace Tests.FeatureManagement
                 }
             };
 
-            Assert.False(RecurrenceEvaluator.TryValidateSettings(settings, out string paramName, out string errorMessage));
+            Assert.False(RecurrenceValidator.TryValidateSettings(settings, out string paramName, out string errorMessage));
             Assert.Equal(ParamName.End, paramName);
             Assert.Equal(ErrorMessage.TimeWindowDurationOutOfRange, errorMessage);
         }
@@ -414,6 +392,31 @@ namespace Tests.FeatureManagement
             };
 
             ConsumeValidationTestData(testData);
+        }
+    }
+
+    public class RecurrenceEvaluatorTest
+    {
+        private static void ConsumeEvaluationTestData(List<ValueTuple<DateTimeOffset, TimeWindowFilterSettings, bool>> testData)
+        {
+            foreach ((DateTimeOffset time, TimeWindowFilterSettings settings, bool expected) in testData)
+            {
+                Assert.Equal(RecurrenceEvaluator.MatchRecurrence(time, settings), expected);
+            }
+        }
+
+        private static void ConsumeEvalutationTestData(List<ValueTuple<DateTimeOffset, TimeWindowFilterSettings, bool, DateTimeOffset, DateTimeOffset>> testData)
+        {
+            foreach ((DateTimeOffset time, TimeWindowFilterSettings settings, bool expectedRes, DateTimeOffset expectedPrev, DateTimeOffset expectedNext) in testData)
+            {
+                Assert.Equal(expectedRes, RecurrenceEvaluator.TryFindPrevAndNextOccurrences(time, settings, out DateTimeOffset prev, out DateTimeOffset next));
+                
+                if (expectedRes)
+                {
+                    Assert.Equal(expectedPrev, prev);
+                    Assert.Equal(expectedNext, next);
+                }
+            }
         }
 
         [Fact]

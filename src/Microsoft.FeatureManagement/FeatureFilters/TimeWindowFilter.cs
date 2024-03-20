@@ -40,7 +40,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         {
             var settings = filterParameters.Get<TimeWindowFilterSettings>() ?? new TimeWindowFilterSettings();
 
-            if (!RecurrenceEvaluator.TryValidateSettings(settings, out string paramName, out string reason))
+            if (!RecurrenceValidator.TryValidateSettings(settings, out string paramName, out string reason))
             {
                 throw new ArgumentException(reason, paramName);
             }
