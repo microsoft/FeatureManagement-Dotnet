@@ -90,12 +90,12 @@ namespace Microsoft.FeatureManagement.Mvc
         public IEnumerable<string> Features { get; }
 
         /// <summary>
-        /// Controls whether any or all features in <see cref="Features"/> should be enabled to pass.
+        /// Controls whether any or all features in <see cref="FeatureGateAttribute.Features"/> should be enabled to pass.
         /// </summary>
         public RequirementType RequirementType { get; }
 
         /// <summary>
-        /// Performs controller action pre-procesing to ensure that at least one of the specified features are enabled.
+        /// Performs controller action pre-procesing to ensure that any or all of the specified features are enabled.
         /// </summary>
         /// <param name="context">The context of the MVC action.</param>
         /// <param name="next">The action delegate.</param>
