@@ -21,9 +21,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// Creates a percentage based feature filter.
         /// </summary>
         /// <param name="loggerFactory">A logger factory for creating loggers.</param>
-        public PercentageFilter(ILoggerFactory loggerFactory)
+        public PercentageFilter(ILoggerFactory loggerFactory = null)
         {
-            _logger = loggerFactory.CreateLogger<PercentageFilter>();
+            _logger = loggerFactory?.CreateLogger<PercentageFilter>();
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (settings.Value < 0)
             {
-                _logger.LogWarning($"The '{Alias}' feature filter does not have a valid '{nameof(settings.Value)}' value for feature '{context.FeatureName}'");
+                _logger?.LogWarning($"The '{Alias}' feature filter does not have a valid '{nameof(settings.Value)}' value for feature '{context.FeatureName}'");
 
                 result = false;
             }
