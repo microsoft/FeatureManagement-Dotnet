@@ -348,22 +348,18 @@ namespace Microsoft.FeatureManagement.Targeting
                 hash = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(contextId));
             }
 
+
             //
             // The first 4 bytes of the hash will be used for percentage calculation
-            byte[] relevantBytes = new byte[4];
-
-            Array.Copy(hash, 0, relevantBytes, 0, 4);
-
-            //
-            // If the system is not little-endian, reverse the bytes
+            // Endianness check ensures the consistency accross different architectures
             if (!BitConverter.IsLittleEndian)
             {
-                Array.Reverse(relevantBytes);
+                Array.Reverse(hash, 0, 4);
             }
 
             //
             // Cryptographic hashing algorithms ensure adequate entropy across hash
-            uint contextMarker = BitConverter.ToUInt32(relevantBytes, 0);
+            uint contextMarker = BitConverter.ToUInt32(hash, 0);
 
             double contextPercentage = (contextMarker / (double)uint.MaxValue) * 100;
 
