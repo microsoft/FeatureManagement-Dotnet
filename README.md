@@ -985,7 +985,7 @@ IAlgorithm forecastAlgorithm = await algorithmServiceProvider.GetServiceAsync(ca
 ```
 
 In the snippet above, the `IVariantServiceProvider<IAlgorithm>` will retrieve an implementation of `IAlgorithm` from the dependency injection container. The chosen implementation is dependent upon:
-* The feature that the `IAlgorithm` service was registered with.
+* The feature flag that the `IAlgorithm` service was registered with.
 * The allocated variant for that feature.
 
 The `IVariantServiceProvider<T>` is made available to the application by calling `IFeatureManagementBuilder.WithVariantService<T>(string featureName)`. See below for an example.
@@ -995,7 +995,7 @@ services.AddFeatureManagement()
         .WithVariantService<IAlgorithm>("ForecastAlgorithm");
 ```
 
-With the call above, `IAlgorithm` will be wired up with the variant feature flag `ForecastAlgorithm`. The `GetServiceAsync` method of `IVariantService<IAlgorithm>` will retrieve the variant service of `IAlgorithm` which matches the name of allocated variant of the `ForecastAlgorithm` flag, from the dependency injection container. If there is no appropriate variant service found, the `GetServiceAsync` method will return null.
+The call above makes `IVariantServiceProvider<IAlgorithm>` available in the service collection. Implementation(s) of `IAlgorithm` must be added separately via an add method such as `services.AddSingleton<IAlgorithm, SomeImplementation>()`. The implementation of `IAlgorithm` that the `IVariantServiceProvider` uses depends on the `ForecastAlgorithm` variant feature flag. If no implementation of `IAlgorithm` is added to the service collection, then the `IVariantServiceProvider<IAlgorithm>.GetServiceAsync()` will return a task with a *null* result.
 
 ``` javascript
 {
@@ -1009,13 +1009,6 @@ With the call above, `IAlgorithm` will be wired up with the variant feature flag
         ] 
     }
 }
-```
-
-**Note:** The `WithVariantService<TService>` method will not register any implementation(s) of `TService`. You need to register variant services as `TService` to allow `IVariantServiceProvider<TService>` to retrieve them from the dependency injection container. Which extension method to use for registration depends on your needs. Here is an example.
-
-``` C#
-// Adds an implementation for `IAlgorithm`, which is consumed as a variant service above.
-services.AddSingleton<IAlgorithm, AlgorithmBeta>();
 ```
 
 #### Variant Service Alias Attribute
