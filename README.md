@@ -36,6 +36,7 @@ Here are some of the benefits of using this library:
 * [Targeting](#targeting)
   * [Targeting Exclusion](#targeting-exclusion)
 * [Variants](#variants)
+    * [Variants in Dependency Injection](#variants-in-dependency-injection)
 * [Telemetry](#telemetry)
     * [Enabling Telemetry](#enabling-telemetry)
     * [Custom Telemetry Publishers](#custom-telemetry-publishers)
@@ -954,7 +955,7 @@ The `Allocation` setting of a feature flag has the following properties:
 | `DefaultWhenDisabled` | Specifies which variant should be used when a variant is requested while the feature is considered disabled. |
 | `DefaultWhenEnabled` | Specifies which variant should be used when a variant is requested while the feature is considered enabled and no other variant was assigned to the user. |
 | `User` | Specifies a variant and a list of users to whom that variant should be assigned. | 
-| `Group` | Specifies a variant and a list of groups the current user has to be in for that variant to be assigned. |
+| `Group` | Specifies a variant and a list of groups. The variant will be assigned if the user is in at least one of the groups. |
 | `Percentile` | Specifies a variant and a percentage range the user's calculated percentage has to fit into for that variant to be assigned. |
 | `Seed` | The value which percentage calculations for `Percentile` are based on. The percentage calculation for a specific user will be the same across all features if the same `Seed` value is used. If no `Seed` is specified, then a default seed is created based on the feature name. |
 
@@ -964,7 +965,9 @@ If the feature is enabled, the feature manager will check the `User`, `Group`, a
 
 Allocation logic is similar to the [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter, but there are some parameters that are present in targeting that aren't in allocation, and vice versa. The outcomes of targeting and allocation are not related.
 
-#### Overriding Enabled State with a Variant
+**Note:** To allow allocating feature variants, you need to register `ITargetingContextAccessor`. This can be done by calling the `WithTargeting<T>` method.
+
+### Overriding Enabled State with a Variant
 
 You can use variants to override the enabled state of a feature flag. This gives variants an opportunity to extend the evaluation of a feature flag. If a caller is checking whether a flag that has variants is enabled, the feature manager will check if the variant assigned to the current user is set up to override the result. This is done using the optional variant property `StatusOverride`. By default, this property is set to `None`, which means the variant doesn't affect whether the flag is considered enabled or disabled. Setting `StatusOverride` to `Enabled` allows the variant, when chosen, to override a flag to be enabled. Setting `StatusOverride` to `Disabled` provides the opposite functionality, therefore disabling the flag when the variant is chosen. A feature with a `Status` of `Disabled` cannot be overridden.
 
@@ -999,6 +1002,56 @@ If you are using a feature flag with binary variants, the `StatusOverride` prope
 ```
 
 In the above example, the feature is enabled by the `AlwaysOn` filter. If the current user is in the calculated percentile range of 10 to 20, then the `On` variant is returned. Otherwise, the `Off` variant is returned and because `StatusOverride` is equal to `Disabled`, the feature will now be considered disabled.
+
+### Variants in Dependency Injection
+
+Variant feature flags can be used in conjunction with dependency injection to surface different implementations of a service for different users. This is accomplished through the use of the `IVariantServiceProvider<TService>` interface.
+
+``` C#
+IVariantServiceProvider<IAlgorithm> algorithmServiceProvider;
+...
+
+IAlgorithm forecastAlgorithm = await algorithmServiceProvider.GetServiceAsync(cancellationToken); 
+```
+
+In the snippet above, the `IVariantServiceProvider<IAlgorithm>` will retrieve an implementation of `IAlgorithm` from the dependency injection container. The chosen implementation is dependent upon:
+* The feature flag that the `IAlgorithm` service was registered with.
+* The allocated variant for that feature.
+
+The `IVariantServiceProvider<T>` is made available to the application by calling `IFeatureManagementBuilder.WithVariantService<T>(string featureName)`. See below for an example.
+
+``` C#
+services.AddFeatureManagement() 
+        .WithVariantService<IAlgorithm>("ForecastAlgorithm");
+```
+
+The call above makes `IVariantServiceProvider<IAlgorithm>` available in the service collection. Implementation(s) of `IAlgorithm` must be added separately via an add method such as `services.AddSingleton<IAlgorithm, SomeImplementation>()`. The implementation of `IAlgorithm` that the `IVariantServiceProvider` uses depends on the `ForecastAlgorithm` variant feature flag. If no implementation of `IAlgorithm` is added to the service collection, then the `IVariantServiceProvider<IAlgorithm>.GetServiceAsync()` will return a task with a *null* result.
+
+``` javascript
+{
+    // The example variant feature flag
+    "ForecastAlgorithm": {
+        "Variants": [
+            { 
+                "Name": "AlgorithmBeta" 
+            },
+            ...
+        ] 
+    }
+}
+```
+
+#### Variant Service Alias Attribute
+
+``` C#
+[VariantServiceAlias("Beta")]
+public class AlgorithmBeta : IAlgorithm
+{
+    ...
+}
+```
+
+The variant service provider will use the type names of implementations to match the allocated variant. If a variant service is decorated with the `VariantServiceAliasAttribute`, the name declared in this attribute should be used in configuration to reference this variant service.
 
 ## Telemetry
 
