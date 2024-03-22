@@ -14,12 +14,18 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// An optional start time used to determine when a feature configured to use the <see cref="TimeWindowFilter"/> feature filter should be enabled.
         /// If no start time is specified the time window is considered to have already started.
         /// </summary>
-        public DateTimeOffset? Start { get; set; } // E.g. "Wed, 01 May 2019 22:59:30 GMT"
+        public DateTimeOffset? Start { get; set; }
 
         /// <summary>
         /// An optional end time used to determine when a feature configured to use the <see cref="TimeWindowFilter"/> feature filter should be enabled.
         /// If no end time is specified the time window is considered to never end.
         /// </summary>
-        public DateTimeOffset? End { get; set; } // E.g. "Wed, 01 May 2019 23:00:00 GMT"
+        public DateTimeOffset? End { get; set; }
+
+        /// <summary>
+        /// Add-on recurrence rule allows the time window defined by Start and End to recur.
+        /// The rule specifies both how often the time window repeats and for how long.
+        /// </summary>
+        public Recurrence Recurrence { get; set; }
     }
 }
