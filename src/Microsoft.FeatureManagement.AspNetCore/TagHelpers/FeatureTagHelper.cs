@@ -66,11 +66,6 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
                     enabled = Requirement == RequirementType.All ?
                         await features.All(async feature => await _featureManager.IsEnabledAsync(feature).ConfigureAwait(false)) :
                         await features.Any(async feature => await _featureManager.IsEnabledAsync(feature).ConfigureAwait(false));
-
-                    if (Negate)
-                    {
-                        enabled = !enabled;
-                    }
                 }
                 else
                 {
@@ -88,6 +83,11 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
                             return variant == assignedVariant?.Name;    
                         });
                 }
+            }
+
+            if (Negate)
+            {
+                enabled = !enabled;
             }
 
             if (!enabled)
