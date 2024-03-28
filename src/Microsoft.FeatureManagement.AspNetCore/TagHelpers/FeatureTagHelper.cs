@@ -33,7 +33,7 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
 
         /// <summary>
         /// A variant name, or comma separated list of variant names. If any of specified variants is assigned, the content should be rendered.
-        /// If variant is specified, <see cref="Negate"/> and <see cref="Requirement"/> will be ignored. Besides, <see cref="Name"/> should be exactly one feature name.
+        /// If variant is specified, <see cref="Requirement"/> will be ignored. Besides, <see cref="Name"/> should be exactly one feature name.
         /// </summary>
         public string Variant { get; set; }
 
