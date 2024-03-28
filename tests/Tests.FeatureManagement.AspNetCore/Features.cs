@@ -3,9 +3,9 @@
 //
 namespace Tests.FeatureManagement.AspNetCore
 {
-    enum Features
+    static class Features
     {
-        ConditionalFeature,
-        ConditionalFeature2
+        public const string ConditionalFeature = "ConditionalFeature";
+        public const string ConditionalFeature2 = "ConditionalFeature2";
     }
 }

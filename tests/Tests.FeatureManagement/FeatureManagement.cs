@@ -1120,7 +1120,6 @@ namespace Tests.FeatureManagement
             Assert.Null(variantResult);
             Assert.Null(testPublisher.evaluationEventCache.Variant);
             Assert.Equal(VariantAssignmentReason.DefaultWhenDisabled, testPublisher.evaluationEventCache.VariantAssignmentReason);
-
         }
 
         [Fact]

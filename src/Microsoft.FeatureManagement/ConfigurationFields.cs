@@ -17,8 +17,8 @@ namespace Microsoft.FeatureManagement
         public const string AllocationSectionName = "Allocation";
         public const string AllocationDefaultWhenDisabled = "DefaultWhenDisabled";
         public const string AllocationDefaultWhenEnabled = "DefaultWhenEnabled";
-        public const string UserAllocationSectionName = "User";
         public const string AllocationVariantKeyword = "Variant";
+        public const string UserAllocationSectionName = "User";
         public const string UserAllocationUsers = "Users";
         public const string GroupAllocationSectionName = "Group";
         public const string GroupAllocationGroups = "Groups";
