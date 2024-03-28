@@ -351,7 +351,7 @@ namespace Microsoft.FeatureManagement.Targeting
 
             //
             // The first 4 bytes of the hash will be used for percentage calculation
-            // Endianness check ensures the consistency accross different architectures
+            // Endianness check ensures the consistency of targeting evaluation result across different architectures
             if (!BitConverter.IsLittleEndian)
             {
                 Array.Reverse(hash, 0, 4);
