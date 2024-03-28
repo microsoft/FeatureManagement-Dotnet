@@ -21,6 +21,70 @@ namespace Microsoft.FeatureManagement.Targeting
         const string RequiredParameter = "Value cannot be null.";
 
         /// <summary>
+        /// Performs validation of targeting settings.
+        /// </summary>
+        /// <param name="targetingSettings">The settings to validate.</param>
+        /// <param name="paramName">The name of the invalid setting, if any.</param>
+        /// <param name="reason">The reason that the setting is invalid.</param>
+        /// <returns>True if the provided settings are valid. False if the provided settings are invalid.</returns>
+        public static bool TryValidateSettings(TargetingFilterSettings targetingSettings, out string paramName, out string reason)
+        {
+            paramName = null;
+
+            reason = null;
+
+            if (targetingSettings == null)
+            {
+                paramName = nameof(targetingSettings);
+
+                reason = RequiredParameter;
+
+                return false;
+            }
+
+            if (targetingSettings.Audience == null)
+            {
+                paramName = nameof(targetingSettings.Audience);
+
+                reason = RequiredParameter;
+
+                return false;
+            }
+
+            if (targetingSettings.Audience.DefaultRolloutPercentage < 0 || targetingSettings.Audience.DefaultRolloutPercentage > 100)
+            {
+                paramName = $"{targetingSettings.Audience}.{targetingSettings.Audience.DefaultRolloutPercentage}";
+
+                reason = OutOfRange;
+
+                return false;
+            }
+
+            if (targetingSettings.Audience.Groups != null)
+            {
+                int index = 0;
+
+                foreach (GroupRollout groupRollout in targetingSettings.Audience.Groups)
+                {
+                    index++;
+
+                    if (groupRollout.RolloutPercentage < 0 || groupRollout.RolloutPercentage > 100)
+                    {
+                        //
+                        // Audience.Groups[1].RolloutPercentage
+                        paramName = $"{targetingSettings.Audience}.{targetingSettings.Audience.Groups}[{index}].{groupRollout.RolloutPercentage}";
+
+                        reason = OutOfRange;
+
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Checks if a provided targeting context should be targeted given targeting settings.
         /// </summary>
         public static bool IsTargeted(ITargetingContext targetingContext, TargetingFilterSettings settings, bool ignoreCase, string hint)
@@ -222,70 +286,6 @@ namespace Microsoft.FeatureManagement.Targeting
             string defaultContextId = $"{userId}\n{hint}";
 
             return IsTargeted(defaultContextId, 0, defaultRolloutPercentage);
-        }
-
-        /// <summary>
-        /// Performs validation of targeting settings.
-        /// </summary>
-        /// <param name="targetingSettings">The settings to validate.</param>
-        /// <param name="paramName">The name of the invalid setting, if any.</param>
-        /// <param name="reason">The reason that the setting is invalid.</param>
-        /// <returns>True if the provided settings are valid. False if the provided settings are invalid.</returns>
-        public static bool TryValidateSettings(TargetingFilterSettings targetingSettings, out string paramName, out string reason)
-        {
-            paramName = null;
-
-            reason = null;
-
-            if (targetingSettings == null)
-            {
-                paramName = nameof(targetingSettings);
-
-                reason = RequiredParameter;
-
-                return false;
-            }
-
-            if (targetingSettings.Audience == null)
-            {
-                paramName = nameof(targetingSettings.Audience);
-
-                reason = RequiredParameter;
-
-                return false;
-            }
-
-            if (targetingSettings.Audience.DefaultRolloutPercentage < 0 || targetingSettings.Audience.DefaultRolloutPercentage > 100)
-            {
-                paramName = $"{targetingSettings.Audience}.{targetingSettings.Audience.DefaultRolloutPercentage}";
-
-                reason = OutOfRange;
-
-                return false;
-            }
-
-            if (targetingSettings.Audience.Groups != null)
-            {
-                int index = 0;
-
-                foreach (GroupRollout groupRollout in targetingSettings.Audience.Groups)
-                {
-                    index++;
-
-                    if (groupRollout.RolloutPercentage < 0 || groupRollout.RolloutPercentage > 100)
-                    {
-                        //
-                        // Audience.Groups[1].RolloutPercentage
-                        paramName = $"{targetingSettings.Audience}.{targetingSettings.Audience.Groups}[{index}].{groupRollout.RolloutPercentage}";
-
-                        reason = OutOfRange;
-
-                        return false;
-                    }
-                }
-            }
-
-            return true;
         }
 
         /// <summary>
