@@ -348,8 +348,16 @@ namespace Microsoft.FeatureManagement.Targeting
                 hash = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(contextId));
             }
 
+
             //
-            // Use first 4 bytes for percentage calculation
+            // The first 4 bytes of the hash will be used for percentage calculation
+            // Endianness check ensures the consistency of targeting evaluation result across different architectures
+            if (!BitConverter.IsLittleEndian)
+            {
+                Array.Reverse(hash, 0, 4);
+            }
+
+            //
             // Cryptographic hashing algorithms ensure adequate entropy across hash
             uint contextMarker = BitConverter.ToUInt32(hash, 0);
 
