@@ -343,6 +343,8 @@ namespace Microsoft.FeatureManagement.Targeting
         {
             byte[] hash;
 
+            //
+            // Cryptographic hashing algorithms ensure adequate entropy across hash
             using (HashAlgorithm hashAlgorithm = SHA256.Create())
             {
                 hash = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(contextId));
@@ -350,7 +352,6 @@ namespace Microsoft.FeatureManagement.Targeting
 
 
             //
-            // The first 4 bytes of the hash will be used for percentage calculation
             // Endianness check ensures the consistency of targeting evaluation result across different architectures
             if (!BitConverter.IsLittleEndian)
             {
@@ -358,7 +359,7 @@ namespace Microsoft.FeatureManagement.Targeting
             }
 
             //
-            // Cryptographic hashing algorithms ensure adequate entropy across hash
+            // The first 4 bytes of the hash will be used for percentage calculation
             uint contextMarker = BitConverter.ToUInt32(hash, 0);
 
             double contextPercentage = (contextMarker / (double)uint.MaxValue) * 100;
