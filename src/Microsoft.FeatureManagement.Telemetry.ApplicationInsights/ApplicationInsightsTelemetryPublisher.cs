@@ -44,7 +44,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 
             if (evaluationEvent.TargetingContext != null)
             {
-                properties["TargetingId"] = evaluationEvent.TargetingContext.UserId;
+                properties["TargetingId"] = evaluationEvent.TargetingContext.UserId ?? string.Empty;
             }
 
             if (evaluationEvent.VariantAssignmentReason != VariantAssignmentReason.None)

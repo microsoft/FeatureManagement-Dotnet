@@ -6,6 +6,7 @@ using Microsoft.ApplicationInsights.AspNetCore.TelemetryInitializers;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.AspNetCore.Http;
+using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
 {
@@ -14,7 +15,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
     /// </summary>
     public class TargetingTelemetryInitializer : TelemetryInitializerBase
     {
-        private const string TargetingIdKey = $"Microsoft.FeatureManagement.TargetingId";
+        private const string TargetingContextLookup = "FeatureManagement.TargetingContext";
 
         /// <summary>
         /// Creates an instance of the TargetingTelemetryInitializer
@@ -42,21 +43,15 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
                 throw new ArgumentNullException(nameof(httpContext));
             }
 
-            // Extract the targeting id from the http context
-            string targetingId = null;
+            //
+            // Extract the targeting info from the http context
+            TargetingContext targetingContext = httpContext.Items[TargetingContextLookup] as TargetingContext;
 
-            if (httpContext.Items.TryGetValue(TargetingIdKey, out object value))
-            {
-                targetingId = value?.ToString();
-            }
+            string targetingId = targetingContext?.UserId ?? string.Empty;
 
-            if (!string.IsNullOrEmpty(targetingId))
+            if (telemetry is ISupportProperties telemetryWithSupportProperties)
             {
-                // Telemetry.Properties is deprecated in favor of ISupportProperties
-                if (telemetry is ISupportProperties telemetryWithSupportProperties)
-                {
-                    telemetryWithSupportProperties.Properties["TargetingId"] = targetingId;
-                }
+                telemetryWithSupportProperties.Properties["TargetingId"] = targetingId;
             }
         }
     }
