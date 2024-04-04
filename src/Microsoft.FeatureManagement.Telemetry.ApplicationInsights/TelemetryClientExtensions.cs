@@ -1,11 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.FeatureManagement.FeatureFilters;
 
-namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
+namespace Microsoft.ApplicationInsights
 {
     /// <summary>
     /// Provides extension methods for tracking events with <see cref="TargetingContext"/>.
