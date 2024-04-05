@@ -7,7 +7,7 @@ using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.AspNetCore.Http;
 
-namespace Microsoft.FeatureManagement.Telemetry.AspNetCore
+namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
 {
     /// <summary>
     /// Used to add targeting information to outgoing Application Insights telemetry.
