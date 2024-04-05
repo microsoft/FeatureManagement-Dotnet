@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.FeatureManagement.Telemetry.ApplicationInsights;
+using Microsoft.FeatureManagement.Telemetry;
 using Microsoft.FeatureManagement;
 using EvaluationDataToApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
