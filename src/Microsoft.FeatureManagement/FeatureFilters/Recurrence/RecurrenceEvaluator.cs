@@ -21,6 +21,12 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// </summary>
         public static bool MatchRecurrence(DateTimeOffset time, TimeWindowFilterSettings settings)
         {
+            Debug.Assert(settings != null);
+            Debug.Assert(settings.Start != null);
+            Debug.Assert(settings.Recurrence != null);
+            Debug.Assert(settings.Recurrence.Pattern != null);
+            Debug.Assert(settings.Recurrence.Range != null);
+
             if (time < settings.Start.Value)
             {
                 return false;
@@ -35,46 +41,45 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Try to find the closest previous recurrence occurrence (if any) before the provided timestamp and the next occurrence.
+        /// Calculate the closest previous recurrence occurrence (if any) before the provided timestamp and the next occurrence (if any) after the provided timestamp.
         /// <param name="time">A timestamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
-        /// <param name="prevOccurrence">The closest previous occurrence. If there is no previous occurrence, it will be set to <see cref="DateTimeOffset.MinValue"/>.</param>
-        /// <param name="nextOccurrence">The next occurrence.</param>
-        /// <returns>True if the closest previous occurrence is within the recurrence range or the time is before the first occurrence, false otherwise.</returns>
+        /// <param name="prevOccurrence">The closest previous occurrence. Note that prev occurrence can be null even if the time is past the start date, because the recurrence range may have surpassed its end.</param>
+        /// <param name="nextOccurrence">The next occurrence. Note that next occurrence can be null even if the prev occurrence is not null, because the recurrence range may have reached its end.</param>
         /// </summary>
-        public static bool TryFindPrevAndNextOccurrences(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset prevOccurrence, out DateTimeOffset nextOccurrence)
+        public static void CalculateSurroundingOccurrences(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset? prevOccurrence, out DateTimeOffset? nextOccurrence)
         {
-            prevOccurrence = DateTimeOffset.MinValue;
+            Debug.Assert(settings != null);
+            Debug.Assert(settings.Start != null);
+            Debug.Assert(settings.Recurrence != null);
+            Debug.Assert(settings.Recurrence.Pattern != null);
+            Debug.Assert(settings.Recurrence.Range != null);
 
-            nextOccurrence = DateTimeOffset.MaxValue;
+            prevOccurrence = null;
+
+            nextOccurrence = null;
 
             if (time < settings.Start.Value)
             {
-                //
-                // The time is before the first occurrence.
                 nextOccurrence = settings.Start.Value;
 
-                return true;
+                return;
             }
 
-            if (TryFindPreviousOccurrence(time, settings, out prevOccurrence, out int numberOfOccurrences))
+            if (TryFindPreviousOccurrence(time, settings, out DateTimeOffset prev, out int numberOfOccurrences))
             {
+                prevOccurrence = prev;
+
                 RecurrencePattern pattern = settings.Recurrence.Pattern;
 
-                switch (pattern.Type)
+                if (pattern.Type == RecurrencePatternType.Daily)
                 {
-                    case RecurrencePatternType.Daily:
-                        nextOccurrence = prevOccurrence.AddDays(pattern.Interval);
+                    nextOccurrence = prev.AddDays(pattern.Interval);
+                }
 
-                        break;
-
-                    case RecurrencePatternType.Weekly:
-                        nextOccurrence = GetWeeklyNextOccurrence(prevOccurrence, settings);
-
-                        break;
-
-                    default:
-                        return false;
+                if (pattern.Type == RecurrencePatternType.Weekly)
+                {
+                    nextOccurrence = CalculateWeeklyNextOccurrence(prev, settings);
                 }
 
                 RecurrenceRange range = settings.Recurrence.Range;
@@ -83,7 +88,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 {
                     if (nextOccurrence > range.EndDate)
                     {
-                        nextOccurrence = DateTimeOffset.MaxValue;
+                        nextOccurrence = null;
                     }
                 }
 
@@ -91,14 +96,10 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 {
                     if (numberOfOccurrences >= range.NumberOfOccurrences)
                     {
-                        nextOccurrence = DateTimeOffset.MaxValue;
+                        nextOccurrence = null;
                     }
                 }
-
-                return true;
             }
-
-            return false;
         }
 
         /// <summary>
@@ -132,7 +133,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Try to find the closest previous recurrence occurrence before the provided timestamp according to the recurrence pattern.
+        /// Try to find the closest previous recurrence occurrence before the provided timestamp according to the recurrence pattern. The given time should be later than the recurrence start.
         /// <param name="time">A timestamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
@@ -141,30 +142,22 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// </summary>
         private static bool TryFindPreviousOccurrence(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset previousOccurrence, out int numberOfOccurrences)
         {
-            Debug.Assert(settings.Start != null);
-            Debug.Assert(settings.Recurrence != null);
-            Debug.Assert(settings.Recurrence.Pattern != null);
-            Debug.Assert(settings.Recurrence.Range != null);
             Debug.Assert(settings.Start.Value <= time);
 
             previousOccurrence = DateTimeOffset.MinValue;
 
             numberOfOccurrences = 0;
 
-            switch (settings.Recurrence.Pattern.Type)
+            RecurrencePattern pattern = settings.Recurrence.Pattern;
+
+            if (pattern.Type == RecurrencePatternType.Daily)
             {
-                case RecurrencePatternType.Daily:
-                    FindDailyPreviousOccurrence(time, settings, out previousOccurrence, out numberOfOccurrences);
+                FindDailyPreviousOccurrence(time, settings, out previousOccurrence, out numberOfOccurrences);
+            }
 
-                    break;
-
-                case RecurrencePatternType.Weekly:
-                    FindWeeklyPreviousOccurrence(time, settings, out previousOccurrence, out numberOfOccurrences);
-
-                    break;
-
-                default:
-                    return false;
+            if (pattern.Type == RecurrencePatternType.Weekly)
+            {
+                FindWeeklyPreviousOccurrence(time, settings, out previousOccurrence, out numberOfOccurrences);
             }
 
             RecurrenceRange range = settings.Recurrence.Range;
@@ -183,7 +176,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Find the closest previous recurrence occurrence before the provided timestamp according to the "Daily" recurrence pattern.
+        /// Find the closest previous recurrence occurrence before the provided timestamp according to the "Daily" recurrence pattern. The given time should be later than the recurrence start.
         /// <param name="time">A timestamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
@@ -191,11 +184,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// </summary>
         private static void FindDailyPreviousOccurrence(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset previousOccurrence, out int numberOfOccurrences)
         {
+            Debug.Assert(settings.Start.Value <= time);
+
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 
             DateTimeOffset start = settings.Start.Value;
-
-            Debug.Assert(time >= start);
 
             int interval = pattern.Interval;
 
@@ -211,7 +204,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Find the closest previous recurrence occurrence before the provided timestamp according to the "Weekly" recurrence pattern.
+        /// Find the closest previous recurrence occurrence before the provided timestamp according to the "Weekly" recurrence pattern. The given time should be later than the recurrence start.
         /// <param name="time">A timestamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
@@ -219,11 +212,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// </summary>
         private static void FindWeeklyPreviousOccurrence(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset previousOccurrence, out int numberOfOccurrences)
         {
+            Debug.Assert(settings.Start.Value <= time);
+
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 
             DateTimeOffset start = settings.Start.Value;
-
-            Debug.Assert(time >= start);
 
             int interval = pattern.Interval;
 
@@ -309,7 +302,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <param name="previousOccurrence">The previous occurrence.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// </summary>
-        private static DateTimeOffset GetWeeklyNextOccurrence(DateTimeOffset previousOccurrence, TimeWindowFilterSettings settings)
+        private static DateTimeOffset CalculateWeeklyNextOccurrence(DateTimeOffset previousOccurrence, TimeWindowFilterSettings settings)
         {
             RecurrencePattern pattern = settings.Recurrence.Pattern;
 

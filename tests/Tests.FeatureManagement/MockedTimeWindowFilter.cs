@@ -4,6 +4,8 @@ using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
 {
@@ -52,58 +54,67 @@ namespace Tests.FeatureManagement
                 // The reference of the object will be used for hash key.
                 // If there is no pre-bounded settings attached to the context, there will be no cached filter settings and each call will have a unique settings object.
                 // In this case, the cache for recurrence settings won't work.
-                if (context.Settings != null)
+                if (context.Settings == null)
                 {
-                    DateTimeOffset cachedTime = _recurrenceCache.GetOrAdd(
-                        settings,
-                        (_) =>
+                    return RecurrenceEvaluator.MatchRecurrence(now, settings);
+                }
+
+                DateTimeOffset cachedTime = _recurrenceCache.GetOrAdd(
+                    settings,
+                    (_) =>
+                    {
+                        RecurrenceEvaluator.CalculateSurroundingOccurrences(now, settings, out DateTimeOffset? prevOccurrence, out DateTimeOffset? nextOccurrence);
+
+                        if (now < settings.Start.Value)
                         {
-                            if (RecurrenceEvaluator.TryFindPrevAndNextOccurrences(now, settings, out DateTimeOffset prevOccurrence, out DateTimeOffset _))
-                            {
-                                return prevOccurrence;
-                            }
+                            return nextOccurrence.Value;
+                        }
 
-                            //
-                            // There is no previous occurrence within the reccurrence range.
-                            return DateTimeOffset.MaxValue;
-                        });
+                        if (prevOccurrence != null)
+                        {
+                            return prevOccurrence.Value;
+                        }
 
-                    if (now < cachedTime)
-                    {
-                        return false;
-                    }
+                        //
+                        // There is no previous occurrence within the reccurrence range.
+                        return DateTimeOffset.MaxValue;
+                    });
 
-                    if (now <= cachedTime + (settings.End.Value - settings.Start.Value))
-                    {
-                        return true;
-                    }
-
-                    if (RecurrenceEvaluator.TryFindPrevAndNextOccurrences(now, settings, out DateTimeOffset prevOccurrence, out DateTimeOffset nextOccurrrence))
-                    {
-                        bool isWithinPreviousTimeWindow =
-                            now <= prevOccurrence + (settings.End.Value - settings.Start.Value);
-
-                        _recurrenceCache.AddOrUpdate(
-                            settings,
-                            (_) => throw new KeyNotFoundException(),
-                            (_, _) => isWithinPreviousTimeWindow ?
-                                prevOccurrence :
-                                nextOccurrrence);
-
-                        return isWithinPreviousTimeWindow;
-                    }
-
-                    //
-                    // There is no previous occurrence within the reccurrence range.
-                    _recurrenceCache.AddOrUpdate(
-                        settings,
-                        (_) => throw new KeyNotFoundException(),
-                        (_, _) => DateTimeOffset.MaxValue);
-
+                if (now < cachedTime)
+                {
                     return false;
                 }
 
-                return RecurrenceEvaluator.MatchRecurrence(now, settings);
+                if (now < cachedTime + (settings.End.Value - settings.Start.Value))
+                {
+                    return true;
+                }
+
+                RecurrenceEvaluator.CalculateSurroundingOccurrences(now, settings, out DateTimeOffset? prevOccurrence, out DateTimeOffset? nextOccurrrence);
+
+                if (prevOccurrence != null)
+                {
+                    Debug.Assert(now > settings.Start.Value);
+
+                    bool isWithinPreviousTimeWindow =
+                        now <= prevOccurrence.Value + (settings.End.Value - settings.Start.Value);
+
+                    _recurrenceCache.AddOrUpdate(
+                        settings,
+                        (_) => throw new KeyNotFoundException(),
+                        (_, _) => isWithinPreviousTimeWindow ?
+                            prevOccurrence.Value :
+                            nextOccurrrence ?? DateTimeOffset.MaxValue);
+
+                    return isWithinPreviousTimeWindow;
+                }
+
+                //
+                // There is no previous occurrence within the recurrence range.
+                _recurrenceCache.AddOrUpdate(
+                    settings,
+                    (_) => throw new KeyNotFoundException(),
+                    (_, _) => DateTimeOffset.MaxValue);
             }
 
             return false;
