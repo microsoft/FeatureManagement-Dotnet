@@ -631,12 +631,9 @@ Depending on the type, certain fields of the `Pattern` are required, optional, o
 
     ``` javascript
     "Pattern": {
-      "Type": "Weekly",
-      "Interval": 2,
-      "DaysOfWeek": [
-        "Monday",
-        "Tuesday"
-      ]
+        "Type": "Weekly",
+        "Interval": 2,
+        "DaysOfWeek": ["Monday", "Tuesday"]
     }
     ```
 
@@ -652,7 +649,7 @@ There are three possible recurrence range type: `NoEnd`, `EndDate` and `Numbered
 
     | Property | Relevance | Description |
     |----------|-----------|-------------|
-    | **Type** | Required | Must be set to `EndDate`. |
+    | **Type** | Required | Must be set to `NoEnd`. |
 
 - `EndDate`
 
@@ -663,6 +660,23 @@ There are three possible recurrence range type: `NoEnd`, `EndDate` and `Numbered
     | **Type** | Required | Must be set to `EndDate`. |
     | **EndDate** | Required | 	Specifies the date time to stop applying the pattern. Note that as long as the start time of the last occurrence falls before the end date, the end time of that occurrence is allowed to extend beyond it. |
 
+    The following example will repeat the time window every day until the last occurrence happens on April 1st, 2024.
+
+    ``` javascript
+    "Start": "Fri, 22 Mar 2024 18:00:00 GMT",
+    "End": "Fri, 22 Mar 2024 20:00:00 GMT",
+    "Recurrence":{
+        "Pattern": {
+            "Type": "Daily",
+            "Interval": 1
+        },
+        "Range": {
+            "Type": "EndDate",
+            "EndDate": "Mon, 1 Apr 2024 20:00:00 GMT"
+        }
+    }
+    ```
+
 - `Numbered`
 
     The `Numbered` range causes the time window to occur a fixed number of times (based on the pattern).
@@ -672,9 +686,27 @@ There are three possible recurrence range type: `NoEnd`, `EndDate` and `Numbered
     | **Type** | Required | Must be set to `Numbered`. |
     | **NumberOfOccurrences** | Required | 	Specifies the number of occurrences. |
 
+    The following example will repeat the time window on Monday and Tuesday until the there are 3 occurrences, which respectively happens on April 1st(Mon), April 2nd(Tue) and April 8th(Mon).
+
+    ``` javascript
+    "Start": "Mon, 1 Apr 2024 18:00:00 GMT",
+    "End": "Mon, 1 Apr 2024 20:00:00 GMT",
+    "Recurrence":{
+        "Pattern": {
+            "Type": "Weekly",
+            "Interval": 1
+            "DaysOfWeek": ["Monday", "Tuesday"],
+        },
+        "Range": {
+            "Type": "Numbered",
+            "NumberOfOccurrences": 3
+        }
+    }
+    ```
+
 To create a recurrence rule, you must specify both `Pattern` and `Range`. Any pattern type can work with any range type.
 
-**Advanced:** The time zone offset of the `Start` will apply to the recurrence settings.
+**Advanced:** The time zone offset of the `Start` property will apply to the recurrence settings.
 
 ### Microsoft.Targeting
 
