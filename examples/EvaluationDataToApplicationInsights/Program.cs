@@ -5,7 +5,7 @@ using Microsoft.FeatureManagement.Telemetry;
 using Microsoft.FeatureManagement;
 using EvaluationDataToApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore;
+using Microsoft.FeatureManagement.Telemetry.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 

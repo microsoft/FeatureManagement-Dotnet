@@ -12,15 +12,16 @@
   <Import Project="..\..\build\Versioning.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>..\..\build\Microsoft.FeatureManagement.snk</AssemblyOriginatorKeyFile>
+    <LangVersion>10.0</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup>
-    <Description>Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore provides a solution for tagging Application Insights telemetry with Microsoft.FeatureManagement targeting information.</Description>
+    <Description>Microsoft.FeatureManagement.Telemetry provides a solution for sending feature flag evaluation events produced by the Microsoft.FeatureManagement library to Application Insights.</Description>
     <Authors>Microsoft</Authors>
     <Company>Microsoft</Company>
     <PackageLicenseUrl>https://licenses.nuget.org/MIT</PackageLicenseUrl>
@@ -33,9 +34,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.22.0" />
-    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
   </ItemGroup>
-
+  
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.FeatureManagement\Microsoft.FeatureManagement.csproj" />
   </ItemGroup>
