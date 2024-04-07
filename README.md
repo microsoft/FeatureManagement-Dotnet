@@ -103,7 +103,7 @@ Below we have an example of declaring feature flags in a json file.
 }
 ```
 
-The `feature_management` section of the json document is used by convention to load feature flag settings. Feature flag objects must be listed in the `feature_flags` array under the `feature_management` section. In the section above, we see that we have provided three different features. A feature flag has `id` and `enabled` properties. The `id` is the name used to identify and reference the feature flag. The `enabled` is the enabled state of the feature flag. A feature is *OFF* if `enabled` is false. If `enabled` is true, then the feature is *ON* if there are no `conditions` (null or empty) or if the `conditions` are satisfied. The `conditions` property declare the conditions used to dynamically enabled the feature. Features define their feature filters in the `client_filters` array under the `conditions`. `FeatureV` specifies a feature filter named `Microsoft.TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
+The `feature_management` section of the json document is used by convention to load feature flag settings. Feature flag objects must be listed in the `feature_flags` array under the `feature_management` section. In the section above, we see that we have provided three different features. A feature flag has `id` and `enabled` properties. The `id` is the name used to identify and reference the feature flag. The `enabled` property specifies the enabled state of the feature flag. A feature is *OFF* if `enabled` is false. If `enabled` is true, then the state of the feature depends on the `conditions`. If there are no `conditions` then the feature is *ON*. If there are `conditions` and they are met then the feature is *ON*. If there are `conditions` and they are not met then the feature is *OFF*. The `conditions` property declares the conditions used to dynamically enabled the feature. Features define their feature filters in the `client_filters` array. `FeatureV` specifies a feature filter named `Microsoft.TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
 
 #### Requirement Type
 
@@ -112,7 +112,7 @@ The `requirement_type` property of `conditions` is used to determine if the filt
 * `Any` means only one filter needs to evaluate to true for the feature to be enabled. 
 * `All` means every filter needs to evaluate to true for the feature to be enabled.
 
-A `requirement_type` of `All` changes the traversal. First, if there are no filters, the feature will be disabled. Then, the feature-filters are traversed until one of the filters decides that the feature should be disabled. If no filter indicates that the feature should be disabled, then it will be considered enabled.
+A `requirement_type` of `All` changes the traversal. First, if there are no filters, the feature will be disabled. If there are filters, then the feature-filters are traversed until one of the filters decides that the feature should be disabled. If no filter indicates that the feature should be disabled, then it will be considered enabled.
 
 ``` JavaScript
 {
@@ -143,7 +143,7 @@ In the above example, `FeatureW` specifies a `requirement_type` of `All`, meanin
 
 ### .NET Feature Management schema
 
-The feature management library used to use the [.NET Feature Management schema](./schemas/FeatureManagement.Dotnet.v1.0.0.schema.json) as the format used to set up feature flags. Starting from v4.0.0, new features including Variants and Telemetry will not be supported for the .NET Feature Managemen schema.
+In previous versions, the primary schema for the feature management library was the [.NET feature management schema](./schemas/FeatureManagement.Dotnet.v1.0.0.schema.json). Starting from v4.0.0, new features including variants and telemetry will not be supported for the .NET feature management schema.
 
 ## Consumption
 
