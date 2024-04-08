@@ -205,10 +205,10 @@ namespace Microsoft.FeatureManagement
                 return ParseMicrosoftFeatureDefinition(configurationSection);
             }
 
-            return ParseFeatureDefinition(configurationSection);
+            return ParseDotnetFeatureDefinition(configurationSection);
         }
 
-        private FeatureDefinition ParseFeatureDefinition(IConfigurationSection configurationSection)
+        private FeatureDefinition ParseDotnetFeatureDefinition(IConfigurationSection configurationSection)
         {
             /*
               
@@ -255,7 +255,7 @@ namespace Microsoft.FeatureManagement
 
             if (string.IsNullOrEmpty(val))
             {
-                val = configurationSection[ConfigurationFields.FeatureFiltersSectionName];
+                val = configurationSection[DotnetFeatureManagementFields.FeatureFiltersSectionName];
             }
 
             if (!string.IsNullOrEmpty(val) && bool.TryParse(val, out bool result) && result)
@@ -273,137 +273,27 @@ namespace Microsoft.FeatureManagement
             }
             else
             {
-                string rawRequirementType = configurationSection[ConfigurationFields.RequirementType];
-
-                string rawFeatureStatus = configurationSection[ConfigurationFields.FeatureStatus];
+                string rawRequirementType = configurationSection[DotnetFeatureManagementFields.RequirementType];
 
                 if (!string.IsNullOrEmpty(rawRequirementType))
                 {
-                    requirementType = ParseEnum<RequirementType>(featureName, rawRequirementType, ConfigurationFields.RequirementType);
+                    requirementType = ParseEnum<RequirementType>(featureName, rawRequirementType, DotnetFeatureManagementFields.RequirementType);
                 }
 
-                if (!string.IsNullOrEmpty(rawFeatureStatus))
-                {
-                    featureStatus = ParseEnum<FeatureStatus>(featureName, rawFeatureStatus, ConfigurationFields.FeatureStatus);
-                }
-
-                IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(ConfigurationFields.FeatureFiltersSectionName).GetChildren();
+                IEnumerable<IConfigurationSection> filterSections = configurationSection.GetSection(DotnetFeatureManagementFields.FeatureFiltersSectionName).GetChildren();
 
                 foreach (IConfigurationSection section in filterSections)
                 {
                     //
                     // Arrays in json such as "myKey": [ "some", "values" ]
                     // Are accessed through the configuration system by using the array index as the property name, e.g. "myKey": { "0": "some", "1": "values" }
-                    if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[ConfigurationFields.NameKeyword]))
+                    if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[DotnetFeatureManagementFields.NameKeyword]))
                     {
                         enabledFor.Add(new FeatureFilterConfiguration()
                         {
-                            Name = section[ConfigurationFields.NameKeyword],
-                            Parameters = new ConfigurationWrapper(section.GetSection(ConfigurationFields.FeatureFilterConfigurationParameters))
+                            Name = section[DotnetFeatureManagementFields.NameKeyword],
+                            Parameters = new ConfigurationWrapper(section.GetSection(DotnetFeatureManagementFields.FeatureFilterConfigurationParameters))
                         });
-                    }
-                }
-
-                IConfigurationSection allocationSection = configurationSection.GetSection(ConfigurationFields.AllocationSectionName);
-
-                if (allocationSection.Exists())
-                {
-                    allocation = new Allocation()
-                    {
-                        DefaultWhenDisabled = allocationSection[ConfigurationFields.AllocationDefaultWhenDisabled],
-                        DefaultWhenEnabled = allocationSection[ConfigurationFields.AllocationDefaultWhenEnabled],
-                        User = allocationSection.GetSection(ConfigurationFields.UserAllocationSectionName).GetChildren().Select(userAllocation =>
-                        {
-                            return new UserAllocation()
-                            {
-                                Variant = userAllocation[ConfigurationFields.AllocationVariantKeyword],
-                                Users = userAllocation.GetSection(ConfigurationFields.UserAllocationUsers).Get<IEnumerable<string>>()
-                            };
-                        }),
-                        Group = allocationSection.GetSection(ConfigurationFields.GroupAllocationSectionName).GetChildren().Select(groupAllocation =>
-                        {
-                            return new GroupAllocation()
-                            {
-                                Variant = groupAllocation[ConfigurationFields.AllocationVariantKeyword],
-                                Groups = groupAllocation.GetSection(ConfigurationFields.GroupAllocationGroups).Get<IEnumerable<string>>()
-                            };
-                        }),
-                        Percentile = allocationSection.GetSection(ConfigurationFields.PercentileAllocationSectionName).GetChildren().Select(percentileAllocation =>
-                        {
-                            double from = 0;
-
-                            double to = 0;
-
-                            string rawFrom = percentileAllocation[ConfigurationFields.PercentileAllocationFrom];
-
-                            string rawTo = percentileAllocation[ConfigurationFields.PercentileAllocationTo];
-
-                            if (!string.IsNullOrEmpty(rawFrom))
-                            {
-                                from = ParseDouble(featureName, rawFrom, ConfigurationFields.PercentileAllocationFrom);
-                            }
-
-                            if (!string.IsNullOrEmpty(rawTo))
-                            {
-                                to = ParseDouble(featureName, rawTo, ConfigurationFields.PercentileAllocationTo);
-                            }
-
-                            return new PercentileAllocation()
-                            {
-                                Variant = percentileAllocation[ConfigurationFields.AllocationVariantKeyword],
-                                From = from,
-                                To = to
-                            };
-                        }),
-                        Seed = allocationSection[ConfigurationFields.AllocationSeed]
-                    };
-                }
-
-                IEnumerable<IConfigurationSection> variantsSections = configurationSection.GetSection(ConfigurationFields.VariantsSectionName).GetChildren();
-
-                foreach (IConfigurationSection section in variantsSections)
-                {
-                    if (int.TryParse(section.Key, out int _) && !string.IsNullOrEmpty(section[ConfigurationFields.NameKeyword]))
-                    {
-                        StatusOverride statusOverride = StatusOverride.None;
-
-                        string rawStatusOverride = section[ConfigurationFields.VariantDefinitionStatusOverride];
-
-                        if (!string.IsNullOrEmpty(rawStatusOverride))
-                        {
-                            statusOverride = ParseEnum<StatusOverride>(configurationSection.Key, rawStatusOverride, ConfigurationFields.VariantDefinitionStatusOverride);
-                        }
-
-                        var variant = new VariantDefinition()
-                        {
-                            Name = section[ConfigurationFields.NameKeyword],
-                            ConfigurationValue = section.GetSection(ConfigurationFields.VariantDefinitionConfigurationValue),
-                            ConfigurationReference = section[ConfigurationFields.VariantDefinitionConfigurationReference],
-                            StatusOverride = statusOverride
-                        };
-
-                        variants.Add(variant);
-                    }
-                }
-
-                IConfigurationSection telemetrySection = configurationSection.GetSection(ConfigurationFields.Telemetry);
-
-                if (telemetrySection.Exists())
-                {
-                    string rawTelemetryEnabled = telemetrySection[ConfigurationFields.Enabled];
-
-                    if (!string.IsNullOrEmpty(rawTelemetryEnabled))
-                    {
-                        telemetryEnabled = ParseBool(featureName, rawTelemetryEnabled, ConfigurationFields.Enabled);
-                    }
-
-                    IConfigurationSection telemetryMetadataSection = telemetrySection.GetSection(ConfigurationFields.Metadata);
-
-                    if (telemetryMetadataSection.Exists())
-                    {
-                        telemetryMetadata = new Dictionary<string, string>();
-
-                        telemetryMetadata = telemetryMetadataSection.GetChildren().ToDictionary(x => x.Key, x => x.Value);
                     }
                 }
             }
@@ -669,7 +559,7 @@ namespace Microsoft.FeatureManagement
                             section.Key,
                             _microsoftFeatureManagementSchemaEnabled ?
                                 MicrosoftFeatureManagementFields.FeatureManagementSectionName :
-                                ConfigurationFields.FeatureManagementSectionName,
+                                DotnetFeatureManagementFields.FeatureManagementSectionName,
                             StringComparison.OrdinalIgnoreCase));
 
             if (featureManagementConfigurationSection == null)

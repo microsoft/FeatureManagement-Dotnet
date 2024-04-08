@@ -46,9 +46,6 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="MicrosoftFeatureManagement.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="DotnetFeatureManagementSchema.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
