@@ -9,7 +9,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace FeatureFlagDemo
+namespace Microsoft.FeatureManagement
 {
     /// <summary>
     /// Provides a default implementation of <see cref="ITargetingContextAccessor"/> that creates <see cref="TargetingContext"/> using info from the current HTTP request.
@@ -44,6 +44,7 @@ namespace FeatureFlagDemo
             //
             // Treat user identity name as user id
             ClaimsPrincipal user = httpContext.User;
+
             string userId = user?.Identity?.Name;
 
             //
