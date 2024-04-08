@@ -175,9 +175,9 @@ public class Startup
 }
 ```
 
-By default, the feature manager retrieves feature flag configuration from the "FeatureManagement" section of the .NET Core configuration data. If the "FeatureManagement" section does not exist, the configuration will be considered empty.
+By default, the feature manager retrieves feature flag configuration from the `feature_management` section of the .NET Core configuration data. If the `feature_management` section does not exist, the configuration will be considered empty.
 
-You can also specify that feature flag configuration should be retrieved from a different configuration section by passing the section to `AddFeatureManagement`. The following example tells the feature manager to read from a different section called "MyFeatureFlags" instead:
+**Note:** You can also specify that feature flag configuration should be retrieved from a different configuration section by passing the section to `AddFeatureManagement`. The following example tells the feature manager to read from a different section called "MyFeatureFlags" instead:
 
 ``` C#
 services.AddFeatureManagement(configuration.GetSection("MyFeatureFlags"));
