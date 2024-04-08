@@ -27,7 +27,9 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
-        private readonly bool _microsoftFeatureManagementSchemaEnabled;
+        private long _initialized = 0;
+        private bool _microsoftFeatureManagementSchemaEnabled;
+        private readonly object _lock = new object();
 
         const string ParseValueErrorString = "Invalid setting '{0}' with value '{1}' for feature '{2}'.";
 
@@ -95,6 +97,8 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentException($"The value '{ConfigurationPath.KeyDelimiter}' is not allowed in the feature name.", nameof(featureName));
             }
 
+            EnsureInit();
+
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
                 _definitions.Clear();
@@ -118,6 +122,8 @@ namespace Microsoft.FeatureManagement
         public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998
         {
+            EnsureInit();
+
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
                 _definitions.Clear();
@@ -136,7 +142,46 @@ namespace Microsoft.FeatureManagement
 
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                yield return  _definitions.GetOrAdd(featureName, (_) => ReadFeatureDefinition(featureSection));
+                yield return _definitions.GetOrAdd(featureName, (_) => ReadFeatureDefinition(featureSection));
+            }
+        }
+
+        private void EnsureInit()
+        {
+            if (_initialized == 0)
+            {
+                IConfiguration MicrosoftFeatureManagementConfigurationSection = _configuration
+                    .GetChildren()
+                    .FirstOrDefault(section =>
+                        string.Equals(
+                            section.Key,
+                            MicrosoftFeatureManagementFields.FeatureManagementSectionName,
+                            StringComparison.OrdinalIgnoreCase));
+
+                bool hasMicrosoftFeatureManagementSchema = MicrosoftFeatureManagementConfigurationSection != null;
+
+                if (MicrosoftFeatureManagementConfigurationSection == null & RootConfigurationFallbackEnabled)
+                {
+                    IConfiguration featureFlagsSection = _configuration
+                        .GetChildren()
+                        .FirstOrDefault(section =>
+                            string.Equals(
+                                section.Key,
+                                MicrosoftFeatureManagementFields.FeatureFlagsSectionName,
+                                StringComparison.OrdinalIgnoreCase));
+
+                    hasMicrosoftFeatureManagementSchema = featureFlagsSection != null;
+                }
+
+                lock (_lock)
+                {
+                    if (Interlocked.Read(ref _initialized) == 0)
+                    {
+                        _microsoftFeatureManagementSchemaEnabled = hasMicrosoftFeatureManagementSchema;
+
+                        Interlocked.Exchange(ref _initialized, 1);
+                    }
+                }
             }
         }
 
@@ -622,14 +667,14 @@ namespace Microsoft.FeatureManagement
                     .FirstOrDefault(section =>
                         string.Equals(
                             section.Key,
-                            _microsoftFeatureManagementSchemaEnabled ? 
-                                MicrosoftFeatureManagementFields.FeatureManagementSectionName : 
+                            _microsoftFeatureManagementSchemaEnabled ?
+                                MicrosoftFeatureManagementFields.FeatureManagementSectionName :
                                 ConfigurationFields.FeatureManagementSectionName,
                             StringComparison.OrdinalIgnoreCase));
 
             if (featureManagementConfigurationSection == null)
             {
-                if (RootConfigurationFallbackEnabled && !_microsoftFeatureManagementSchemaEnabled)
+                if (RootConfigurationFallbackEnabled)
                 {
                     featureManagementConfigurationSection = _configuration;
                 }
@@ -652,7 +697,7 @@ namespace Microsoft.FeatureManagement
         }
 
         private T ParseEnum<T>(string feature, string rawValue, string fieldKeyword)
-            where T: struct, Enum
+            where T : struct, Enum
         {
             Debug.Assert(!string.IsNullOrEmpty(rawValue));
 

@@ -12,7 +12,6 @@ namespace Tests.FeatureManagement
         public const string AlwaysOnTestFeature = "AlwaysOnTestFeature";
         public const string OffTimeTestFeature = "OffTimeTestFeature";
         public const string ConditionalFeature = "ConditionalFeature";
-        public const string ConditionalFeature2 = "ConditionalFeature2";
         public const string ContextualFeature = "ContextualFeature";
         public const string AnyFilterFeature = "AnyFilterFeature";
         public const string AllFilterFeature = "AllFilterFeature";
