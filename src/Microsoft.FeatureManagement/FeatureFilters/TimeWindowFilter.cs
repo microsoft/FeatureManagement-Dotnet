@@ -20,7 +20,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
     {
         private const string Alias = "Microsoft.TimeWindow";
         private readonly ILogger _logger;
-        private readonly ConcurrentDictionary<TimeWindowFilterSettings, DateTimeOffset> _recurrenceCache;
+        private readonly ConcurrentDictionary<TimeWindowFilterSettings, DateTimeOffset?> _recurrenceCache;
 
         /// <summary>
         /// Creates a time window based feature filter.
@@ -29,7 +29,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         public TimeWindowFilter(ILoggerFactory loggerFactory = null)
         {
             _logger = loggerFactory?.CreateLogger<TimeWindowFilter>();
-            _recurrenceCache = new ConcurrentDictionary<TimeWindowFilterSettings, DateTimeOffset>();
+            _recurrenceCache = new ConcurrentDictionary<TimeWindowFilterSettings, DateTimeOffset?>();
         }
 
         /// <summary>
@@ -84,65 +84,36 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 // In this case, the cache for recurrence settings won't work.
                 if (context.Settings == null)
                 {
-                    return Task.FromResult(RecurrenceEvaluator.MatchRecurrence(now, settings));
+                    return Task.FromResult(RecurrenceEvaluator.IsMatch(now, settings));
                 }
 
-                DateTimeOffset cachedTime = _recurrenceCache.GetOrAdd(
+                DateTimeOffset? closestStart = _recurrenceCache.GetOrAdd(
                     settings,
-                    (_) =>
-                    {
-                        RecurrenceEvaluator.CalculateSurroundingOccurrences(now, settings, out DateTimeOffset? prevOccurrence, out DateTimeOffset? nextOccurrence);
+                    RecurrenceEvaluator.CalculateClosestStart(now, settings));
 
-                        if (now < settings.Start.Value)
-                        {
-                            return nextOccurrence.Value;
-                        }
-
-                        if (prevOccurrence != null)
-                        {
-                            return prevOccurrence.Value;
-                        }
-
-                        //
-                        // There is no previous occurrence within the reccurrence range.
-                        return DateTimeOffset.MaxValue;
-                    });
-
-                if (now < cachedTime)
+                if (closestStart == null || now < closestStart.Value)
                 {
                     return Task.FromResult(false);
                 }
 
-                if (now < cachedTime + (settings.End.Value - settings.Start.Value))
+                if (now < closestStart.Value + (settings.End.Value - settings.Start.Value))
                 {
                     return Task.FromResult(true);
                 }
 
-                RecurrenceEvaluator.CalculateSurroundingOccurrences(now, settings, out DateTimeOffset? prevOccurrence, out DateTimeOffset? nextOccurrrence);
+                closestStart = RecurrenceEvaluator.CalculateClosestStart(now, settings);
 
-                if (prevOccurrence != null)
-                {
-                    Debug.Assert(now > settings.Start.Value);
-
-                    bool isWithinPreviousTimeWindow =
-                        now <= prevOccurrence.Value + (settings.End.Value - settings.Start.Value);
-
-                    _recurrenceCache.AddOrUpdate(
-                        settings,
-                        (_) => throw new KeyNotFoundException(),
-                        (_, _) => isWithinPreviousTimeWindow ?
-                            prevOccurrence.Value :
-                            nextOccurrrence ?? DateTimeOffset.MaxValue);
-
-                    return Task.FromResult(isWithinPreviousTimeWindow);
-                }
-
-                //
-                // There is no previous occurrence within the recurrence range.
                 _recurrenceCache.AddOrUpdate(
                     settings,
                     (_) => throw new KeyNotFoundException(),
-                    (_, _) => DateTimeOffset.MaxValue);
+                    (_, _) => closestStart);
+
+                if (closestStart == null || now < closestStart.Value)
+                {
+                    return Task.FromResult(false);
+                }
+
+                return Task.FromResult(now < closestStart.Value + (settings.End.Value - settings.Start.Value));
             }
 
             return Task.FromResult(false);

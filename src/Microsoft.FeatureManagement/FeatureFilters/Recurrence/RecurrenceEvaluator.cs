@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
 {
@@ -19,7 +20,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <param name="settings">The settings of time window filter.</param>
         /// <returns>True if the timestamp is within any recurring time window, false otherwise.</returns>
         /// </summary>
-        public static bool MatchRecurrence(DateTimeOffset time, TimeWindowFilterSettings settings)
+        public static bool IsMatch(DateTimeOffset time, TimeWindowFilterSettings settings)
         {
             Debug.Assert(settings != null);
             Debug.Assert(settings.Start != null);
@@ -38,6 +39,70 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Calculate the start time of the closest active time window.
+        /// <param name="time">A timestamp.</param>
+        /// <param name="settings">The settings of time window filter.</param>
+        /// <returns>The start time of the closest active time window or null if the recurrence range surpasses its end.</returns>
+        /// </summary>
+        public static DateTimeOffset? CalculateClosestStart(DateTimeOffset time, TimeWindowFilterSettings settings)
+        {
+            CalculateSurroundingOccurrences(time, settings, out DateTimeOffset? prevOccurrence, out DateTimeOffset? nextOccurrence);
+
+            if (time < settings.Start.Value)
+            {
+                return nextOccurrence.Value;
+            }
+
+            if (prevOccurrence != null)
+            {
+                bool isWithinPreviousTimeWindow =
+                        time < prevOccurrence.Value + (settings.End.Value - settings.Start.Value);
+
+                if (isWithinPreviousTimeWindow)
+                {
+                    return prevOccurrence.Value;
+                }
+
+                if (nextOccurrence != null)
+                {
+                    return nextOccurrence.Value;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Calculate the offset in days between two given days of the week.
+        /// <param name="day1">A day of week.</param>
+        /// <param name="day2">A day of week.</param>
+        /// <returns>The number of days to be added to day2 to reach day1</returns>
+        /// </summary>
+        public static int CalculateWeeklyDayOffset(DayOfWeek day1, DayOfWeek day2)
+        {
+            return ((int)day1 - (int)day2 + DaysPerWeek) % DaysPerWeek;
+        }
+
+
+        /// <summary>
+        /// Sort a collection of days of week based on their offsets from a specified first day of week.
+        /// <param name="daysOfWeek">A collection of days of week.</param>
+        /// <param name="firstDayOfWeek">The first day of week.</param>
+        /// <returns>The sorted days of week.</returns>
+        /// </summary>
+        public static List<DayOfWeek> SortDaysOfWeek(IEnumerable<DayOfWeek> daysOfWeek, DayOfWeek firstDayOfWeek)
+        {
+            List<DayOfWeek> result = daysOfWeek.ToList();
+
+            result.Sort((x, y) =>
+                CalculateWeeklyDayOffset(x, firstDayOfWeek)
+                    .CompareTo(
+                        CalculateWeeklyDayOffset(y, firstDayOfWeek)));
+
+            return result;
         }
 
         /// <summary>
@@ -102,35 +167,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
         }
 
-        /// <summary>
-        /// Calculate the offset in days between two given days of the week.
-        /// <param name="day1">A day of week.</param>
-        /// <param name="day2">A day of week.</param>
-        /// <returns>The number of days to be added to day2 to reach day1</returns>
-        /// </summary>
-        public static int CalculateWeeklyDayOffset(DayOfWeek day1, DayOfWeek day2)
-        {
-            return ((int)day1 - (int)day2 + DaysPerWeek) % DaysPerWeek;
-        }
-
-
-        /// <summary>
-        /// Sort a collection of days of week based on their offsets from a specified first day of week.
-        /// <param name="daysOfWeek">A collection of days of week.</param>
-        /// <param name="firstDayOfWeek">The first day of week.</param>
-        /// <returns>The sorted days of week.</returns>
-        /// </summary>
-        public static List<DayOfWeek> SortDaysOfWeek(IEnumerable<DayOfWeek> daysOfWeek, DayOfWeek firstDayOfWeek)
-        {
-            List<DayOfWeek> result = daysOfWeek.ToList();
-
-            result.Sort((x, y) =>
-                CalculateWeeklyDayOffset(x, firstDayOfWeek)
-                    .CompareTo(
-                        CalculateWeeklyDayOffset(y, firstDayOfWeek)));
-
-            return result;
-        }
 
         /// <summary>
         /// Try to find the closest previous recurrence occurrence before the provided timestamp according to the recurrence pattern. The given time should be later than the recurrence start.
