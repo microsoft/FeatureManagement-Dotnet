@@ -405,14 +405,13 @@ namespace Tests.FeatureManagement
             }
         }
 
-        private static void ConsumeEvalutationTestData(List<ValueTuple<DateTimeOffset, TimeWindowFilterSettings, DateTimeOffset?, DateTimeOffset?>> testData)
+        private static void ConsumeEvalutationTestData(List<ValueTuple<DateTimeOffset, TimeWindowFilterSettings, DateTimeOffset?>> testData)
         {
-            foreach ((DateTimeOffset time, TimeWindowFilterSettings settings, DateTimeOffset? expectedPrev, DateTimeOffset? expectedNext) in testData)
+            foreach ((DateTimeOffset time, TimeWindowFilterSettings settings, DateTimeOffset? expected) in testData)
             {
-                RecurrenceEvaluator.CalculateSurroundingOccurrences(time, settings, out DateTimeOffset? prev, out DateTimeOffset? next);
+                DateTimeOffset? res = RecurrenceEvaluator.CalculateClosestStart(time, settings);
 
-                Assert.Equal(expectedPrev, prev);
-                Assert.Equal(expectedNext, next);
+                Assert.Equal(expected, res);
             }
         }
 
@@ -981,9 +980,9 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public void FindDailyPrevAndNextOccurrenceTest()
+        public void FindDailyClosestStartTest()
         {
-            var testData = new List<ValueTuple<DateTimeOffset, TimeWindowFilterSettings, DateTimeOffset?, DateTimeOffset?>>()
+            var testData = new List<ValueTuple<DateTimeOffset, TimeWindowFilterSettings, DateTimeOffset?>>()
             {
                 ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
                 new TimeWindowFilterSettings()
@@ -999,7 +998,6 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                     }
                 },
-                null,
                 DateTimeOffset.Parse("2024-3-1T00:00:00+08:00")),
 
                 ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
@@ -1016,8 +1014,7 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                     }
                 },
-                DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
-                DateTimeOffset.Parse("2024-2-29T00:00:00+08:00")),
+                DateTimeOffset.Parse("2024-2-28T00:00:00+08:00")),
 
                 ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
                 new TimeWindowFilterSettings()
@@ -1034,7 +1031,6 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                     }
                 },
-                DateTimeOffset.Parse("2024-2-27T00:00:00+08:00"),
                 DateTimeOffset.Parse("2024-2-29T00:00:00+08:00")),
 
                 ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
@@ -1052,8 +1048,7 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                     }
                 },
-                DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
-                DateTimeOffset.Parse("2024-3-2T00:00:00+08:00")),
+                DateTimeOffset.Parse("2024-2-28T00:00:00+08:00")),
 
                 ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
                 new TimeWindowFilterSettings()
@@ -1073,7 +1068,6 @@ namespace Tests.FeatureManagement
                         }
                     }
                 },
-                null,
                 null),
 
                 ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
@@ -1094,8 +1088,7 @@ namespace Tests.FeatureManagement
                         }
                     }
                 },
-                DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
-                null),
+                DateTimeOffset.Parse("2024-2-28T00:00:00+08:00")),
 
                 ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
                 new TimeWindowFilterSettings()
@@ -1115,7 +1108,6 @@ namespace Tests.FeatureManagement
                         }
                     }
                 },
-                null,
                 null),
 
                 ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
@@ -1136,17 +1128,16 @@ namespace Tests.FeatureManagement
                         }
                     }
                 },
-                DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
-                null)
+                DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"))
             };
 
             ConsumeEvalutationTestData(testData);
         }
 
         [Fact]
-        public void FindWeeklyPrevAndNextOccurrenceTest()
+        public void FindWeeklyClosestStartTest()
         {
-            var testData = new List<ValueTuple<DateTimeOffset, TimeWindowFilterSettings, DateTimeOffset?, DateTimeOffset?>>()
+            var testData = new List<ValueTuple<DateTimeOffset, TimeWindowFilterSettings, DateTimeOffset?>>()
             {
                 ( DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
                 new TimeWindowFilterSettings()
@@ -1163,7 +1154,6 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                     }
                 },
-                null,
                 DateTimeOffset.Parse("2024-2-29T00:00:00+08:00")),
 
                 ( DateTimeOffset.Parse("2024-2-29T00:00:00+08:00"),
@@ -1181,8 +1171,7 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                     }
                 },
-                DateTimeOffset.Parse("2024-2-29T00:00:00+08:00"),
-                DateTimeOffset.Parse("2024-3-7T00:00:00+08:00")),
+                DateTimeOffset.Parse("2024-2-29T00:00:00+08:00")),
 
                 ( DateTimeOffset.Parse("2024-2-29T00:00:00+08:00"),
                 new TimeWindowFilterSettings()
@@ -1199,7 +1188,6 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                     }
                 },
-                DateTimeOffset.Parse("2024-2-22T12:00:00+08:00"),
                 DateTimeOffset.Parse("2024-2-29T12:00:00+08:00")),
 
                 ( DateTimeOffset.Parse("2024-3-1T00:00:00+08:00"),
@@ -1217,7 +1205,6 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                     }
                 },
-                DateTimeOffset.Parse("2024-2-29T00:00:00+08:00"),
                 DateTimeOffset.Parse("2024-3-3T00:00:00+08:00")),
 
                 ( DateTimeOffset.Parse("2024-2-28T00:00:00+08:00"),
@@ -1237,7 +1224,6 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                     }
                 },
-                DateTimeOffset.Parse("2024-2-25T00:00:00+08:00"),
                 DateTimeOffset.Parse("2024-2-29T00:00:00+08:00")),
 
                 ( DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
@@ -1257,8 +1243,7 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                     }
                 },
-                DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
-                DateTimeOffset.Parse("2024-2-11T00:00:00+08:00")), // Sunday in the 3rd week
+                DateTimeOffset.Parse("2024-2-1T00:00:00+08:00")),
 
                 ( DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
                 new TimeWindowFilterSettings()
@@ -1279,8 +1264,7 @@ namespace Tests.FeatureManagement
                         }
                     }
                 },
-                DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"),
-                null),
+                DateTimeOffset.Parse("2024-2-1T00:00:00+08:00")),
 
                 ( DateTimeOffset.Parse("2024-2-2T00:00:00+08:00"),
                 new TimeWindowFilterSettings()
@@ -1301,7 +1285,6 @@ namespace Tests.FeatureManagement
                         }
                     }
                 },
-                null,
                 null),
 
                 ( DateTimeOffset.Parse("2024-2-11T00:00:00+08:00"),
@@ -1325,8 +1308,7 @@ namespace Tests.FeatureManagement
                         }
                     }
                 },
-                DateTimeOffset.Parse("2024-2-11T00:00:00+08:00"), // Sunday in the 3rd week
-                null),
+                DateTimeOffset.Parse("2024-2-11T00:00:00+08:00")), // Sunday in the 3rd week
 
                 ( DateTimeOffset.Parse("2024-2-11T00:00:00+08:00"),
                 new TimeWindowFilterSettings()
@@ -1349,7 +1331,6 @@ namespace Tests.FeatureManagement
                         }
                     }
                 },
-                DateTimeOffset.Parse("2024-2-4T00:00:00+08:00"), // Sunday in the 1st week
                 null),
 
                 ( DateTimeOffset.Parse("2024-2-12T00:00:00+08:00"), // Monday in the 3rd week
@@ -1373,7 +1354,6 @@ namespace Tests.FeatureManagement
                         }
                     }
                 },
-                DateTimeOffset.Parse("2024-2-11T00:00:00+08:00"), // Sunday in the 3rd week
                 DateTimeOffset.Parse("2024-2-15T00:00:00+08:00")), // Thursday in the 3rd week
 
                 ( DateTimeOffset.Parse("2024-2-12T00:00:00+08:00"), // Monday in the 3rd week
@@ -1397,7 +1377,6 @@ namespace Tests.FeatureManagement
                         }
                     }
                 },
-                DateTimeOffset.Parse("2024-2-4T00:00:00+08:00"), // Sunday in the 1st week
                 DateTimeOffset.Parse("2024-2-15T00:00:00+08:00")), // Thursday in the 3rd week
 
                 ( DateTimeOffset.Parse("2024-2-11T00:00:00+08:00"), // Sunday in the 3rd week
@@ -1421,7 +1400,6 @@ namespace Tests.FeatureManagement
                         }
                     }
                 },
-                DateTimeOffset.Parse("2024-2-3T12:00:00+08:00"), // Saturday in the 1st week
                 null),
 
                 ( DateTimeOffset.Parse("2024-2-11T00:00:00+08:00"), // Sunday in the 2nd week
@@ -1445,7 +1423,6 @@ namespace Tests.FeatureManagement
                         }
                     }
                 },
-                null,
                 null),
 
                 ( DateTimeOffset.Parse("2024-2-11T00:00:00+08:00"),
@@ -1467,7 +1444,6 @@ namespace Tests.FeatureManagement
                         }
                     }
                 },
-                null,
                 null)
             };
 
