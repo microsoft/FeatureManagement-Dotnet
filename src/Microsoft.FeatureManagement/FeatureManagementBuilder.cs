@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace Microsoft.FeatureManagement
 {
@@ -46,6 +47,38 @@ namespace Microsoft.FeatureManagement
                 else
                 {
                     Services.AddSingleton(serviceType, implementationType);
+                }
+            }
+
+            return this;
+        }
+
+        public IFeatureManagementBuilder AddFeatureFilter<T>(Func<IServiceProvider, object> implementationFactory) where T : IFeatureFilterMetadata
+        {
+            Type serviceType = typeof(IFeatureFilterMetadata);
+
+            Type implementationType = typeof(T);
+
+            IEnumerable<Type> featureFilterImplementations = implementationType.GetInterfaces()
+                .Where(i => i == typeof(IFeatureFilter) ||
+                            (i.IsGenericType && i.GetGenericTypeDefinition().IsAssignableFrom(typeof(IContextualFeatureFilter<>))));
+
+            if (featureFilterImplementations.Count() > 1)
+            {
+                throw new ArgumentException($"A single feature filter cannot implement more than one feature filter interface.", nameof(T));
+            }
+
+            if (!Services.Any(descriptor => descriptor.ServiceType == serviceType && descriptor.ImplementationType == implementationType))
+            {
+                //
+                // Register the feature filter with the same lifetime as the feature manager
+                if (Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
+                {
+                    Services.AddScoped(serviceType, implementationFactory);
+                }
+                else
+                {
+                    Services.AddSingleton(serviceType, implementationFactory);
                 }
             }
 

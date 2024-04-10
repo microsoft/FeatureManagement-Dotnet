@@ -339,9 +339,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
 
             DateTime firstDayOfThisWeek = DateTime.Today.AddDays(
-                DaysPerWeek - RecurrenceEvaluator.CalculateWeeklyDayOffset(DateTime.Today.DayOfWeek, firstDayOfWeek));
+                DaysPerWeek - CalculateWeeklyDayOffset(DateTime.Today.DayOfWeek, firstDayOfWeek));
 
-            List<DayOfWeek> sortedDaysOfWeek = RecurrenceEvaluator.SortDaysOfWeek(daysOfWeek, firstDayOfWeek);
+            List<DayOfWeek> sortedDaysOfWeek = SortDaysOfWeek(daysOfWeek, firstDayOfWeek);
 
             DateTime prev = DateTime.MinValue;
 
@@ -352,12 +352,12 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 if (prev == DateTime.MinValue)
                 {
                     prev = firstDayOfThisWeek.AddDays(
-                        RecurrenceEvaluator.CalculateWeeklyDayOffset(dayOfWeek, firstDayOfWeek));
+                        CalculateWeeklyDayOffset(dayOfWeek, firstDayOfWeek));
                 }
                 else
                 {
                     DateTime date = firstDayOfThisWeek.AddDays(
-                        RecurrenceEvaluator.CalculateWeeklyDayOffset(dayOfWeek, firstDayOfWeek));
+                        CalculateWeeklyDayOffset(dayOfWeek, firstDayOfWeek));
 
                     TimeSpan gap = date - prev;
 
@@ -377,7 +377,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 DateTime firstDayOfNextWeek = firstDayOfThisWeek.AddDays(DaysPerWeek);
 
                 DateTime firstOccurrenceInNextWeek = firstDayOfNextWeek.AddDays(
-                    RecurrenceEvaluator.CalculateWeeklyDayOffset(sortedDaysOfWeek.First(), firstDayOfWeek));
+                    CalculateWeeklyDayOffset(sortedDaysOfWeek.First(), firstDayOfWeek));
 
                 TimeSpan gap = firstOccurrenceInNextWeek - prev;
 
@@ -388,6 +388,36 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
 
             return minGap >= duration;
+        }
+
+        /// <summary>
+        /// Calculate the offset in days between two given days of the week.
+        /// <param name="day1">A day of week.</param>
+        /// <param name="day2">A day of week.</param>
+        /// <returns>The number of days to be added to day2 to reach day1</returns>
+        /// </summary>
+        private static int CalculateWeeklyDayOffset(DayOfWeek day1, DayOfWeek day2)
+        {
+            return ((int)day1 - (int)day2 + DaysPerWeek) % DaysPerWeek;
+        }
+
+
+        /// <summary>
+        /// Sort a collection of days of week based on their offsets from a specified first day of week.
+        /// <param name="daysOfWeek">A collection of days of week.</param>
+        /// <param name="firstDayOfWeek">The first day of week.</param>
+        /// <returns>The sorted days of week.</returns>
+        /// </summary>
+        private static List<DayOfWeek> SortDaysOfWeek(IEnumerable<DayOfWeek> daysOfWeek, DayOfWeek firstDayOfWeek)
+        {
+            List<DayOfWeek> result = daysOfWeek.ToList();
+
+            result.Sort((x, y) =>
+                CalculateWeeklyDayOffset(x, firstDayOfWeek)
+                    .CompareTo(
+                        CalculateWeeklyDayOffset(y, firstDayOfWeek)));
+
+            return result;
         }
     }
 }

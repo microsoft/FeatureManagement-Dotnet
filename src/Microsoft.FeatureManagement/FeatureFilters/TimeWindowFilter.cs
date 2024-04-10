@@ -1,12 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
@@ -18,9 +16,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
     [FilterAlias(Alias)]
     public class TimeWindowFilter : IFeatureFilter, IFilterParametersBinder
     {
+        private readonly TimeSpan ParametersCacheSlidingExpiration = TimeSpan.FromMinutes(5);
+        private readonly TimeSpan ParametersCacheAbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
+
         private const string Alias = "Microsoft.TimeWindow";
         private readonly ILogger _logger;
-        private readonly ConcurrentDictionary<TimeWindowFilterSettings, DateTimeOffset?> _recurrenceCache;
 
         /// <summary>
         /// Creates a time window based feature filter.
@@ -29,8 +29,17 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         public TimeWindowFilter(ILoggerFactory loggerFactory = null)
         {
             _logger = loggerFactory?.CreateLogger<TimeWindowFilter>();
-            _recurrenceCache = new ConcurrentDictionary<TimeWindowFilterSettings, DateTimeOffset?>();
         }
+
+        /// <summary>
+        /// The application memory cache to store the start time of the closest active time window. By caching this time, the time window can minimize redundant computations when evaluating recurrence.
+        /// </summary>
+        public IMemoryCache Cache { get; init; }
+
+        /// <summary>
+        /// This property allows the time window filter in our test suite to use simulated current time.
+        /// </summary>
+        internal ITimeProvider TimeProvider { get; init; }
 
         /// <summary>
         /// Binds configuration representing filter parameters to <see cref="TimeWindowFilterSettings"/>.
@@ -62,6 +71,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             DateTimeOffset now = DateTimeOffset.UtcNow;
 
+            if (TimeProvider != null)
+            {
+                now = TimeProvider.GetTime();
+            }
+
             if (!settings.Start.HasValue && !settings.End.HasValue)
             {
                 _logger?.LogWarning($"The '{Alias}' feature filter is not valid for feature '{context.FeatureName}'. It must specify either '{nameof(settings.Start)}', '{nameof(settings.End)}', or both.");
@@ -82,14 +96,29 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 // The reference of the object will be used for hash key.
                 // If there is no pre-bounded settings attached to the context, there will be no cached filter settings and each call will have a unique settings object.
                 // In this case, the cache for recurrence settings won't work.
-                if (context.Settings == null)
+                if (context.Settings == null || Cache == null)
                 {
                     return Task.FromResult(RecurrenceEvaluator.IsMatch(now, settings));
                 }
 
-                DateTimeOffset? closestStart = _recurrenceCache.GetOrAdd(
-                    settings,
-                    RecurrenceEvaluator.CalculateClosestStart(now, settings));
+                //
+                // The start time of the closest active time window. It could be null if the recurrence range surpasses its end.
+                DateTimeOffset? closestStart;
+
+                if (!Cache.TryGetValue(settings, out closestStart))
+                {
+                    closestStart = RecurrenceEvaluator.CalculateClosestStart(now, settings);
+
+                    Cache.Set(
+                        settings, 
+                        closestStart, 
+                        new MemoryCacheEntryOptions
+                        {
+                            SlidingExpiration = ParametersCacheSlidingExpiration,
+                            AbsoluteExpirationRelativeToNow = ParametersCacheAbsoluteExpirationRelativeToNow,
+                            Size = 1
+                        });
+                }
 
                 if (closestStart == null || now < closestStart.Value)
                 {
@@ -103,10 +132,15 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
                 closestStart = RecurrenceEvaluator.CalculateClosestStart(now, settings);
 
-                _recurrenceCache.AddOrUpdate(
+                Cache.Set(
                     settings,
-                    (_) => throw new KeyNotFoundException(),
-                    (_, _) => closestStart);
+                    closestStart,
+                    new MemoryCacheEntryOptions
+                    {
+                        SlidingExpiration = ParametersCacheSlidingExpiration,
+                        AbsoluteExpirationRelativeToNow = ParametersCacheAbsoluteExpirationRelativeToNow,
+                        Size = 1
+                    });
 
                 if (closestStart == null || now < closestStart.Value)
                 {

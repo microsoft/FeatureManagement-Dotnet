@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
@@ -1451,9 +1452,15 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public void RecurrenceEvaluationThroughCacheTest()
+        public async void RecurrenceEvaluationThroughCacheTest()
         {
-            var mockedTimeWindowFilter = new MockedTimeWindowFilter();
+            OnDemandTimeProvider mockedTimeProvider = new OnDemandTimeProvider();
+
+            var mockedTimeWindowFilter = new TimeWindowFilter()
+            {
+                Cache = new MemoryCache(new MemoryCacheOptions()),
+                TimeProvider = mockedTimeProvider
+            };
 
             var context = new FeatureFilterEvaluationContext()
             {
@@ -1477,35 +1484,35 @@ namespace Tests.FeatureManagement
                 }
             };
 
-            DateTimeOffset now = DateTimeOffset.Parse("2024-2-2T23:00:00+08:00");
+            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-2T23:00:00+08:00");
 
-            Assert.False(mockedTimeWindowFilter.Evaluate(now, context));
+            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
             for (int i = 0; i < 12; i++)
             {
-                now = now.AddHours(1);
-                //Assert.True(mockedTimeWindowFilter.Evaluate(now, context));
+                mockedTimeProvider.Now = mockedTimeProvider.Now.AddHours(1);
+                Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
             }
 
-            now = DateTimeOffset.Parse("2024-2-3T11:59:59+08:00");
-            //Assert.True(mockedTimeWindowFilter.Evaluate(now, context));
+            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-3T11:59:59+08:00");
+            Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            now = DateTimeOffset.Parse("2024-2-3T12:00:00+08:00");
-            Assert.False(mockedTimeWindowFilter.Evaluate(now, context));
+            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-3T12:00:00+08:00");
+            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            now = DateTimeOffset.Parse("2024-2-5T00:00:00+08:00");
-            Assert.True(mockedTimeWindowFilter.Evaluate(now, context));
+            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-5T00:00:00+08:00");
+            Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            now = DateTimeOffset.Parse("2024-2-5T12:00:00+08:00");
-            Assert.False(mockedTimeWindowFilter.Evaluate(now, context));
+            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-5T12:00:00+08:00");
+            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            now = DateTimeOffset.Parse("2024-2-7T00:00:00+08:00");
-            Assert.False(mockedTimeWindowFilter.Evaluate(now, context));
+            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-7T00:00:00+08:00");
+            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
             for (int i = 0; i < 10; i++ )
             {
-                now = now.AddDays(1);
-                Assert.False(mockedTimeWindowFilter.Evaluate(now, context));
+                mockedTimeProvider.Now = mockedTimeProvider.Now.AddDays(1);
+                Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
             }
 
             context = new FeatureFilterEvaluationContext()
@@ -1531,40 +1538,40 @@ namespace Tests.FeatureManagement
                 }
             };
 
-            now = DateTimeOffset.Parse("2024-1-31T23:00:00+08:00");
-            Assert.False(mockedTimeWindowFilter.Evaluate(now, context));
+            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-1-31T23:00:00+08:00");
+            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
             for (int i = 0; i < 12; i++)
             {
-                now = now.AddHours(1);
-                Assert.True(mockedTimeWindowFilter.Evaluate(now, context));
+                mockedTimeProvider.Now = mockedTimeProvider.Now.AddHours(1);
+                Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
             }
 
-            now = DateTimeOffset.Parse("2024-2-1T11:59:59+08:00");
-            Assert.True(mockedTimeWindowFilter.Evaluate(now, context));
+            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-1T11:59:59+08:00");
+            Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            now = DateTimeOffset.Parse("2024-2-1T12:00:00+08:00");
-            Assert.False(mockedTimeWindowFilter.Evaluate(now, context));
+            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-1T12:00:00+08:00");
+            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            now = DateTimeOffset.Parse("2024-2-2T00:00:00+08:00"); // Friday
-            Assert.False(mockedTimeWindowFilter.Evaluate(now, context));
+            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-2T00:00:00+08:00"); // Friday
+            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            now = DateTimeOffset.Parse("2024-2-4T00:00:00+08:00"); // Sunday
-            Assert.True(mockedTimeWindowFilter.Evaluate(now, context));
+            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-4T00:00:00+08:00"); // Sunday
+            Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            now = DateTimeOffset.Parse("2024-2-4T06:00:00+08:00");
-            Assert.True(mockedTimeWindowFilter.Evaluate(now, context));
+            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-4T06:00:00+08:00");
+            Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            now = DateTimeOffset.Parse("2024-2-4T12:01:00+08:00");
-            Assert.False(mockedTimeWindowFilter.Evaluate(now, context));
+            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-4T12:01:00+08:00");
+            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            now = DateTimeOffset.Parse("2024-2-8T00:00:00+08:00");
-            Assert.False(mockedTimeWindowFilter.Evaluate(now, context));
+            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-8T00:00:00+08:00");
+            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
             for (int i = 0; i < 10; i++)
             {
-                now = now.AddDays(1);
-                Assert.False(mockedTimeWindowFilter.Evaluate(now, context));
+                mockedTimeProvider.Now = mockedTimeProvider.Now.AddDays(1);
+                Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
             }
         }
     }

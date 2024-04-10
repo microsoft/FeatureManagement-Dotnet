@@ -76,43 +76,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Calculate the offset in days between two given days of the week.
-        /// <param name="day1">A day of week.</param>
-        /// <param name="day2">A day of week.</param>
-        /// <returns>The number of days to be added to day2 to reach day1</returns>
-        /// </summary>
-        public static int CalculateWeeklyDayOffset(DayOfWeek day1, DayOfWeek day2)
-        {
-            return ((int)day1 - (int)day2 + DaysPerWeek) % DaysPerWeek;
-        }
-
-
-        /// <summary>
-        /// Sort a collection of days of week based on their offsets from a specified first day of week.
-        /// <param name="daysOfWeek">A collection of days of week.</param>
-        /// <param name="firstDayOfWeek">The first day of week.</param>
-        /// <returns>The sorted days of week.</returns>
-        /// </summary>
-        public static List<DayOfWeek> SortDaysOfWeek(IEnumerable<DayOfWeek> daysOfWeek, DayOfWeek firstDayOfWeek)
-        {
-            List<DayOfWeek> result = daysOfWeek.ToList();
-
-            result.Sort((x, y) =>
-                CalculateWeeklyDayOffset(x, firstDayOfWeek)
-                    .CompareTo(
-                        CalculateWeeklyDayOffset(y, firstDayOfWeek)));
-
-            return result;
-        }
-
-        /// <summary>
         /// Calculate the closest previous recurrence occurrence (if any) before the provided timestamp and the next occurrence (if any) after the provided timestamp.
         /// <param name="time">A timestamp.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="prevOccurrence">The closest previous occurrence. Note that prev occurrence can be null even if the time is past the start date, because the recurrence range may have surpassed its end.</param>
         /// <param name="nextOccurrence">The next occurrence. Note that next occurrence can be null even if the prev occurrence is not null, because the recurrence range may have reached its end.</param>
         /// </summary>
-        public static void CalculateSurroundingOccurrences(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset? prevOccurrence, out DateTimeOffset? nextOccurrence)
+        private static void CalculateSurroundingOccurrences(DateTimeOffset time, TimeWindowFilterSettings settings, out DateTimeOffset? prevOccurrence, out DateTimeOffset? nextOccurrence)
         {
             Debug.Assert(settings != null);
             Debug.Assert(settings.Start != null);
@@ -354,6 +324,36 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             return previousOccurrence.AddDays(
                 pattern.Interval * DaysPerWeek - CalculateWeeklyDayOffset(previousOccurrence.DayOfWeek, sortedDaysOfWeek.First()));
+        }
+
+        /// <summary>
+        /// Calculate the offset in days between two given days of the week.
+        /// <param name="day1">A day of week.</param>
+        /// <param name="day2">A day of week.</param>
+        /// <returns>The number of days to be added to day2 to reach day1</returns>
+        /// </summary>
+        private static int CalculateWeeklyDayOffset(DayOfWeek day1, DayOfWeek day2)
+        {
+            return ((int)day1 - (int)day2 + DaysPerWeek) % DaysPerWeek;
+        }
+
+
+        /// <summary>
+        /// Sort a collection of days of week based on their offsets from a specified first day of week.
+        /// <param name="daysOfWeek">A collection of days of week.</param>
+        /// <param name="firstDayOfWeek">The first day of week.</param>
+        /// <returns>The sorted days of week.</returns>
+        /// </summary>
+        private static List<DayOfWeek> SortDaysOfWeek(IEnumerable<DayOfWeek> daysOfWeek, DayOfWeek firstDayOfWeek)
+        {
+            List<DayOfWeek> result = daysOfWeek.ToList();
+
+            result.Sort((x, y) =>
+                CalculateWeeklyDayOffset(x, firstDayOfWeek)
+                    .CompareTo(
+                        CalculateWeeklyDayOffset(y, firstDayOfWeek)));
+
+            return result;
         }
     }
 }
