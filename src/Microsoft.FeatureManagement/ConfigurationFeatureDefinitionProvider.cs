@@ -243,14 +243,6 @@ namespace Microsoft.FeatureManagement
 
             FeatureStatus featureStatus = FeatureStatus.Conditional;
 
-            Allocation allocation = null;
-
-            var variants = new List<VariantDefinition>();
-
-            bool telemetryEnabled = false;
-
-            Dictionary<string, string> telemetryMetadata = null;
-
             string val = configurationSection.Value; // configuration[$"{featureName}"];
 
             if (string.IsNullOrEmpty(val))
@@ -303,14 +295,7 @@ namespace Microsoft.FeatureManagement
                 Name = featureName,
                 EnabledFor = enabledFor,
                 RequirementType = requirementType,
-                Status = featureStatus,
-                Allocation = allocation,
-                Variants = variants,
-                Telemetry = new TelemetryConfiguration
-                {
-                    Enabled = telemetryEnabled,
-                    Metadata = telemetryMetadata
-                }
+                Status = featureStatus
             };
         }
 
