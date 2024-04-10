@@ -18,7 +18,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         const string UnrecognizableValue = "The value is unrecognizable.";
         const string RequiredParameter = "Value cannot be null or empty.";
         const string StartNotMatched = "Start date is not a valid first occurrence.";
-        const string TimeWindowDurationOutOfRange = "Time window duration cannot be longer than how frequently it occurs";
+        const string TimeWindowDurationOutOfRange = "Time window duration cannot be longer than how frequently it occurs or be longer than 10 years.";
 
         /// <summary>
         /// Perform validation of time window settings.
@@ -96,6 +96,15 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 paramName = nameof(settings.End);
 
                 reason = ValueOutOfRange;
+
+                return false;
+            }
+
+            if (settings.End.Value - settings.Start.Value >= TimeSpan.FromDays(3650))
+            {
+                paramName = nameof(settings.End);
+
+                reason = TimeWindowDurationOutOfRange;
 
                 return false;
             }

@@ -37,9 +37,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         public IMemoryCache Cache { get; init; }
 
         /// <summary>
-        /// This property allows the time window filter in our test suite to use simulated current time.
+        /// This property allows the time window filter in our test suite to use simulated time.
         /// </summary>
-        internal ITimeProvider TimeProvider { get; init; }
+        internal ISystemClock SystemClock { get; init; }
 
         /// <summary>
         /// Binds configuration representing filter parameters to <see cref="TimeWindowFilterSettings"/>.
@@ -69,12 +69,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Check if prebound settings available, otherwise bind from parameters.
             TimeWindowFilterSettings settings = (TimeWindowFilterSettings)context.Settings ?? (TimeWindowFilterSettings)BindParameters(context.Parameters);
 
-            DateTimeOffset now = DateTimeOffset.UtcNow;
-
-            if (TimeProvider != null)
-            {
-                now = TimeProvider.GetTime();
-            }
+            DateTimeOffset now = SystemClock?.UtcNow ?? DateTimeOffset.UtcNow;
 
             if (!settings.Start.HasValue && !settings.End.HasValue)
             {

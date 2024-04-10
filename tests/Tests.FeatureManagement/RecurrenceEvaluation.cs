@@ -298,7 +298,7 @@ namespace Tests.FeatureManagement
 
             //
             // The settings is valid. No exception should be thrown.
-            RecurrenceEvaluator.IsMatch(DateTimeOffset.Now, settings);
+            RecurrenceEvaluator.IsMatch(DateTimeOffset.UtcNow, settings);
 
             settings = new TimeWindowFilterSettings()
             {
@@ -319,7 +319,7 @@ namespace Tests.FeatureManagement
 
             //
             // The settings is valid. No exception should be thrown.
-            RecurrenceEvaluator.IsMatch(DateTimeOffset.Now, settings);
+            RecurrenceEvaluator.IsMatch(DateTimeOffset.UtcNow, settings);
 
             settings = new TimeWindowFilterSettings()
             {
@@ -1454,12 +1454,12 @@ namespace Tests.FeatureManagement
         [Fact]
         public async void RecurrenceEvaluationThroughCacheTest()
         {
-            OnDemandTimeProvider mockedTimeProvider = new OnDemandTimeProvider();
+            OnDemandClock mockedTimeProvider = new OnDemandClock();
 
             var mockedTimeWindowFilter = new TimeWindowFilter()
             {
                 Cache = new MemoryCache(new MemoryCacheOptions()),
-                TimeProvider = mockedTimeProvider
+                SystemClock = mockedTimeProvider
             };
 
             var context = new FeatureFilterEvaluationContext()
@@ -1484,34 +1484,34 @@ namespace Tests.FeatureManagement
                 }
             };
 
-            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-2T23:00:00+08:00");
+            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-2T23:00:00+08:00");
 
             Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
             for (int i = 0; i < 12; i++)
             {
-                mockedTimeProvider.Now = mockedTimeProvider.Now.AddHours(1);
+                mockedTimeProvider.UtcNow = mockedTimeProvider.UtcNow.AddHours(1);
                 Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
             }
 
-            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-3T11:59:59+08:00");
+            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-3T11:59:59+08:00");
             Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-3T12:00:00+08:00");
+            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-3T12:00:00+08:00");
             Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-5T00:00:00+08:00");
+            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-5T00:00:00+08:00");
             Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-5T12:00:00+08:00");
+            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-5T12:00:00+08:00");
             Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-7T00:00:00+08:00");
+            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-7T00:00:00+08:00");
             Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
             for (int i = 0; i < 10; i++ )
             {
-                mockedTimeProvider.Now = mockedTimeProvider.Now.AddDays(1);
+                mockedTimeProvider.UtcNow = mockedTimeProvider.UtcNow.AddDays(1);
                 Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
             }
 
@@ -1538,39 +1538,39 @@ namespace Tests.FeatureManagement
                 }
             };
 
-            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-1-31T23:00:00+08:00");
+            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-1-31T23:00:00+08:00");
             Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
             for (int i = 0; i < 12; i++)
             {
-                mockedTimeProvider.Now = mockedTimeProvider.Now.AddHours(1);
+                mockedTimeProvider.UtcNow = mockedTimeProvider.UtcNow.AddHours(1);
                 Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
             }
 
-            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-1T11:59:59+08:00");
+            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-1T11:59:59+08:00");
             Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-1T12:00:00+08:00");
+            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-1T12:00:00+08:00");
             Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-2T00:00:00+08:00"); // Friday
+            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-2T00:00:00+08:00"); // Friday
             Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-4T00:00:00+08:00"); // Sunday
+            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-4T00:00:00+08:00"); // Sunday
             Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-4T06:00:00+08:00");
+            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-4T06:00:00+08:00");
             Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-4T12:01:00+08:00");
+            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-4T12:01:00+08:00");
             Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            mockedTimeProvider.Now = DateTimeOffset.Parse("2024-2-8T00:00:00+08:00");
+            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-8T00:00:00+08:00");
             Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
             for (int i = 0; i < 10; i++)
             {
-                mockedTimeProvider.Now = mockedTimeProvider.Now.AddDays(1);
+                mockedTimeProvider.UtcNow = mockedTimeProvider.UtcNow.AddDays(1);
                 Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
             }
         }
