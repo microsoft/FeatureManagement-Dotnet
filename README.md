@@ -36,6 +36,7 @@ Here are some of the benefits of using this library:
 * [Targeting](#targeting)
   * [Targeting Exclusion](#targeting-exclusion)
 * [Variants](#variants)
+    * [Variants in Dependency Injection](#variants-in-dependency-injection)
 * [Telemetry](#telemetry)
     * [Enabling Telemetry](#enabling-telemetry)
     * [Custom Telemetry Publishers](#custom-telemetry-publishers)
@@ -96,7 +97,7 @@ The feature management library supports appsettings.json as a feature flag sourc
 
 The `FeatureManagement` section of the json document is used by convention to load feature flag settings. In the section above, we see that we have provided three different features. Features define their feature filters using the `EnabledFor` property. In the feature filters for `FeatureT` we see `AlwaysOn`. This feature filter is built-in and if specified will always enable the feature. The `AlwaysOn` feature filter does not require any configuration, so it only has the `Name` property. `FeatureU` has no filters in its `EnabledFor` property and thus will never be enabled. Any functionality that relies on this feature being enabled will not be accessible as long as the feature filters remain empty. However, as soon as a feature filter is added that enables the feature it can begin working. `FeatureV` specifies a feature filter named `TimeWindow`. This is an example of a configurable feature filter. We can see in the example that the filter has a `Parameters` property. This is used to configure the filter. In this case, the start and end times for the feature to be active are configured.
 
-The detailed schema of the `FeatureManagement` section can be found [here](./schemas/FeatureManagement.Dotnet.v1.0.0.schema.json).
+The detailed schema of the `FeatureManagement` section can be found [here](./schemas/FeatureManagement.Dotnet.v2.0.0.schema.json).
 
 **Advanced:** The usage of colon ':' in feature flag names is forbidden.
 
@@ -168,6 +169,36 @@ In the above example, `FeatureW` specifies a `RequirementType` of `All`, meaning
 ```
 
 In this example, even though the `AlwaysOn` filter would normally always make the feature enabled, the `Status` property is set to `Disabled`, so this feature will always be disabled. 
+
+#### Microsoft Feature Management Schema
+
+The feature management library also supports the usage of the [`Microsoft Feature Management schema`](https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureManagement.v1.0.0.schema.json) to declare feature flags. This schema is language agnostic in origin and is supported by all Microsoft feature management libraries.
+
+``` JavaScript
+{
+    "feature_management": {
+        "feature_flags": [
+            {
+                "id": "FeatureT",
+                "enabled": true,
+                "conditions": {
+                    "client_filters": [
+                        {  
+                            "name": "Microsoft.TimeWindow",
+                            "parameters": {
+                                "Start": "Mon, 01 May 2023 13:59:59 GMT",
+                                "End": "Sat, 01 July 2023 00:00:00 GMT"
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
+```
+
+**Note:** If the `feature_management` section can be found in the configuration, the `FeatureManagement` section will be ignored.
 
 #### Microsoft Feature Management Schema
 
@@ -784,17 +815,60 @@ variantConfiguration.Bind(settings);
 
 The variant returned is dependent on the user currently being evaluated, and that information is obtained from an instance of `TargetingContext`. This context can either be passed in when calling `GetVariantAsync` or it can be automatically retrieved from an implementation of [`ITargetingContextAccessor`](#itargetingcontextaccessor) if one is registered.
 
-### Defining Variants
+### Variant Feature Flag Declaration
+
+Compared to normal feature flags, variant feature flags have two additional properties: `Variants` and `Allocation`. The `Variants` property is an array that contains the variants defined for this feature. The `Allocation` property defines how these variants should be allocated for the feature. Just like declaring normal feature flags, you can set up variant feature flags in a json file. Here is an example of a variant feature flag.
+
+``` javascript
+
+{
+    "FeatureManagement":
+    {
+        "MyVariantFeatureFlag":
+        {   
+            "Allocation": {
+                "DefaultWhenEnabled": "Small",
+                "Group": [
+                    {
+                        "Variant": "Big",
+                        "Groups": [
+                            "Ring1"
+                        ]
+                    }
+                ]
+            },
+            "Variants": [
+                { 
+                    "Name": "Big"
+                },  
+                { 
+                    "Name": "Small"
+                } 
+            ],
+            "EnabledFor": [
+                {
+                    "Name": "AlwaysOn"
+                }
+            ]
+        }
+    }
+}
+
+```
+
+For more details about how to configure variant feature flags, please see [here](./schemas/FeatureManagement.Dotnet.v2.0.0.schema.json).
+
+#### Defining Variants
 
 Each variant has two properties: a name and a configuration. The name is used to refer to a specific variant, and the configuration is the value of that variant. The configuration can be set using either the `ConfigurationReference` or `ConfigurationValue` properties. `ConfigurationReference` is a string path that references a section of the current configuration that contains the feature flag declaration. `ConfigurationValue` is an inline configuration that can be a string, number, boolean, or configuration object. If both are specified, `ConfigurationValue` is used. If neither are specified, the returned variant's `Configuration` property will be null.
 
 A list of all possible variants is defined for each feature under the `Variants` property.
 
-```
+``` javascript
 {
     "FeatureManagement":
     {
-        "MyFlag":
+        "MyVariantFeatureFlag":
         {   
             "Variants": [
                 { 
@@ -815,14 +889,25 @@ A list of all possible variants is defined for each feature under the `Variants`
             ]
         }
     }
+
+    "ShoppingCart": {
+        "Big": {
+            "Size": 600,
+            "Color": "green"
+        },
+        "Small": {
+            "Size": 300,
+            "Color": "gray"
+        }
+    }
 }
 ```
 
-### Allocating Variants
+#### Allocating Variants
 
 The process of allocating a feature's variants is determined by the `Allocation` property of the feature.
 
-```
+``` javascript
 "Allocation": { 
     "DefaultWhenEnabled": "Small", 
     "DefaultWhenDisabled": "Small",  
@@ -870,7 +955,7 @@ The `Allocation` setting of a feature flag has the following properties:
 | `DefaultWhenDisabled` | Specifies which variant should be used when a variant is requested while the feature is considered disabled. |
 | `DefaultWhenEnabled` | Specifies which variant should be used when a variant is requested while the feature is considered enabled and no other variant was assigned to the user. |
 | `User` | Specifies a variant and a list of users to whom that variant should be assigned. | 
-| `Group` | Specifies a variant and a list of groups the current user has to be in for that variant to be assigned. |
+| `Group` | Specifies a variant and a list of groups. The variant will be assigned if the user is in at least one of the groups. |
 | `Percentile` | Specifies a variant and a percentage range the user's calculated percentage has to fit into for that variant to be assigned. |
 | `Seed` | The value which percentage calculations for `Percentile` are based on. The percentage calculation for a specific user will be the same across all features if the same `Seed` value is used. If no `Seed` is specified, then a default seed is created based on the feature name. |
 
@@ -880,39 +965,93 @@ If the feature is enabled, the feature manager will check the `User`, `Group`, a
 
 Allocation logic is similar to the [Microsoft.Targeting](./README.md#MicrosoftTargeting) feature filter, but there are some parameters that are present in targeting that aren't in allocation, and vice versa. The outcomes of targeting and allocation are not related.
 
+**Note:** To allow allocating feature variants, you need to register `ITargetingContextAccessor`. This can be done by calling the `WithTargeting<T>` method.
+
 ### Overriding Enabled State with a Variant
 
 You can use variants to override the enabled state of a feature flag. This gives variants an opportunity to extend the evaluation of a feature flag. If a caller is checking whether a flag that has variants is enabled, the feature manager will check if the variant assigned to the current user is set up to override the result. This is done using the optional variant property `StatusOverride`. By default, this property is set to `None`, which means the variant doesn't affect whether the flag is considered enabled or disabled. Setting `StatusOverride` to `Enabled` allows the variant, when chosen, to override a flag to be enabled. Setting `StatusOverride` to `Disabled` provides the opposite functionality, therefore disabling the flag when the variant is chosen. A feature with a `Status` of `Disabled` cannot be overridden.
 
 If you are using a feature flag with binary variants, the `StatusOverride` property can be very helpful. It allows you to continue using APIs like `IsEnabledAsync` and `FeatureGateAttribute` in your application, all while benefiting from the new features that come with variants, such as percentile allocation and seed.
 
-```
+``` javascript
 "Allocation": {
-    "Percentile": [{
-        "Variant": "On",
-        "From": 10,
-        "To": 20
-    }],
+    "Percentile": [
+        {
+            "Variant": "On",
+            "From": 10,
+            "To": 20
+        }
+    ],
     "DefaultWhenEnabled":  "Off",
     "Seed": "Enhanced-Feature-Group"
 },
 "Variants": [
-    { 
+    {
         "Name": "On"
     },
-    { 
+    {
         "Name": "Off",
         "StatusOverride": "Disabled"
-    }    
+    }
 ],
-"EnabledFor": [ 
-    { 
-        "Name": "AlwaysOn" 
-    } 
-] 
+"EnabledFor": [
+    {
+        "Name": "AlwaysOn"
+    }
+]
 ```
 
 In the above example, the feature is enabled by the `AlwaysOn` filter. If the current user is in the calculated percentile range of 10 to 20, then the `On` variant is returned. Otherwise, the `Off` variant is returned and because `StatusOverride` is equal to `Disabled`, the feature will now be considered disabled.
+
+### Variants in Dependency Injection
+
+Variant feature flags can be used in conjunction with dependency injection to surface different implementations of a service for different users. This is accomplished through the use of the `IVariantServiceProvider<TService>` interface.
+
+``` C#
+IVariantServiceProvider<IAlgorithm> algorithmServiceProvider;
+...
+
+IAlgorithm forecastAlgorithm = await algorithmServiceProvider.GetServiceAsync(cancellationToken); 
+```
+
+In the snippet above, the `IVariantServiceProvider<IAlgorithm>` will retrieve an implementation of `IAlgorithm` from the dependency injection container. The chosen implementation is dependent upon:
+* The feature flag that the `IAlgorithm` service was registered with.
+* The allocated variant for that feature.
+
+The `IVariantServiceProvider<T>` is made available to the application by calling `IFeatureManagementBuilder.WithVariantService<T>(string featureName)`. See below for an example.
+
+``` C#
+services.AddFeatureManagement() 
+        .WithVariantService<IAlgorithm>("ForecastAlgorithm");
+```
+
+The call above makes `IVariantServiceProvider<IAlgorithm>` available in the service collection. Implementation(s) of `IAlgorithm` must be added separately via an add method such as `services.AddSingleton<IAlgorithm, SomeImplementation>()`. The implementation of `IAlgorithm` that the `IVariantServiceProvider` uses depends on the `ForecastAlgorithm` variant feature flag. If no implementation of `IAlgorithm` is added to the service collection, then the `IVariantServiceProvider<IAlgorithm>.GetServiceAsync()` will return a task with a *null* result.
+
+``` javascript
+{
+    // The example variant feature flag
+    "ForecastAlgorithm": {
+        "Variants": [
+            { 
+                "Name": "AlgorithmBeta" 
+            },
+            ...
+        ] 
+    }
+}
+```
+
+#### Variant Service Alias Attribute
+
+``` C#
+[VariantServiceAlias("Beta")]
+public class AlgorithmBeta : IAlgorithm
+{
+    ...
+}
+```
+
+The variant service provider will use the type names of implementations to match the allocated variant. If a variant service is decorated with the `VariantServiceAliasAttribute`, the name declared in this attribute should be used in configuration to reference this variant service.
 
 ## Telemetry
 
@@ -931,7 +1070,7 @@ By default, feature flags will not have telemetry emitted. To publish telemetry 
 
 For flags defined in `appsettings.json`, that is done by using the `Telemetry` property on feature flags.
 
-```
+``` javascript
 {
     "FeatureManagement":
     {

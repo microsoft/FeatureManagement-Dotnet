@@ -6,13 +6,13 @@
     <MajorVersion>4</MajorVersion>
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
-    <PreviewVersion>-preview2</PreviewVersion>
+    <PreviewVersion>-preview3</PreviewVersion>
   </PropertyGroup>
 
   <Import Project="..\..\build\Versioning.props" />
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>

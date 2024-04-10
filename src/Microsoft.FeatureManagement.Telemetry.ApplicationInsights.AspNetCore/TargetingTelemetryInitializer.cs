@@ -34,12 +34,12 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
         {
             if (telemetry == null)
             {
-                throw new ArgumentNullException("telemetry");
+                throw new ArgumentNullException(nameof(telemetry));
             }
 
             if (httpContext == null)
             {
-                throw new ArgumentNullException("httpContext");
+                throw new ArgumentNullException(nameof(httpContext));
             }
 
             // Extract the targeting id from the http context

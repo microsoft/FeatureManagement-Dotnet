@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement.Targeting;
 using System;
 using System.Threading.Tasks;
 
@@ -26,11 +27,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <param name="options">Options controlling the behavior of the targeting evaluation performed by the filter.</param>
         /// <param name="contextAccessor">An accessor used to acquire the targeting context for use in feature evaluation.</param>
         /// <param name="loggerFactory">A logger factory for creating loggers.</param>
-        public TargetingFilter(IOptions<TargetingEvaluationOptions> options, ITargetingContextAccessor contextAccessor, ILoggerFactory loggerFactory)
+        public TargetingFilter(ITargetingContextAccessor contextAccessor, IOptions<TargetingEvaluationOptions> options = null, ILoggerFactory loggerFactory = null)
         {
             _contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
             _contextualFilter = new ContextualTargetingFilter(options, loggerFactory);
-            _logger = loggerFactory?.CreateLogger<TargetingFilter>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _logger = loggerFactory?.CreateLogger<TargetingFilter>();
         }
 
         /// <summary>
@@ -40,7 +41,14 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <returns><see cref="TargetingFilterSettings"/> that can later be used in targeting.</returns>
         public object BindParameters(IConfiguration filterParameters)
         {
-            return filterParameters.Get<TargetingFilterSettings>() ?? new TargetingFilterSettings();
+            TargetingFilterSettings settings = filterParameters.Get<TargetingFilterSettings>() ?? new TargetingFilterSettings();
+
+            if (!TargetingEvaluator.TryValidateSettings(settings, out string paramName, out string reason))
+            {
+                throw new ArgumentException(reason, paramName);
+            }
+
+            return settings;
         }
 
         /// <summary>
@@ -64,7 +72,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Ensure targeting can be performed
             if (targetingContext == null)
             {
-                _logger.LogWarning("No targeting context available for targeting evaluation.");
+                _logger?.LogWarning("No targeting context available for targeting evaluation.");
 
                 return false;
             }
