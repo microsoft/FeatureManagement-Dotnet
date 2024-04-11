@@ -3,6 +3,7 @@
 //
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.FeatureManagement.FeatureFilters;
+using Microsoft.FeatureManagement.Telemetry.ApplicationInsights;
 
 namespace Microsoft.ApplicationInsights
 {
@@ -23,7 +24,7 @@ namespace Microsoft.ApplicationInsights
                 properties = new Dictionary<string, string>();
             }
 
-            properties["TargetingId"] = targetingContext.UserId;
+            properties[Constants.TargetingIdKey] = targetingContext.UserId;
 
             telemetryClient.TrackEvent(eventName, properties, metrics);
         }
@@ -40,7 +41,7 @@ namespace Microsoft.ApplicationInsights
                 telemetry = new EventTelemetry();
             }
 
-            telemetry.Properties["TargetingId"] = targetingContext.UserId;
+            telemetry.Properties[Constants.TargetingIdKey] = targetingContext.UserId;
 
             telemetryClient.TrackEvent(telemetry);
         }

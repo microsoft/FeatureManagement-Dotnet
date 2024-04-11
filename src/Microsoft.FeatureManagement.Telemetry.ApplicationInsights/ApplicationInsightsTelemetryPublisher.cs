@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using Microsoft.ApplicationInsights;
+using Microsoft.FeatureManagement.Telemetry.ApplicationInsights;
 using System.Diagnostics;
 
 namespace Microsoft.FeatureManagement.Telemetry
@@ -44,7 +45,7 @@ namespace Microsoft.FeatureManagement.Telemetry
 
             if (evaluationEvent.TargetingContext != null)
             {
-                properties["TargetingId"] = evaluationEvent.TargetingContext.UserId;
+                properties[Constants.TargetingIdKey] = evaluationEvent.TargetingContext.UserId;
             }
 
             if (evaluationEvent.VariantAssignmentReason != VariantAssignmentReason.None)

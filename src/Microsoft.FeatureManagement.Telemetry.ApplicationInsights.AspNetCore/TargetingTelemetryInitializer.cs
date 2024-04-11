@@ -14,8 +14,6 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
     /// </summary>
     public class TargetingTelemetryInitializer : TelemetryInitializerBase
     {
-        private const string TargetingIdKey = $"Microsoft.FeatureManagement.TargetingId";
-
         /// <summary>
         /// Creates an instance of the TargetingTelemetryInitializer
         /// </summary>
@@ -42,20 +40,13 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
                 throw new ArgumentNullException(nameof(httpContext));
             }
 
-            // Extract the targeting id from the http context
-            string targetingId = null;
-
-            if (httpContext.Items.TryGetValue(TargetingIdKey, out object value))
-            {
-                targetingId = value?.ToString();
-            }
-
-            if (!string.IsNullOrEmpty(targetingId))
+            // Extract the targeting id from the request telemetry
+            if (requestTelemetry.Properties.ContainsKey(Constants.TargetingIdKey))
             {
                 // Telemetry.Properties is deprecated in favor of ISupportProperties
                 if (telemetry is ISupportProperties telemetryWithSupportProperties)
                 {
-                    telemetryWithSupportProperties.Properties["TargetingId"] = targetingId;
+                    telemetryWithSupportProperties.Properties[Constants.TargetingIdKey] = requestTelemetry.Properties[Constants.TargetingIdKey];
                 }
             }
         }

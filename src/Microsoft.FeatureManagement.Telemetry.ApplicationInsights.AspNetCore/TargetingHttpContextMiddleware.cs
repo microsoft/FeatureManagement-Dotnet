@@ -2,13 +2,12 @@
 // Licensed under the MIT license.
 //
 
+using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.FeatureManagement.FeatureFilters;
-using System;
-using System.Threading.Tasks;
 
-namespace Microsoft.FeatureManagement
+namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
 {
     /// <summary>
     /// Used to add targeting information to HTTP context.
@@ -17,8 +16,6 @@ namespace Microsoft.FeatureManagement
     {
         private readonly RequestDelegate _next;
         private readonly ILogger _logger;
-
-        private const string TargetingIdKey = $"Microsoft.FeatureManagement.TargetingId";
 
         /// <summary>
         /// Creates an instance of the TargetingHttpContextMiddleware
@@ -50,7 +47,12 @@ namespace Microsoft.FeatureManagement
 
             if (targetingContext != null)
             {
-                context.Items[TargetingIdKey] = targetingContext.UserId;
+                var requestTelemetry = context.Features.Get<RequestTelemetry>();
+
+                if (requestTelemetry != null)
+                {
+                    requestTelemetry.Properties.Add(Constants.TargetingIdKey, targetingContext.UserId);
+                }
             }
             else
             {
