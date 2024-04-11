@@ -312,7 +312,13 @@ namespace Microsoft.FeatureManagement
                     {
                         if (targetingContext == null)
                         {
-                            Logger?.LogWarning($"No instance of {nameof(TargetingContext)} was explicitly passed or could be found using {nameof(ITargetingContextAccessor)} for variant assignment.");
+                            if (useContext)
+                            {
+                                Logger?.LogWarning($"The {nameof(TargetingContext)} required for variant assignment was not provided.");
+                            } else
+                            {
+                                Logger?.LogWarning($"The {nameof(TargetingContext)} required for variant assignment was not retrieved from the {nameof(ITargetingContextAccessor)}.");
+                            }
                         }
 
                         if (targetingContext != null && evaluationEvent.FeatureDefinition.Allocation != null)
