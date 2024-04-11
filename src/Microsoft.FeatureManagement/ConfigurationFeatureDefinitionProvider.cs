@@ -45,19 +45,6 @@ namespace Microsoft.FeatureManagement
             _changeSubscription = ChangeToken.OnChange(
                 () => _configuration.GetReloadToken(),
                 () => _stale = 1);
-
-            IConfiguration MicrosoftFeatureManagementConfigurationSection = _configuration
-                .GetChildren()
-                .FirstOrDefault(section =>
-                    string.Equals(
-                        section.Key,
-                        MicrosoftFeatureManagementFields.FeatureManagementSectionName,
-                        StringComparison.OrdinalIgnoreCase));
-
-            if (MicrosoftFeatureManagementConfigurationSection != null)
-            {
-                _microsoftFeatureManagementSchemaEnabled = true;
-            }
         }
 
         /// <summary>
