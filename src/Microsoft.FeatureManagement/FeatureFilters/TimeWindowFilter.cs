@@ -88,10 +88,10 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             if (settings.Recurrence != null)
             {
                 //
-                // The reference of the object will be used for hash key.
+                // The reference of the object will be used for cache key.
                 // If there is no pre-bounded settings attached to the context, there will be no cached filter settings and each call will have a unique settings object.
                 // In this case, the cache for recurrence settings won't work.
-                if (context.Settings == null || Cache == null)
+                if (Cache == null || context.Settings == null)
                 {
                     return Task.FromResult(RecurrenceEvaluator.IsMatch(now, settings));
                 }
@@ -100,52 +100,45 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 // The start time of the closest active time window. It could be null if the recurrence range surpasses its end.
                 DateTimeOffset? closestStart;
 
-                if (!Cache.TryGetValue(settings, out closestStart))
-                {
-                    closestStart = RecurrenceEvaluator.CalculateClosestStart(now, settings);
+                TimeSpan activeDuration = settings.End.Value - settings.Start.Value;
 
-                    Cache.Set(
-                        settings, 
-                        closestStart, 
-                        new MemoryCacheEntryOptions
-                        {
-                            SlidingExpiration = ParametersCacheSlidingExpiration,
-                            AbsoluteExpirationRelativeToNow = ParametersCacheAbsoluteExpirationRelativeToNow,
-                            Size = 1
-                        });
+                //
+                // Recalculate the closest start if not yet calculated,
+                // Or if we have passed the cached time window.
+                if (!Cache.TryGetValue(settings, out closestStart) ||
+                    (closestStart.HasValue && now >= closestStart.Value + activeDuration))
+                {
+                    closestStart = ReloadClosestStart(settings);
                 }
 
-                if (closestStart == null || now < closestStart.Value)
+                if (!closestStart.HasValue || now < closestStart.Value)
                 {
                     return Task.FromResult(false);
                 }
 
-                if (now < closestStart.Value + (settings.End.Value - settings.Start.Value))
-                {
-                    return Task.FromResult(true);
-                }
-
-                closestStart = RecurrenceEvaluator.CalculateClosestStart(now, settings);
-
-                Cache.Set(
-                    settings,
-                    closestStart,
-                    new MemoryCacheEntryOptions
-                    {
-                        SlidingExpiration = ParametersCacheSlidingExpiration,
-                        AbsoluteExpirationRelativeToNow = ParametersCacheAbsoluteExpirationRelativeToNow,
-                        Size = 1
-                    });
-
-                if (closestStart == null || now < closestStart.Value)
-                {
-                    return Task.FromResult(false);
-                }
-
-                return Task.FromResult(now < closestStart.Value + (settings.End.Value - settings.Start.Value));
+                return Task.FromResult(now < closestStart.Value + activeDuration);
             }
 
             return Task.FromResult(false);
+        }
+
+        private DateTimeOffset? ReloadClosestStart(TimeWindowFilterSettings settings)
+        {
+            DateTimeOffset now = SystemClock?.UtcNow ?? DateTimeOffset.UtcNow;
+
+            DateTimeOffset? closestStart = RecurrenceEvaluator.CalculateClosestStart(now, settings);
+
+            Cache.Set(
+                settings,
+                closestStart,
+                new MemoryCacheEntryOptions
+                {
+                    SlidingExpiration = ParametersCacheSlidingExpiration,
+                    AbsoluteExpirationRelativeToNow = ParametersCacheAbsoluteExpirationRelativeToNow,
+                    Size = 1
+                });
+
+            return closestStart;
         }
     }
 }
