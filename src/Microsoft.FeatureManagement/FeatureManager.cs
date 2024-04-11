@@ -310,6 +310,11 @@ namespace Microsoft.FeatureManagement
                     }
                     else
                     {
+                        if (targetingContext == null)
+                        {
+                            Logger?.LogWarning($"No instance of {nameof(TargetingContext)} was explicitly passed or could be found using {nameof(ITargetingContextAccessor)} for variant assignment.");
+                        }
+
                         if (targetingContext != null && evaluationEvent.FeatureDefinition.Allocation != null)
                         {
                             variantDefinition = await AssignVariantAsync(evaluationEvent, targetingContext, cancellationToken).ConfigureAwait(false);
@@ -527,21 +532,12 @@ namespace Microsoft.FeatureManagement
         {
             if (TargetingContextAccessor == null)
             {
-                Logger?.LogWarning($"No instance of {nameof(ITargetingContextAccessor)} is available for variant assignment.");
-
                 return null;
             }
 
             //
             // Acquire targeting context via accessor
             TargetingContext context = await TargetingContextAccessor.GetContextAsync().ConfigureAwait(false);
-
-            //
-            // Ensure targeting can be performed
-            if (context == null)
-            {
-                Logger?.LogWarning($"No instance of {nameof(TargetingContext)} could be found using {nameof(ITargetingContextAccessor)} for variant assignment.");
-            }
 
             return context;
         }
