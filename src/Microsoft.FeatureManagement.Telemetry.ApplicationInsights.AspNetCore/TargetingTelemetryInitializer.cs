@@ -35,9 +35,9 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
                 throw new ArgumentNullException(nameof(telemetry));
             }
 
-            if (httpContext == null)
+            if (requestTelemetry == null)
             {
-                throw new ArgumentNullException(nameof(httpContext));
+                throw new ArgumentNullException(nameof(requestTelemetry));
             }
 
             // Extract the targeting id from the request telemetry

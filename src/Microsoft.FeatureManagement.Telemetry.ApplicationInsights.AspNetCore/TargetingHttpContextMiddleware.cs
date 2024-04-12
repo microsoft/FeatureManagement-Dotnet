@@ -28,14 +28,14 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
         /// <summary>
         /// Adds targeting information to the HTTP context.
         /// </summary>
-        /// <param name="context">The <see cref="HttpContext"/> to add the targeting information to.</param>
+        /// <param name="httpContext">The <see cref="HttpContext"/> to add the targeting information to.</param>
         /// <param name="targetingContextAccessor">The <see cref="ITargetingContextAccessor"/> to retrieve the targeting information from.</param>
         /// <exception cref="ArgumentNullException">Thrown if the provided context or targetingContextAccessor is null.</exception>
-        public async Task InvokeAsync(HttpContext context, ITargetingContextAccessor targetingContextAccessor)
+        public async Task InvokeAsync(HttpContext httpContext, ITargetingContextAccessor targetingContextAccessor)
         {
-            if (context == null)
+            if (httpContext == null)
             {
-                throw new ArgumentNullException(nameof(context));
+                throw new ArgumentNullException(nameof(httpContext));
             }
 
             if (targetingContextAccessor == null)
@@ -47,11 +47,11 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
 
             if (targetingContext != null)
             {
-                var requestTelemetry = context.Features.Get<RequestTelemetry>();
+                var requestTelemetry = httpContext.Features.Get<RequestTelemetry>();
 
                 if (requestTelemetry != null)
                 {
-                    requestTelemetry.Properties.Add(Constants.TargetingIdKey, targetingContext.UserId);
+                    requestTelemetry.Properties[Constants.TargetingIdKey] = targetingContext.UserId;
                 }
             }
             else
@@ -59,7 +59,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
                 _logger.LogDebug("The targeting context accessor returned a null TargetingContext");
             }
 
-            await _next(context);
+            await _next(httpContext);
         }
     }
 }
