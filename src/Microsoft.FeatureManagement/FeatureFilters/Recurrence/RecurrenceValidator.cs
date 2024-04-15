@@ -21,7 +21,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         const string TimeWindowDurationOutOfRange = "Time window duration cannot be longer than how frequently it occurs or be longer than 10 years.";
 
         /// <summary>
-        /// Perform validation of time window settings.
+        /// Performs validation of time window settings.
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="paramName">The name of the invalid setting, if any.</param>
         /// <param name="reason">The reason that the setting is invalid.</param>
@@ -331,7 +331,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Check whether the duration is shorter than the minimum gap between recurrence of days of week.
+        /// Checks whether the duration is shorter than the minimum gap between recurrence of days of week.
         /// </summary>
         /// <param name="duration">The time span of the duration.</param>
         /// <param name="interval">The recurrence interval.</param>
@@ -400,7 +400,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Calculate the offset in days between two given days of the week.
+        /// Calculates the offset in days between two given days of the week.
         /// <param name="day1">A day of week.</param>
         /// <param name="day2">A day of week.</param>
         /// <returns>The number of days to be added to day2 to reach day1</returns>
@@ -412,7 +412,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
 
         /// <summary>
-        /// Sort a collection of days of week based on their offsets from a specified first day of week.
+        /// Sorts a collection of days of week based on their offsets from a specified first day of week.
         /// <param name="daysOfWeek">A collection of days of week.</param>
         /// <param name="firstDayOfWeek">The first day of week.</param>
         /// <returns>The sorted days of week.</returns>

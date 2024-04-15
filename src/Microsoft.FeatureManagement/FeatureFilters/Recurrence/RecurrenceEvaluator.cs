@@ -16,7 +16,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <summary>
         /// Checks if a provided timestamp is within any recurring time window specified by the Recurrence section in the time window filter settings.
         /// If the time window filter has an invalid recurrence setting, an exception will be thrown.
-        /// <param name="time">A timestamp.</param>
+        /// <param name="time">A datetime.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <returns>True if the timestamp is within any recurring time window, false otherwise.</returns>
         /// </summary>
@@ -42,8 +42,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Calculate the start time of the closest active time window.
-        /// <param name="time">A timestamp.</param>
+        /// Calculates the start time of the closest active time window.
+        /// <param name="time">A datetime.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <returns>The start time of the closest active time window or null if the recurrence range surpasses its end.</returns>
         /// </summary>
@@ -76,8 +76,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Calculate the closest previous recurrence occurrence (if any) before the provided timestamp and the next occurrence (if any) after the provided timestamp.
-        /// <param name="time">A timestamp.</param>
+        /// Calculates the closest previous recurrence occurrence (if any) before the given time and the next occurrence (if any) after it.
+        /// <param name="time">A datetime.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="prevOccurrence">The closest previous occurrence. Note that prev occurrence can be null even if the time is past the start date, because the recurrence range may have surpassed its end.</param>
         /// <param name="nextOccurrence">The next occurrence. Note that next occurrence can be null even if the prev occurrence is not null, because the recurrence range may have reached its end.</param>
@@ -139,8 +139,10 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
 
         /// <summary>
-        /// Try to find the closest previous recurrence occurrence before the provided timestamp according to the recurrence pattern. The given time should be later than the recurrence start.
-        /// <param name="time">A timestamp.</param>
+        /// Finds the closest previous recurrence occurrence before the given time according to the recurrence pattern. 
+        /// The given time should be later than the recurrence start. 
+        /// A return value indicates whether any previous occurrence can be found.
+        /// <param name="time">A datetime.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
         /// <param name="numberOfOccurrences">The number of occurrences between the time and the recurrence start.</param>
@@ -182,8 +184,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Find the closest previous recurrence occurrence before the provided timestamp according to the "Daily" recurrence pattern. The given time should be later than the recurrence start.
-        /// <param name="time">A timestamp.</param>
+        /// Finds the closest previous recurrence occurrence before the given time according to the "Daily" recurrence pattern. 
+        /// The given time should be later than the recurrence start.
+        /// <param name="time">A datetime.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
         /// <param name="numberOfOccurrences">The number of occurrences between the time and the recurrence start.</param>
@@ -210,8 +213,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Find the closest previous recurrence occurrence before the provided timestamp according to the "Weekly" recurrence pattern. The given time should be later than the recurrence start.
-        /// <param name="time">A timestamp.</param>
+        /// Finds the closest previous recurrence occurrence before the given time according to the "Weekly" recurrence pattern. 
+        /// The given time should be later than the recurrence start.
+        /// <param name="time">A datetime.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// <param name="previousOccurrence">The closest previous occurrence.</param>
         /// <param name="numberOfOccurrences">The number of occurrences between the time and the recurrence start.</param>
@@ -304,7 +308,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Find the next recurrence occurrence after the provided previous occurrence according to the "Weekly" recurrence pattern.
+        /// Finds the next recurrence occurrence after the provided previous occurrence according to the "Weekly" recurrence pattern.
         /// <param name="previousOccurrence">The previous occurrence.</param>
         /// <param name="settings">The settings of time window filter.</param>
         /// </summary>
@@ -327,7 +331,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         }
 
         /// <summary>
-        /// Calculate the offset in days between two given days of the week.
+        /// Calculates the offset in days between two given days of the week.
         /// <param name="day1">A day of week.</param>
         /// <param name="day2">A day of week.</param>
         /// <returns>The number of days to be added to day2 to reach day1</returns>
@@ -339,7 +343,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
 
         /// <summary>
-        /// Sort a collection of days of week based on their offsets from a specified first day of week.
+        /// Sorts a collection of days of week based on their offsets from a specified first day of week.
         /// <param name="daysOfWeek">A collection of days of week.</param>
         /// <param name="firstDayOfWeek">The first day of week.</param>
         /// <returns>The sorted days of week.</returns>
