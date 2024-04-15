@@ -314,11 +314,16 @@ namespace Microsoft.FeatureManagement
                         {
                             string message;
 
-                            if (useContext) {
+                            if (useContext) 
+                            {
                                 message = $"A {nameof(TargetingContext)} required for variant assignment was not provided.";
-                            } else if (TargetingContextAccessor == null) {
+                            } 
+                            else if (TargetingContextAccessor == null) 
+                            {
                                 message = $"No instance of {nameof(ITargetingContextAccessor)} could be found for variant assignment.";
-                            } else {
+                            } 
+                            else 
+                            {
                                 message = $"No instance of {nameof(TargetingContext)} could be found using {nameof(ITargetingContextAccessor)} for variant assignment.";
                             }
 
