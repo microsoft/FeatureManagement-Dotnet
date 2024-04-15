@@ -14,7 +14,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Provides a default implementation of <see cref="ITargetingContextAccessor"/> that creates <see cref="TargetingContext"/> using info from the current HTTP request.
     /// </summary>
-    public class DefaultHttpTargetingContextAccessor : ITargetingContextAccessor
+    public sealed class DefaultHttpTargetingContextAccessor : ITargetingContextAccessor
     {
         private const string TargetingContextLookup = "FeatureManagement.TargetingContext";
         private readonly IHttpContextAccessor _httpContextAccessor;
