@@ -317,7 +317,7 @@ namespace Microsoft.FeatureManagement
                             if (useContext) {
                                 message = $"A {nameof(TargetingContext)} required for variant assignment was not provided.";
                             } else if (TargetingContextAccessor == null) {
-                                message = $"A {nameof(ITargetingContextAccessor)} was not provided. The {nameof(TargetingContext)} required for variant assignment will be null.";
+                                message = $"No instance of {nameof(ITargetingContextAccessor)} could be found for variant assignment.";
                             } else {
                                 message = $"No instance of {nameof(TargetingContext)} could be found using {nameof(ITargetingContextAccessor)} for variant assignment.";
                             }
