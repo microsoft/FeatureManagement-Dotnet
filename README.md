@@ -332,7 +332,7 @@ public interface IDisabledFeaturesHandler
 
 ### View
 
-In MVC views `<feature>` tags can be used to conditionally render content based on whether a feature is enabled or whether specific variant of a feature is assigned. 
+In MVC views `<feature>` tags can be used to conditionally render content based on whether a feature is enabled or whether specific variant of a feature is assigned. For more information about variant, please refer to the [variants](./README.md#Variants) section.
 
 ``` HTML+Razor
 <feature name="FeatureX">
