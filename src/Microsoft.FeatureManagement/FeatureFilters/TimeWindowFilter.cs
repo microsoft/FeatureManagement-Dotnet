@@ -43,6 +43,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <returns>True if the feature is enabled, false otherwise.</returns>
         public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
             //
             // Check if prebound settings available, otherwise bind from parameters.
             TimeWindowFilterSettings settings = (TimeWindowFilterSettings)context.Settings ?? (TimeWindowFilterSettings)BindParameters(context.Parameters);
