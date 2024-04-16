@@ -71,6 +71,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Check if prebound settings available, otherwise bind from parameters.
             TargetingFilterSettings settings = (TargetingFilterSettings)context.Settings ?? (TargetingFilterSettings)BindParameters(context.Parameters);
 
+            //
+            // If prebound settings is not available, which means BindParameters method is not called, we need to validate the feature filter settings.
+            if (context.Settings == null && !TargetingEvaluator.TryValidateSettings(settings, out string paramName, out string reason))
+            {
+                throw new ArgumentException(reason, paramName);
+            }
+
             return Task.FromResult(TargetingEvaluator.IsTargeted(targetingContext, settings, _options.IgnoreCase, context.FeatureName));
         }
     }
