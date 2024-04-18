@@ -58,7 +58,7 @@ The .NET Core configuration system is used to determine the state of feature fla
 
 ### Feature Flag Declaration
 
-The feature management library supports appsettings.json as a feature flag source since it is a provider for .NET Core's IConfiguration system. Feature flags are declared using the [`Microsoft Feature Management schema`](https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureManagement.v1.0.0.schema.json). This schema is language agnostic in origin and is supported by all Microsoft feature management libraries.
+The feature management library supports appsettings.json as a feature flag source since it is a provider for .NET Core's IConfiguration system. Feature flags are declared using the [`Microsoft Feature Management schema`](https://github.com/Azure/AppConfiguration/blob/main/docs/FeatureManagement/FeatureManagement.v2.0.0.schema.json). This schema is language agnostic in origin and is supported by all Microsoft feature management libraries.
 
 
 Below we have an example of declaring feature flags in a json file.
