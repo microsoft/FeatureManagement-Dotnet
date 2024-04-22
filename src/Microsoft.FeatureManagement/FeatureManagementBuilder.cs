@@ -53,23 +53,7 @@ namespace Microsoft.FeatureManagement
             return this;
         }
 
-        public IFeatureManagementBuilder AddSessionManager<T>() where T : ISessionManager
-        {
-            //
-            // Register the session manager with the same lifetime as the feature manager
-            if (Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
-            {
-                Services.AddScoped(typeof(ISessionManager), typeof(T));
-            }
-            else
-            {
-                Services.AddSingleton(typeof(ISessionManager), typeof(T));
-            }
-
-            return this;
-        }
-
-        internal IFeatureManagementBuilder AddFeatureFilter<T>(Func<IServiceProvider, object> implementationFactory) where T : IFeatureFilterMetadata
+        public IFeatureManagementBuilder AddFeatureFilter<T>(Func<IServiceProvider, object> implementationFactory) where T : IFeatureFilterMetadata
         {
             Type serviceType = typeof(IFeatureFilterMetadata);
 
@@ -96,6 +80,22 @@ namespace Microsoft.FeatureManagement
                 {
                     Services.AddSingleton(serviceType, implementationFactory);
                 }
+            }
+
+            return this;
+        }
+
+        public IFeatureManagementBuilder AddSessionManager<T>() where T : ISessionManager
+        {
+            //
+            // Register the session manager with the same lifetime as the feature manager
+            if (Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
+            {
+                Services.AddScoped(typeof(ISessionManager), typeof(T));
+            }
+            else
+            {
+                Services.AddSingleton(typeof(ISessionManager), typeof(T));
             }
 
             return this;
