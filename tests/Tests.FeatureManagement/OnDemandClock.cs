@@ -3,7 +3,7 @@ using System;
 
 namespace Tests.FeatureManagement
 {
-    internal class OnDemandClock : ISystemClock
+    class OnDemandClock : ISystemClock
     {
         public DateTimeOffset UtcNow { get; set; }
     }
