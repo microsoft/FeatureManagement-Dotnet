@@ -16,8 +16,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
     [FilterAlias(Alias)]
     public class TimeWindowFilter : IFeatureFilter, IFilterParametersBinder
     {
-        private readonly TimeSpan ParametersCacheSlidingExpiration = TimeSpan.FromMinutes(5);
-        private readonly TimeSpan ParametersCacheAbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
+        private readonly TimeSpan CacheSlidingExpiration = TimeSpan.FromMinutes(5);
+        private readonly TimeSpan CacheAbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
 
         private const string Alias = "Microsoft.TimeWindow";
         private readonly ILogger _logger;
@@ -138,8 +138,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 closestStart,
                 new MemoryCacheEntryOptions
                 {
-                    SlidingExpiration = ParametersCacheSlidingExpiration,
-                    AbsoluteExpirationRelativeToNow = ParametersCacheAbsoluteExpirationRelativeToNow,
+                    SlidingExpiration = CacheSlidingExpiration,
+                    AbsoluteExpirationRelativeToNow = CacheAbsoluteExpirationRelativeToNow,
                     Size = 1
                 });
 
