@@ -136,7 +136,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
         }
 
-
         /// <summary>
         /// Finds the closest previous recurrence occurrence before the given time according to the recurrence pattern. 
         /// The given time should be later than the recurrence start. 
