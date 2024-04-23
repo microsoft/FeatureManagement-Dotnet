@@ -694,8 +694,8 @@ There are three possible recurrence range type: `NoEnd`, `EndDate` and `Numbered
     "Recurrence":{
         "Pattern": {
             "Type": "Weekly",
-            "Interval": 1
-            "DaysOfWeek": ["Monday", "Tuesday"],
+            "Interval": 1,
+            "DaysOfWeek": ["Monday", "Tuesday"]
         },
         "Range": {
             "Type": "Numbered",
@@ -802,8 +802,8 @@ IFeatureManager fm;
 TargetingContext targetingContext = new TargetingContext
 {
    UserId = userId,
-   Groups = groups;
-}
+   Groups = groups
+};
 
 await fm.IsEnabledAsync(featureName, targetingContext);
 ```
