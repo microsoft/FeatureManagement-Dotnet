@@ -1027,5 +1027,41 @@ namespace Tests.FeatureManagement
 
             Assert.True(called);
         }
+
+        [Fact]
+        public void ConstructorUsesFallbackValues()
+        {
+            var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+            var configDefinitionProvider = new ConfigurationFeatureDefinitionProvider(config);
+            var featureManager = new FeatureManager(configDefinitionProvider);
+
+            Assert.Empty(featureManager.FeatureFilters);
+            Assert.Empty(featureManager.SessionManagers);
+        }
+
+        [Fact]
+        public void ConstructorSetsOptionalValues()
+        {
+            var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+            var configDefinitionProvider = new ConfigurationFeatureDefinitionProvider(config);
+            var options = new FeatureManagementOptions();
+            var featureFilters = new List<IFeatureFilterMetadata>
+            {
+                new TestFilter()
+            };
+            var sessionManagers = new List<ISessionManager>
+            {
+                new TestSessionManager()
+            };
+            var featureManager = new FeatureManager(
+                configDefinitionProvider,
+                options,
+                featureFilters,
+                sessionManagers
+            );
+
+            Assert.Single(featureManager.FeatureFilters);
+            Assert.Single(featureManager.SessionManagers);
+        }
     }
 }

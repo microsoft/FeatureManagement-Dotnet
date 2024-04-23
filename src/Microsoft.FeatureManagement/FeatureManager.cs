@@ -39,17 +39,21 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="featureDefinitionProvider">The provider of feature flag definitions.</param>
         /// <param name="options">Options controlling the behavior of the feature manager.</param>
+        /// <param name="featureFilters">The collection of feature filter metadata.</param>
+        /// <param name="sessionManagers">The collection of session managers.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureDefinitionProvider"/> is null.</exception>
         public FeatureManager(
             IFeatureDefinitionProvider featureDefinitionProvider,
-            FeatureManagementOptions options = null)
+            FeatureManagementOptions options = null,
+            IEnumerable<IFeatureFilterMetadata> featureFilters = null,
+            IEnumerable<ISessionManager> sessionManagers = null)
         {
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
             _featureDefinitionProvider = featureDefinitionProvider ?? throw new ArgumentNullException(nameof(featureDefinitionProvider));
             _options = options ?? new FeatureManagementOptions();
-            _featureFilters = Enumerable.Empty<IFeatureFilterMetadata>();
-            _sessionManagers = Enumerable.Empty<ISessionManager>();
+            _featureFilters = featureFilters ?? Enumerable.Empty<IFeatureFilterMetadata>();
+            _sessionManagers = sessionManagers ?? Enumerable.Empty<ISessionManager>();
         }
 
         /// <summary>
