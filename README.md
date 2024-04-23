@@ -803,7 +803,7 @@ TargetingContext targetingContext = new TargetingContext
 {
    UserId = userId,
    Groups = groups
-}
+};
 
 await fm.IsEnabledAsync(featureName, targetingContext);
 ```
