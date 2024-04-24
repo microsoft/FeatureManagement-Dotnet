@@ -1,11 +1,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using EvaluationDataToApplicationInsights;
-using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.FeatureManagement;
+using VariantServiceDemo;
 using Microsoft.FeatureManagement.Telemetry;
+using Microsoft.FeatureManagement;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,18 +25,23 @@ builder.Services.AddApplicationInsightsTelemetry();
 builder.Services.AddSingleton<ITelemetryInitializer, TargetingTelemetryInitializer>();
 
 //
+// Add variant implementations of ICalculator
+builder.Services.AddSingleton<ICalculator, DefaultCalculator>();
+
+builder.Services.AddSingleton<ICalculator, RemoteCalculator>();
+
+//
 // Enter feature management
 //
 // Enhance a web application with feature management
 // Including user targeting capability
+// wire up variant service provider of ICalculator and variant feature flag "Calculator"
 // Wire up evaluation event emission
 builder.Services.AddFeatureManagement()
     .WithTargeting<HttpContextTargetingContextAccessor>()
+    .WithVariantService<ICalculator>("Calculator")
     .AddTelemetryPublisher<ApplicationInsightsTelemetryPublisher>();
 
-//
-// Default code from .NET template below
-//
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
