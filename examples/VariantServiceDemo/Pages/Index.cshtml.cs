@@ -17,10 +17,6 @@ namespace VariantServiceDemo.Pages
 
         public IActionResult OnGet()
         {
-            Response.Cookies.Delete("ai_user");
-
-            Response.Cookies.Delete("ai_session");
-
             //
             // generate a new visitor
             string visitor = Random.Shared.Next().ToString();

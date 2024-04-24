@@ -34,8 +34,7 @@ builder.Services.AddSingleton<ICalculator, RemoteCalculator>();
 // Enter feature management
 //
 // Enhance a web application with feature management
-// Including user targeting capability
-// wire up variant service provider of ICalculator and variant feature flag "Calculator"
+// Including user targeting capability and the variant service provider of ICalculator which is bounded with the variant feature flag "Calculator"
 // Wire up evaluation event emission
 builder.Services.AddFeatureManagement()
     .WithTargeting<HttpContextTargetingContextAccessor>()
