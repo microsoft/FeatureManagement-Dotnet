@@ -119,7 +119,7 @@ namespace Microsoft.FeatureManagement
         {
             await foreach (FeatureDefinition featureDefintion in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
             {
-                yield return featureDefintion.Name;
+                yield return featureDefintion?.Name;
             }
         }
 

@@ -115,11 +115,6 @@ namespace Microsoft.FeatureManagement
         public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998
         {
-            if (Interlocked.Exchange(ref _stale, 0) != 0)
-            {
-                _definitions.Clear();
-            }
-
             //
             // Iterate over all features registered in the system at initial invocation time
             foreach (IConfigurationSection featureSection in GetFeatureDefinitionSections())
@@ -129,6 +124,11 @@ namespace Microsoft.FeatureManagement
                 if (string.IsNullOrEmpty(featureName))
                 {
                     continue;
+                }
+
+                if (Interlocked.Exchange(ref _stale, 0) != 0)
+                {
+                    _definitions.Clear();
                 }
 
                 //
