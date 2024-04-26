@@ -1,11 +1,6 @@
 ﻿@using System.Security.Claims
 @using Microsoft.AspNetCore.Http
 
-@inject IHttpContextAccessor httpContextAccessor
-@{
-    string username = httpContextAccessor.HttpContext.Request.Cookies["username"];
-}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>

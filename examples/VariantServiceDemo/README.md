@@ -85,7 +85,7 @@ builder.Services.AddSingleton<ICalculator, DefaultCalculator>();
 builder.Services.AddSingleton<ICalculator, RemoteCalculator>();
 ```
 
-The `DefaultCalculator` will do the calculation on the server locally. The `RemoteCalculator` will call the [newton API](https://github.com/aunyks/newton-api) to get the result of the calculation.
+The `DefaultCalculator` does the calculation on the server locally. The `RemoteCalculator` simulates calling API to get the result of the calculation from a remote server.
 
 ## A/B Testing
 
