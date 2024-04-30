@@ -381,8 +381,8 @@ namespace Microsoft.FeatureManagement
                     .FirstOrDefault(section =>
                         string.Equals(
                             section.Key,
-                            _microsoftFeatureManagementSchemaEnabled ?
-                                MicrosoftFeatureManagementFields.FeatureManagementSectionName :
+                            _microsoftFeatureManagementSchemaEnabled ? 
+                                MicrosoftFeatureManagementFields.FeatureManagementSectionName : 
                                 ConfigurationFields.FeatureManagementSectionName,
                             StringComparison.OrdinalIgnoreCase));
 
