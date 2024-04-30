@@ -115,6 +115,11 @@ namespace Microsoft.FeatureManagement
         public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998
         {
+            if (Interlocked.Exchange(ref _stale, 0) != 0)
+            {
+                _definitions.Clear();
+            }
+
             //
             // Iterate over all features registered in the system at initial invocation time
             foreach (IConfigurationSection featureSection in GetFeatureDefinitionSections())
@@ -126,14 +131,16 @@ namespace Microsoft.FeatureManagement
                     continue;
                 }
 
-                if (Interlocked.Exchange(ref _stale, 0) != 0)
-                {
-                    _definitions.Clear();
-                }
-
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                yield return  _definitions.GetOrAdd(featureName, (_) => ReadFeatureDefinition(featureSection));
+                FeatureDefinition definition = _definitions.GetOrAdd(featureName, (_) => ReadFeatureDefinition(featureSection));
+
+                //
+                // Null cache entry possible if someone accesses non-existent flag directly (IsEnabled)
+                if (definition != null)
+                {
+                    yield return definition;
+                }
             }
         }
 
@@ -374,8 +381,8 @@ namespace Microsoft.FeatureManagement
                     .FirstOrDefault(section =>
                         string.Equals(
                             section.Key,
-                            _microsoftFeatureManagementSchemaEnabled ? 
-                                MicrosoftFeatureManagementFields.FeatureManagementSectionName : 
+                            _microsoftFeatureManagementSchemaEnabled ?
+                                MicrosoftFeatureManagementFields.FeatureManagementSectionName :
                                 ConfigurationFields.FeatureManagementSectionName,
                             StringComparison.OrdinalIgnoreCase));
 
