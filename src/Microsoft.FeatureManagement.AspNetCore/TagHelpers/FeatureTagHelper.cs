@@ -76,9 +76,14 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
 
                     IEnumerable<string> variants = Variant.Split(',').Select(n => n.Trim());
 
+                    if (variants.Count() != 1 && Requirement == RequirementType.All)
+                    {
+                        throw new ArgumentException("Requirement must be Any when there are multiple variants.", nameof(Requirement));
+                    }
+
                     enabled = await variants.Any(
                         async variant => {
-                            Variant assignedVariant = await _featureManager.GetVariantAsync(features.First());
+                            Variant assignedVariant = await _featureManager.GetVariantAsync(features.First()).ConfigureAwait(false);
 
                             return variant == assignedVariant?.Name;    
                         });
