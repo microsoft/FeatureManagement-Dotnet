@@ -103,5 +103,11 @@ namespace Microsoft.FeatureManagement
 
             return builder;
         }
+
+        public static IFeatureManagementBuilder WithEvents(this IFeatureManagementBuilder builder)
+        {
+            
+            return builder;
+        }
     }
 }

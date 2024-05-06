@@ -62,7 +62,7 @@ namespace Microsoft.FeatureManagement.Telemetry
                 }
             }
 
-            _telemetryClient.TrackEvent(_eventName, properties);
+            //_telemetryClient.TrackEvent(_eventName, properties);
 
             return new ValueTask();
         }

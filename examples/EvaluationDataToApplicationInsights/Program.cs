@@ -6,6 +6,7 @@ using Microsoft.FeatureManagement;
 using EvaluationDataToApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore;
+using OpenTelemetry.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +33,9 @@ builder.Services.AddSingleton<ITelemetryInitializer, TargetingTelemetryInitializ
 builder.Services.AddFeatureManagement()
     .WithTargeting<HttpContextTargetingContextAccessor>()
     .AddTelemetryPublisher<ApplicationInsightsTelemetryPublisher>();
+
+//builder.Services.AddOpenTelemetry()
+//    .AddAppInsightsExporter();
 
 //
 // Default code from .NET template below

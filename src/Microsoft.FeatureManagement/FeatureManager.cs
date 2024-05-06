@@ -35,6 +35,8 @@ namespace Microsoft.FeatureManagement
         private readonly IEnumerable<ITelemetryPublisher> _telemetryPublishers;
         private readonly TargetingEvaluationOptions _assignerOptions;
 
+        public static readonly ActivitySource ActivitySource = new ActivitySource("Microsoft.FeatureManagement", "1.0.0");
+
         private class ConfigurationCacheItem
         {
             public IConfiguration Parameters { get; set; }
@@ -257,6 +259,8 @@ namespace Microsoft.FeatureManagement
 
         private async ValueTask<EvaluationEvent> EvaluateFeature<TContext>(string feature, TContext context, bool useContext, CancellationToken cancellationToken)
         {
+            using Activity activity = ActivitySource.StartActivity("FeatureEvaluation");
+            
             var evaluationEvent = new EvaluationEvent
             {
                 FeatureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false)
@@ -314,15 +318,15 @@ namespace Microsoft.FeatureManagement
                         {
                             string message;
 
-                            if (useContext) 
+                            if (useContext)
                             {
                                 message = $"A {nameof(TargetingContext)} required for variant assignment was not provided.";
-                            } 
-                            else if (TargetingContextAccessor == null) 
+                            }
+                            else if (TargetingContextAccessor == null)
                             {
                                 message = $"No instance of {nameof(ITargetingContextAccessor)} could be found for variant assignment.";
-                            } 
-                            else 
+                            }
+                            else
                             {
                                 message = $"No instance of {nameof(TargetingContext)} could be found using {nameof(ITargetingContextAccessor)} for variant assignment.";
                             }
@@ -347,7 +351,7 @@ namespace Microsoft.FeatureManagement
 
                             evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.DefaultWhenEnabled;
                         }
-                    }        
+                    }
 
                     evaluationEvent.Variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null;
 
@@ -378,7 +382,34 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
+            addEvaluationActivityEvent(evaluationEvent);
+
             return evaluationEvent;
+        }
+
+        private void addEvaluationActivityEvent(EvaluationEvent evaluationEvent)
+        {
+            if (Activity.Current == null)
+            {
+                return;
+            }
+
+            ActivityTagsCollection tags = new ActivityTagsCollection();
+
+            // Standard fields
+            tags.Add("event.name", "feature_flag");
+            tags.Add("key", evaluationEvent.FeatureDefinition.Name);
+            tags.Add("provider_name", "Microsoft.FeatureManagement");
+            tags.Add("variant", evaluationEvent.Variant);
+
+            // Fields specific to us
+            tags.Add("target", evaluationEvent.TargetingContext.UserId);
+            tags.Add("enabled", evaluationEvent.Enabled);
+            tags.Add("variant_assignment_reason", evaluationEvent.VariantAssignmentReason);
+
+            ActivityEvent activityEvent = new ActivityEvent("feature_flag", DateTimeOffset.Now, tags);
+
+            Activity.Current.AddEvent(activityEvent);
         }
 
         private async ValueTask<bool> IsEnabledAsync<TContext>(FeatureDefinition featureDefinition, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
