@@ -36,7 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\build\icon.png" Path ="\" Pack="true" PackagePath="/"/>
+    <None Include="..\..\build\icon.png" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
   <ItemGroup>
