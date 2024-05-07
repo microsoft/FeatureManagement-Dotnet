@@ -133,7 +133,14 @@ namespace Microsoft.FeatureManagement
 
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                yield return  _definitions.GetOrAdd(featureName, (_) => ReadFeatureDefinition(featureSection));
+                FeatureDefinition definition = _definitions.GetOrAdd(featureName, (_) => ReadFeatureDefinition(featureSection));
+
+                //
+                // Null cache entry possible if someone accesses non-existent flag directly (IsEnabled)
+                if (definition != null)
+                {
+                    yield return definition;
+                }
             }
         }
 

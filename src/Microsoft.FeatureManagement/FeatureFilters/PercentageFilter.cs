@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.FeatureManagement.Utils;
+using System;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
@@ -21,9 +22,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// Creates a percentage based feature filter.
         /// </summary>
         /// <param name="loggerFactory">A logger factory for creating loggers.</param>
-        public PercentageFilter(ILoggerFactory loggerFactory)
+        public PercentageFilter(ILoggerFactory loggerFactory = null)
         {
-            _logger = loggerFactory.CreateLogger<PercentageFilter>();
+            _logger = loggerFactory?.CreateLogger<PercentageFilter>();
         }
 
         /// <summary>
@@ -43,6 +44,11 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <returns>True if the feature is enabled, false otherwise.</returns>
         public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
             //
             // Check if prebound settings available, otherwise bind from parameters.
             PercentageFilterSettings settings = (PercentageFilterSettings)context.Settings ?? (PercentageFilterSettings)BindParameters(context.Parameters);
@@ -51,7 +57,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             if (settings.Value < 0)
             {
-                _logger.LogWarning($"The '{Alias}' feature filter does not have a valid '{nameof(settings.Value)}' value for feature '{context.FeatureName}'");
+                _logger?.LogWarning($"The '{Alias}' feature filter does not have a valid '{nameof(settings.Value)}' value for feature '{context.FeatureName}'");
 
                 result = false;
             }
