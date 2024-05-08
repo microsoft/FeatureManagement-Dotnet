@@ -1650,10 +1650,11 @@ namespace Tests.FeatureManagement
                 Settings = settings
             };
 
+            DateTimeOffset? closestStart;
+            Assert.False(cache.TryGetValue(settings, out closestStart));
+
             mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-2T23:00:00+08:00");
             Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
-
-            DateTimeOffset? closestStart;
             Assert.True(cache.TryGetValue(settings, out closestStart));
             Assert.Equal(DateTimeOffset.Parse("2024-2-3T00:00:00+08:00"), closestStart);
 
@@ -1722,6 +1723,8 @@ namespace Tests.FeatureManagement
             {
                 Settings = settings
             };
+
+            Assert.False(cache.TryGetValue(settings, out closestStart));
 
             mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-1-31T23:00:00+08:00");
             Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
