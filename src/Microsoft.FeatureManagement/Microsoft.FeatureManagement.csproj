@@ -27,16 +27,12 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReleaseNotes>Release notes can be found at https://aka.ms/MicrosoftFeatureManagementReleaseNotes</PackageReleaseNotes>
     <PackageTags>Microsoft FeatureManagement FeatureFlags AzureAppConfiguration</PackageTags>
-    <PackageIcon>icon.png</PackageIcon>
+    <PackageIconUrl>https://aka.ms/AzureAppConfigurationPackageIcon</PackageIconUrl>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.1.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\..\build\icon.png" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
   <ItemGroup>
