@@ -376,7 +376,7 @@ The `<feature>` tag can reference multiple features/variants by specifying a com
 
 **Note:** if `variant` is specified, only *one* feature should be specified. 
 
-By default, all listed features must be enabled for the feature tag to be rendered. This behavior can be overidden by adding the `requirement` attribute as seen in the example below. Note that the `requirement` attribute will have no effect on `variant`.
+By default, all listed features must be enabled for the feature tag to be rendered. This behavior can be overidden by adding the `requirement` attribute as seen in the example below.
 
 ``` HTML+Razor
 <feature name="FeatureX,FeatureY" requirement="Any">
