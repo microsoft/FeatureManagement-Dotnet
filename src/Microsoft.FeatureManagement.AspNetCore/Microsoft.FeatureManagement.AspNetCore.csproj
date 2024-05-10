@@ -23,6 +23,7 @@
     <Company>Microsoft</Company>
     <PackageProjectUrl>https://github.com/microsoft/FeatureManagement-Dotnet</PackageProjectUrl>
     <RepositoryUrl>https://github.com/microsoft/FeatureManagement-Dotnet.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReleaseNotes>Release notes can be found at https://aka.ms/MicrosoftFeatureManagementReleaseNotes</PackageReleaseNotes>
     <PackageTags>Microsoft FeatureManagement FeatureFlags AzureAppConfiguration aspnetcore</PackageTags>
