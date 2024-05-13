@@ -310,6 +310,26 @@ namespace Microsoft.FeatureManagement
                     }
                     else
                     {
+                        if (targetingContext == null)
+                        {
+                            string message;
+
+                            if (useContext) 
+                            {
+                                message = $"A {nameof(TargetingContext)} required for variant assignment was not provided.";
+                            } 
+                            else if (TargetingContextAccessor == null) 
+                            {
+                                message = $"No instance of {nameof(ITargetingContextAccessor)} could be found for variant assignment.";
+                            } 
+                            else 
+                            {
+                                message = $"No instance of {nameof(TargetingContext)} could be found using {nameof(ITargetingContextAccessor)} for variant assignment.";
+                            }
+
+                            Logger?.LogWarning(message);
+                        }
+
                         if (targetingContext != null && evaluationEvent.FeatureDefinition.Allocation != null)
                         {
                             variantDefinition = await AssignVariantAsync(evaluationEvent, targetingContext, cancellationToken).ConfigureAwait(false);
@@ -527,21 +547,12 @@ namespace Microsoft.FeatureManagement
         {
             if (TargetingContextAccessor == null)
             {
-                Logger?.LogWarning($"No instance of {nameof(ITargetingContextAccessor)} is available for variant assignment.");
-
                 return null;
             }
 
             //
             // Acquire targeting context via accessor
             TargetingContext context = await TargetingContextAccessor.GetContextAsync().ConfigureAwait(false);
-
-            //
-            // Ensure targeting can be performed
-            if (context == null)
-            {
-                Logger?.LogWarning($"No instance of {nameof(TargetingContext)} could be found using {nameof(ITargetingContextAccessor)} for variant assignment.");
-            }
 
             return context;
         }
