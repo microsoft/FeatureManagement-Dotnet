@@ -38,7 +38,14 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <returns><see cref="TargetingFilterSettings"/> that can later be used in targeting.</returns>
         public object BindParameters(IConfiguration filterParameters)
         {
-            return filterParameters.Get<TargetingFilterSettings>() ?? new TargetingFilterSettings();
+            TargetingFilterSettings settings = filterParameters.Get<TargetingFilterSettings>() ?? new TargetingFilterSettings();
+
+            if (!TargetingEvaluator.TryValidateSettings(settings, out string paramName, out string reason))
+            {
+                throw new ArgumentException(reason, paramName);
+            }
+
+            return settings;
         }
 
         /// <summary>
