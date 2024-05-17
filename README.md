@@ -248,7 +248,7 @@ public interface IDisabledFeaturesHandler
 
 ### View
 
-In MVC views `<feature>` tags can be used to conditionally render content based on whether a feature is enabled or whether specific variant of a feature is assigned. For more information about variant, please refer to the [variants](./README.md#Variants) section.
+In MVC views `<feature>` tags can be used to conditionally render content based on whether a feature is enabled or whether specific variant of a feature is assigned. For more information about variants, please refer to the [variants](./README.md#Variants) section.
 
 ``` HTML+Razor
 <feature name="FeatureX">
@@ -276,7 +276,7 @@ You can also negate the tag helper evaluation to display content when a feature 
 </feature>
 ```
 
-The `<feature>` tag can reference multiple features/variants by specifying a comma separated list of features/variants in the `name`/`variant` attribute. Note that if `variant` is specified, only *one* feature should be specified. 
+The `<feature>` tag can reference multiple features/variants by specifying a comma separated list of features/variants in the `name`/`variant` attribute. 
 
 ``` HTML+Razor
 <feature name="FeatureX,FeatureY">
@@ -292,7 +292,9 @@ The `<feature>` tag can reference multiple features/variants by specifying a com
 
 **Note:** if `variant` is specified, only *one* feature should be specified. 
 
-By default, all listed features must be enabled for the feature tag to be rendered. This behavior can be overidden by adding the `requirement` attribute as seen in the example below.
+By default, all listed features must be enabled for the feature tag to be rendered. This behavior can be overridden by adding the `requirement` attribute as seen in the example below.
+
+**Note:** If a `requirement` of `And` is used in conjunction with `variant` an error will be thrown, as multiple variants can never be assigned.
 
 ``` HTML+Razor
 <feature name="FeatureX,FeatureY" requirement="Any">
@@ -301,6 +303,7 @@ By default, all listed features must be enabled for the feature tag to be render
 ```
 
 The `<feature>` tag requires a tag helper to work. This can be done by adding the feature management tag helper to the _ViewImports.cshtml_ file.
+
 ``` HTML+Razor
 @addTagHelper *, Microsoft.FeatureManagement.AspNetCore
 ```
