@@ -248,7 +248,7 @@ public interface IDisabledFeaturesHandler
 
 ### View
 
-In MVC views `<feature>` tags can be used to conditionally render content based on whether a feature is enabled or not.
+In MVC views `<feature>` tags can be used to conditionally render content based on whether a feature is enabled or whether specific variant of a feature is assigned. For more information about variants, please refer to the [variants](./README.md#Variants) section.
 
 ``` HTML+Razor
 <feature name="FeatureX">
@@ -256,7 +256,13 @@ In MVC views `<feature>` tags can be used to conditionally render content based 
 </feature>
 ```
 
-You can also negate the tag helper evaluation to display content when a feature or set of features are disabled. By setting `negate="true"` in the example below, the content is only rendered if `FeatureX` is disabled.
+``` HTML+Razor
+<feature name="FeatureX" variant="Alpha">
+  <p>This can only be seen if variant 'Alpha' of 'FeatureX' is assigned.</p>
+</feature>
+```
+
+You can also negate the tag helper evaluation to display content when a feature is disabled or when a variant is not assigned, by setting `negate="true"`.
 
 ``` HTML+Razor
 <feature negate="true" name="FeatureX">
@@ -264,7 +270,13 @@ You can also negate the tag helper evaluation to display content when a feature 
 </feature>
 ```
 
-The `<feature>` tag can reference multiple features by specifying a comma separated list of features in the `name` attribute.
+``` HTML+Razor
+<feature negate="true" name="FeatureX" variant="Alpha">
+  <p>This can only be seen if variant 'Alpha' of 'FeatureX' is not assigned.</p>
+</feature>
+```
+
+The `<feature>` tag can reference multiple features/variants by specifying a comma separated list of features/variants in the `name`/`variant` attribute. 
 
 ``` HTML+Razor
 <feature name="FeatureX,FeatureY">
@@ -272,7 +284,17 @@ The `<feature>` tag can reference multiple features by specifying a comma separa
 </feature>
 ```
 
-By default, all listed features must be enabled for the feature tag to be rendered. This behavior can be overidden by adding the `requirement` attribute as seen in the example below.
+``` HTML+Razor
+<feature name="FeatureX" variant="Alpha,Beta">
+  <p>This can only be seen if variant 'Alpha' or 'Beta' of 'FeatureX' is assigned.</p>
+</feature>
+```
+
+**Note:** if `variant` is specified, only *one* feature should be specified. 
+
+By default, all listed features must be enabled for the feature tag to be rendered. This behavior can be overridden by adding the `requirement` attribute as seen in the example below.
+
+**Note:** If a `requirement` of `And` is used in conjunction with `variant` an error will be thrown, as multiple variants can never be assigned.
 
 ``` HTML+Razor
 <feature name="FeatureX,FeatureY" requirement="Any">
@@ -281,6 +303,7 @@ By default, all listed features must be enabled for the feature tag to be render
 ```
 
 The `<feature>` tag requires a tag helper to work. This can be done by adding the feature management tag helper to the _ViewImports.cshtml_ file.
+
 ``` HTML+Razor
 @addTagHelper *, Microsoft.FeatureManagement.AspNetCore
 ```
