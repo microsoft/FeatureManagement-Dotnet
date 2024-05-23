@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace Microsoft.FeatureManagement
 {
@@ -25,6 +26,13 @@ namespace Microsoft.FeatureManagement
             Type serviceType = typeof(IFeatureFilterMetadata);
 
             Type implementationType = typeof(T);
+
+            //
+            // TimeWindowFilter will only be added through another overload of AddFeatureFilter 
+            if (implementationType == typeof(TimeWindowFilter))
+            {
+                return this;
+            }
 
             IEnumerable<Type> featureFilterImplementations = implementationType.GetInterfaces()
                 .Where(i => i == typeof(IFeatureFilter) || 
