@@ -36,12 +36,12 @@ namespace Tests.FeatureManagement.AspNetCore
                 services.AddMvcCore(o =>
                 {
                     DisableEndpointRouting(o);
-                    o.Filters.AddForFeature<MvcFilter>(Enum.GetName(typeof(Features), Features.ConditionalFeature));
+                    o.Filters.AddForFeature<MvcFilter>(Features.ConditionalFeature);
                 });
             })
             .Configure(app =>
             {
-                app.UseForFeature(Enum.GetName(typeof(Features), Features.ConditionalFeature), a => a.Use(async (ctx, next) =>
+                app.UseForFeature(Features.ConditionalFeature, a => a.Use(async (ctx, next) =>
                 {
                     ctx.Response.Headers[nameof(RouterMiddleware)] = bool.TrueString;
 
@@ -102,7 +102,7 @@ namespace Tests.FeatureManagement.AspNetCore
 
             //
             // Enable 1/2 features
-            testFeatureFilter.Callback = ctx => Task.FromResult(ctx.FeatureName == Enum.GetName(typeof(Features), Features.ConditionalFeature));
+            testFeatureFilter.Callback = ctx => Task.FromResult(ctx.FeatureName == Features.ConditionalFeature);
 
             gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
@@ -158,7 +158,7 @@ namespace Tests.FeatureManagement.AspNetCore
 
             //
             // Enable 1/2 features
-            testFeatureFilter.Callback = ctx => Task.FromResult(ctx.FeatureName == Enum.GetName(typeof(Features), Features.ConditionalFeature));
+            testFeatureFilter.Callback = ctx => Task.FromResult(ctx.FeatureName == Features.ConditionalFeature);
 
             gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");

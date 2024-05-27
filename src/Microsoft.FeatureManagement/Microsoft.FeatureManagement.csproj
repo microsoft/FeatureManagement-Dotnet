@@ -4,7 +4,7 @@
   <!-- Official Version -->
   <PropertyGroup>
     <MajorVersion>3</MajorVersion>
-    <MinorVersion>1</MinorVersion>
+    <MinorVersion>3</MinorVersion>
     <PatchVersion>1</PatchVersion>
   </PropertyGroup>
 
@@ -22,8 +22,10 @@
     <Description>Microsoft.FeatureManagement provides a way to develop and expose application functionality based on features. Many applications have special requirements when a new feature is developed such as when the feature should be enabled and under what conditions. This library provides a way to define these relationships, and also integrates into common .NET code patterns to make exposing these features possible.</Description>
     <Authors>Microsoft</Authors>
     <Company>Microsoft</Company>
-    <PackageProjectUrl>https://github.com/Azure/AppConfiguration</PackageProjectUrl>
-    <PackageLicenseUrl>https://licenses.nuget.org/MIT</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/microsoft/FeatureManagement-Dotnet</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/microsoft/FeatureManagement-Dotnet.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReleaseNotes>Release notes can be found at https://aka.ms/MicrosoftFeatureManagementReleaseNotes</PackageReleaseNotes>
     <PackageTags>Microsoft FeatureManagement FeatureFlags AzureAppConfiguration</PackageTags>
     <PackageIconUrl>https://aka.ms/AzureAppConfigurationPackageIcon</PackageIconUrl>
