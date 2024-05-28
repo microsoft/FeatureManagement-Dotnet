@@ -15,8 +15,6 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
     /// </summary>
     public class TargetingTelemetryInitializer : TelemetryInitializerBase
     {
-        private const string TargetingContextLookup = "FeatureManagement.TargetingContext";
-
         /// <summary>
         /// Creates an instance of the TargetingTelemetryInitializer
         /// </summary>
@@ -38,6 +36,11 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
                 throw new ArgumentNullException(nameof(telemetry));
             }
 
+            if (telemetry is not ISupportProperties telemetryWithSupportProperties)
+            {
+                return;
+            }
+
             if (httpContext == null)
             {
                 throw new ArgumentNullException(nameof(httpContext));
@@ -45,14 +48,11 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
 
             //
             // Extract the targeting info from the http context
-            TargetingContext targetingContext = httpContext.Items[TargetingContextLookup] as TargetingContext;
+            TargetingContext targetingContext = httpContext.Items[DefaultHttpTargetingContextAccessor.TargetingContextLookup] as TargetingContext;
 
             string targetingId = targetingContext?.UserId ?? string.Empty;
 
-            if (telemetry is ISupportProperties telemetryWithSupportProperties)
-            {
-                telemetryWithSupportProperties.Properties["TargetingId"] = targetingId;
-            }
+            telemetryWithSupportProperties.Properties["TargetingId"] = targetingId;
         }
     }
 }

@@ -18,8 +18,6 @@ namespace Microsoft.FeatureManagement
         private readonly RequestDelegate _next;
         private readonly ILogger _logger;
 
-        private const string TargetingContextLookup = "FeatureManagement.TargetingContext";
-
         /// <summary>
         /// Creates an instance of the TargetingHttpContextMiddleware
         /// </summary>
@@ -48,9 +46,9 @@ namespace Microsoft.FeatureManagement
 
             TargetingContext targetingContext = await targetingContextAccessor.GetContextAsync().ConfigureAwait(false);
 
-            if (targetingContext != null && !context.Items.ContainsKey(TargetingContextLookup))
+            if (targetingContext != null && !context.Items.ContainsKey(DefaultHttpTargetingContextAccessor.TargetingContextLookup))
             {
-                context.Items[TargetingContextLookup] = targetingContext;
+                context.Items[DefaultHttpTargetingContextAccessor.TargetingContextLookup] = targetingContext;
             }
             else
             {
