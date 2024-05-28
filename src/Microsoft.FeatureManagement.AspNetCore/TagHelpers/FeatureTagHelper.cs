@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using Microsoft.AspNetCore.Razor.TagHelpers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,7 +14,7 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
     /// </summary>
     public class FeatureTagHelper : TagHelper
     {
-        private readonly IFeatureManager _featureManager;
+        private readonly IVariantFeatureManager _featureManager;
 
         /// <summary>
         /// A feature name, or comma separated list of feature names, for which the content should be rendered. By default, all specified features must be enabled to render the content, but this requirement can be controlled by the <see cref="Requirement"/> property.
@@ -31,12 +32,18 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
         public bool Negate { get; set; }
 
         /// <summary>
+        /// A variant name, or comma separated list of variant names. If any of specified variants is assigned, the content should be rendered.
+        /// If variant is specified, <see cref="Name"/> must contain only one feature name and <see cref="Requirement"/> will have no effect.
+        /// </summary>
+        public string Variant { get; set; }
+
+        /// <summary>
         /// Creates a feature tag helper.
         /// </summary>
         /// <param name="featureManager">The feature manager snapshot to use to evaluate feature state.</param>
-        public FeatureTagHelper(IFeatureManagerSnapshot featureManager)
+        public FeatureTagHelper(IVariantFeatureManagerSnapshot featureManager)
         {
-            _featureManager = featureManager;
+            _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
         }
 
         /// <summary>
@@ -52,11 +59,35 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
 
             if (!string.IsNullOrEmpty(Name))
             {
-                IEnumerable<string> names = Name.Split(',').Select(n => n.Trim());
+                IEnumerable<string> features = Name.Split(',').Select(n => n.Trim());
 
-                enabled = Requirement == RequirementType.All ?
-                    await names.All(async n => await _featureManager.IsEnabledAsync(n).ConfigureAwait(false)) :
-                    await names.Any(async n => await _featureManager.IsEnabledAsync(n).ConfigureAwait(false));
+                if (string.IsNullOrEmpty(Variant))
+                {
+                    enabled = Requirement == RequirementType.All ?
+                        await features.All(async feature => await _featureManager.IsEnabledAsync(feature).ConfigureAwait(false)) :
+                        await features.Any(async feature => await _featureManager.IsEnabledAsync(feature).ConfigureAwait(false));
+                }
+                else
+                {
+                    if (features.Count() != 1)
+                    {
+                        throw new ArgumentException("Variant cannot be associated with multiple feature flags.", nameof(Name));
+                    }
+
+                    IEnumerable<string> variants = Variant.Split(',').Select(n => n.Trim());
+
+                    if (variants.Count() != 1 && Requirement == RequirementType.All)
+                    {
+                        throw new ArgumentException("Requirement must be Any when there are multiple variants.", nameof(Requirement));
+                    }
+
+                    enabled = await variants.Any(
+                        async variant => {
+                            Variant assignedVariant = await _featureManager.GetVariantAsync(features.First()).ConfigureAwait(false);
+
+                            return variant == assignedVariant?.Name;    
+                        });
+                }
             }
 
             if (Negate)

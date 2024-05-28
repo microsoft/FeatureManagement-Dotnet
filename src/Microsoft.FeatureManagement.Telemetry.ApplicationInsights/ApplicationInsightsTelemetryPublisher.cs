@@ -4,7 +4,7 @@
 using Microsoft.ApplicationInsights;
 using System.Diagnostics;
 
-namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
+namespace Microsoft.FeatureManagement.Telemetry
 {
     /// <summary>
     /// Used to publish data from evaluation events to Application Insights
