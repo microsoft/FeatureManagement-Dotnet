@@ -15,6 +15,7 @@
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>..\..\build\Microsoft.FeatureManagement.snk</AssemblyOriginatorKeyFile>
+    <!-- Microsoft.FeatureManagement uses the feature of async streams which is not supported in versions of C# earlier than 8.0. -->
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
