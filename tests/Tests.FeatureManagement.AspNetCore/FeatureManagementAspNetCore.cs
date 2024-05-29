@@ -1,29 +1,6 @@
 // Copyright (c) Microsoft Corporation. All Rights Reserved.
 // Licensed under the MIT license.
 
-/* Unmerged change from project 'Tests.FeatureManagement.AspNetCore(net7.0)'
-Before:
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT license.
-//
-After:
-// Copyright (c) Microsoft Corporation. All Rights Reserved.
-// Licensed under the MIT license.
-*/
-
-/* Unmerged change from project 'Tests.FeatureManagement.AspNetCore(net8.0)'
-Before:
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT license.
-//
-After:
-// Copyright (c) Microsoft Corporation. All Rights Reserved.
-// Licensed under the MIT license.
-*/
-// Copyright (c) Microsoft Corporation. All Rights Reserved.
-// Licensed under the MIT license.
-
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
