@@ -1,8 +1,8 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿// Copyright (c) Microsoft Corporation. All Rights Reserved.
 // Licensed under the MIT license.
-//
-using Microsoft.FeatureManagement;
+
 using System.Threading.Tasks;
+using Microsoft.FeatureManagement;
 
 namespace FeatureFlagDemo.FeatureManagement.FeatureFilters
 {

@@ -1,13 +1,33 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿
+/* Unmerged change from project 'Microsoft.FeatureManagement.AspNetCore(net7.0)'
+Before:
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.Extensions.DependencyInjection;
+After:
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+*/
+
+/* Unmerged change from project 'Microsoft.FeatureManagement.AspNetCore(net8.0)'
+Before:
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+After:
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+*/
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.FeatureManagement.Mvc
 {
@@ -68,7 +88,7 @@ namespace Microsoft.FeatureManagement.Mvc
 
             foreach (object feature in features)
             {
-                var type = feature.GetType();
+                Type type = feature.GetType();
 
                 if (!type.IsEnum)
                 {
@@ -90,7 +110,7 @@ namespace Microsoft.FeatureManagement.Mvc
         public IEnumerable<string> Features { get; }
 
         /// <summary>
-        /// Controls whether any or all features in <see cref="FeatureGateAttribute.Features"/> should be enabled to pass.
+        /// Controls whether any or all features in <see cref="Features"/> should be enabled to pass.
         /// </summary>
         public RequirementType RequirementType { get; }
 
@@ -106,9 +126,9 @@ namespace Microsoft.FeatureManagement.Mvc
 
             //
             // Enabled state is determined by either 'any' or 'all' features being enabled.
-            bool enabled = RequirementType == RequirementType.All ?
-                             await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false)) :
-                             await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
+            bool enabled = RequirementType == RequirementType.All
+                             ? await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false))
+                             : await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
 
             if (enabled)
             {
@@ -134,9 +154,9 @@ namespace Microsoft.FeatureManagement.Mvc
 
             //
             // Enabled state is determined by either 'any' or 'all' features being enabled.
-            bool enabled = RequirementType == RequirementType.All ?
-                             await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false)) :
-                             await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
+            bool enabled = RequirementType == RequirementType.All
+                             ? await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false))
+                             : await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
 
             if (enabled)
             {

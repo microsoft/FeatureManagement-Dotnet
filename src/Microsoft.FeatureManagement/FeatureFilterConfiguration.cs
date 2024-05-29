@@ -1,8 +1,18 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿
+/* Unmerged change from project 'Microsoft.FeatureManagement(netstandard2.1)'
+Before:
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.Extensions.Configuration;
+After:
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+*/
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+
 using System.Collections.Generic;
+using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.FeatureManagement
 {

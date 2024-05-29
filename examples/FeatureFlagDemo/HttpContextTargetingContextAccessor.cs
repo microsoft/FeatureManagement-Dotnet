@@ -1,12 +1,12 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿// Copyright (c) Microsoft Corporation. All Rights Reserved.
 // Licensed under the MIT license.
-//
-using Microsoft.AspNetCore.Http;
-using Microsoft.FeatureManagement.FeatureFilters;
+
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace FeatureFlagDemo
 {

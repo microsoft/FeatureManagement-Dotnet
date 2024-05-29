@@ -1,10 +1,30 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿
+/* Unmerged change from project 'Microsoft.FeatureManagement.AspNetCore(net7.0)'
+Before:
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.AspNetCore.Razor.TagHelpers;
+After:
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+*/
+
+/* Unmerged change from project 'Microsoft.FeatureManagement.AspNetCore(net8.0)'
+Before:
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+After:
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+*/
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Razor.TagHelpers;
 
 namespace Microsoft.FeatureManagement.Mvc.TagHelpers
 {
@@ -54,9 +74,9 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
             {
                 IEnumerable<string> names = Name.Split(',').Select(n => n.Trim());
 
-                enabled = Requirement == RequirementType.All ?
-                    await names.All(async n => await _featureManager.IsEnabledAsync(n).ConfigureAwait(false)) :
-                    await names.Any(async n => await _featureManager.IsEnabledAsync(n).ConfigureAwait(false));
+                enabled = Requirement == RequirementType.All
+                    ? await names.All(async n => await _featureManager.IsEnabledAsync(n).ConfigureAwait(false))
+                    : await names.Any(async n => await _featureManager.IsEnabledAsync(n).ConfigureAwait(false));
             }
 
             if (Negate)

@@ -1,6 +1,6 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿// Copyright (c) Microsoft Corporation. All Rights Reserved.
 // Licensed under the MIT license.
-//
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,8 +14,8 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     class ContextualFeatureFilterEvaluator : IContextualFeatureFilter<object>
     {
-        private IFeatureFilterMetadata _filter;
-        private Func<object, FeatureFilterEvaluationContext, object, Task<bool>> _evaluateFunc;
+        private readonly IFeatureFilterMetadata _filter;
+        private readonly Func<object, FeatureFilterEvaluationContext, object, Task<bool>> _evaluateFunc;
 
         public ContextualFeatureFilterEvaluator(IFeatureFilterMetadata filter, Type appContextType)
         {

@@ -1,6 +1,6 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿// Copyright (c) Microsoft Corporation. All Rights Reserved.
 // Licensed under the MIT license.
-//
+
 using FeatureFlagDemo.Authentication;
 using FeatureFlagDemo.FeatureManagement;
 using FeatureFlagDemo.FeatureManagement.FeatureFilters;

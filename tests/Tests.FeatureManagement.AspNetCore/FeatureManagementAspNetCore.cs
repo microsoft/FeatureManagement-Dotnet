@@ -1,6 +1,32 @@
+
+/* Unmerged change from project 'Tests.FeatureManagement.AspNetCore(net7.0)'
+Before:
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+After:
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+*/
+
+/* Unmerged change from project 'Tests.FeatureManagement.AspNetCore(net8.0)'
+Before:
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+After:
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+*/
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -9,12 +35,6 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FeatureManagement;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Tests.FeatureManagement.AspNetCore

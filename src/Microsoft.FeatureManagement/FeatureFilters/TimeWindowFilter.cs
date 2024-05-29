@@ -1,11 +1,21 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿
+/* Unmerged change from project 'Microsoft.FeatureManagement(netstandard2.1)'
+Before:
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+After:
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+*/
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+
+using System;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
 {
@@ -48,7 +58,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <returns><see cref="TimeWindowFilterSettings"/> that can later be used in feature evaluation.</returns>
         public object BindParameters(IConfiguration filterParameters)
         {
-            var settings = filterParameters.Get<TimeWindowFilterSettings>() ?? new TimeWindowFilterSettings();
+            TimeWindowFilterSettings settings = filterParameters.Get<TimeWindowFilterSettings>() ?? new TimeWindowFilterSettings();
 
             if (!RecurrenceValidator.TryValidateSettings(settings, out string paramName, out string reason))
             {

@@ -1,10 +1,30 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿
+/* Unmerged change from project 'Microsoft.FeatureManagement.AspNetCore(net7.0)'
+Before:
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.AspNetCore.Mvc.Filters;
+After:
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+*/
+
+/* Unmerged change from project 'Microsoft.FeatureManagement.AspNetCore(net8.0)'
+Before:
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+After:
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+*/
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace Microsoft.FeatureManagement.Mvc
 {

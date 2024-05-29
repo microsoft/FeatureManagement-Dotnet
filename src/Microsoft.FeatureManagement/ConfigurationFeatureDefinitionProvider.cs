@@ -1,15 +1,25 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿
+/* Unmerged change from project 'Microsoft.FeatureManagement(netstandard2.1)'
+Before:
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
+After:
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+*/
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.FeatureManagement
 {
@@ -381,9 +391,9 @@ namespace Microsoft.FeatureManagement
                     .FirstOrDefault(section =>
                         string.Equals(
                             section.Key,
-                            _microsoftFeatureManagementSchemaEnabled ?
-                                MicrosoftFeatureManagementFields.FeatureManagementSectionName :
-                                ConfigurationFields.FeatureManagementSectionName,
+                            _microsoftFeatureManagementSchemaEnabled
+                                ? MicrosoftFeatureManagementFields.FeatureManagementSectionName
+                                : ConfigurationFields.FeatureManagementSectionName,
                             StringComparison.OrdinalIgnoreCase));
 
             if (featureManagementConfigurationSection == null)

@@ -1,16 +1,46 @@
+
+/* Unmerged change from project 'Tests.FeatureManagement(net6.0)'
+Before:
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.FeatureManagement;
-using Microsoft.FeatureManagement.FeatureFilters;
+After:
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+*/
+
+/* Unmerged change from project 'Tests.FeatureManagement(net7.0)'
+Before:
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+After:
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+*/
+
+/* Unmerged change from project 'Tests.FeatureManagement(net8.0)'
+Before:
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+After:
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+*/
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.FeatureManagement;
+using Microsoft.FeatureManagement.FeatureFilters;
 using Xunit;
 
 namespace Tests.FeatureManagement

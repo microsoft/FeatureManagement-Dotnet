@@ -1,11 +1,31 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿
+/* Unmerged change from project 'Microsoft.FeatureManagement.AspNetCore(net7.0)'
+Before:
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+After:
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+*/
+
+/* Unmerged change from project 'Microsoft.FeatureManagement.AspNetCore(net8.0)'
+Before:
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+After:
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+*/
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+
+using System;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FeatureManagement.Mvc;
-using System;
-using System.Collections.Generic;
 
 namespace Microsoft.FeatureManagement
 {
@@ -22,7 +42,7 @@ namespace Microsoft.FeatureManagement
         /// <returns>The feature management builder.</returns>
         public static IFeatureManagementBuilder UseDisabledFeaturesHandler(this IFeatureManagementBuilder builder, IDisabledFeaturesHandler disabledFeaturesHandler)
         {
-            builder.Services.AddSingleton<IDisabledFeaturesHandler>(disabledFeaturesHandler ?? throw new ArgumentNullException(nameof(disabledFeaturesHandler)));
+            builder.Services.AddSingleton(disabledFeaturesHandler ?? throw new ArgumentNullException(nameof(disabledFeaturesHandler)));
 
             return builder;
         }
