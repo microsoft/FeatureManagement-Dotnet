@@ -159,17 +159,12 @@ dotnet_naming_rule.non_field_members_should_be_pascalcase.symbols = non_field_me
 dotnet_naming_rule.non_field_members_should_be_pascalcase.style = pascalcase
 dotnet_naming_symbols.non_field_members.applicable_kinds = property, method
 
-dotnet_naming_rule.private_static_readonly_fields_should_be_pascalcase.severity = warning
-dotnet_naming_rule.private_static_readonly_fields_should_be_pascalcase.symbols = private_static_readonly_fields
-dotnet_naming_rule.private_static_readonly_fields_should_be_pascalcase.style = pascalcase
-dotnet_naming_symbols.private_static_readonly_fields.applicable_kinds = field
-dotnet_naming_symbols.private_static_readonly_fields.applicable_accessibilities = private, protected, protected_internal, private_protected
-dotnet_naming_symbols.private_static_readonly_fields.required_modifiers = readonly, static
-
-dotnet_naming_rule.constants_should_be_pascalcase.severity = warning
-dotnet_naming_rule.constantss_should_be_pascalcase.symbols = constants
-dotnet_naming_rule.constants_should_be_pascalcase.style = pascalcase
-dotnet_naming_symbols.constants.required_modifiers = const
+dotnet_naming_rule.local_constants_should_be_camelcase.severity = suggestion
+dotnet_naming_rule.local_constants_should_be_camelcase.symbols = local_constants
+dotnet_naming_rule.local_constants_should_be_camelcase.style = pascalcase
+dotnet_naming_symbols.local_constants.applicable_kinds = local
+dotnet_naming_symbols.local_constants.applicable_accessibilities = local
+dotnet_naming_symbols.local_constants.required_modifiers = const
 
 # Camel case naming rule
 dotnet_naming_style._camelcase.required_prefix = _

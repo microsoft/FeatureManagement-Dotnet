@@ -26,7 +26,7 @@ namespace Tests.FeatureManagement
 
         public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context)
         {
-            return _contextualFilter.EvaluateAsync(context, new TargetingContext(){ UserId = "Jeff" });
+            return _contextualFilter.EvaluateAsync(context, new TargetingContext() { UserId = "Jeff" });
         }
     }
 }
