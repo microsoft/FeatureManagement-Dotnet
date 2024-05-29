@@ -1,3 +1,5 @@
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
 
 /* Unmerged change from project 'Tests.FeatureManagement.AspNetCore(net7.0)'
 Before:

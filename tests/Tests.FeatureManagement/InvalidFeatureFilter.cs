@@ -1,4 +1,6 @@
-﻿
+﻿// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+
 /* Unmerged change from project 'Tests.FeatureManagement(net6.0)'
 Before:
 // Copyright (c) Microsoft Corporation.

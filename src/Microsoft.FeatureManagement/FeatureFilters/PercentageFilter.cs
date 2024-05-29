@@ -1,4 +1,6 @@
-﻿
+﻿// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+
 /* Unmerged change from project 'Microsoft.FeatureManagement(netstandard2.1)'
 Before:
 // Copyright (c) Microsoft Corporation.

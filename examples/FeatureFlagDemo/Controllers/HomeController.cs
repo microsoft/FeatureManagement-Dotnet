@@ -33,7 +33,7 @@ namespace FeatureFlagDemo.Controllers
             if (await _featureManager.IsEnabledAsync(MyFeatureFlags.CustomViewData))
             {
                 ViewData["Message"] = $"This is FANCY CONTENT you can see only if '{MyFeatureFlags.CustomViewData}' is enabled.";
-            };
+            }
 
             return View();
         }
