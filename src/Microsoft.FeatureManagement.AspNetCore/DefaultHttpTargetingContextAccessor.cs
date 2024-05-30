@@ -17,7 +17,7 @@ namespace Microsoft.FeatureManagement
     public sealed class DefaultHttpTargetingContextAccessor : ITargetingContextAccessor
     {
         /// <summary>
-        /// The key used to store and retrieve the TargetingContext from the HttpContext items.
+        /// The key used to store and retrieve the <see cref="TargetingContext"/> from the <see cref="HttpContext"/> items.
         /// </summary>
         public const string TargetingContextLookup = $"Microsoft.FeatureManagement.TargetingContext";
 
