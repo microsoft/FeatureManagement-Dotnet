@@ -32,8 +32,12 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
         private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
         private readonly IEnumerable<ISessionManager> _sessionManagers;
-        private readonly IEnumerable<ITelemetryPublisher> _telemetryPublishers;
         private readonly TargetingEvaluationOptions _assignerOptions;
+
+        /// <summary>
+        /// The activity source for feature management.
+        /// </summary>
+        public static readonly ActivitySource ActivitySource = new ActivitySource("Microsoft.FeatureManagement", "1.0.0");
 
         private class ConfigurationCacheItem
         {
@@ -58,7 +62,6 @@ namespace Microsoft.FeatureManagement
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
             _featureFilters = Enumerable.Empty<IFeatureFilterMetadata>();
             _sessionManagers = Enumerable.Empty<ISessionManager>();
-            _telemetryPublishers = Enumerable.Empty<ITelemetryPublisher>();
             _assignerOptions = new TargetingEvaluationOptions();
         }
 
@@ -99,20 +102,6 @@ namespace Microsoft.FeatureManagement
         /// The logger for the feature manager.
         /// </summary>
         public ILogger Logger { get; init; }
-
-        /// <summary>
-        /// The collection of telemetry publishers.
-        /// </summary>
-        /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
-        public IEnumerable<ITelemetryPublisher> TelemetryPublishers
-        {
-            get => _telemetryPublishers;
-
-            init
-            {
-                _telemetryPublishers = value ?? throw new ArgumentNullException(nameof(value));
-            }
-        }
 
         /// <summary>
         /// The configuration reference for feature variants.
@@ -262,6 +251,14 @@ namespace Microsoft.FeatureManagement
                 FeatureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false)
             };
 
+            bool telemetryEnabled = evaluationEvent.FeatureDefinition.Telemetry != null && evaluationEvent.FeatureDefinition.Telemetry.Enabled;
+            
+            //
+            // Only start an activity if telemetry is enabled for the feature
+            using Activity activity = telemetryEnabled
+                          ? ActivitySource.StartActivity("FeatureEvaluation")
+                          : null;
+
             //
             // Determine Targeting Context
             TargetingContext targetingContext;
@@ -314,15 +311,15 @@ namespace Microsoft.FeatureManagement
                         {
                             string message;
 
-                            if (useContext) 
+                            if (useContext)
                             {
                                 message = $"A {nameof(TargetingContext)} required for variant assignment was not provided.";
-                            } 
-                            else if (TargetingContextAccessor == null) 
+                            }
+                            else if (TargetingContextAccessor == null)
                             {
                                 message = $"No instance of {nameof(ITargetingContextAccessor)} could be found for variant assignment.";
-                            } 
-                            else 
+                            }
+                            else
                             {
                                 message = $"No instance of {nameof(TargetingContext)} could be found using {nameof(ITargetingContextAccessor)} for variant assignment.";
                             }
@@ -347,7 +344,7 @@ namespace Microsoft.FeatureManagement
 
                             evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.DefaultWhenEnabled;
                         }
-                    }        
+                    }
 
                     evaluationEvent.Variant = variantDefinition != null ? GetVariantFromVariantDefinition(variantDefinition) : null;
 
@@ -371,14 +368,51 @@ namespace Microsoft.FeatureManagement
                     await sessionManager.SetAsync(evaluationEvent.FeatureDefinition.Name, evaluationEvent.Enabled).ConfigureAwait(false);
                 }
 
-                if (evaluationEvent.FeatureDefinition.Telemetry != null &&
-                    evaluationEvent.FeatureDefinition.Telemetry.Enabled)
+                // Only add an activity event if telemetry is enabled for the feature
+                if (telemetryEnabled)
                 {
-                    PublishTelemetry(evaluationEvent, cancellationToken);
+                    AddEvaluationActivityEvent(evaluationEvent);
                 }
             }
 
             return evaluationEvent;
+        }
+
+        private void AddEvaluationActivityEvent(EvaluationEvent evaluationEvent)
+        {
+            // Break if there is no activity, this shouldn't happen
+            if (Activity.Current == null)
+            {
+                return;
+            }
+
+            ActivityTagsCollection tags = new ActivityTagsCollection
+            {
+                { "TargetingId", evaluationEvent.TargetingContext?.UserId },
+                { "FeatureName", evaluationEvent.FeatureDefinition.Name },
+                { "Variant", evaluationEvent.Variant?.Name },
+                { "Enabled", evaluationEvent.Enabled },
+                { "VariantAssignmentReason", evaluationEvent.VariantAssignmentReason },
+                { "Version", ActivitySource.Version }
+            };
+
+            if (evaluationEvent.FeatureDefinition.Telemetry.Metadata != null)
+            {
+                foreach (KeyValuePair<string, string> kvp in evaluationEvent.FeatureDefinition.Telemetry.Metadata)
+                {
+                    try
+                    {
+                        tags.Add(kvp.Key, kvp.Value);
+                    } catch (InvalidOperationException)
+                    {
+                        Logger?.LogWarning($"{kvp.Key} from TelemetryMetadata will be ignored, as it would override an existing key.");
+                    }
+                }
+            }
+
+            ActivityEvent activityEvent = new ActivityEvent("feature_flag", DateTimeOffset.Now, tags);
+
+            Activity.Current.AddEvent(activityEvent);
         }
 
         private async ValueTask<bool> IsEnabledAsync<TContext>(FeatureDefinition featureDefinition, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
@@ -800,23 +834,6 @@ namespace Microsoft.FeatureManagement
             );
 
             return filter;
-        }
-
-        private async void PublishTelemetry(EvaluationEvent evaluationEvent, CancellationToken cancellationToken)
-        {
-            if (!_telemetryPublishers.Any())
-            {
-                Logger?.LogWarning("The feature declaration enabled telemetry but no telemetry publisher was registered.");
-            }
-            else
-            {
-                foreach (ITelemetryPublisher telemetryPublisher in _telemetryPublishers)
-                {
-                    await telemetryPublisher.PublishEvent(
-                        evaluationEvent,
-                        cancellationToken);
-                }
-            }
         }
 
         private Variant GetVariantFromVariantDefinition(VariantDefinition variantDefinition)
