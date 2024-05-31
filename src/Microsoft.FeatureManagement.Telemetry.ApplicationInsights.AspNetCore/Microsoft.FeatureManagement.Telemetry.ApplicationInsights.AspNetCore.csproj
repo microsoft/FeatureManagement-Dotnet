@@ -37,7 +37,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.FeatureManagement\Microsoft.FeatureManagement.csproj" />
     <ProjectReference Include="..\Microsoft.FeatureManagement.AspNetCore\Microsoft.FeatureManagement.AspNetCore.csproj" />
     <ProjectReference Include="..\Microsoft.FeatureManagement.Telemetry.ApplicationInsights\Microsoft.FeatureManagement.Telemetry.ApplicationInsights.csproj" />
   </ItemGroup>
