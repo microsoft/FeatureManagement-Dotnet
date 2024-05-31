@@ -251,7 +251,7 @@ namespace Microsoft.FeatureManagement
                 FeatureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false)
             };
 
-            bool telemetryEnabled = evaluationEvent.FeatureDefinition.Telemetry != null && evaluationEvent.FeatureDefinition.Telemetry.Enabled;
+            bool telemetryEnabled = evaluationEvent.FeatureDefinition.Telemetry?.Enabled ?? false;
             
             //
             // Only start an activity if telemetry is enabled for the feature
