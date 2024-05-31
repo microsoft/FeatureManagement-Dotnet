@@ -6,10 +6,10 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
     /// <summary>
     /// Listens to <see cref="Activity"/> events from feature management and sends them to Application Insights.
     /// </summary>
-    internal class ApplicationInsightsEventPublisher : IDisposable
+    internal sealed class ApplicationInsightsEventPublisher : IDisposable
     {
         private readonly TelemetryClient _telemetryClient;
-        private readonly ActivityListener activityListener;
+        private readonly ActivityListener _activityListener;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ApplicationInsightsEventPublisher"/> class.
@@ -19,7 +19,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
         {
             _telemetryClient = telemetryClient ?? throw new ArgumentNullException(nameof(telemetryClient));
 
-            activityListener = new ActivityListener
+            _activityListener = new ActivityListener
             {
                 ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.FeatureManagement",
                 Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData,
@@ -34,7 +34,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
                 }
             };
 
-            ActivitySource.AddActivityListener(activityListener);
+            ActivitySource.AddActivityListener(_activityListener);
         }
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
         /// </summary>
         public void Dispose()
         {
-            activityListener.Dispose();
+            _activityListener.Dispose();
         }
 
         private void HandleActivityEvent(ActivityEvent activityEvent)

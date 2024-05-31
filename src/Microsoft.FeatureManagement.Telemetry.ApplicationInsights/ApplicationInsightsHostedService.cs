@@ -6,7 +6,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
     /// <summary>
     /// A hosted service used to construct and dispose the <see cref="ApplicationInsightsEventPublisher"/>
     /// </summary>
-    internal class ApplicationInsightsHostedService : IHostedService
+    internal sealed class ApplicationInsightsHostedService : IHostedService
     {
         private readonly TelemetryClient _telemetryClient;
         private ApplicationInsightsEventPublisher appInsightsPublisher;

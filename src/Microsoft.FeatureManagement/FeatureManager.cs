@@ -37,7 +37,7 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The activity source for feature management.
         /// </summary>
-        public static readonly ActivitySource ActivitySource = new ActivitySource("Microsoft.FeatureManagement", "1.0.0");
+        private static readonly ActivitySource ActivitySource = new ActivitySource("Microsoft.FeatureManagement", "1.0.0");
 
         private class ConfigurationCacheItem
         {
@@ -251,7 +251,7 @@ namespace Microsoft.FeatureManagement
                 FeatureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false)
             };
 
-            bool telemetryEnabled = evaluationEvent.FeatureDefinition.Telemetry?.Enabled ?? false;
+            bool telemetryEnabled = evaluationEvent.FeatureDefinition?.Telemetry?.Enabled ?? false;
             
             //
             // Only start an activity if telemetry is enabled for the feature
@@ -380,8 +380,8 @@ namespace Microsoft.FeatureManagement
 
         private void AddEvaluationActivityEvent(EvaluationEvent evaluationEvent)
         {
-            // Break if there is no activity, this shouldn't happen
-            if (Activity.Current == null)
+            // Break if there is no reason to emit an event
+            if (Activity.Current == null || !Activity.Current.IsAllDataRequested)
             {
                 return;
             }
@@ -396,21 +396,22 @@ namespace Microsoft.FeatureManagement
                 { "Version", ActivitySource.Version }
             };
 
-            if (evaluationEvent.FeatureDefinition.Telemetry.Metadata != null)
+            if (evaluationEvent.FeatureDefinition.Telemetry.Metadata is { } metadata)
             {
-                foreach (KeyValuePair<string, string> kvp in evaluationEvent.FeatureDefinition.Telemetry.Metadata)
+                foreach (KeyValuePair<string, string> kvp in metadata)
                 {
-                    try
-                    {
-                        tags.Add(kvp.Key, kvp.Value);
-                    } catch (InvalidOperationException)
+                    if (tags.ContainsKey(kvp.Key))
                     {
                         Logger?.LogWarning($"{kvp.Key} from TelemetryMetadata will be ignored, as it would override an existing key.");
+                    }
+                    else
+                    {
+                        tags[kvp.Key] = kvp.Value;
                     }
                 }
             }
 
-            ActivityEvent activityEvent = new ActivityEvent("feature_flag", DateTimeOffset.Now, tags);
+            ActivityEvent activityEvent = new ActivityEvent("feature_flag", DateTimeOffset.UtcNow, tags);
 
             Activity.Current.AddEvent(activityEvent);
         }
