@@ -256,8 +256,8 @@ namespace Microsoft.FeatureManagement
             //
             // Only start an activity if telemetry is enabled for the feature
             using Activity activity = telemetryEnabled
-                          ? ActivitySource.StartActivity("FeatureEvaluation")
-                          : null;
+                ? ActivitySource.StartActivity("FeatureEvaluation")
+                : null;
 
             //
             // Determine Targeting Context
