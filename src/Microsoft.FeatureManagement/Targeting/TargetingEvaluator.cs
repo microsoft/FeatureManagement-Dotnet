@@ -190,7 +190,7 @@ namespace Microsoft.FeatureManagement.Targeting
             if (sourceGroups != null)
             {
                 IEnumerable<string> normalizedGroups = ignoreCase ?
-                    sourceGroups.Select(g => g.ToLower()) :
+                    sourceGroups.Select(g => g?.ToLower()) :
                     sourceGroups;
 
                 foreach (string group in normalizedGroups)
@@ -232,13 +232,13 @@ namespace Microsoft.FeatureManagement.Targeting
             }
 
             string userId = ignoreCase ?
-                targetingContext.UserId.ToLower() :
+                targetingContext.UserId?.ToLower() :
                 targetingContext.UserId;
 
             if (targetingContext.Groups != null)
             {
                 IEnumerable<string> normalizedGroups = ignoreCase ?
-                    targetingContext.Groups.Select(g => g.ToLower()) :
+                    targetingContext.Groups.Select(g => g?.ToLower()) :
                     targetingContext.Groups;
 
                 foreach (string group in normalizedGroups)
@@ -280,7 +280,7 @@ namespace Microsoft.FeatureManagement.Targeting
             }
 
             string userId = ignoreCase ?
-                targetingContext.UserId.ToLower() :
+                targetingContext.UserId?.ToLower() :
                 targetingContext.UserId;
 
             string defaultContextId = $"{userId}\n{hint}";
@@ -319,7 +319,7 @@ namespace Microsoft.FeatureManagement.Targeting
             }
 
             string userId = ignoreCase ?
-                targetingContext.UserId.ToLower() :
+                targetingContext.UserId?.ToLower() :
                 targetingContext.UserId;
 
             string contextId = $"{userId}\n{hint}";
