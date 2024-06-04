@@ -1,6 +1,6 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿// Copyright (c) Microsoft Corporation. All Rights Reserved.
 // Licensed under the MIT license.
-//
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -338,7 +338,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         {
             return ((int)day1 - (int)day2 + DaysPerWeek) % DaysPerWeek;
         }
-
 
         /// <summary>
         /// Sorts a collection of days of week based on their offsets from a specified first day of week.

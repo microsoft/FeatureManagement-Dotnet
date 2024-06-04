@@ -1,14 +1,17 @@
-﻿using Microsoft.FeatureManagement;
+﻿// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.FeatureManagement;
 
 namespace Tests.FeatureManagement
 {
     class InMemoryFeatureDefinitionProvider : IFeatureDefinitionProvider, IFeatureDefinitionProviderCacheable
     {
-        private IEnumerable<FeatureDefinition> _definitions;
+        private readonly IEnumerable<FeatureDefinition> _definitions;
 
         public InMemoryFeatureDefinitionProvider(IEnumerable<FeatureDefinition> featureDefinitions)
         {

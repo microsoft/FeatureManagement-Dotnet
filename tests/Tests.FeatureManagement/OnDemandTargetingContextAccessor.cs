@@ -1,8 +1,8 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿// Copyright (c) Microsoft Corporation. All Rights Reserved.
 // Licensed under the MIT license.
-//
-using Microsoft.FeatureManagement.FeatureFilters;
+
 using System.Threading.Tasks;
+using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace Tests.FeatureManagement
 {

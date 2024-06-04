@@ -1,4 +1,7 @@
-﻿using Microsoft.FeatureManagement;
+﻿// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+
+using Microsoft.FeatureManagement;
 
 namespace BlazorServerApp
 {
@@ -45,7 +48,7 @@ namespace BlazorServerApp
                 return false;
             }
 
-            return userAgentContext.Contains("chrome", StringComparison.OrdinalIgnoreCase) && 
+            return userAgentContext.Contains("chrome", StringComparison.OrdinalIgnoreCase) &&
                 !userAgentContext.Contains("edg", StringComparison.OrdinalIgnoreCase);
         }
 

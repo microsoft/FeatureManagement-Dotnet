@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Components.Authorization;
+﻿// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace BlazorServerApp

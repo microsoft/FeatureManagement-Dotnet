@@ -39,6 +39,11 @@
   <PropertyGroup>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\XMLComments\$(MSBuildProjectName).xml</DocumentationFile>
   </PropertyGroup>
+    
+  <PropertyGroup>
+    <AnalysisLevel>6.0</AnalysisLevel>
+    <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+  </PropertyGroup>
 
   <Target Name="PrepublishScript" BeforeTargets="PrepareForPublish">
     <Copy SourceFiles="$(DocumentationFile)" DestinationFolder="$(OutDir)\XMLComments" SkipUnchangedFiles="false" />

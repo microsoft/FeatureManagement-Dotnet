@@ -1,11 +1,11 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿// Copyright (c) Microsoft Corporation. All Rights Reserved.
 // Licensed under the MIT license.
-//
+
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.Mvc
 {

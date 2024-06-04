@@ -1,6 +1,6 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿// Copyright (c) Microsoft Corporation. All Rights Reserved.
 // Licensed under the MIT license.
-//
+
 using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
@@ -27,13 +27,13 @@ namespace Microsoft.FeatureManagement
             set => _configuration[key] = value;
         }
 
-        public IEnumerable<IConfigurationSection> GetChildren() =>
-            _configuration.GetChildren();
+        public IEnumerable<IConfigurationSection> GetChildren()
+            => _configuration.GetChildren();
 
-        public IChangeToken GetReloadToken() =>
-            _configuration.GetReloadToken();
+        public IChangeToken GetReloadToken()
+            => _configuration.GetReloadToken();
 
-        public IConfigurationSection GetSection(string key) =>
-            _configuration.GetSection(key);
+        public IConfigurationSection GetSection(string key)
+            => _configuration.GetSection(key);
     }
 }

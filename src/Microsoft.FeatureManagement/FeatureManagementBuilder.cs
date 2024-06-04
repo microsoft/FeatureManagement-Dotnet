@@ -1,6 +1,6 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿// Copyright (c) Microsoft Corporation. All Rights Reserved.
 // Licensed under the MIT license.
-//
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,7 +35,7 @@ namespace Microsoft.FeatureManagement
             }
 
             IEnumerable<Type> featureFilterImplementations = implementationType.GetInterfaces()
-                .Where(i => i == typeof(IFeatureFilter) || 
+                .Where(i => i == typeof(IFeatureFilter) ||
                             (i.IsGenericType && i.GetGenericTypeDefinition().IsAssignableFrom(typeof(IContextualFeatureFilter<>))));
 
             if (featureFilterImplementations.Count() > 1)

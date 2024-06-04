@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All Rights Reserved.
+// Licensed under the MIT license.
+
 using BlazorServerApp.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.FeatureManagement;
@@ -8,7 +11,7 @@ namespace BlazorServerApp
     {
         public static void Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
+            WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddRazorPages();
             builder.Services.AddServerSideBlazor();
@@ -26,7 +29,7 @@ namespace BlazorServerApp
                 .WithTargeting<MyTargetingContextAccessor>()
                 .AddFeatureFilter<BrowserFilter>();
 
-            var app = builder.Build();
+            WebApplication app = builder.Build();
 
             if (!app.Environment.IsDevelopment())
             {

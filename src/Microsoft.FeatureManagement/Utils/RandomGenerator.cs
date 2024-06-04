@@ -1,6 +1,6 @@
-﻿// Copyright (c) Microsoft Corporation.
+﻿// Copyright (c) Microsoft Corporation. All Rights Reserved.
 // Licensed under the MIT license.
-//
+
 using System;
 using System.Threading;
 
@@ -8,9 +8,9 @@ namespace Microsoft.FeatureManagement.Utils
 {
     static class RandomGenerator
     {
-        private static Random _global = new Random();
+        private static readonly Random _global = new Random();
 
-        private static ThreadLocal<Random> _rnd = new ThreadLocal<Random>(() =>
+        private static readonly ThreadLocal<Random> _rnd = new ThreadLocal<Random>(() =>
         {
             int seed;
 
