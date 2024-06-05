@@ -1,10 +1,14 @@
-﻿using Microsoft.FeatureManagement.FeatureFilters;
-using System;
+﻿using System;
 
 namespace Tests.FeatureManagement
 {
-    class OnDemandClock : ISystemClock
+    class OnDemandClock : TimeProvider
     {
         public DateTimeOffset UtcNow { get; set; }
+
+        public override DateTimeOffset GetUtcNow()
+        {
+            return UtcNow;
+        }
     }
 }
