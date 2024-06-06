@@ -48,7 +48,8 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore
 
             //
             // Extract the targeting info from the http context
-            TargetingContext targetingContext = httpContext.Items[DefaultHttpTargetingContextAccessor.TargetingContextLookup] as TargetingContext;
+            httpContext.Items.TryGetValue(DefaultHttpTargetingContextAccessor.TargetingContextLookup, out object targetingContextObject);
+            TargetingContext targetingContext = targetingContextObject as TargetingContext;
 
             string targetingId = targetingContext?.UserId ?? string.Empty;
 
