@@ -2,6 +2,8 @@
 
 Feature management provides a way to develop and expose application functionality based on features. Many applications have special requirements when a new feature is developed such as when the feature should be enabled and under what conditions. This library provides a way to define these relationships, and also integrates into common .NET code patterns to make exposing these features possible. Official documentation on how to use feature management is available in the [Microsoft Learn](https://learn.microsoft.com/azure/azure-app-configuration/feature-management-dotnet-reference).
 
+## Get started
+
 Follow the [quickstart](https://learn.microsoft.com/azure/azure-app-configuration/quickstart-feature-flag-dotnet) guide to learn how to integrate feature flags from Azure App Configuration into your .NET applications. Check out the [feature reference](https://learn.microsoft.com/azure/azure-app-configuration/feature-management-dotnet-reference) document for a full feature rundown. See the [API reference](https://go.microsoft.com/fwlink/?linkid=2091700) for more information.
 
 ## Examples
