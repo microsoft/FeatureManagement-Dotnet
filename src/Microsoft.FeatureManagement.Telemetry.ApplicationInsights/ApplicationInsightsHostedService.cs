@@ -1,4 +1,4 @@
-﻿using Microsoft.ApplicationInsights;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
@@ -8,40 +8,36 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
     /// </summary>
     internal sealed class ApplicationInsightsHostedService : IHostedService
     {
-        private readonly TelemetryClient _telemetryClient;
-        private ApplicationInsightsEventPublisher appInsightsPublisher;
+        private readonly IServiceProvider _serviceProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ApplicationInsightsHostedService"/> class.
         /// </summary>
-        /// <param name="telemetryClient">The <see cref="TelemetryClient"/> instance used for telemetry.</param>
-        public ApplicationInsightsHostedService(TelemetryClient telemetryClient)
+        /// <param name="serviceProvider">The <see cref="IServiceProvider"/> to get the publisher from.</param>
+        public ApplicationInsightsHostedService(IServiceProvider serviceProvider)
         {
-            _telemetryClient = telemetryClient ?? throw new ArgumentNullException(nameof(telemetryClient));
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         }
 
         /// <summary>
-        /// Constructs the <see cref="ApplicationInsightsEventPublisher"/> which will start listening for events.
+        /// Uses the service provider to construct a <see cref="ApplicationInsightsEventPublisher"/> which will start listening for activities.
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            appInsightsPublisher = new ApplicationInsightsEventPublisher(_telemetryClient);
+            _serviceProvider.GetService<ApplicationInsightsEventPublisher>();
 
             return Task.CompletedTask;
         }
 
         /// <summary>
-        /// Disposes of the <see cref="ApplicationInsightsEventPublisher"/>.
+        /// Stops this hosted service.
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            appInsightsPublisher.Dispose();
-            appInsightsPublisher = null;
-
             return Task.CompletedTask;
         }
     }

@@ -29,6 +29,8 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentException($"The provided builder's services must not be null.", nameof(builder));
             }
 
+            builder.Services.AddSingleton<ApplicationInsightsEventPublisher>();
+
             if (!builder.Services.Any((ServiceDescriptor d) => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(ApplicationInsightsHostedService)))
             {
                 builder.Services.Insert(0, ServiceDescriptor.Singleton<IHostedService, ApplicationInsightsHostedService>());
