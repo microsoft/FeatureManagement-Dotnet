@@ -358,25 +358,20 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             foreach (DayOfWeek dayOfWeek in sortedDaysOfWeek)
             {
-                if (prev == DateTime.MinValue)
-                {
-                    prev = firstDayOfThisWeek.AddDays(
-                        CalculateWeeklyDayOffset(dayOfWeek, firstDayOfWeek));
-                }
-                else
-                {
-                    DateTime date = firstDayOfThisWeek.AddDays(
+                DateTime date = firstDayOfThisWeek.AddDays(
                         CalculateWeeklyDayOffset(dayOfWeek, firstDayOfWeek));
 
+                if (prev != DateTime.MinValue)
+                {
                     TimeSpan gap = date - prev;
 
                     if (gap < minGap)
                     {
                         minGap = gap;
                     }
-
-                    prev = date;
                 }
+
+                prev = date;
             }
 
             //
