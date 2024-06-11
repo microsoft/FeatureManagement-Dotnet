@@ -394,14 +394,14 @@ namespace Microsoft.FeatureManagement
                 { "Version", ActivitySource.Version }
             };
 
-            if (evaluationEvent.TargetingContext?.UserId != null)
+            if (evaluationEvent.TargetingContext is { UserId: string userId })
             {
-                tags["TargetingId"] = evaluationEvent.TargetingContext.UserId;
+                tags["TargetingId"] = userId;
             }
 
-            if (evaluationEvent.Variant?.Name != null)
+            if (evaluationEvent.Variant is { Name: string variantName })
             {
-                tags["Variant"] = evaluationEvent.Variant.Name;
+                tags["Variant"] = variantName;
             }
 
             if (evaluationEvent.FeatureDefinition.Telemetry.Metadata is { } metadata)
