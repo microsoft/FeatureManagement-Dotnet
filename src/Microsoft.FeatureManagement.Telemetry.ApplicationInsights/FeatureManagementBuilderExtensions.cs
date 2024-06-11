@@ -26,7 +26,7 @@ namespace Microsoft.FeatureManagement
 
             if (builder.Services == null)
             {
-                throw new ArgumentNullException(nameof(builder.Services));
+                throw new ArgumentException($"The provided builder's services must not be null.", nameof(builder));
             }
 
             if (!builder.Services.Any((ServiceDescriptor d) => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(ApplicationInsightsHostedService)))
