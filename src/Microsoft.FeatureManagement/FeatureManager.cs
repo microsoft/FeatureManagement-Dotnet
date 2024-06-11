@@ -252,7 +252,7 @@ namespace Microsoft.FeatureManagement
             };
 
             bool telemetryEnabled = evaluationEvent.FeatureDefinition?.Telemetry?.Enabled ?? false;
-            
+
             //
             // Only start an activity if telemetry is enabled for the feature
             using Activity activity = telemetryEnabled
@@ -388,13 +388,21 @@ namespace Microsoft.FeatureManagement
 
             ActivityTagsCollection tags = new ActivityTagsCollection
             {
-                { "TargetingId", evaluationEvent.TargetingContext?.UserId },
                 { "FeatureName", evaluationEvent.FeatureDefinition.Name },
-                { "Variant", evaluationEvent.Variant?.Name },
                 { "Enabled", evaluationEvent.Enabled },
                 { "VariantAssignmentReason", evaluationEvent.VariantAssignmentReason },
                 { "Version", ActivitySource.Version }
             };
+
+            if (evaluationEvent.TargetingContext?.UserId != null)
+            {
+                tags["TargetingId"] = evaluationEvent.TargetingContext.UserId;
+            }
+
+            if (evaluationEvent.Variant?.Name != null)
+            {
+                tags["Variant"] = evaluationEvent.Variant.Name;
+            }
 
             if (evaluationEvent.FeatureDefinition.Telemetry.Metadata is { } metadata)
             {
@@ -556,7 +564,7 @@ namespace Microsoft.FeatureManagement
 
             return enabled;
         }
-        
+
         private async ValueTask<FeatureDefinition> GetFeatureDefinition(string feature)
         {
             FeatureDefinition featureDefinition = await _featureDefinitionProvider
@@ -622,7 +630,7 @@ namespace Microsoft.FeatureManagement
                         return new ValueTask<VariantDefinition>(
                             evaluationEvent.FeatureDefinition
                                 .Variants
-                                .FirstOrDefault(variant => 
+                                .FirstOrDefault(variant =>
                                     variant.Name == user.Variant));
                     }
                 }
@@ -648,7 +656,7 @@ namespace Microsoft.FeatureManagement
                         return new ValueTask<VariantDefinition>(
                             evaluationEvent.FeatureDefinition
                                 .Variants
-                                .FirstOrDefault(variant => 
+                                .FirstOrDefault(variant =>
                                     variant.Name == group.Variant));
                     }
                 }
@@ -679,7 +687,7 @@ namespace Microsoft.FeatureManagement
                         return new ValueTask<VariantDefinition>(
                             evaluationEvent.FeatureDefinition
                                 .Variants
-                                .FirstOrDefault(variant => 
+                                .FirstOrDefault(variant =>
                                     variant.Name == percentile.Variant));
                     }
                 }
@@ -743,7 +751,8 @@ namespace Microsoft.FeatureManagement
         {
             IFeatureFilterMetadata filter = _filterMetadataCache.GetOrAdd(
                 $"{filterName}{Environment.NewLine}{appContextType?.FullName}",
-                (_) => {
+                (_) =>
+                {
 
                     IEnumerable<IFeatureFilterMetadata> matchingFilters = _featureFilters.Where(f =>
                     {
@@ -821,7 +830,8 @@ namespace Microsoft.FeatureManagement
 
             ContextualFeatureFilterEvaluator filter = _contextualFeatureFilterCache.GetOrAdd(
                 $"{filterName}{Environment.NewLine}{appContextType.FullName}",
-                (_) => {
+                (_) =>
+                {
 
                     IFeatureFilterMetadata metadata = GetFeatureFilterMetadata(filterName, appContextType);
 
