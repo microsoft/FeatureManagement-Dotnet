@@ -1,6 +1,10 @@
 # .NET Feature Management
 
-Feature management provides a way to develop and expose application functionality based on features. Many applications have special requirements when a new feature is developed such as when the feature should be enabled and under what conditions. This library provides a way to define these relationships, and also integrates into common .NET code patterns to make exposing these features possible. Official documentation on how to use feature management is available in the [Microsoft Learn](https://learn.microsoft.com/azure/azure-app-configuration/feature-management-dotnet-reference).
+Feature management provides a way to develop and expose application functionality based on features. Many applications have special requirements when a new feature is developed such as when the feature should be enabled and under what conditions. This library provides a way to define these relationships, and also integrates into common .NET code patterns to make exposing these features possible. 
+
+Click the following link to see the official documentation on how to use feature management:
+
+[***Official Documentation***](https://learn.microsoft.com/azure/azure-app-configuration/feature-management-dotnet-reference)
 
 ## Get started
 
