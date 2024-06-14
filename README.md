@@ -8,7 +8,7 @@ Feature management provides a way to develop and expose application functionalit
 
 [**Feature Reference**](https://learn.microsoft.com/azure/azure-app-configuration/feature-management-dotnet-reference): This document provides a full feature rundown.
 
-[**API reference**](https://go.microsoft.com/fwlink/?linkid=2091700): This API reference details the API surface of this library.
+[**API reference**](https://go.microsoft.com/fwlink/?linkid=2091700): This API reference details the API surface of the libraries contained within this repository.
 
 ## Examples
 
