@@ -58,12 +58,12 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The option that controls the behavior when "FeatureManagement" section in the configuration is missing.
         /// </summary>
-        public bool RootConfigurationFallbackEnabled { get; init; }
+        public bool RootConfigurationFallbackEnabled { get; set; }
 
         /// <summary>
         /// The logger for the configuration feature definition provider.
         /// </summary>
-        public ILogger Logger { get; init; }
+        public ILogger Logger { get; set; }
 
         /// <summary>
         /// Disposes the change subscription of the configuration.
