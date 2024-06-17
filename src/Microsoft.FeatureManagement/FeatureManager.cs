@@ -27,13 +27,14 @@ namespace Microsoft.FeatureManagement
         private readonly TimeSpan ParametersCacheAbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
 
         private readonly IFeatureDefinitionProvider _featureDefinitionProvider;
-        private readonly FeatureManagementOptions _options;
         private readonly ConcurrentDictionary<string, IFeatureFilterMetadata> _filterMetadataCache;
         private readonly ConcurrentDictionary<string, ContextualFeatureFilterEvaluator> _contextualFeatureFilterCache;
-        private readonly IEnumerable<IFeatureFilterMetadata> _featureFilters;
-        private readonly IEnumerable<ISessionManager> _sessionManagers;
-        private readonly IEnumerable<ITelemetryPublisher> _telemetryPublishers;
-        private readonly TargetingEvaluationOptions _assignerOptions;
+        private readonly FeatureManagementOptions _options;
+
+        private IEnumerable<IFeatureFilterMetadata> _featureFilters;
+        private IEnumerable<ISessionManager> _sessionManagers;
+        private TargetingEvaluationOptions _assignerOptions;
+        private IEnumerable<ITelemetryPublisher> _telemetryPublishers;
 
         private class ConfigurationCacheItem
         {
@@ -70,7 +71,7 @@ namespace Microsoft.FeatureManagement
         {
             get => _featureFilters;
 
-            init
+            set
             {
                 _featureFilters = value ?? throw new ArgumentNullException(nameof(value));
             }
@@ -84,7 +85,7 @@ namespace Microsoft.FeatureManagement
         {
             get => _sessionManagers;
 
-            init
+            set
             {
                 _sessionManagers = value ?? throw new ArgumentNullException(nameof(value));
             }
@@ -93,12 +94,12 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The application memory cache to store feature filter settings.
         /// </summary>
-        public IMemoryCache Cache { get; init; }
+        public IMemoryCache Cache { get; set; }
 
         /// <summary>
         /// The logger for the feature manager.
         /// </summary>
-        public ILogger Logger { get; init; }
+        public ILogger Logger { get; set; }
 
         /// <summary>
         /// The collection of telemetry publishers.
@@ -108,7 +109,7 @@ namespace Microsoft.FeatureManagement
         {
             get => _telemetryPublishers;
 
-            init
+            set
             {
                 _telemetryPublishers = value ?? throw new ArgumentNullException(nameof(value));
             }
@@ -117,12 +118,12 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The configuration reference for feature variants.
         /// </summary>
-        public IConfiguration Configuration { get; init; }
+        public IConfiguration Configuration { get; set; }
 
         /// <summary>
         /// The targeting context accessor for feature variant allocation.
         /// </summary>
-        public ITargetingContextAccessor TargetingContextAccessor { get; init; }
+        public ITargetingContextAccessor TargetingContextAccessor { get; set; }
 
         /// <summary>
         /// Options controlling the targeting behavior for feature variant allocation.
@@ -132,7 +133,7 @@ namespace Microsoft.FeatureManagement
         {
             get => _assignerOptions;
 
-            init
+            set
             {
                 _assignerOptions = value ?? throw new ArgumentNullException(nameof(value));
             }

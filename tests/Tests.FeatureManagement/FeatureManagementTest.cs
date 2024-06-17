@@ -826,6 +826,9 @@ namespace Tests.FeatureManagement
             const string feature2 = "feature2";
             const string feature3 = "feature3";
             const string feature4 = "feature4";
+            const string feature5 = "feature5";
+            const string feature6 = "feature6";
+            const string feature7 = "feature7";
 
             Environment.SetEnvironmentVariable($"feature_management:feature_flags:0:id", feature1);
             Environment.SetEnvironmentVariable($"feature_management:feature_flags:0:enabled", "true");
@@ -847,6 +850,37 @@ namespace Tests.FeatureManagement
             Environment.SetEnvironmentVariable($"feature_management:feature_flags:3:conditions:client_filters:0:name", "TimeWindow");
             Environment.SetEnvironmentVariable($"feature_management:feature_flags:3:conditions:client_filters:0:parameters:Start", DateTimeOffset.UtcNow.AddDays(1).ToString("r"));
 
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:4:id", feature5);
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:4:enabled", "true");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:4:conditions:client_filters:0:name", "TimeWindow");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:4:conditions:client_filters:0:parameters:Start", DateTimeOffset.UtcNow.AddDays(-2).ToString("r"));
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:4:conditions:client_filters:0:parameters:End", DateTimeOffset.UtcNow.AddDays(-1).ToString("r"));
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:4:conditions:client_filters:0:parameters:Recurrence:Pattern:Type", "Daily");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:4:conditions:client_filters:0:parameters:Recurrence:Range:Type", "NoEnd");
+
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:5:id", feature6);
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:5:enabled", "true");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:5:conditions:client_filters:0:name", "TimeWindow");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:5:conditions:client_filters:0:parameters:Start", DateTimeOffset.UtcNow.AddDays(-2).ToString("r"));
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:5:conditions:client_filters:0:parameters:End", DateTimeOffset.UtcNow.AddDays(-1).ToString("r"));
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:5:conditions:client_filters:0:parameters:Recurrence:Pattern:Type", "Daily");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:5:conditions:client_filters:0:parameters:Recurrence:Pattern:Interval", "3");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:5:conditions:client_filters:0:parameters:Recurrence:Range:Type", "NoEnd");
+
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:id", feature7);
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:enabled", "true");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:name", "TimeWindow");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Start", DateTimeOffset.UtcNow.AddDays(-2).ToString("r"));
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:End", DateTimeOffset.UtcNow.AddDays(-1).ToString("r"));
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:Type", "Weekly");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Range:Type", "NoEnd");
+
+            foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
+            {
+                int dayIndex = (int)day;
+                Environment.SetEnvironmentVariable($"feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:DaysOfWeek:{dayIndex}", day.ToString());
+            }
+
             IConfiguration config = new ConfigurationBuilder().AddEnvironmentVariables().Build();
 
             var serviceCollection = new ServiceCollection();
@@ -862,6 +896,13 @@ namespace Tests.FeatureManagement
             Assert.False(await featureManager.IsEnabledAsync(feature2));
             Assert.True(await featureManager.IsEnabledAsync(feature3));
             Assert.False(await featureManager.IsEnabledAsync(feature4));
+            Assert.True(await featureManager.IsEnabledAsync(feature5));
+            Assert.False(await featureManager.IsEnabledAsync(feature6));
+
+            for (int i = 0; i < 10; i++)
+            {
+                Assert.True(await featureManager.IsEnabledAsync(feature7));
+            }
         }
 
         [Fact]
@@ -874,7 +915,7 @@ namespace Tests.FeatureManagement
             Environment.SetEnvironmentVariable($"feature_management:feature_flags:0:conditions:client_filters:0:name", "Percentage");
             Environment.SetEnvironmentVariable($"feature_management:feature_flags:0:conditions:client_filters:0:parameters:Value", "50");
 
-            IConfiguration config = new ConfigurationBuilder().AddEnvironmentVariables().Build();
+            IConfiguration config = new ConfigurationBuilder().AddEnvironmentVariables().AddJsonFile("appsettings.json").Build();
 
             var serviceCollection = new ServiceCollection();
 
