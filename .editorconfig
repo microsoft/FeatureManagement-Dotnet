@@ -1,0 +1,106 @@
+# editorconfig.org
+
+# top-most EditorConfig file
+root = true
+
+## Default settings ##
+[*]
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+end_of_line = crlf
+insert_final_newline = true
+
+# Code style
+dotnet_diagnostic.IDE0055.severity = warning
+
+# New line preferences
+csharp_new_line_before_catch = true
+csharp_new_line_before_else = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_open_brace = all
+csharp_new_line_between_query_expression_clauses = true
+
+dotnet_style_allow_multiple_blank_lines_experimental = false:warning
+csharp_style_allow_embedded_statements_on_same_line_experimental = false:warning
+csharp_style_allow_blank_lines_between_consecutive_braces_experimental = false:warning
+dotnet_style_allow_statement_immediately_after_block_experimental = false:warning
+csharp_style_allow_blank_line_after_colon_in_constructor_initializer_experimental = false:warning
+csharp_style_allow_blank_line_after_token_in_conditional_expression_experimental = false:warning
+csharp_style_allow_blank_line_after_token_in_arrow_expression_clause_experimental = false:warning
+
+# Indentation preferences
+csharp_indent_block_contents = true
+csharp_indent_braces = false
+csharp_indent_case_contents = true
+csharp_indent_case_contents_when_block = true
+csharp_indent_labels = one_less_than_current
+csharp_indent_switch_labels = true
+
+# Space preferences
+csharp_space_after_cast = false
+csharp_space_after_colon_in_inheritance_clause = true
+csharp_space_after_comma = true
+csharp_space_after_dot = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_after_semicolon_in_for_statement = true
+csharp_space_around_binary_operators = before_and_after
+csharp_space_around_declaration_statements = false
+csharp_space_before_colon_in_inheritance_clause = true
+csharp_space_before_comma = false
+csharp_space_before_dot = false
+csharp_space_before_open_square_brackets = false
+csharp_space_before_semicolon_in_for_statement = false
+csharp_space_between_empty_square_brackets = false
+csharp_space_between_method_call_empty_parameter_list_parentheses = false
+csharp_space_between_method_call_name_and_opening_parenthesis = false
+csharp_space_between_method_call_parameter_list_parentheses = false
+csharp_space_between_method_declaration_empty_parameter_list_parentheses = false
+csharp_space_between_method_declaration_name_and_open_parenthesis = false
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_parentheses = false
+csharp_space_between_square_brackets = false
+
+# 'Using' directive preferences
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_using_directive_placement = outside_namespace
+
+# Unnecessary using directive
+dotnet_diagnostic.IDE0005.severity = suggestion
+
+# Suppress xUnit1031 warning
+dotnet_diagnostic.xUnit1031.severity = suggestion
+
+## Naming rules ##
+dotnet_diagnostic.IDE1006.severity = warning
+
+# Namespaces, type names, method names and all public members should be PascalCase
+dotnet_naming_rule.namespaces_types_and_methods_should_be_pascalcase.severity = warning
+dotnet_naming_rule.namespaces_types_and_methods_should_be_pascalcase.symbols = namespaces_types_and_methods
+dotnet_naming_rule.namespaces_types_and_methods_should_be_pascalcase.style = pascalcase
+dotnet_naming_rule.public_fields_should_be_pascalcase.severity = error
+dotnet_naming_rule.public_fields_should_be_pascalcase.symbols = public_fields
+dotnet_naming_rule.public_fields_should_be_pascalcase.style = pascalcase
+dotnet_naming_symbols.namespaces_types_and_methods.applicable_kinds = namespace, class, struct, interface, enum, method
+dotnet_naming_symbols.public_fields.applicable_kinds = field
+dotnet_naming_symbols.public_fields.applicable_accessibilities = public, internal
+dotnet_naming_style.pascalcase.capitalization = pascal_case
+
+# Interface names should start with capital I
+dotnet_naming_rule.interfaces_should_be_ipascalcase.severity = warning
+dotnet_naming_rule.interfaces_should_be_ipascalcase.symbols = interfaces
+dotnet_naming_rule.interfaces_should_be_ipascalcase.style = ipascalcase
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_style.ipascalcase.required_prefix = I
+dotnet_naming_style.ipascalcase.capitalization = pascal_case
+
+[*.csproj]
+indent_size = 2
+charset = utf-8
+
+[*.json]
+indent_size = 2
