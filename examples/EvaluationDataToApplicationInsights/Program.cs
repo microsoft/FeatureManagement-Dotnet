@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.FeatureManagement.Telemetry;
 using Microsoft.FeatureManagement;
 using EvaluationDataToApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -31,7 +30,7 @@ builder.Services.AddSingleton<ITelemetryInitializer, TargetingTelemetryInitializ
 // Wire up evaluation event emission
 builder.Services.AddFeatureManagement()
     .WithTargeting<HttpContextTargetingContextAccessor>()
-    .AddTelemetryPublisher<ApplicationInsightsTelemetryPublisher>();
+    .AddApplicationInsightsTelemetryPublisher();
 
 //
 // Default code from .NET template below
