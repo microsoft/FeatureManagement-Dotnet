@@ -1,9 +1,9 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.FeatureManagement;
 using System;
 using System.Threading.Tasks;
+using Microsoft.FeatureManagement;
 
 namespace Tests.FeatureManagement
 {

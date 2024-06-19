@@ -1,12 +1,12 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.FeatureManagement;
-using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.FeatureManagement;
+using Microsoft.FeatureManagement.FeatureFilters;
 using Xunit;
 
 namespace Tests.FeatureManagement
@@ -1671,7 +1671,7 @@ namespace Tests.FeatureManagement
             mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-7T00:00:00+08:00");
             Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
 
-            for (int i = 0; i < 10; i++ )
+            for (int i = 0; i < 10; i++)
             {
                 mockedTimeProvider.UtcNow = mockedTimeProvider.UtcNow.AddDays(1);
                 Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));

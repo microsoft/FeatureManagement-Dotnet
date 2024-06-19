@@ -1,13 +1,13 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.FeatureManagement.Mvc
 {
@@ -106,9 +106,9 @@ namespace Microsoft.FeatureManagement.Mvc
 
             //
             // Enabled state is determined by either 'any' or 'all' features being enabled.
-            bool enabled = RequirementType == RequirementType.All ?
-                             await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false)) :
-                             await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
+            bool enabled = RequirementType == RequirementType.All
+                             ? await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false))
+                             : await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
 
             if (enabled)
             {
@@ -134,9 +134,9 @@ namespace Microsoft.FeatureManagement.Mvc
 
             //
             // Enabled state is determined by either 'any' or 'all' features being enabled.
-            bool enabled = RequirementType == RequirementType.All ?
-                             await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false)) :
-                             await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
+            bool enabled = RequirementType == RequirementType.All
+                             ? await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false))
+                             : await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
 
             if (enabled)
             {

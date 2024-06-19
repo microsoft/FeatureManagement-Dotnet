@@ -1,5 +1,5 @@
-﻿using Microsoft.FeatureManagement.FeatureFilters;
-using System;
+﻿using System;
+using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace Tests.FeatureManagement
 {

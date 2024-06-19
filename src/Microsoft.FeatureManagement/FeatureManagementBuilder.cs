@@ -35,7 +35,7 @@ namespace Microsoft.FeatureManagement
             }
 
             IEnumerable<Type> featureFilterImplementations = implementationType.GetInterfaces()
-                .Where(i => i == typeof(IFeatureFilter) || 
+                .Where(i => i == typeof(IFeatureFilter) ||
                             (i.IsGenericType && i.GetGenericTypeDefinition().IsAssignableFrom(typeof(IContextualFeatureFilter<>))));
 
             if (featureFilterImplementations.Count() > 1)

@@ -1,16 +1,16 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.FeatureManagement;
-using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.FeatureManagement;
+using Microsoft.FeatureManagement.FeatureFilters;
 using Xunit;
 
 namespace Tests.FeatureManagement
@@ -106,7 +106,6 @@ namespace Tests.FeatureManagement
             Assert.True(await featureManager.IsEnabledAsync(feature));
         }
 
-
         [Fact]
         public void AddsScopedFeatureManagement()
         {
@@ -175,7 +174,7 @@ namespace Tests.FeatureManagement
             var appContext = new AppContext();
 
             var dummyContext = new DummyContext();
-            
+
             var targetingContext = new TargetingContext();
 
             Assert.True(await featureManager.IsEnabledAsync(featureName));
@@ -271,7 +270,7 @@ namespace Tests.FeatureManagement
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             ServiceCollection services = new ServiceCollection();
-            
+
             var targetingContextAccessor = new OnDemandTargetingContextAccessor();
 
             services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor);
@@ -343,7 +342,7 @@ namespace Tests.FeatureManagement
             Assert.False(await featureManager.IsEnabledAsync(feature4));
             Assert.True(await featureManager.IsEnabledAsync(feature5));
             Assert.False(await featureManager.IsEnabledAsync(feature6));
-            
+
             for (int i = 0; i < 10; i++)
             {
                 Assert.True(await featureManager.IsEnabledAsync(Features.RecurringTimeWindowTestFeature));
@@ -881,7 +880,6 @@ namespace Tests.FeatureManagement
             //
             // Set filters to all return true
             testFeatureFilter.Callback = _ => Task.FromResult(true);
-
 
             Assert.True(await featureManager.IsEnabledAsync(anyFilterFeature));
             Assert.True(await featureManager.IsEnabledAsync(allFilterFeature));

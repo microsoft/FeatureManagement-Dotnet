@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.AspNetCore.Razor.TagHelpers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Razor.TagHelpers;
 
 namespace Microsoft.FeatureManagement.Mvc.TagHelpers
 {
@@ -54,9 +54,9 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
             {
                 IEnumerable<string> names = Name.Split(',').Select(n => n.Trim());
 
-                enabled = Requirement == RequirementType.All ?
-                    await names.All(async n => await _featureManager.IsEnabledAsync(n).ConfigureAwait(false)) :
-                    await names.Any(async n => await _featureManager.IsEnabledAsync(n).ConfigureAwait(false));
+                enabled = Requirement == RequirementType.All
+                    ? await names.All(async n => await _featureManager.IsEnabledAsync(n).ConfigureAwait(false))
+                    : await names.Any(async n => await _featureManager.IsEnabledAsync(n).ConfigureAwait(false));
             }
 
             if (Negate)
