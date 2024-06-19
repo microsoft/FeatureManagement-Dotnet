@@ -1351,7 +1351,7 @@ namespace Tests.FeatureManagement
             FeatureManager featureManager = (FeatureManager)serviceProvider.GetRequiredService<IVariantFeatureManager>();
             CancellationToken cancellationToken = CancellationToken.None;
 
-            Thread testThread = Thread.CurrentThread;
+            using Activity testActivity = new Activity("TestActivity").Start();
 
             // Start listener
             using ActivityListener activityListener = new ActivityListener
@@ -1361,7 +1361,7 @@ namespace Tests.FeatureManagement
                 ActivityStopped = (activity) =>
                 {
                     // Stop other tests from asserting
-                    if (testThread != Thread.CurrentThread)
+                    if (activity.ParentId != testActivity.Id)
                     {
                         return;
                     }
