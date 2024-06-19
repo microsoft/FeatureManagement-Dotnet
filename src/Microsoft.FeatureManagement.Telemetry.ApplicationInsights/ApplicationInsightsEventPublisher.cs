@@ -25,7 +25,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
                 Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData,
                 ActivityStopped = (activity) =>
                 {
-                    ActivityEvent? evaluationEvent = activity.Events.FirstOrDefault((activityEvent) => activityEvent.Name == "feature_flag");
+                    ActivityEvent? evaluationEvent = activity.Events.FirstOrDefault((activityEvent) => activityEvent.Name == "FeatureFlag");
 
                     if (evaluationEvent.HasValue && evaluationEvent.Value.Tags.Any())
                     {
