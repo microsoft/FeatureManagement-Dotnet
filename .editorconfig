@@ -11,17 +11,19 @@ indent_size = 4
 trim_trailing_whitespace = true
 insert_final_newline = true
 
-# Code style
-dotnet_diagnostic.IDE0055.severity = warning
-
-# Modifier preferences
-dotnet_style_require_accessibility_modifiers = for_non_interface_members
+## Language and unnecessary rules ##
 
 # Parentheses preferences
-dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity
-dotnet_style_parentheses_in_other_binary_operators = always_for_clarity
-dotnet_style_parentheses_in_other_operators = never_if_unnecessary
-dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity
+dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity:warning
+dotnet_style_parentheses_in_other_binary_operators = always_for_clarity:warning
+dotnet_style_parentheses_in_other_operators = never_if_unnecessary:warning
+dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:warning
+
+# Modifier preferences
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+
+## Formatting rule ##
+dotnet_diagnostic.IDE0055.severity = warning
 
 # New line preferences
 csharp_new_line_before_catch = true
@@ -33,7 +35,6 @@ csharp_new_line_before_open_brace = all
 csharp_new_line_between_query_expression_clauses = true
 
 dotnet_style_allow_multiple_blank_lines_experimental = false:warning
-csharp_style_allow_embedded_statements_on_same_line_experimental = false:warning
 csharp_style_allow_blank_lines_between_consecutive_braces_experimental = false:warning
 dotnet_style_allow_statement_immediately_after_block_experimental = false:warning
 csharp_style_allow_blank_line_after_colon_in_constructor_initializer_experimental = false:warning
