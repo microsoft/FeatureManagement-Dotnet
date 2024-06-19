@@ -380,13 +380,16 @@ namespace Microsoft.FeatureManagement
 
         private void AddEvaluationActivityEvent(EvaluationEvent evaluationEvent)
         {
+            Debug.Assert(evaluationEvent != null);
+            Debug.Assert(evaluationEvent.FeatureDefinition != null);
+
             // Break if there is no reason to emit an event
             if (Activity.Current == null || !Activity.Current.IsAllDataRequested)
             {
                 return;
             }
 
-            ActivityTagsCollection tags = new ActivityTagsCollection
+            var tags = new ActivityTagsCollection()
             {
                 { "FeatureName", evaluationEvent.FeatureDefinition.Name },
                 { "Enabled", evaluationEvent.Enabled },
@@ -411,15 +414,15 @@ namespace Microsoft.FeatureManagement
                     if (tags.ContainsKey(kvp.Key))
                     {
                         Logger?.LogWarning($"{kvp.Key} from TelemetryMetadata will be ignored, as it would override an existing key.");
+
+                        continue;
                     }
-                    else
-                    {
-                        tags[kvp.Key] = kvp.Value;
-                    }
+
+                    tags[kvp.Key] = kvp.Value;
                 }
             }
 
-            ActivityEvent activityEvent = new ActivityEvent("feature_flag", DateTimeOffset.UtcNow, tags);
+            var activityEvent = new ActivityEvent("feature_flag", DateTimeOffset.UtcNow, tags);
 
             Activity.Current.AddEvent(activityEvent);
         }

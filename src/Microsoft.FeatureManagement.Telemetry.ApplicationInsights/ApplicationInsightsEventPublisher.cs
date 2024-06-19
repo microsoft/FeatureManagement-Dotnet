@@ -27,9 +27,9 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
                 {
                     ActivityEvent? evaluationEvent = activity.Events.FirstOrDefault((activityEvent) => activityEvent.Name == "feature_flag");
 
-                    if (evaluationEvent != null && evaluationEvent.Value.Tags.Any())
+                    if (evaluationEvent.HasValue && evaluationEvent.Value.Tags.Any())
                     {
-                        HandleActivityEvent(evaluationEvent.Value);
+                        HandleFeatureFlagEvent(evaluationEvent.Value);
                     }
                 }
             };
@@ -45,7 +45,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
             _activityListener.Dispose();
         }
 
-        private void HandleActivityEvent(ActivityEvent activityEvent)
+        private void HandleFeatureFlagEvent(ActivityEvent activityEvent)
         {
             var properties = new Dictionary<string, string>();
 

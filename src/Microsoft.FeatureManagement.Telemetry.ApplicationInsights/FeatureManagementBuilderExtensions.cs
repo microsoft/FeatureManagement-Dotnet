@@ -17,7 +17,7 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="builder">The feature management builder.</param>
         /// <returns>The feature management builder.</returns>
-        public static IFeatureManagementBuilder AddAppInsightsTelemetryPublisher(this IFeatureManagementBuilder builder)
+        public static IFeatureManagementBuilder AddApplicationInsightsTelemetryPublisher(this IFeatureManagementBuilder builder)
         {
             if (builder == null)
             {

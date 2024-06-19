@@ -30,7 +30,7 @@ builder.Services.AddSingleton<ITelemetryInitializer, TargetingTelemetryInitializ
 // Wire up evaluation event emission
 builder.Services.AddFeatureManagement()
     .WithTargeting<HttpContextTargetingContextAccessor>()
-    .AddAppInsightsTelemetryPublisher();
+    .AddApplicationInsightsTelemetryPublisher();
 
 //
 // Default code from .NET template below
