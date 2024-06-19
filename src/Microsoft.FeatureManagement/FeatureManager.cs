@@ -368,8 +368,10 @@ namespace Microsoft.FeatureManagement
                     await sessionManager.SetAsync(evaluationEvent.FeatureDefinition.Name, evaluationEvent.Enabled).ConfigureAwait(false);
                 }
 
-                // Only add an activity event if telemetry is enabled for the feature
-                if (telemetryEnabled)
+                // Only add an activity event if telemetry is enabled for the feature and the activity is valid
+                if (telemetryEnabled &&
+                    Activity.Current != null &&
+                    Activity.Current.IsAllDataRequested)
                 {
                     AddEvaluationActivityEvent(evaluationEvent);
                 }
@@ -382,12 +384,6 @@ namespace Microsoft.FeatureManagement
         {
             Debug.Assert(evaluationEvent != null);
             Debug.Assert(evaluationEvent.FeatureDefinition != null);
-
-            // Break if there is no reason to emit an event
-            if (Activity.Current == null || !Activity.Current.IsAllDataRequested)
-            {
-                return;
-            }
 
             var tags = new ActivityTagsCollection()
             {
