@@ -14,6 +14,15 @@ insert_final_newline = true
 # Code style
 dotnet_diagnostic.IDE0055.severity = warning
 
+# Modifier preferences
+dotnet_style_require_accessibility_modifiers = for_non_interface_members
+
+# Parentheses preferences
+dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity
+dotnet_style_parentheses_in_other_binary_operators = always_for_clarity
+dotnet_style_parentheses_in_other_operators = never_if_unnecessary
+dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity
+
 # New line preferences
 csharp_new_line_before_catch = true
 csharp_new_line_before_else = true
