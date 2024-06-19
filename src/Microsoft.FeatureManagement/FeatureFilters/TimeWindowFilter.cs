@@ -22,8 +22,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         private const string Alias = "Microsoft.TimeWindow";
         private readonly ILogger _logger;
 
-        private int _countOfTimeWindowCalculations;
-
         /// <summary>
         /// Creates a time window based feature filter.
         /// </summary>
@@ -42,14 +40,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// This property allows the time window filter in our test suite to use simulated time.
         /// </summary>
         internal ISystemClock SystemClock { get; init; }
-
-        /// <summary>
-        /// This property allows our test suite to track how many times the recurring time window has been calculated.
-        /// </summary>
-        internal int CountOfTimeWindowCalculations 
-        {
-            get => _countOfTimeWindowCalculations; 
-        }
 
         /// <summary>
         /// Binds configuration representing filter parameters to <see cref="TimeWindowFilterSettings"/>.
@@ -152,8 +142,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                     AbsoluteExpirationRelativeToNow = CacheAbsoluteExpirationRelativeToNow,
                     Size = 1
                 });
-
-            _countOfTimeWindowCalculations += 1;
 
             return closestStart;
         }
