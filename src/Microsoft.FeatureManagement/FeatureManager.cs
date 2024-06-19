@@ -393,12 +393,12 @@ namespace Microsoft.FeatureManagement
                 { "Version", ActivitySource.Version }
             };
 
-            if (evaluationEvent.TargetingContext != null && !string.IsNullOrEmpty(evaluationEvent.TargetingContext.UserId))
+            if (!string.IsNullOrEmpty(evaluationEvent.TargetingContext?.UserId))
             {
                 tags["TargetingId"] = evaluationEvent.TargetingContext.UserId;
             }
 
-            if (evaluationEvent.Variant != null && !string.IsNullOrEmpty(evaluationEvent.Variant.Name))
+            if (!string.IsNullOrEmpty(evaluationEvent.Variant?.Name))
             {
                 tags["Variant"] = evaluationEvent.Variant.Name;
             }
