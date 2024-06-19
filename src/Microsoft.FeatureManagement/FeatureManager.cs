@@ -393,19 +393,19 @@ namespace Microsoft.FeatureManagement
                 { "Version", ActivitySource.Version }
             };
 
-            if (evaluationEvent.TargetingContext is { UserId: string userId })
+            if (evaluationEvent.TargetingContext != null)
             {
-                tags["TargetingId"] = userId;
+                tags["TargetingId"] = evaluationEvent.TargetingContext.UserId;
             }
 
-            if (evaluationEvent.Variant is { Name: string variantName })
+            if (evaluationEvent.Variant != null)
             {
-                tags["Variant"] = variantName;
+                tags["Variant"] = evaluationEvent.Variant.Name;
             }
 
-            if (evaluationEvent.FeatureDefinition.Telemetry.Metadata is { } metadata)
+            if (evaluationEvent.FeatureDefinition.Telemetry.Metadata != null)
             {
-                foreach (KeyValuePair<string, string> kvp in metadata)
+                foreach (KeyValuePair<string, string> kvp in evaluationEvent.FeatureDefinition.Telemetry.Metadata)
                 {
                     if (tags.ContainsKey(kvp.Key))
                     {
