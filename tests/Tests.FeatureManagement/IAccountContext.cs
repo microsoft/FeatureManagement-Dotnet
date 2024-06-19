@@ -3,7 +3,7 @@
 //
 namespace Tests.FeatureManagement
 {
-    interface IAccountContext
+    internal interface IAccountContext
     {
         string AccountId { get; }
     }

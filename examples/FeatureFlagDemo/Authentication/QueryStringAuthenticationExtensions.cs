@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authentication;
 
 namespace FeatureFlagDemo.Authentication
 {
-    static class QueryStringAuthenticationExtensions
+    internal static class QueryStringAuthenticationExtensions
     {
         public static AuthenticationBuilder AddQueryString(this AuthenticationBuilder builder)
         {

@@ -68,7 +68,7 @@ namespace Microsoft.FeatureManagement.Mvc
 
             foreach (object feature in features)
             {
-                var type = feature.GetType();
+                Type type = feature.GetType();
 
                 if (!type.IsEnum)
                 {

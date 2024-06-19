@@ -19,7 +19,7 @@ namespace FeatureFlagDemo.Authentication
     /// 
     /// To assign a user, use the following query string structure "?username=JohnDoe&groups=MyGroup1,MyGroup2"
     /// </summary>
-    class QueryStringAuthenticationHandler : AuthenticationHandler<QueryStringAuthenticationOptions>
+    internal class QueryStringAuthenticationHandler : AuthenticationHandler<QueryStringAuthenticationOptions>
     {
         public QueryStringAuthenticationHandler(IOptionsMonitor<QueryStringAuthenticationOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock)
             : base(options, logger, encoder, clock)

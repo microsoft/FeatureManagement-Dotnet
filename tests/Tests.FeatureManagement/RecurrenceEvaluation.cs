@@ -11,7 +11,7 @@ using Xunit;
 
 namespace Tests.FeatureManagement
 {
-    class ErrorMessage
+    internal class ErrorMessage
     {
         public const string ValueOutOfRange = "The value is out of the accepted range.";
         public const string UnrecognizableValue = "The value is unrecognizable.";
@@ -20,7 +20,7 @@ namespace Tests.FeatureManagement
         public const string TimeWindowDurationOutOfRange = "Time window duration cannot be longer than how frequently it occurs or be longer than 10 years.";
     }
 
-    class ParamName
+    internal class ParamName
     {
         public const string Start = "Start";
         public const string End = "End";
@@ -1616,7 +1616,7 @@ namespace Tests.FeatureManagement
         [Fact]
         public async void RecurrenceEvaluationThroughCacheTest()
         {
-            OnDemandClock mockedTimeProvider = new OnDemandClock();
+            var mockedTimeProvider = new OnDemandClock();
 
             var mockedTimeWindowFilter = new TimeWindowFilter()
             {

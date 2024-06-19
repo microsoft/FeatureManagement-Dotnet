@@ -12,7 +12,7 @@ namespace Microsoft.FeatureManagement
     /// Wraps an instance of IConfiguration. This allows the reference to be updated when the underlying IConfiguration is updated. 
     /// This is useful for cache busting based on the reference.
     /// </summary>
-    class ConfigurationWrapper : IConfiguration
+    internal class ConfigurationWrapper : IConfiguration
     {
         private readonly IConfiguration _configuration;
 

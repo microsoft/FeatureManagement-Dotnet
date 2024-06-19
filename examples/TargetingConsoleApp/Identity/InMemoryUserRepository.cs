@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace TargetingConsoleApp.Identity
 {
-    class InMemoryUserRepository : IUserRepository
+    internal class InMemoryUserRepository : IUserRepository
     {
         public static readonly IEnumerable<User> Users = new User[]
         {

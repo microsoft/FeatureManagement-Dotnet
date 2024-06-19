@@ -22,6 +22,25 @@ dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:war
 # Modifier preferences
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
 
+# Field preferences
+dotnet_style_readonly_field = true:warning
+
+# var preferences
+csharp_style_var_elsewhere = false:warning
+csharp_style_var_for_built_in_types = false:warning
+csharp_style_var_when_type_is_apparent = true:warning
+
+# 'Using' directive preferences
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_using_directive_placement = outside_namespace
+
+# Unnecessary using directive
+dotnet_diagnostic.IDE0005.severity = suggestion
+
+# Suppress xUnit1031 warning
+dotnet_diagnostic.xUnit1031.severity = suggestion
+
 ## Formatting rule ##
 dotnet_diagnostic.IDE0055.severity = warning
 
@@ -72,17 +91,6 @@ csharp_space_between_method_declaration_name_and_open_parenthesis = false
 csharp_space_between_method_declaration_parameter_list_parentheses = false
 csharp_space_between_parentheses = false
 csharp_space_between_square_brackets = false
-
-# 'Using' directive preferences
-dotnet_sort_system_directives_first = true
-dotnet_separate_import_directive_groups = false
-csharp_using_directive_placement = outside_namespace
-
-# Unnecessary using directive
-dotnet_diagnostic.IDE0005.severity = suggestion
-
-# Suppress xUnit1031 warning
-dotnet_diagnostic.xUnit1031.severity = suggestion
 
 ## Naming rules ##
 dotnet_diagnostic.IDE1006.severity = warning

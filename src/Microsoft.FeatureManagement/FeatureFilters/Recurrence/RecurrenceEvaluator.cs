@@ -8,9 +8,9 @@ using System.Linq;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
 {
-    static class RecurrenceEvaluator
+    internal static class RecurrenceEvaluator
     {
-        const int DaysPerWeek = 7;
+        private const int DaysPerWeek = 7;
 
         /// <summary>
         /// Checks if a provided timestamp is within any recurring time window specified by the Recurrence section in the time window filter settings.
@@ -241,7 +241,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             //
             // Subtract the days before the start in the first week.
-            numberOfOccurrences = numberOfInterval * sortedDaysOfWeek.Count - sortedDaysOfWeek.IndexOf(start.DayOfWeek);
+            numberOfOccurrences = (numberOfInterval * sortedDaysOfWeek.Count) - sortedDaysOfWeek.IndexOf(start.DayOfWeek);
 
             //
             // The current time is not within the most recent occurring week.
@@ -325,7 +325,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
 
             return previousOccurrence.AddDays(
-                pattern.Interval * DaysPerWeek - CalculateWeeklyDayOffset(previousOccurrence.DayOfWeek, sortedDaysOfWeek.First()));
+                (pattern.Interval * DaysPerWeek) - CalculateWeeklyDayOffset(previousOccurrence.DayOfWeek, sortedDaysOfWeek.First()));
         }
 
         /// <summary>
@@ -347,7 +347,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// </summary>
         private static List<DayOfWeek> SortDaysOfWeek(IEnumerable<DayOfWeek> daysOfWeek, DayOfWeek firstDayOfWeek)
         {
-            List<DayOfWeek> result = daysOfWeek.ToList();
+            var result = daysOfWeek.ToList();
 
             result.Sort((x, y) =>
                 CalculateWeeklyDayOffset(x, firstDayOfWeek)

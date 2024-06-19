@@ -12,10 +12,10 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Provides a performance efficient method of evaluating IContextualFeatureFilter&lt;T&gt; without knowing what the generic type parameter is.
     /// </summary>
-    class ContextualFeatureFilterEvaluator : IContextualFeatureFilter<object>
+    internal class ContextualFeatureFilterEvaluator : IContextualFeatureFilter<object>
     {
-        private IFeatureFilterMetadata _filter;
-        private Func<object, FeatureFilterEvaluationContext, object, Task<bool>> _evaluateFunc;
+        private readonly IFeatureFilterMetadata _filter;
+        private readonly Func<object, FeatureFilterEvaluationContext, object, Task<bool>> _evaluateFunc;
 
         public ContextualFeatureFilterEvaluator(IFeatureFilterMetadata filter, Type appContextType)
         {
@@ -93,7 +93,7 @@ namespace Microsoft.FeatureManagement
 
         private static Func<object, FeatureFilterEvaluationContext, object, Task<bool>> GenericTypeAgnosticEvaluate<TTarget, TParam1, TParam2, TReturn>(MethodInfo method)
         {
-            Func<TTarget, FeatureFilterEvaluationContext, TParam2, Task<bool>> func = (Func<TTarget, FeatureFilterEvaluationContext, TParam2, Task<bool>>)Delegate.CreateDelegate
+            var func = (Func<TTarget, FeatureFilterEvaluationContext, TParam2, Task<bool>>)Delegate.CreateDelegate
                 (typeof(Func<TTarget, FeatureFilterEvaluationContext, TParam2, Task<bool>>), method);
 
             Func<object, FeatureFilterEvaluationContext, object, Task<bool>> genericDelegate = (object target, FeatureFilterEvaluationContext param1, object param2) => func((TTarget)target, param1, (TParam2)param2);

@@ -282,7 +282,7 @@ namespace Microsoft.FeatureManagement
 
         private void BindSettings(IFeatureFilterMetadata filter, FeatureFilterEvaluationContext context, int filterIndex)
         {
-            IFilterParametersBinder binder = filter as IFilterParametersBinder;
+            var binder = filter as IFilterParametersBinder;
 
             if (binder == null)
             {
@@ -349,7 +349,7 @@ namespace Microsoft.FeatureManagement
 
                         if (appContextType == null)
                         {
-                            return (f is IFeatureFilter);
+                            return f is IFeatureFilter;
                         }
 
                         return ContextualFeatureFilterEvaluator.IsContextualFilter(f, appContextType);

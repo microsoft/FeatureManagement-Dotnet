@@ -11,7 +11,7 @@ namespace Microsoft.FeatureManagement.Mvc
     /// <summary>
     /// A disabled feature handler that wraps an inline handler.
     /// </summary>
-    class InlineDisabledFeaturesHandler : IDisabledFeaturesHandler
+    internal class InlineDisabledFeaturesHandler : IDisabledFeaturesHandler
     {
         private readonly Action<IEnumerable<string>, ActionExecutingContext> _handler;
 

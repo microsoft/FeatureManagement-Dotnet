@@ -26,7 +26,7 @@ namespace Tests.FeatureManagement.AspNetCore
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
-            TestServer testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
+            var testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
             {
                 services
                     .AddSingleton(config)
@@ -53,7 +53,7 @@ namespace Tests.FeatureManagement.AspNetCore
 
             IEnumerable<IFeatureFilterMetadata> featureFilters = testServer.Host.Services.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
 
-            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+            var testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
 
             testFeatureFilter.Callback = _ => Task.FromResult(true);
 
@@ -75,7 +75,7 @@ namespace Tests.FeatureManagement.AspNetCore
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
-            TestServer testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
+            var testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
             {
                 services
                     .AddSingleton(config)
@@ -88,7 +88,7 @@ namespace Tests.FeatureManagement.AspNetCore
 
             IEnumerable<IFeatureFilterMetadata> featureFilters = testServer.Host.Services.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
 
-            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+            var testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
 
             //
             // Enable all features
@@ -126,7 +126,7 @@ namespace Tests.FeatureManagement.AspNetCore
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
-            TestServer testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
+            var testServer = new TestServer(WebHost.CreateDefaultBuilder().ConfigureServices(services =>
             {
                 services
                     .AddSingleton(config)
@@ -144,7 +144,7 @@ namespace Tests.FeatureManagement.AspNetCore
 
             IEnumerable<IFeatureFilterMetadata> featureFilters = testServer.Host.Services.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
 
-            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+            var testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
 
             //
             // Enable all features

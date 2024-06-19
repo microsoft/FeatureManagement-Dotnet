@@ -11,7 +11,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Provides a snapshot of feature state to ensure consistency across a given request.
     /// </summary>
-    class FeatureManagerSnapshot : IFeatureManagerSnapshot
+    internal class FeatureManagerSnapshot : IFeatureManagerSnapshot
     {
         private readonly IFeatureManager _featureManager;
         private readonly ConcurrentDictionary<string, Task<bool>> _flagCache = new ConcurrentDictionary<string, Task<bool>>();

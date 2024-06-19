@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authentication;
 
 namespace FeatureFlagDemo.Authentication
 {
-    class QueryStringAuthenticationOptions : AuthenticationSchemeOptions
+    internal class QueryStringAuthenticationOptions : AuthenticationSchemeOptions
     {
         public string UsernameParameterName { get; set; } = "username";
 

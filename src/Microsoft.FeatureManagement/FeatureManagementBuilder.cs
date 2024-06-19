@@ -12,7 +12,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Provides a way to customize feature management.
     /// </summary>
-    class FeatureManagementBuilder : IFeatureManagementBuilder
+    internal class FeatureManagementBuilder : IFeatureManagementBuilder
     {
         public FeatureManagementBuilder(IServiceCollection services)
         {

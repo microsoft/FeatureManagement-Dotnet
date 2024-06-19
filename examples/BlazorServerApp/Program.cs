@@ -8,7 +8,7 @@ namespace BlazorServerApp
     {
         public static void Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
+            WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddRazorPages();
             builder.Services.AddServerSideBlazor();
@@ -26,7 +26,7 @@ namespace BlazorServerApp
                 .WithTargeting<MyTargetingContextAccessor>()
                 .AddFeatureFilter<BrowserFilter>();
 
-            var app = builder.Build();
+            WebApplication app = builder.Build();
 
             if (!app.Environment.IsDevelopment())
             {

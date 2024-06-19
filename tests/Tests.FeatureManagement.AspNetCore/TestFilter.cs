@@ -8,7 +8,7 @@ using Microsoft.FeatureManagement;
 
 namespace Tests.FeatureManagement.AspNetCore
 {
-    class TestFilter : IFeatureFilter, IFilterParametersBinder
+    internal class TestFilter : IFeatureFilter, IFilterParametersBinder
     {
         public Func<IConfiguration, object> ParametersBinderCallback { get; set; }
 

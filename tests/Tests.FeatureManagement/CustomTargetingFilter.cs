@@ -12,7 +12,7 @@ using Microsoft.FeatureManagement.FeatureFilters;
 namespace Tests.FeatureManagement
 {
     [FilterAlias(Alias)]
-    class CustomTargetingFilter : IFeatureFilter
+    internal class CustomTargetingFilter : IFeatureFilter
     {
         private const string Alias = "CustomTargetingFilter";
         private readonly ContextualTargetingFilter _contextualFilter;

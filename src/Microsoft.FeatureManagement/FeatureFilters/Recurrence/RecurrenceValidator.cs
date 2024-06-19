@@ -8,17 +8,17 @@ using System.Linq;
 
 namespace Microsoft.FeatureManagement.FeatureFilters
 {
-    static class RecurrenceValidator
+    internal static class RecurrenceValidator
     {
-        const int DaysPerWeek = 7;
+        private const int DaysPerWeek = 7;
 
         //
         // Error Message
-        const string ValueOutOfRange = "The value is out of the accepted range.";
-        const string UnrecognizableValue = "The value is unrecognizable.";
-        const string RequiredParameter = "Value cannot be null or empty.";
-        const string StartNotMatched = "Start date is not a valid first occurrence.";
-        const string TimeWindowDurationOutOfRange = "Time window duration cannot be longer than how frequently it occurs or be longer than 10 years.";
+        private const string ValueOutOfRange = "The value is out of the accepted range.";
+        private const string UnrecognizableValue = "The value is unrecognizable.";
+        private const string RequiredParameter = "Value cannot be null or empty.";
+        private const string StartNotMatched = "Start date is not a valid first occurrence.";
+        private const string TimeWindowDurationOutOfRange = "Time window duration cannot be longer than how frequently it occurs or be longer than 10 years.";
 
         /// <summary>
         /// Performs validation of time window settings.
@@ -154,7 +154,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // No required parameter for "Daily" pattern
             // "Start" is always a valid first occurrence for "Daily" pattern
 
-            TimeSpan intervalDuration = TimeSpan.FromDays(settings.Recurrence.Pattern.Interval);
+            var intervalDuration = TimeSpan.FromDays(settings.Recurrence.Pattern.Interval);
 
             TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
 
@@ -189,7 +189,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 return false;
             }
 
-            TimeSpan intervalDuration = TimeSpan.FromDays(pattern.Interval * DaysPerWeek);
+            var intervalDuration = TimeSpan.FromDays(pattern.Interval * DaysPerWeek);
 
             TimeSpan timeWindowDuration = settings.End.Value - settings.Start.Value;
 
@@ -354,7 +354,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             DateTime prev = DateTime.MinValue;
 
-            TimeSpan minGap = TimeSpan.FromDays(DaysPerWeek);
+            var minGap = TimeSpan.FromDays(DaysPerWeek);
 
             foreach (DayOfWeek dayOfWeek in sortedDaysOfWeek)
             {
@@ -413,7 +413,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// </summary>
         private static List<DayOfWeek> SortDaysOfWeek(IEnumerable<DayOfWeek> daysOfWeek, DayOfWeek firstDayOfWeek)
         {
-            List<DayOfWeek> result = daysOfWeek.ToList();
+            var result = daysOfWeek.ToList();
 
             result.Sort((x, y) =>
                 CalculateWeeklyDayOffset(x, firstDayOfWeek)

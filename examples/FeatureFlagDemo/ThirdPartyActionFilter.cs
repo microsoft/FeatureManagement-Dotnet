@@ -9,7 +9,7 @@ namespace FeatureFlagDemo
 {
     public class ThirdPartyActionFilter : IAsyncActionFilter
     {
-        private ILogger _logger;
+        private readonly ILogger _logger;
 
         public ThirdPartyActionFilter(ILoggerFactory loggerFactory)
         {

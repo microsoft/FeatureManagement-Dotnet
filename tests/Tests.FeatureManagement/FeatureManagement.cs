@@ -41,7 +41,7 @@ namespace Tests.FeatureManagement
 
             //
             // Sync filter
-            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+            var testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
 
             bool called = false;
 
@@ -128,7 +128,7 @@ namespace Tests.FeatureManagement
             Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(IFeatureFilterMetadata) && descriptor.Lifetime == ServiceLifetime.Scoped);
             Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IFeatureFilterMetadata) && descriptor.Lifetime == ServiceLifetime.Singleton);
 
-            var ex = Assert.Throws<FeatureManagementException>(
+            FeatureManagementException ex = Assert.Throws<FeatureManagementException>(
                 () =>
                 {
                     services.AddFeatureManagement();
@@ -210,7 +210,7 @@ namespace Tests.FeatureManagement
 
             featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            var ex = await Assert.ThrowsAsync<FeatureManagementException>(
+            FeatureManagementException ex = await Assert.ThrowsAsync<FeatureManagementException>(
                 async () =>
                 {
                     await featureManager.IsEnabledAsync(featureName);
@@ -269,7 +269,7 @@ namespace Tests.FeatureManagement
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
-            ServiceCollection services = new ServiceCollection();
+            var services = new ServiceCollection();
 
             var targetingContextAccessor = new OnDemandTargetingContextAccessor();
 
@@ -509,7 +509,7 @@ namespace Tests.FeatureManagement
 
             ServiceProvider provider = serviceCollection.BuildServiceProvider();
 
-            ContextualTestFilter contextualTestFeatureFilter = (ContextualTestFilter)provider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>().First(f => f is ContextualTestFilter);
+            var contextualTestFeatureFilter = (ContextualTestFilter)provider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>().First(f => f is ContextualTestFilter);
 
             contextualTestFeatureFilter.ContextualCallback = (ctx, accountContext) =>
             {
@@ -522,7 +522,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
 
-            AppContext context = new AppContext();
+            var context = new AppContext();
 
             context.AccountId = "NotEnabledAccount";
 
@@ -624,7 +624,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            var isEnabled = await featureManager.IsEnabledAsync(Features.ConditionalFeature);
+            bool isEnabled = await featureManager.IsEnabledAsync(Features.ConditionalFeature);
 
             Assert.False(isEnabled);
         }
@@ -657,7 +657,7 @@ namespace Tests.FeatureManagement
         [Fact]
         public async Task CustomFeatureDefinitionProvider()
         {
-            FeatureDefinition testFeature = new FeatureDefinition
+            var testFeature = new FeatureDefinition
             {
                 Name = Features.ConditionalFeature,
                 EnabledFor = new List<FeatureFilterConfiguration>()
@@ -687,7 +687,7 @@ namespace Tests.FeatureManagement
 
             //
             // Sync filter
-            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+            var testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
 
             bool called = false;
 
@@ -727,7 +727,7 @@ namespace Tests.FeatureManagement
 
             //
             // Sync filter
-            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+            var testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
 
             bool called = false;
 
@@ -875,7 +875,7 @@ namespace Tests.FeatureManagement
 
             IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
 
-            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+            var testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
 
             //
             // Set filters to all return true
@@ -938,7 +938,7 @@ namespace Tests.FeatureManagement
         [Fact]
         public async Task BindsFeatureFlagSettings()
         {
-            FeatureFilterConfiguration testFilterConfiguration = new FeatureFilterConfiguration
+            var testFilterConfiguration = new FeatureFilterConfiguration
             {
                 Name = "Test",
                 Parameters = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()
@@ -975,7 +975,7 @@ namespace Tests.FeatureManagement
 
             //
             // Sync filter
-            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+            var testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
 
             bool binderCalled = false;
 

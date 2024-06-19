@@ -8,7 +8,7 @@ namespace Tests.FeatureManagement
 {
     //
     // Cannot implement more than one IFeatureFilter interface
-    class InvalidFeatureFilter : IContextualFeatureFilter<IAccountContext>, IContextualFeatureFilter<object>
+    internal class InvalidFeatureFilter : IContextualFeatureFilter<IAccountContext>, IContextualFeatureFilter<object>
     {
         public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, IAccountContext accountContext)
         {
@@ -23,7 +23,7 @@ namespace Tests.FeatureManagement
 
     //
     // Cannot implement more than one IFeatureFilter interface
-    class InvalidFeatureFilter2 : IFeatureFilter, IContextualFeatureFilter<object>
+    internal class InvalidFeatureFilter2 : IFeatureFilter, IContextualFeatureFilter<object>
     {
         public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext featureFilterContext, object appContext)
         {

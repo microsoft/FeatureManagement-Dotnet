@@ -31,7 +31,7 @@ using (ServiceProvider serviceProvider = services.BuildServiceProvider())
 
     //
     // Mimic work items in a task-driven console application
-    foreach (var account in accounts)
+    foreach (string account in accounts)
     {
         const string FeatureName = "Beta";
 

@@ -48,7 +48,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <returns><see cref="TimeWindowFilterSettings"/> that can later be used in feature evaluation.</returns>
         public object BindParameters(IConfiguration filterParameters)
         {
-            var settings = filterParameters.Get<TimeWindowFilterSettings>() ?? new TimeWindowFilterSettings();
+            TimeWindowFilterSettings settings = filterParameters.Get<TimeWindowFilterSettings>() ?? new TimeWindowFilterSettings();
 
             if (!RecurrenceValidator.TryValidateSettings(settings, out string paramName, out string reason))
             {

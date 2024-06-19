@@ -3,7 +3,7 @@
 //
 namespace Tests.FeatureManagement
 {
-    static class Features
+    internal static class Features
     {
         public const string RecurringTimeWindowTestFeature = "RecurringTimeWindowTestFeature";
         public const string TargetingTestFeature = "TargetingTestFeature";
