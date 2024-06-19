@@ -413,7 +413,7 @@ namespace Microsoft.FeatureManagement
                 {
                     if (tags.ContainsKey(kvp.Key))
                     {
-                        Logger?.LogWarning($"{kvp.Key} from TelemetryMetadata will be ignored, as it would override an existing key.");
+                        Logger?.LogWarning($"{kvp.Key} from telemetry metadata will be ignored, as it would override an existing key.");
 
                         continue;
                     }
