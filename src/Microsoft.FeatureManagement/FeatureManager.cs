@@ -420,7 +420,7 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            var activityEvent = new ActivityEvent("feature_flag", DateTimeOffset.UtcNow, tags);
+            var activityEvent = new ActivityEvent("FeatureFlag", DateTimeOffset.UtcNow, tags);
 
             Activity.Current.AddEvent(activityEvent);
         }

@@ -1670,7 +1670,7 @@ namespace Tests.FeatureManagement
                         return;
                     }
 
-                    ActivityEvent? evaluationEventNullable = activity.Events.FirstOrDefault((activityEvent) => activityEvent.Name == "feature_flag");
+                    ActivityEvent? evaluationEventNullable = activity.Events.FirstOrDefault((activityEvent) => activityEvent.Name == "FeatureFlag");
 
                     if (evaluationEventNullable != null && evaluationEventNullable.Value.Tags.Any())
                     {
