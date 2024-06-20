@@ -2,9 +2,8 @@
 // Licensed under the MIT license.
 //
 using VariantServiceDemo;
-using Microsoft.FeatureManagement.Telemetry;
-using Microsoft.FeatureManagement;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore;
 
 
@@ -39,7 +38,7 @@ builder.Services.AddSingleton<ICalculator, RemoteCalculator>();
 builder.Services.AddFeatureManagement()
     .WithTargeting<HttpContextTargetingContextAccessor>()
     .WithVariantService<ICalculator>("Calculator")
-    .AddTelemetryPublisher<ApplicationInsightsTelemetryPublisher>();
+    .AddApplicationInsightsTelemetryPublisher();
 
 var app = builder.Build();
 
