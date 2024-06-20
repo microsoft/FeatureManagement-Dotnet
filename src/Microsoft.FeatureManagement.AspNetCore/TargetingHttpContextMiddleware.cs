@@ -3,9 +3,11 @@
 //
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Logging;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
@@ -34,11 +36,11 @@ namespace Microsoft.FeatureManagement
         /// <param name="context">The <see cref="HttpContext"/> to add the targeting information to.</param>
         /// <param name="targetingContextAccessor">The <see cref="ITargetingContextAccessor"/> to retrieve the targeting information from.</param>
         /// <exception cref="ArgumentNullException">Thrown if the provided context or targetingContextAccessor is null.</exception>
-        public async Task InvokeAsync(HttpContext context, ITargetingContextAccessor targetingContextAccessor)
+        public async Task InvokeAsync(HttpContext httpContext, ITargetingContextAccessor targetingContextAccessor)
         {
-            if (context == null)
+            if (httpContext == null)
             {
-                throw new ArgumentNullException(nameof(context));
+                throw new ArgumentNullException(nameof(httpContext));
             }
 
             if (targetingContextAccessor == null)
@@ -50,14 +52,15 @@ namespace Microsoft.FeatureManagement
 
             if (targetingContext != null)
             {
-                context.Items[TargetingIdKey] = targetingContext.UserId;
+                var activityFeature = httpContext.Features.Get<IHttpActivityFeature>();
+                activityFeature.Activity.AddBaggage(TargetingIdKey, targetingContext.UserId);
             }
             else
             {
                 _logger.LogDebug("The targeting context accessor returned a null TargetingContext");
             }
 
-            await _next(context);
+            await _next(httpContext);
         }
     }
 }
