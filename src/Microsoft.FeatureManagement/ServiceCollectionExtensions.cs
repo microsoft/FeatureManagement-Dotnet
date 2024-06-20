@@ -71,7 +71,11 @@ namespace Microsoft.FeatureManagement
             // Add built-in feature filters
             builder.AddFeatureFilter<PercentageFilter>();
 
-            builder.AddFeatureFilter<TimeWindowFilter>();
+            builder.AddFeatureFilter<TimeWindowFilter>(sp =>
+                new TimeWindowFilter()
+                {
+                    Cache = sp.GetRequiredService<IMemoryCache>()
+                });
 
             builder.AddFeatureFilter<ContextualTargetingFilter>();
 
@@ -154,7 +158,11 @@ namespace Microsoft.FeatureManagement
             // Add built-in feature filters
             builder.AddFeatureFilter<PercentageFilter>();
 
-            builder.AddFeatureFilter<TimeWindowFilter>();
+            builder.AddFeatureFilter<TimeWindowFilter>(sp => 
+                new TimeWindowFilter()
+                {
+                    Cache = sp.GetRequiredService<IMemoryCache>()
+                });
 
             builder.AddFeatureFilter<ContextualTargetingFilter>();
 

@@ -50,12 +50,12 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The option that controls the behavior when "FeatureManagement" section in the configuration is missing.
         /// </summary>
-        public bool RootConfigurationFallbackEnabled { get; init; }
+        public bool RootConfigurationFallbackEnabled { get; set; }
 
         /// <summary>
         /// The logger for the configuration feature definition provider.
         /// </summary>
-        public ILogger Logger { get; init; }
+        public ILogger Logger { get; set; }
 
         /// <summary>
         /// Disposes the change subscription of the configuration.
@@ -129,7 +129,14 @@ namespace Microsoft.FeatureManagement
 
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                yield return _definitions.GetOrAdd(featureName, (_) => ReadFeatureDefinition(featureSection));
+                FeatureDefinition definition = _definitions.GetOrAdd(featureName, (_) => ReadFeatureDefinition(featureSection));
+
+                //
+                // Null cache entry possible if someone accesses non-existent flag directly (IsEnabled)
+                if (definition != null)
+                {
+                    yield return definition;
+                }
             }
         }
 
