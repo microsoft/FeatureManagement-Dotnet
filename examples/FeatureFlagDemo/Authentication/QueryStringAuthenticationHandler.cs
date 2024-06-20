@@ -49,7 +49,7 @@ namespace FeatureFlagDemo.Authentication
 
                 foreach (string group in groups)
                 {
-                    identity.AddClaim(new Claim(ClaimTypes.GroupName, group));
+                    identity.AddClaim(new Claim(ClaimTypes.Role, group));
                 }
 
                 Logger.LogInformation($"Assigning the following groups '{string.Join(", ", groups)}' to the request.");
