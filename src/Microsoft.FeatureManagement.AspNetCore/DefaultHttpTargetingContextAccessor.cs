@@ -14,7 +14,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Provides a default implementation of <see cref="ITargetingContextAccessor"/> that creates <see cref="TargetingContext"/> using info from the current HTTP request.
     /// </summary>
-    public sealed class DefaultHttpTargetingContextAccessor : ITargetingContextAccessor
+    internal sealed class DefaultHttpTargetingContextAccessor : ITargetingContextAccessor
     {
         /// <summary>
         /// The key used to store and retrieve the <see cref="TargetingContext"/> from the <see cref="HttpContext"/> items.
