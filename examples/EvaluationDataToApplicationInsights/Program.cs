@@ -4,7 +4,6 @@
 using EvaluationDataToApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.FeatureManagement;
-using Microsoft.FeatureManagement.Telemetry;
 using Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,7 +30,7 @@ builder.Services.AddSingleton<ITelemetryInitializer, TargetingTelemetryInitializ
 // Wire up evaluation event emission
 builder.Services.AddFeatureManagement()
     .WithTargeting<HttpContextTargetingContextAccessor>()
-    .AddTelemetryPublisher<ApplicationInsightsTelemetryPublisher>();
+    .AddApplicationInsightsTelemetryPublisher();
 
 //
 // Default code from .NET template below

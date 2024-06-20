@@ -6,9 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
 using Microsoft.FeatureManagement.Telemetry;
-using Microsoft.FeatureManagement.Tests;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -826,6 +826,9 @@ namespace Tests.FeatureManagement
             const string feature2 = "feature2";
             const string feature3 = "feature3";
             const string feature4 = "feature4";
+            const string feature5 = "feature5";
+            const string feature6 = "feature6";
+            const string feature7 = "feature7";
 
             Environment.SetEnvironmentVariable($"feature_management:feature_flags:0:id", feature1);
             Environment.SetEnvironmentVariable($"feature_management:feature_flags:0:enabled", "true");
@@ -847,6 +850,37 @@ namespace Tests.FeatureManagement
             Environment.SetEnvironmentVariable($"feature_management:feature_flags:3:conditions:client_filters:0:name", "TimeWindow");
             Environment.SetEnvironmentVariable($"feature_management:feature_flags:3:conditions:client_filters:0:parameters:Start", DateTimeOffset.UtcNow.AddDays(1).ToString("r"));
 
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:4:id", feature5);
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:4:enabled", "true");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:4:conditions:client_filters:0:name", "TimeWindow");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:4:conditions:client_filters:0:parameters:Start", DateTimeOffset.UtcNow.AddDays(-2).ToString("r"));
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:4:conditions:client_filters:0:parameters:End", DateTimeOffset.UtcNow.AddDays(-1).ToString("r"));
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:4:conditions:client_filters:0:parameters:Recurrence:Pattern:Type", "Daily");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:4:conditions:client_filters:0:parameters:Recurrence:Range:Type", "NoEnd");
+
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:5:id", feature6);
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:5:enabled", "true");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:5:conditions:client_filters:0:name", "TimeWindow");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:5:conditions:client_filters:0:parameters:Start", DateTimeOffset.UtcNow.AddDays(-2).ToString("r"));
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:5:conditions:client_filters:0:parameters:End", DateTimeOffset.UtcNow.AddDays(-1).ToString("r"));
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:5:conditions:client_filters:0:parameters:Recurrence:Pattern:Type", "Daily");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:5:conditions:client_filters:0:parameters:Recurrence:Pattern:Interval", "3");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:5:conditions:client_filters:0:parameters:Recurrence:Range:Type", "NoEnd");
+
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:id", feature7);
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:enabled", "true");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:name", "TimeWindow");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Start", DateTimeOffset.UtcNow.AddDays(-2).ToString("r"));
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:End", DateTimeOffset.UtcNow.AddDays(-1).ToString("r"));
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:Type", "Weekly");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Range:Type", "NoEnd");
+
+            foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
+            {
+                int dayIndex = (int)day;
+                Environment.SetEnvironmentVariable($"feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:DaysOfWeek:{dayIndex}", day.ToString());
+            }
+
             IConfiguration config = new ConfigurationBuilder().AddEnvironmentVariables().Build();
 
             var serviceCollection = new ServiceCollection();
@@ -862,6 +896,13 @@ namespace Tests.FeatureManagement
             Assert.False(await featureManager.IsEnabledAsync(feature2));
             Assert.True(await featureManager.IsEnabledAsync(feature3));
             Assert.False(await featureManager.IsEnabledAsync(feature4));
+            Assert.True(await featureManager.IsEnabledAsync(feature5));
+            Assert.False(await featureManager.IsEnabledAsync(feature6));
+
+            for (int i = 0; i < 10; i++)
+            {
+                Assert.True(await featureManager.IsEnabledAsync(feature7));
+            }
         }
 
         [Fact]
@@ -874,7 +915,7 @@ namespace Tests.FeatureManagement
             Environment.SetEnvironmentVariable($"feature_management:feature_flags:0:conditions:client_filters:0:name", "Percentage");
             Environment.SetEnvironmentVariable($"feature_management:feature_flags:0:conditions:client_filters:0:parameters:Value", "50");
 
-            IConfiguration config = new ConfigurationBuilder().AddEnvironmentVariables().Build();
+            IConfiguration config = new ConfigurationBuilder().AddEnvironmentVariables().AddJsonFile("appsettings.json").Build();
 
             var serviceCollection = new ServiceCollection();
 
@@ -1011,6 +1052,269 @@ namespace Tests.FeatureManagement
             {
                 UserId = "Jeff"
             }));
+        }
+
+        [Fact]
+        public async Task UsesContext()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualTestFilter>();
+
+            ServiceProvider provider = serviceCollection.BuildServiceProvider();
+
+            ContextualTestFilter contextualTestFeatureFilter = (ContextualTestFilter)provider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>().First(f => f is ContextualTestFilter);
+
+            contextualTestFeatureFilter.ContextualCallback = (ctx, accountContext) =>
+            {
+                var allowedAccounts = new List<string>();
+
+                ctx.Parameters.Bind("AllowedAccounts", allowedAccounts);
+
+                return allowedAccounts.Contains(accountContext.AccountId);
+            };
+
+            IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
+
+            AppContext context = new AppContext();
+
+            context.AccountId = "NotEnabledAccount";
+
+            Assert.False(await featureManager.IsEnabledAsync(Features.ContextualFeature, context));
+
+            context.AccountId = "abc";
+
+            Assert.True(await featureManager.IsEnabledAsync(Features.ContextualFeature, context));
+        }
+
+        [Fact]
+        public void LimitsFeatureFilterImplementations()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var serviceCollection = new ServiceCollection();
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                new ServiceCollection().AddSingleton(config)
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<InvalidFeatureFilter>();
+            });
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                new ServiceCollection().AddSingleton(config)
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<InvalidFeatureFilter2>();
+            });
+        }
+
+        [Fact]
+        public async Task ListsFeatures()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualTestFilter>();
+
+            using (ServiceProvider provider = serviceCollection.BuildServiceProvider())
+            {
+                IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
+
+                bool hasItems = false;
+
+                await foreach (string feature in featureManager.GetFeatureNamesAsync())
+                {
+                    hasItems = true;
+
+                    break;
+                }
+
+                Assert.True(hasItems);
+            }
+        }
+
+        [Fact]
+        public async Task ThrowsExceptionForMissingFeatureFilter()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.IsEnabledAsync(Features.ConditionalFeature));
+
+            Assert.Equal(FeatureManagementError.MissingFeatureFilter, e.Error);
+        }
+
+        [Fact]
+        public async Task SwallowsExceptionForMissingFeatureFilter()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            var isEnabled = await featureManager.IsEnabledAsync(Features.ConditionalFeature);
+
+            Assert.False(isEnabled);
+        }
+
+        [Fact]
+        public async Task ThrowsForMissingFeatures()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatures = false;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            FeatureManagementException fme = await Assert.ThrowsAsync<FeatureManagementException>(() =>
+                featureManager.IsEnabledAsync("NonExistentFeature"));
+        }
+
+        [Fact]
+        public async Task CustomFeatureDefinitionProvider()
+        {
+            FeatureDefinition testFeature = new FeatureDefinition
+            {
+                Name = Features.ConditionalFeature,
+                EnabledFor = new List<FeatureFilterConfiguration>()
+                {
+                    new FeatureFilterConfiguration
+                    {
+                        Name = "Test",
+                        Parameters = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()
+                        {
+                           { "P1", "V1" },
+                        }).Build()
+                    }
+                }
+            };
+
+            var services = new ServiceCollection();
+
+            services.AddSingleton<IFeatureDefinitionProvider>(new InMemoryFeatureDefinitionProvider(new FeatureDefinition[] { testFeature }))
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            //
+            // Sync filter
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            bool called = false;
+
+            testFeatureFilter.Callback = (evaluationContext) =>
+            {
+                called = true;
+
+                Assert.Equal("V1", evaluationContext.Parameters["P1"]);
+
+                Assert.Equal(Features.ConditionalFeature, evaluationContext.FeatureName);
+
+                return Task.FromResult(true);
+            };
+
+            await featureManager.IsEnabledAsync(Features.ConditionalFeature);
+
+            Assert.True(called);
+        }
+
+        [Fact]
+        public async Task ThreadsafeSnapshot()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManagerSnapshot>();
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            //
+            // Sync filter
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            bool called = false;
+
+            testFeatureFilter.Callback = async (evaluationContext) =>
+            {
+                called = true;
+
+                await Task.Delay(10);
+
+                return new Random().Next(0, 100) > 50;
+            };
+
+            var tasks = new List<Task<bool>>();
+
+            for (int i = 0; i < 1000; i++)
+            {
+                tasks.Add(featureManager.IsEnabledAsync(Features.ConditionalFeature));
+            }
+
+            Assert.True(called);
+
+            await Task.WhenAll(tasks);
+
+            bool result = await tasks.First();
+
+            foreach (Task<bool> t in tasks)
+            {
+                Assert.Equal(result, await t);
+            }
         }
 
         [Fact]
@@ -1335,6 +1639,8 @@ namespace Tests.FeatureManagement
         [Fact]
         public async Task TelemetryPublishing()
         {
+            int currentTest = 0;
+
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             var services = new ServiceCollection();
@@ -1342,135 +1648,202 @@ namespace Tests.FeatureManagement
             var targetingContextAccessor = new OnDemandTargetingContextAccessor();
             services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor)
                 .AddSingleton(config)
-                .AddFeatureManagement()
-                .AddTelemetryPublisher<TestTelemetryPublisher>();
+                .AddFeatureManagement();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
             FeatureManager featureManager = (FeatureManager)serviceProvider.GetRequiredService<IVariantFeatureManager>();
-            TestTelemetryPublisher testPublisher = (TestTelemetryPublisher)featureManager.TelemetryPublishers.First();
             CancellationToken cancellationToken = CancellationToken.None;
 
-            // Test a feature with telemetry disabled
-            bool result = await featureManager.IsEnabledAsync(Features.OnTestFeature, cancellationToken);
+            using Activity testActivity = new Activity("TestActivity").Start();
 
-            Assert.True(result);
-            Assert.Null(testPublisher.evaluationEventCache);
+            // Start listener
+            using ActivityListener activityListener = new ActivityListener
+            {
+                ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.FeatureManagement",
+                Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData,
+                ActivityStopped = (activity) =>
+                {
+                    // Stop other tests from asserting
+                    if (activity.ParentId != testActivity.Id)
+                    {
+                        return;
+                    }
 
-            // Test telemetry cases
-            result = await featureManager.IsEnabledAsync(Features.OnTelemetryTestFeature, cancellationToken);
+                    ActivityEvent? evaluationEventNullable = activity.Events.FirstOrDefault((activityEvent) => activityEvent.Name == "feature_flag");
 
-            Assert.True(result);
-            Assert.Equal(Features.OnTelemetryTestFeature, testPublisher.evaluationEventCache.FeatureDefinition.Name);
-            Assert.Equal(result, testPublisher.evaluationEventCache.Enabled);
-            Assert.Equal("EtagValue", testPublisher.evaluationEventCache.FeatureDefinition.Telemetry.Metadata["Etag"]);
-            Assert.Equal("LabelValue", testPublisher.evaluationEventCache.FeatureDefinition.Telemetry.Metadata["Label"]);
-            Assert.Equal("Tag1Value", testPublisher.evaluationEventCache.FeatureDefinition.Telemetry.Metadata["Tags.Tag1"]);
-            Assert.Null(testPublisher.evaluationEventCache.Variant);
-            Assert.Equal(VariantAssignmentReason.None, testPublisher.evaluationEventCache.VariantAssignmentReason);
+                    if (evaluationEventNullable != null && evaluationEventNullable.Value.Tags.Any())
+                    {
+                        ActivityEvent evaluationEvent = evaluationEventNullable.Value;
 
-            result = await featureManager.IsEnabledAsync(Features.OffTelemtryTestFeature, cancellationToken);
+                        string featureName = evaluationEvent.Tags.FirstOrDefault(kvp => kvp.Key == "FeatureName").Value?.ToString();
+                        string targetingId = evaluationEvent.Tags.FirstOrDefault(kvp => kvp.Key == "TargetingId").Value?.ToString();
+                        string variantName = evaluationEvent.Tags.FirstOrDefault(kvp => kvp.Key == "Variant").Value?.ToString();
+                        string enabled = evaluationEvent.Tags.FirstOrDefault(kvp => kvp.Key == "Enabled").Value?.ToString();
+                        string variantAssignmentReason = evaluationEvent.Tags.FirstOrDefault(kvp => kvp.Key == "VariantAssignmentReason").Value?.ToString();
+                        string version = evaluationEvent.Tags.FirstOrDefault(kvp => kvp.Key == "Version").Value?.ToString();
+                        string etag = evaluationEvent.Tags.FirstOrDefault(kvp => kvp.Key == "Etag").Value?.ToString();
+                        string label = evaluationEvent.Tags.FirstOrDefault(kvp => kvp.Key == "Label").Value?.ToString();
+                        string firstTag = evaluationEvent.Tags.FirstOrDefault(kvp => kvp.Key == "Tags.Tag1").Value?.ToString();
 
-            Assert.False(result);
-            Assert.Equal(Features.OffTelemtryTestFeature, testPublisher.evaluationEventCache.FeatureDefinition.Name);
-            Assert.Equal(result, testPublisher.evaluationEventCache.Enabled);
-            Assert.Equal(VariantAssignmentReason.None, testPublisher.evaluationEventCache.VariantAssignmentReason);
+                        // Test telemetry cases
+                        switch (featureName)
+                        {
+                            case Features.OnTelemetryTestFeature:
+                                Assert.Equal(1, currentTest);
+                                currentTest = 0;
+                                Assert.Equal("True", enabled);
+                                Assert.Equal("EtagValue", etag);
+                                Assert.Equal("LabelValue", label);
+                                Assert.Equal("Tag1Value", firstTag);
+                                Assert.Null(variantName);
+                                Assert.Equal(VariantAssignmentReason.None.ToString(), variantAssignmentReason);
+                                break;
+
+                            case Features.OffTelemetryTestFeature:
+                                Assert.Equal(2, currentTest);
+                                currentTest = 0;
+                                Assert.Equal("False", enabled);
+                                Assert.Equal(VariantAssignmentReason.None.ToString(), variantAssignmentReason);
+                                break;
+
+                            case Features.VariantFeatureDefaultEnabled:
+                                Assert.Equal(3, currentTest);
+                                currentTest = 0;
+                                Assert.Equal("True", enabled);
+                                Assert.Equal("Medium", variantName);
+                                Assert.Equal(VariantAssignmentReason.DefaultWhenEnabled.ToString(), variantAssignmentReason);
+                                break;
+
+                            case Features.VariantFeatureDefaultDisabled:
+                                Assert.Equal(4, currentTest);
+                                currentTest = 0;
+                                Assert.Equal("False", enabled);
+                                Assert.Equal("Small", variantName);
+                                Assert.Equal(VariantAssignmentReason.DefaultWhenDisabled.ToString(), variantAssignmentReason);
+                                break;
+
+                            case Features.VariantFeaturePercentileOn:
+                                Assert.Equal(5, currentTest);
+                                currentTest = 0;
+                                Assert.Equal("Big", variantName);
+                                Assert.Equal("Marsha", targetingId);
+                                Assert.Equal(VariantAssignmentReason.Percentile.ToString(), variantAssignmentReason);
+                                break;
+
+                            case Features.VariantFeaturePercentileOff:
+                                Assert.Equal(6, currentTest);
+                                currentTest = 0;
+                                Assert.Null(variantName);
+                                Assert.Equal(VariantAssignmentReason.DefaultWhenEnabled.ToString(), variantAssignmentReason);
+                                break;
+
+                            case Features.VariantFeatureAlwaysOff:
+                                Assert.Equal(7, currentTest);
+                                currentTest = 0;
+                                Assert.Null(variantName);
+                                Assert.Equal(VariantAssignmentReason.DefaultWhenDisabled.ToString(), variantAssignmentReason);
+                                break;
+
+                            case Features.VariantFeatureUser:
+                                Assert.Equal(8, currentTest);
+                                currentTest = 0;
+                                Assert.Equal("Small", variantName);
+                                Assert.Equal(VariantAssignmentReason.User.ToString(), variantAssignmentReason);
+                                break;
+
+                            case Features.VariantFeatureGroup:
+                                Assert.Equal(9, currentTest);
+                                currentTest = 0;
+                                Assert.Equal("Small", variantName);
+                                Assert.Equal(VariantAssignmentReason.Group.ToString(), variantAssignmentReason);
+                                break;
+
+                            case Features.VariantFeatureNoVariants:
+                                Assert.Equal(10, currentTest);
+                                currentTest = 0;
+                                Assert.Null(variantName);
+                                Assert.Equal(VariantAssignmentReason.None.ToString(), variantAssignmentReason);
+                                break;
+
+                            case Features.VariantFeatureNoAllocation:
+                                Assert.Equal(11, currentTest);
+                                currentTest = 0;
+                                Assert.Null(variantName);
+                                Assert.Equal(VariantAssignmentReason.DefaultWhenEnabled.ToString(), variantAssignmentReason);
+                                break;
+
+                            case Features.VariantFeatureAlwaysOffNoAllocation:
+                                Assert.Equal(12, currentTest);
+                                currentTest = 0;
+                                Assert.Null(variantName);
+                                Assert.Equal(VariantAssignmentReason.DefaultWhenDisabled.ToString(), variantAssignmentReason);
+                                break;
+
+                            default:
+                                throw new Exception("Unexpected feature name");
+                        }
+                    }
+                }
+            };
+            ActivitySource.AddActivityListener(activityListener);
+
+            currentTest = 1;
+            await featureManager.IsEnabledAsync(Features.OnTelemetryTestFeature, cancellationToken);
+            Assert.Equal(0, currentTest);
+
+            currentTest = 2;
+            await featureManager.IsEnabledAsync(Features.OffTelemetryTestFeature, cancellationToken);
+            Assert.Equal(0, currentTest);
 
             // Test variant cases
-            result = await featureManager.IsEnabledAsync(Features.VariantFeatureDefaultEnabled, cancellationToken);
+            currentTest = 3;
+            await featureManager.IsEnabledAsync(Features.VariantFeatureDefaultEnabled, cancellationToken);
+            Assert.Equal(0, currentTest);
 
-            Assert.True(result);
-            Assert.Equal(Features.VariantFeatureDefaultEnabled, testPublisher.evaluationEventCache.FeatureDefinition.Name);
-            Assert.Equal(result, testPublisher.evaluationEventCache.Enabled);
-            Assert.Equal("Medium", testPublisher.evaluationEventCache.Variant.Name);
-
-            Variant variantResult = await featureManager.GetVariantAsync(Features.VariantFeatureDefaultEnabled, cancellationToken);
-
-            Assert.True(testPublisher.evaluationEventCache.Enabled);
-            Assert.Equal(Features.VariantFeatureDefaultEnabled, testPublisher.evaluationEventCache.FeatureDefinition.Name);
-            Assert.Equal(variantResult.Name, testPublisher.evaluationEventCache.Variant.Name);
-            Assert.Equal(VariantAssignmentReason.DefaultWhenEnabled, testPublisher.evaluationEventCache.VariantAssignmentReason);
-
-            result = await featureManager.IsEnabledAsync(Features.VariantFeatureDefaultDisabled, cancellationToken);
-
-            Assert.False(result);
-            Assert.Equal(Features.VariantFeatureDefaultDisabled, testPublisher.evaluationEventCache.FeatureDefinition.Name);
-            Assert.Equal(result, testPublisher.evaluationEventCache.Enabled);
-            Assert.Equal("Small", testPublisher.evaluationEventCache.Variant.Name);
-            Assert.Equal(VariantAssignmentReason.DefaultWhenDisabled, testPublisher.evaluationEventCache.VariantAssignmentReason);
-
-            variantResult = await featureManager.GetVariantAsync(Features.VariantFeatureDefaultDisabled, cancellationToken);
-
-            Assert.False(testPublisher.evaluationEventCache.Enabled);
-            Assert.Equal(Features.VariantFeatureDefaultDisabled, testPublisher.evaluationEventCache.FeatureDefinition.Name);
-            Assert.Equal(variantResult.Name, testPublisher.evaluationEventCache.Variant.Name);
-            Assert.Equal(VariantAssignmentReason.DefaultWhenDisabled, testPublisher.evaluationEventCache.VariantAssignmentReason);
+            currentTest = 4;
+            await featureManager.IsEnabledAsync(Features.VariantFeatureDefaultDisabled, cancellationToken);
+            Assert.Equal(0, currentTest);
 
             targetingContextAccessor.Current = new TargetingContext
             {
                 UserId = "Marsha",
                 Groups = new List<string> { "Group1" }
             };
+            currentTest = 5;
+            await featureManager.GetVariantAsync(Features.VariantFeaturePercentileOn, cancellationToken);
+            Assert.Equal(0, currentTest);
 
-            variantResult = await featureManager.GetVariantAsync(Features.VariantFeaturePercentileOn, cancellationToken);
-            Assert.Equal("Big", variantResult.Name);
-            Assert.Equal("Big", testPublisher.evaluationEventCache.Variant.Name);
-            Assert.Equal("Marsha", testPublisher.evaluationEventCache.TargetingContext.UserId);
-            Assert.Equal(VariantAssignmentReason.Percentile, testPublisher.evaluationEventCache.VariantAssignmentReason);
+            currentTest = 6;
+            await featureManager.GetVariantAsync(Features.VariantFeaturePercentileOff, cancellationToken);
+            Assert.Equal(0, currentTest);
 
-            variantResult = await featureManager.GetVariantAsync(Features.VariantFeaturePercentileOff, cancellationToken);
-            Assert.Null(variantResult);
-            Assert.Null(testPublisher.evaluationEventCache.Variant);
-            Assert.Equal(VariantAssignmentReason.DefaultWhenEnabled, testPublisher.evaluationEventCache.VariantAssignmentReason);
+            currentTest = 7;
+            await featureManager.GetVariantAsync(Features.VariantFeatureAlwaysOff, cancellationToken);
+            Assert.Equal(0, currentTest);
 
-            variantResult = await featureManager.GetVariantAsync(Features.VariantFeatureAlwaysOff, cancellationToken);
-            Assert.Null(variantResult);
-            Assert.Null(testPublisher.evaluationEventCache.Variant);
-            Assert.Equal(VariantAssignmentReason.DefaultWhenDisabled, testPublisher.evaluationEventCache.VariantAssignmentReason);
+            currentTest = 8;
+            await featureManager.GetVariantAsync(Features.VariantFeatureUser, cancellationToken);
+            Assert.Equal(0, currentTest);
 
-            variantResult = await featureManager.GetVariantAsync(Features.VariantFeatureUser, cancellationToken);
-            Assert.Equal("Small", variantResult.Name);
-            Assert.Equal("Small", testPublisher.evaluationEventCache.Variant.Name);
-            Assert.Equal(VariantAssignmentReason.User, testPublisher.evaluationEventCache.VariantAssignmentReason);
+            currentTest = 9;
+            await featureManager.GetVariantAsync(Features.VariantFeatureGroup, cancellationToken);
+            Assert.Equal(0, currentTest);
 
-            variantResult = await featureManager.GetVariantAsync(Features.VariantFeatureGroup, cancellationToken);
-            Assert.Equal("Small", variantResult.Name);
-            Assert.Equal("Small", testPublisher.evaluationEventCache.Variant.Name);
-            Assert.Equal(VariantAssignmentReason.Group, testPublisher.evaluationEventCache.VariantAssignmentReason);
+            currentTest = 10;
+            await featureManager.GetVariantAsync(Features.VariantFeatureNoVariants, cancellationToken);
+            Assert.Equal(0, currentTest);
 
-            variantResult = await featureManager.GetVariantAsync(Features.VariantFeatureNoVariants, cancellationToken);
-            Assert.Null(variantResult);
-            Assert.Null(testPublisher.evaluationEventCache.Variant);
-            Assert.Equal(VariantAssignmentReason.None, testPublisher.evaluationEventCache.VariantAssignmentReason);
+            currentTest = 11;
+            await featureManager.GetVariantAsync(Features.VariantFeatureNoAllocation, cancellationToken);
+            Assert.Equal(0, currentTest);
 
-            variantResult = await featureManager.GetVariantAsync(Features.VariantFeatureNoAllocation, cancellationToken);
-            Assert.Null(variantResult);
-            Assert.Null(testPublisher.evaluationEventCache.Variant);
-            Assert.Equal(VariantAssignmentReason.DefaultWhenEnabled, testPublisher.evaluationEventCache.VariantAssignmentReason);
+            currentTest = 12;
+            await featureManager.GetVariantAsync(Features.VariantFeatureAlwaysOffNoAllocation, cancellationToken);
+            Assert.Equal(0, currentTest);
 
-            variantResult = await featureManager.GetVariantAsync(Features.VariantFeatureAlwaysOffNoAllocation, cancellationToken);
-            Assert.Null(variantResult);
-            Assert.Null(testPublisher.evaluationEventCache.Variant);
-            Assert.Equal(VariantAssignmentReason.DefaultWhenDisabled, testPublisher.evaluationEventCache.VariantAssignmentReason);
-        }
-
-        [Fact]
-        public async Task TelemetryPublishingNullPublisher()
-        {
-            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-
-            var services = new ServiceCollection();
-
-            services
-                .AddSingleton(config)
-                .AddFeatureManagement();
-
-            ServiceProvider serviceProvider = services.BuildServiceProvider();
-
-            FeatureManager featureManager = (FeatureManager)serviceProvider.GetRequiredService<IVariantFeatureManager>();
-
-            // Test telemetry enabled feature with no telemetry publisher
-            bool result = await featureManager.IsEnabledAsync(Features.OnTelemetryTestFeature, CancellationToken.None);
+            // Test a feature with telemetry disabled- should throw if the listener hits it
+            bool result = await featureManager.IsEnabledAsync(Features.OnTestFeature, cancellationToken);
 
             Assert.True(result);
         }
