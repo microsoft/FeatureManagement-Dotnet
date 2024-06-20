@@ -69,7 +69,7 @@ The call above makes ``IVariantServiceProvider<ICalculator>`` available in the s
       },
       {
         "variant": "RemoteCalculator",
-        "from": 51,
+        "from": 50,
         "to": 100
       }
     ]
