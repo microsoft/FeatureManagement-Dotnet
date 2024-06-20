@@ -29,6 +29,6 @@ namespace Tests.FeatureManagement
         public const string VariantFeatureInvalidFromTo = "VariantFeatureInvalidFromTo";
         public const string VariantImplementationFeature = "VariantImplementationFeature";
         public const string OnTelemetryTestFeature = "OnTelemetryTestFeature";
-        public const string OffTelemtryTestFeature = "OffTelemetryTestFeature";
+        public const string OffTelemetryTestFeature = "OffTelemetryTestFeature";
     }
 }
