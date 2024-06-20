@@ -1055,6 +1055,269 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task UsesContext()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualTestFilter>();
+
+            ServiceProvider provider = serviceCollection.BuildServiceProvider();
+
+            ContextualTestFilter contextualTestFeatureFilter = (ContextualTestFilter)provider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>().First(f => f is ContextualTestFilter);
+
+            contextualTestFeatureFilter.ContextualCallback = (ctx, accountContext) =>
+            {
+                var allowedAccounts = new List<string>();
+
+                ctx.Parameters.Bind("AllowedAccounts", allowedAccounts);
+
+                return allowedAccounts.Contains(accountContext.AccountId);
+            };
+
+            IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
+
+            AppContext context = new AppContext();
+
+            context.AccountId = "NotEnabledAccount";
+
+            Assert.False(await featureManager.IsEnabledAsync(Features.ContextualFeature, context));
+
+            context.AccountId = "abc";
+
+            Assert.True(await featureManager.IsEnabledAsync(Features.ContextualFeature, context));
+        }
+
+        [Fact]
+        public void LimitsFeatureFilterImplementations()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var serviceCollection = new ServiceCollection();
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                new ServiceCollection().AddSingleton(config)
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<InvalidFeatureFilter>();
+            });
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                new ServiceCollection().AddSingleton(config)
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<InvalidFeatureFilter2>();
+            });
+        }
+
+        [Fact]
+        public async Task ListsFeatures()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualTestFilter>();
+
+            using (ServiceProvider provider = serviceCollection.BuildServiceProvider())
+            {
+                IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
+
+                bool hasItems = false;
+
+                await foreach (string feature in featureManager.GetFeatureNamesAsync())
+                {
+                    hasItems = true;
+
+                    break;
+                }
+
+                Assert.True(hasItems);
+            }
+        }
+
+        [Fact]
+        public async Task ThrowsExceptionForMissingFeatureFilter()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () => await featureManager.IsEnabledAsync(Features.ConditionalFeature));
+
+            Assert.Equal(FeatureManagementError.MissingFeatureFilter, e.Error);
+        }
+
+        [Fact]
+        public async Task SwallowsExceptionForMissingFeatureFilter()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatureFilters = true;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            var isEnabled = await featureManager.IsEnabledAsync(Features.ConditionalFeature);
+
+            Assert.False(isEnabled);
+        }
+
+        [Fact]
+        public async Task ThrowsForMissingFeatures()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .Configure<FeatureManagementOptions>(options =>
+                {
+                    options.IgnoreMissingFeatures = false;
+                });
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            FeatureManagementException fme = await Assert.ThrowsAsync<FeatureManagementException>(() =>
+                featureManager.IsEnabledAsync("NonExistentFeature"));
+        }
+
+        [Fact]
+        public async Task CustomFeatureDefinitionProvider()
+        {
+            FeatureDefinition testFeature = new FeatureDefinition
+            {
+                Name = Features.ConditionalFeature,
+                EnabledFor = new List<FeatureFilterConfiguration>()
+                {
+                    new FeatureFilterConfiguration
+                    {
+                        Name = "Test",
+                        Parameters = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()
+                        {
+                           { "P1", "V1" },
+                        }).Build()
+                    }
+                }
+            };
+
+            var services = new ServiceCollection();
+
+            services.AddSingleton<IFeatureDefinitionProvider>(new InMemoryFeatureDefinitionProvider(new FeatureDefinition[] { testFeature }))
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            //
+            // Sync filter
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            bool called = false;
+
+            testFeatureFilter.Callback = (evaluationContext) =>
+            {
+                called = true;
+
+                Assert.Equal("V1", evaluationContext.Parameters["P1"]);
+
+                Assert.Equal(Features.ConditionalFeature, evaluationContext.FeatureName);
+
+                return Task.FromResult(true);
+            };
+
+            await featureManager.IsEnabledAsync(Features.ConditionalFeature);
+
+            Assert.True(called);
+        }
+
+        [Fact]
+        public async Task ThreadsafeSnapshot()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManagerSnapshot>();
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            //
+            // Sync filter
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            bool called = false;
+
+            testFeatureFilter.Callback = async (evaluationContext) =>
+            {
+                called = true;
+
+                await Task.Delay(10);
+
+                return new Random().Next(0, 100) > 50;
+            };
+
+            var tasks = new List<Task<bool>>();
+
+            for (int i = 0; i < 1000; i++)
+            {
+                tasks.Add(featureManager.IsEnabledAsync(Features.ConditionalFeature));
+            }
+
+            Assert.True(called);
+
+            await Task.WhenAll(tasks);
+
+            bool result = await tasks.First();
+
+            foreach (Task<bool> t in tasks)
+            {
+                Assert.Equal(result, await t);
+            }
+        }
+
+        [Fact]
         public async Task TargetingExclusion()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
