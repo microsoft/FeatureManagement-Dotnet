@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
 {
-    class OnDemandTargetingContextAccessor : ITargetingContextAccessor
+    internal class OnDemandTargetingContextAccessor : ITargetingContextAccessor
     {
         public TargetingContext Current { get; set; }
 

@@ -12,7 +12,7 @@ namespace Microsoft.FeatureManagement
     /// A place holder MVC filter that is used to dynamically activate a filter based on whether a feature is enabled.
     /// </summary>
     /// <typeparam name="T">The filter that will be used instead of this placeholder.</typeparam>
-    class FeatureGatedAsyncActionFilter<T> : IAsyncActionFilter where T : IAsyncActionFilter
+    internal class FeatureGatedAsyncActionFilter<T> : IAsyncActionFilter where T : IAsyncActionFilter
     {
         public FeatureGatedAsyncActionFilter(string featureName)
         {

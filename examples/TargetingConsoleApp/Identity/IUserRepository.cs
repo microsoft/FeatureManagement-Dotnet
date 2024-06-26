@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace TargetingConsoleApp.Identity
 {
-    interface IUserRepository
+    internal interface IUserRepository
     {
         Task<User> GetUser(string id);
     }

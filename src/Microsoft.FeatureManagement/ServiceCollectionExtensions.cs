@@ -42,21 +42,21 @@ namespace Microsoft.FeatureManagement
             // Add required services
             services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
 
-            services.AddSingleton<IFeatureManager>(sp => 
+            services.AddSingleton<IFeatureManager>(sp =>
                 new FeatureManager(
                     sp.GetRequiredService<IFeatureDefinitionProvider>(),
                     sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
-                    {
-                        FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
-                        SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
-                        Cache = sp.GetRequiredService<IMemoryCache>(),
-                        Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>()
-                    });
+                {
+                    FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                    SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
+                    Cache = sp.GetRequiredService<IMemoryCache>(),
+                    Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>()
+                });
 
             services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
 
             var builder = new FeatureManagementBuilder(services);
-            
+
             //
             // Add built-in feature filters
             builder.AddFeatureFilter<PercentageFilter>();
@@ -119,16 +119,16 @@ namespace Microsoft.FeatureManagement
             // Add required services
             services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
 
-            services.AddScoped<IFeatureManager>(sp => 
+            services.AddScoped<IFeatureManager>(sp =>
                 new FeatureManager(
                     sp.GetRequiredService<IFeatureDefinitionProvider>(),
                     sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
-                    {
-                        FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
-                        SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
-                        Cache = sp.GetRequiredService<IMemoryCache>(),
-                        Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>()
-                    });
+                {
+                    FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                    SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
+                    Cache = sp.GetRequiredService<IMemoryCache>(),
+                    Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>()
+                });
 
             services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
 
@@ -138,7 +138,7 @@ namespace Microsoft.FeatureManagement
             // Add built-in feature filters
             builder.AddFeatureFilter<PercentageFilter>();
 
-            builder.AddFeatureFilter<TimeWindowFilter>(sp => 
+            builder.AddFeatureFilter<TimeWindowFilter>(sp =>
                 new TimeWindowFilter()
                 {
                     Cache = sp.GetRequiredService<IMemoryCache>()

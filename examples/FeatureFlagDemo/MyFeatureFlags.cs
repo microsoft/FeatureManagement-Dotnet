@@ -5,7 +5,7 @@ namespace FeatureFlagDemo
 {
     //
     // Define feature flags in an enum
-    static class MyFeatureFlags
+    internal static class MyFeatureFlags
     {
         public const string Home = "Home";
         public const string Beta = "Beta";

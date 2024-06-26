@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using System;
-using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
+using System;
+using System.Collections.Generic;
 
 namespace Microsoft.FeatureManagement
 {
@@ -12,7 +12,7 @@ namespace Microsoft.FeatureManagement
     /// Wraps an instance of IConfiguration. This allows the reference to be updated when the underlying IConfiguration is updated. 
     /// This is useful for cache busting based on the reference.
     /// </summary>
-    class ConfigurationWrapper : IConfiguration
+    internal class ConfigurationWrapper : IConfiguration
     {
         private readonly IConfiguration _configuration;
 
@@ -27,13 +27,13 @@ namespace Microsoft.FeatureManagement
             set => _configuration[key] = value;
         }
 
-        public IEnumerable<IConfigurationSection> GetChildren() =>
-            _configuration.GetChildren();
+        public IEnumerable<IConfigurationSection> GetChildren()
+            => _configuration.GetChildren();
 
-        public IChangeToken GetReloadToken() =>
-            _configuration.GetReloadToken();
+        public IChangeToken GetReloadToken()
+            => _configuration.GetReloadToken();
 
-        public IConfigurationSection GetSection(string key) =>
-            _configuration.GetSection(key);
+        public IConfigurationSection GetSection(string key)
+            => _configuration.GetSection(key);
     }
 }

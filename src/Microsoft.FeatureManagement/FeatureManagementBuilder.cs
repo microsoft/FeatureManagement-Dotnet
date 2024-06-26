@@ -1,18 +1,18 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.FeatureManagement.FeatureFilters;
 
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
     /// Provides a way to customize feature management.
     /// </summary>
-    class FeatureManagementBuilder : IFeatureManagementBuilder
+    internal class FeatureManagementBuilder : IFeatureManagementBuilder
     {
         public FeatureManagementBuilder(IServiceCollection services)
         {
@@ -35,7 +35,7 @@ namespace Microsoft.FeatureManagement
             }
 
             IEnumerable<Type> featureFilterImplementations = implementationType.GetInterfaces()
-                .Where(i => i == typeof(IFeatureFilter) || 
+                .Where(i => i == typeof(IFeatureFilter) ||
                             (i.IsGenericType && i.GetGenericTypeDefinition().IsAssignableFrom(typeof(IContextualFeatureFilter<>))));
 
             if (featureFilterImplementations.Count() > 1)

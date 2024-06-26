@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace System.Collections.Generic
 {
-    static class EnumerableExtensions
+    internal static class EnumerableExtensions
     {
         public static async Task<bool> Any<TSource>(this IEnumerable<TSource> source, Func<TSource, Task<bool>> predicate)
         {

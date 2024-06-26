@@ -9,7 +9,7 @@ using Microsoft.FeatureManagement;
 /// This filter will only be executed if an object implementing <see cref="IAccountContext"/> is passed in during feature evaluation.
 /// </summary>
 [FilterAlias("AccountId")]
-class AccountIdFilter : IContextualFeatureFilter<IAccountContext>
+internal class AccountIdFilter : IContextualFeatureFilter<IAccountContext>
 {
     public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext featureEvaluationContext, IAccountContext accountContext)
     {

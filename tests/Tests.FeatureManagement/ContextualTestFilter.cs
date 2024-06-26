@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
 {
-    class ContextualTestFilter : IContextualFeatureFilter<IAccountContext>
+    internal class ContextualTestFilter : IContextualFeatureFilter<IAccountContext>
     {
         public Func<FeatureFilterEvaluationContext, IAccountContext, bool> ContextualCallback { get; set; }
 

@@ -144,7 +144,7 @@ namespace Microsoft.FeatureManagement
                 if (featureDefinition.RequirementType == RequirementType.All && _options.IgnoreMissingFeatureFilters)
                 {
                     throw new FeatureManagementException(
-                        FeatureManagementError.Conflict, 
+                        FeatureManagementError.Conflict,
                         $"The 'IgnoreMissingFeatureFilters' flag cannot use used in combination with a feature of requirement type 'All'.");
                 }
 
@@ -183,7 +183,7 @@ namespace Microsoft.FeatureManagement
                                 enabled = true;
                                 break;
                             }
-                            
+
                             continue;
                         }
 
@@ -268,7 +268,7 @@ namespace Microsoft.FeatureManagement
                 {
                     throw new FeatureManagementException(FeatureManagementError.MissingFeature, errorMessage);
                 }
-                
+
                 Logger?.LogDebug(errorMessage);
             }
 
@@ -282,7 +282,7 @@ namespace Microsoft.FeatureManagement
 
         private void BindSettings(IFeatureFilterMetadata filter, FeatureFilterEvaluationContext context, int filterIndex)
         {
-            IFilterParametersBinder binder = filter as IFilterParametersBinder;
+            var binder = filter as IFilterParametersBinder;
 
             if (binder == null)
             {
@@ -335,7 +335,8 @@ namespace Microsoft.FeatureManagement
         {
             IFeatureFilterMetadata filter = _filterMetadataCache.GetOrAdd(
                 $"{filterName}{Environment.NewLine}{appContextType?.FullName}",
-                (_) => {
+                (_) =>
+                {
 
                     IEnumerable<IFeatureFilterMetadata> matchingFilters = _featureFilters.Where(f =>
                     {
@@ -348,7 +349,7 @@ namespace Microsoft.FeatureManagement
 
                         if (appContextType == null)
                         {
-                            return (f is IFeatureFilter);
+                            return f is IFeatureFilter;
                         }
 
                         return ContextualFeatureFilterEvaluator.IsContextualFilter(f, appContextType);
@@ -413,7 +414,8 @@ namespace Microsoft.FeatureManagement
 
             ContextualFeatureFilterEvaluator filter = _contextualFeatureFilterCache.GetOrAdd(
                 $"{filterName}{Environment.NewLine}{appContextType.FullName}",
-                (_) => {
+                (_) =>
+                {
 
                     IFeatureFilterMetadata metadata = GetFeatureFilterMetadata(filterName, appContextType);
 

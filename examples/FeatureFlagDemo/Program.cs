@@ -18,7 +18,7 @@ namespace FeatureFlagDemo
             return WebHost.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration((ctx, builder) =>
                 {
-                    var settings = builder.Build();
+                    IConfigurationRoot settings = builder.Build();
 
                     if (!string.IsNullOrEmpty(settings["AppConfiguration:ConnectionString"]))
                     {

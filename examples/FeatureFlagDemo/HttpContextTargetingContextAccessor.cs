@@ -36,7 +36,7 @@ namespace FeatureFlagDemo
 
             ClaimsPrincipal user = httpContext.User;
 
-            List<string> groups = new List<string>();
+            var groups = new List<string>();
 
             //
             // This application expects groups to be specified in the user's claims
@@ -50,7 +50,7 @@ namespace FeatureFlagDemo
 
             //
             // Build targeting context based off user info
-            TargetingContext targetingContext = new TargetingContext
+            var targetingContext = new TargetingContext
             {
                 UserId = user.Identity.Name,
                 Groups = groups

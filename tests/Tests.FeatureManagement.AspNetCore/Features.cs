@@ -3,7 +3,7 @@
 //
 namespace Tests.FeatureManagement.AspNetCore
 {
-    static class Features
+    internal static class Features
     {
         public const string ConditionalFeature = "ConditionalFeature";
         public const string ConditionalFeature2 = "ConditionalFeature2";

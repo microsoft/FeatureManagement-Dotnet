@@ -1,15 +1,15 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
 
 namespace FeatureFlagDemo
 {
     public class ThirdPartyActionFilter : IAsyncActionFilter
     {
-        private ILogger _logger;
+        private readonly ILogger _logger;
 
         public ThirdPartyActionFilter(ILoggerFactory loggerFactory)
         {
