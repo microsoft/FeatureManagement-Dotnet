@@ -751,11 +751,11 @@ namespace Tests.FeatureManagement
 
             await Task.WhenAll(tasks);
 
-            bool result = tasks.First().Result;
+            bool result = await tasks.First();
 
             foreach (Task<bool> t in tasks)
             {
-                Assert.Equal(result, t.Result);
+                Assert.Equal(result, await t);
             }
         }
 
