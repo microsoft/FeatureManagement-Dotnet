@@ -55,7 +55,8 @@ namespace Microsoft.FeatureManagement
             // Treat claims of type Role as groups
             IEnumerable<string> groups = httpContext.User.Claims
                 .Where(c => c.Type == ClaimTypes.Role)
-                .Select(c => c.Value);
+                .Select(c => c.Value)
+                .ToList();
 
             TargetingContext targetingContext = new TargetingContext
             {
