@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Microsoft.FeatureManagement;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.FeatureManagement;
 
 namespace Tests.FeatureManagement
 {
