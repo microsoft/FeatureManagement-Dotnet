@@ -17,11 +17,6 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
         private const string TargetingIdKey = $"Microsoft.FeatureManagement.TargetingId";
 
         /// <summary>
-        /// Creates an instance of the TargetingTelemetryInitializer
-        /// </summary>
-        public TargetingTelemetryInitializer() { }
-
-        /// <summary>
         /// When telemetry is initialized, adds targeting information to all relevant telemetry.
         /// </summary>
         /// <param name="telemetry">The <see cref="ITelemetry"/> to be initialized.</param>
