@@ -100,7 +100,7 @@ namespace Tests.FeatureManagement
                   ""feature_flags"": [
                     {
                       ""id"": ""FeatureY"",
-                      ""enabled"": false
+                      ""enabled"": true
                     }
                   ]
                 }
