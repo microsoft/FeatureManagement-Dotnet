@@ -179,38 +179,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task ReadsTopLevelConfiguration()
-        {
-            string json = @"
-            {
-              ""AllowedHosts"": ""*"",
-              ""FeatureManagement"": {
-                ""feature_flags"": [
-                  {
-                    ""id"": ""FeatureX"",
-                    ""enabled"": true
-                  }
-                ]
-              }
-            }";
-
-            var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-
-            IConfiguration config = new ConfigurationBuilder().AddJsonStream(stream).Build();
-
-            var services = new ServiceCollection();
-
-            services.AddFeatureManagement(config.GetSection("FeatureManagement"));
-
-            ServiceProvider serviceProvider = services.BuildServiceProvider();
-
-            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
-
-            Assert.True(await featureManager.IsEnabledAsync("FeatureX"));
-        }
-
-        [Fact]
-        public async Task RespectsMicrosoftFeatureManagementSchemaIfAny()
+        public async Task RespectsAllFeatureManagementSchemas()
         {
             string json = @"
             {
@@ -243,7 +212,7 @@ namespace Tests.FeatureManagement
 
             Assert.True(await featureManager.IsEnabledAsync("FeatureX"));
 
-            Assert.False(await featureManager.IsEnabledAsync("FeatureY"));
+            Assert.True(await featureManager.IsEnabledAsync("FeatureY"));
         }
 
         [Fact]

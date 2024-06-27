@@ -12,6 +12,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using static System.Collections.Specialized.BitVector32;
+
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
@@ -27,9 +29,6 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
-        private long _initialized = 0;
-        private bool _microsoftFeatureManagementSchemaEnabled;
-        private readonly object _lock = new object();
 
         const string ParseValueErrorString = "Invalid setting '{0}' with value '{1}' for feature '{2}'.";
 
@@ -84,16 +83,49 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentException($"The value '{ConfigurationPath.KeyDelimiter}' is not allowed in the feature name.", nameof(featureName));
             }
 
-            EnsureInit();
-
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
                 _definitions.Clear();
             }
 
-            //
-            // Query by feature name
-            FeatureDefinition definition = _definitions.GetOrAdd(featureName, (name) => ReadFeatureDefinition(name));
+            if (_definitions.TryGetValue(featureName, out FeatureDefinition definition))
+            {
+                return Task.FromResult(definition);
+            }
+
+            IEnumerable<IConfigurationSection> microsoftFeatureManagementSection = GetFeatureDefinitionSections(MicrosoftFeatureManagementFields.FeatureManagementSectionName);
+
+            if (microsoftFeatureManagementSection != null)
+            {
+                IConfigurationSection configuration = microsoftFeatureManagementSection
+                    .FirstOrDefault(section =>
+                        string.Equals(section[MicrosoftFeatureManagementFields.Id], featureName, StringComparison.OrdinalIgnoreCase));
+
+                if (configuration != null)
+                {
+                    definition = _definitions.GetOrAdd(featureName, (_) => ParseMicrosoftFeatureDefinition(configuration));
+
+                    return Task.FromResult(definition);
+                }
+            }
+
+            bool rootConfigurationFallback = microsoftFeatureManagementSection == null && RootConfigurationFallbackEnabled;
+
+            IEnumerable<IConfigurationSection> dotnetFeatureManagementSection = GetDotnetFeatureManagementSection(rootConfigurationFallback);
+
+            if (dotnetFeatureManagementSection != null)
+            {
+                IConfigurationSection configuration = dotnetFeatureManagementSection
+                    .FirstOrDefault(section =>
+                        string.Equals(section.Key, featureName, StringComparison.OrdinalIgnoreCase));
+
+                if (configuration != null)
+                {
+                    definition = _definitions.GetOrAdd(featureName, (_) => ParseDotnetFeatureDefinition(configuration));
+
+                    return Task.FromResult(definition);
+                }
+            }
 
             return Task.FromResult(definition);
         }
@@ -109,97 +141,77 @@ namespace Microsoft.FeatureManagement
         public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998
         {
-            EnsureInit();
-
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
                 _definitions.Clear();
             }
 
-            //
-            // Iterate over all features registered in the system at initial invocation time
-            foreach (IConfigurationSection featureSection in GetFeatureDefinitionSections())
+            IEnumerable<IConfigurationSection> microsoftFeatureManagementSection = GetFeatureDefinitionSections(MicrosoftFeatureManagementFields.FeatureManagementSectionName);
+
+            if (microsoftFeatureManagementSection != null)
             {
-                string featureName = GetFeatureName(featureSection);
-
-                if (string.IsNullOrEmpty(featureName))
+                foreach (IConfigurationSection featureSection in microsoftFeatureManagementSection)
                 {
-                    continue;
-                }
+                    string featureName = featureSection[MicrosoftFeatureManagementFields.Id];
 
-                //
-                // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                FeatureDefinition definition = _definitions.GetOrAdd(featureName, (_) => ReadFeatureDefinition(featureSection));
+                    if (string.IsNullOrEmpty(featureName))
+                    {
+                        continue;
+                    }
 
-                //
-                // Null cache entry possible if someone accesses non-existent flag directly (IsEnabled)
-                if (definition != null)
-                {
-                    yield return definition;
+                    //
+                    // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
+                    FeatureDefinition definition = _definitions.GetOrAdd(featureName, (_) => ParseMicrosoftFeatureDefinition(featureSection));
+
+                    if (definition != null)
+                    {
+                        yield return definition;
+                    }
                 }
             }
-        }
 
-        private void EnsureInit()
-        {
-            if (_initialized == 0)
+            bool rootConfigurationFallback = microsoftFeatureManagementSection == null && RootConfigurationFallbackEnabled;
+
+            IEnumerable<IConfigurationSection> dotnetFeatureManagementSection = GetDotnetFeatureManagementSection(rootConfigurationFallback);
+
+            if (dotnetFeatureManagementSection != null)
             {
-                IConfiguration MicrosoftFeatureManagementConfigurationSection = _configuration
-                    .GetChildren()
-                    .FirstOrDefault(section =>
-                        string.Equals(
-                            section.Key,
-                            MicrosoftFeatureManagementFields.FeatureManagementSectionName,
-                            StringComparison.OrdinalIgnoreCase));
-
-                bool hasMicrosoftFeatureManagementSchema = MicrosoftFeatureManagementConfigurationSection != null;
-
-                if (MicrosoftFeatureManagementConfigurationSection == null & RootConfigurationFallbackEnabled)
+                foreach (IConfigurationSection featureSection in dotnetFeatureManagementSection)
                 {
-                    IConfiguration featureFlagsSection = _configuration
-                        .GetChildren()
-                        .FirstOrDefault(section =>
-                            string.Equals(
-                                section.Key,
-                                MicrosoftFeatureManagementFields.FeatureFlagsSectionName,
-                                StringComparison.OrdinalIgnoreCase));
+                    string featureName = featureSection.Key;
 
-                    hasMicrosoftFeatureManagementSchema = featureFlagsSection != null;
-                }
-
-                lock (_lock)
-                {
-                    if (Interlocked.Read(ref _initialized) == 0)
+                    if (string.IsNullOrEmpty(featureName))
                     {
-                        _microsoftFeatureManagementSchemaEnabled = hasMicrosoftFeatureManagementSchema;
+                        continue;
+                    }
 
-                        Interlocked.Exchange(ref _initialized, 1);
+                    //
+                    // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
+                    FeatureDefinition definition = _definitions.GetOrAdd(featureName, (_) => ParseDotnetFeatureDefinition(featureSection));
+
+                    if (definition != null)
+                    {
+                        yield return definition;
                     }
                 }
             }
         }
 
-        private FeatureDefinition ReadFeatureDefinition(string featureName)
+        private IEnumerable<IConfigurationSection> GetDotnetFeatureManagementSection(bool rootConfigurationFallback)
         {
-            IConfigurationSection configuration = GetFeatureDefinitionSections()
-                .FirstOrDefault(section => string.Equals(GetFeatureName(section), featureName, StringComparison.OrdinalIgnoreCase));
+            IEnumerable<IConfigurationSection> dotnetFeatureManagementSection = GetFeatureDefinitionSections(DotnetFeatureManagementFields.FeatureManagementSectionName);
 
-            if (configuration == null)
+            if (dotnetFeatureManagementSection == null && rootConfigurationFallback)
             {
-                return null;
+                if (!_configuration.GetChildren().Any())
+                {
+                    Logger?.LogDebug($"Configuration is empty.");
+                }
+
+                dotnetFeatureManagementSection = _configuration.GetChildren();
             }
 
-            return ReadFeatureDefinition(configuration);
-        }
-
-        private FeatureDefinition ReadFeatureDefinition(IConfigurationSection configurationSection)
-        {
-            if (_microsoftFeatureManagementSchemaEnabled)
-            {
-                return ParseMicrosoftFeatureDefinition(configurationSection);
-            }
-
-            return ParseDotnetFeatureDefinition(configurationSection);
+            return dotnetFeatureManagementSection;
         }
 
         private FeatureDefinition ParseDotnetFeatureDefinition(IConfigurationSection configurationSection)
@@ -229,7 +241,7 @@ namespace Microsoft.FeatureManagement
 
             */
 
-            string featureName = GetFeatureName(configurationSection);
+            string featureName = configurationSection.Key;
 
             var enabledFor = new List<FeatureFilterConfiguration>();
 
@@ -323,7 +335,7 @@ namespace Microsoft.FeatureManagement
 
             */
 
-            string featureName = GetFeatureName(configurationSection);
+            string featureName = configurationSection[MicrosoftFeatureManagementFields.Id];
 
             var enabledFor = new List<FeatureFilterConfiguration>();
 
@@ -512,57 +524,23 @@ namespace Microsoft.FeatureManagement
             };
         }
 
-        private string GetFeatureName(IConfigurationSection section)
+        private IEnumerable<IConfigurationSection> GetFeatureDefinitionSections(string featureManagementSectionName)
         {
-            if (_microsoftFeatureManagementSchemaEnabled)
-            {
-                return section[MicrosoftFeatureManagementFields.Id];
-            }
-
-            return section.Key;
-        }
-
-        private IEnumerable<IConfigurationSection> GetFeatureDefinitionSections()
-        {
-            if (!_configuration.GetChildren().Any())
-            {
-                Logger?.LogDebug($"Configuration is empty.");
-
-                return Enumerable.Empty<IConfigurationSection>();
-            }
-
             IConfiguration featureManagementConfigurationSection = _configuration
                     .GetChildren()
                     .FirstOrDefault(section =>
                         string.Equals(
                             section.Key,
-                            _microsoftFeatureManagementSchemaEnabled ?
-                                MicrosoftFeatureManagementFields.FeatureManagementSectionName :
-                                DotnetFeatureManagementFields.FeatureManagementSectionName,
+                            featureManagementSectionName,
                             StringComparison.OrdinalIgnoreCase));
 
-            if (featureManagementConfigurationSection == null)
+            if (featureManagementConfigurationSection != null &&
+                featureManagementSectionName.Equals(MicrosoftFeatureManagementFields.FeatureManagementSectionName))
             {
-                if (RootConfigurationFallbackEnabled)
-                {
-                    featureManagementConfigurationSection = _configuration;
-                }
-                else
-                {
-                    Logger?.LogDebug($"No feature management configuration section was found.");
-
-                    return Enumerable.Empty<IConfigurationSection>();
-                }
+                return featureManagementConfigurationSection.GetSection(MicrosoftFeatureManagementFields.FeatureFlagsSectionName).GetChildren();
             }
 
-            if (_microsoftFeatureManagementSchemaEnabled)
-            {
-                IConfigurationSection featureFlagsSection = featureManagementConfigurationSection.GetSection(MicrosoftFeatureManagementFields.FeatureFlagsSectionName);
-
-                return featureFlagsSection.GetChildren();
-            }
-
-            return featureManagementConfigurationSection.GetChildren();
+            return featureManagementConfigurationSection?.GetChildren();
         }
 
         private T ParseEnum<T>(string feature, string rawValue, string fieldKeyword)
