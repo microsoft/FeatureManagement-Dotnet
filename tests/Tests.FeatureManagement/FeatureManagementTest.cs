@@ -151,6 +151,8 @@ namespace Tests.FeatureManagement
             }
 
             Assert.True(hasItems);
+
+            Assert.False(await featureManager.IsEnabledAsync("NonExistentFeature"));
         }
 
         [Fact]
@@ -184,16 +186,21 @@ namespace Tests.FeatureManagement
             string json = @"
             {
               ""AllowedHosts"": ""*"",
+              ""FeatureManagement"": {
+                 ""FeatureX"": true,
+                 ""FeatureY"": true
+              },
               ""feature_management"": {
                 ""feature_flags"": [
                   {
-                    ""id"": ""FeatureX"",
+                    ""id"": ""FeatureZ"",
                     ""enabled"": true
+                  },
+                  {
+                    ""id"": ""FeatureY"",
+                    ""enabled"": false
                   }
                 ]
-              },
-              ""FeatureManagement"": {
-                 ""FeatureY"": true
               }
             }";
 
@@ -212,7 +219,10 @@ namespace Tests.FeatureManagement
 
             Assert.True(await featureManager.IsEnabledAsync("FeatureX"));
 
-            Assert.True(await featureManager.IsEnabledAsync("FeatureY"));
+            // feature flag written in Microsoft schema has higher priority
+            Assert.False(await featureManager.IsEnabledAsync("FeatureY"));
+
+            Assert.True(await featureManager.IsEnabledAsync("FeatureZ"));
         }
 
         [Fact]

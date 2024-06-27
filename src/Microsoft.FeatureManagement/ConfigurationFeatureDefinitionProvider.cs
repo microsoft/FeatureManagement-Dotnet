@@ -12,8 +12,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-using static System.Collections.Specialized.BitVector32;
-
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
@@ -122,8 +120,6 @@ namespace Microsoft.FeatureManagement
                 if (configuration != null)
                 {
                     definition = _definitions.GetOrAdd(featureName, (_) => ParseDotnetFeatureDefinition(configuration));
-
-                    return Task.FromResult(definition);
                 }
             }
 
