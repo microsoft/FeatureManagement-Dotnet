@@ -4,7 +4,7 @@
 using VariantServiceDemo;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.FeatureManagement;
-using Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore;
+using Microsoft.FeatureManagement.Telemetry.ApplicationInsights;
 
 
 var builder = WebApplication.CreateBuilder(args);

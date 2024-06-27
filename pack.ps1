@@ -22,8 +22,7 @@ $targetProjects = @(
 
     "Microsoft.FeatureManagement",
     "Microsoft.FeatureManagement.AspNetCore",
-    "Microsoft.FeatureManagement.Telemetry.ApplicationInsights",
-    "Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore"
+    "Microsoft.FeatureManagement.Telemetry.ApplicationInsights"
 )
 
 # Create the log directory.
