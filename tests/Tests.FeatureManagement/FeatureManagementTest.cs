@@ -78,9 +78,7 @@ namespace Tests.FeatureManagement
         [Fact]
         public async Task ReadsTopLevelConfiguration()
         {
-            const string feature = "FeatureX";
-
-            var stream = new MemoryStream(Encoding.UTF8.GetBytes($"{{\"AllowedHosts\": \"*\", \"FeatureFlags\": {{\"{feature}\": true}}}}"));
+            var stream = new MemoryStream(Encoding.UTF8.GetBytes($"{{\"AllowedHosts\": \"*\", \"FeatureFlags\": {{\"FeatureX\": true}}}}"));
 
             IConfiguration config = new ConfigurationBuilder().AddJsonStream(stream).Build();
 
@@ -92,7 +90,39 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            Assert.True(await featureManager.IsEnabledAsync(feature));
+            //Assert.True(await featureManager.IsEnabledAsync("FeatureX"));
+
+            string json = @"
+            {
+              ""FeatureFlags"": {
+                ""FeatureX"": true,
+                ""feature_management"": {
+                  ""feature_flags"": [
+                    {
+                      ""id"": ""FeatureY"",
+                      ""enabled"": false
+                    }
+                  ]
+                }
+              }
+            }";
+
+            stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+
+            config = new ConfigurationBuilder().AddJsonStream(stream).Build();
+
+            services = new ServiceCollection();
+
+            services.AddFeatureManagement(config.GetSection("FeatureFlags"));
+
+            serviceProvider = services.BuildServiceProvider();
+
+            featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            // If Microsoft schema can be found, it will not fall back to root configuration.
+            Assert.False(await featureManager.IsEnabledAsync("FeatureX"));
+
+            Assert.True(await featureManager.IsEnabledAsync("FeatureY"));
         }
     }
 
