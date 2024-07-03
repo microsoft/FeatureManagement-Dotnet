@@ -54,7 +54,19 @@ namespace Microsoft.FeatureManagement
             if (targetingContext != null)
             {
                 var activityFeature = httpContext.Features.Get<IHttpActivityFeature>();
-                activityFeature?.Activity?.AddBaggage(TargetingIdKey, targetingContext.UserId);
+
+                if (activityFeature == null)
+                {
+                    _logger.LogDebug("The IHttpActivityFeature from the IFeatureCollection was null");
+                }
+                else if (activityFeature.Activity == null)
+                {
+                    _logger.LogDebug("The Activity on the IHttpActivityFeature was null");
+                }
+                else
+                {
+                    activityFeature.Activity.AddBaggage(TargetingIdKey, targetingContext.UserId);
+                }
             }
             else
             {
