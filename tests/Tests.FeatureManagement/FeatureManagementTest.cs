@@ -924,7 +924,7 @@ namespace Tests.FeatureManagement
             Environment.SetEnvironmentVariable($"feature_management:feature_flags:0:conditions:client_filters:0:name", "Percentage");
             Environment.SetEnvironmentVariable($"feature_management:feature_flags:0:conditions:client_filters:0:parameters:Value", "50");
 
-            IConfiguration config = new ConfigurationBuilder().AddEnvironmentVariables().AddJsonFile("appsettings.json").Build();
+            IConfiguration config = new ConfigurationBuilder().AddEnvironmentVariables().Build();
 
             var serviceCollection = new ServiceCollection();
 
