@@ -203,10 +203,7 @@ namespace Microsoft.FeatureManagement
             if (RootConfigurationFallbackEnabled &&
                 !_configuration.GetChildren()
                     .Any(section =>
-                        string.Equals(
-                            section.Key,
-                            MicrosoftFeatureManagementFields.FeatureManagementSectionName,
-                            StringComparison.OrdinalIgnoreCase)))
+                        string.Equals(section.Key, MicrosoftFeatureManagementFields.FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase)))
             {
                 return _configuration.GetChildren();
             }
