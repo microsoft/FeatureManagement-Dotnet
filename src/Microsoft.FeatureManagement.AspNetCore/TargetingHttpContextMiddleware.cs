@@ -57,11 +57,11 @@ namespace Microsoft.FeatureManagement
 
                 if (activityFeature == null)
                 {
-                    _logger.LogDebug("The IHttpActivityFeature from the IFeatureCollection was null");
+                    _logger.LogWarning("The IHttpActivityFeature from the IFeatureCollection was null");
                 }
                 else if (activityFeature.Activity == null)
                 {
-                    _logger.LogDebug("The Activity on the IHttpActivityFeature was null");
+                    _logger.LogWarning("The Activity on the IHttpActivityFeature was null");
                 }
                 else
                 {
