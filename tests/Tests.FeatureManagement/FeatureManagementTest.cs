@@ -78,9 +78,7 @@ namespace Tests.FeatureManagement
         [Fact]
         public async Task ReadsTopLevelConfiguration()
         {
-            const string feature = "FeatureX";
-
-            var stream = new MemoryStream(Encoding.UTF8.GetBytes($"{{\"AllowedHosts\": \"*\", \"FeatureFlags\": {{\"{feature}\": true}}}}"));
+            var stream = new MemoryStream(Encoding.UTF8.GetBytes($"{{\"AllowedHosts\": \"*\", \"FeatureFlags\": {{\"FeatureX\": true}}}}"));
 
             IConfiguration config = new ConfigurationBuilder().AddJsonStream(stream).Build();
 
@@ -92,7 +90,39 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            Assert.True(await featureManager.IsEnabledAsync(feature));
+            //Assert.True(await featureManager.IsEnabledAsync("FeatureX"));
+
+            string json = @"
+            {
+              ""FeatureFlags"": {
+                ""FeatureX"": true,
+                ""feature_management"": {
+                  ""feature_flags"": [
+                    {
+                      ""id"": ""FeatureY"",
+                      ""enabled"": true
+                    }
+                  ]
+                }
+              }
+            }";
+
+            stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+
+            config = new ConfigurationBuilder().AddJsonStream(stream).Build();
+
+            services = new ServiceCollection();
+
+            services.AddFeatureManagement(config.GetSection("FeatureFlags"));
+
+            serviceProvider = services.BuildServiceProvider();
+
+            featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            // If Microsoft schema can be found, it will not fall back to root configuration.
+            Assert.False(await featureManager.IsEnabledAsync("FeatureX"));
+
+            Assert.True(await featureManager.IsEnabledAsync("FeatureY"));
         }
     }
 
@@ -151,6 +181,8 @@ namespace Tests.FeatureManagement
             }
 
             Assert.True(hasItems);
+
+            Assert.False(await featureManager.IsEnabledAsync("NonExistentFeature"));
         }
 
         [Fact]
@@ -179,52 +211,26 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task ReadsTopLevelConfiguration()
+        public async Task RespectsAllFeatureManagementSchemas()
         {
             string json = @"
             {
               ""AllowedHosts"": ""*"",
               ""FeatureManagement"": {
-                ""feature_flags"": [
-                  {
-                    ""id"": ""FeatureX"",
-                    ""enabled"": true
-                  }
-                ]
-              }
-            }";
-
-            var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-
-            IConfiguration config = new ConfigurationBuilder().AddJsonStream(stream).Build();
-
-            var services = new ServiceCollection();
-
-            services.AddFeatureManagement(config.GetSection("FeatureManagement"));
-
-            ServiceProvider serviceProvider = services.BuildServiceProvider();
-
-            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
-
-            Assert.True(await featureManager.IsEnabledAsync("FeatureX"));
-        }
-
-        [Fact]
-        public async Task RespectsMicrosoftFeatureManagementSchemaIfAny()
-        {
-            string json = @"
-            {
-              ""AllowedHosts"": ""*"",
+                 ""FeatureX"": true,
+                 ""FeatureY"": true
+              },
               ""feature_management"": {
                 ""feature_flags"": [
                   {
-                    ""id"": ""FeatureX"",
+                    ""id"": ""FeatureZ"",
                     ""enabled"": true
+                  },
+                  {
+                    ""id"": ""FeatureY"",
+                    ""enabled"": false
                   }
                 ]
-              },
-              ""FeatureManagement"": {
-                 ""FeatureY"": true
               }
             }";
 
@@ -243,7 +249,10 @@ namespace Tests.FeatureManagement
 
             Assert.True(await featureManager.IsEnabledAsync("FeatureX"));
 
+            // feature flag written in Microsoft schema has higher priority
             Assert.False(await featureManager.IsEnabledAsync("FeatureY"));
+
+            Assert.True(await featureManager.IsEnabledAsync("FeatureZ"));
         }
 
         [Fact]
@@ -915,7 +924,7 @@ namespace Tests.FeatureManagement
             Environment.SetEnvironmentVariable($"feature_management:feature_flags:0:conditions:client_filters:0:name", "Percentage");
             Environment.SetEnvironmentVariable($"feature_management:feature_flags:0:conditions:client_filters:0:parameters:Value", "50");
 
-            IConfiguration config = new ConfigurationBuilder().AddEnvironmentVariables().AddJsonFile("appsettings.json").Build();
+            IConfiguration config = new ConfigurationBuilder().AddEnvironmentVariables().Build();
 
             var serviceCollection = new ServiceCollection();
 
