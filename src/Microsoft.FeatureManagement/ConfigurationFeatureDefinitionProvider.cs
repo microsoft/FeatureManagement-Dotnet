@@ -86,11 +86,6 @@ namespace Microsoft.FeatureManagement
                 _definitions.Clear();
             }
 
-            if (_definitions.TryGetValue(featureName, out FeatureDefinition definition))
-            {
-                return Task.FromResult(definition);
-            }
-
             return Task.FromResult(
                 _definitions.GetOrAdd(
                     featureName,
@@ -158,9 +153,9 @@ namespace Microsoft.FeatureManagement
 
         private FeatureDefinition GetDotnetSchemaFeatureDefinition(string featureName)
         {
-            IEnumerable<IConfigurationSection> dotnetFeatureManagementSection = GetDotnetFeatureDefinitionSections();
+            IEnumerable<IConfigurationSection> dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
 
-            IConfigurationSection configuration = dotnetFeatureManagementSection
+            IConfigurationSection configuration = dotnetFeatureDefinitionSections
                 .FirstOrDefault(section =>
                     string.Equals(section.Key, featureName, StringComparison.OrdinalIgnoreCase));
 
@@ -174,9 +169,9 @@ namespace Microsoft.FeatureManagement
 
         private FeatureDefinition GetMicrosoftSchemaFeatureDefinition(string featureName)
         {
-            IEnumerable<IConfigurationSection> microsoftFeatureManagementSection = GetMicrosoftFeatureDefinitionSections();
+            IEnumerable<IConfigurationSection> microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
 
-            IConfigurationSection configuration = microsoftFeatureManagementSection
+            IConfigurationSection configuration = microsoftFeatureDefinitionSections
                 .FirstOrDefault(section =>
                     string.Equals(section[MicrosoftFeatureManagementFields.Id], featureName, StringComparison.OrdinalIgnoreCase));
 
