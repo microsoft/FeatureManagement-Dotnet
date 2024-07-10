@@ -108,9 +108,9 @@ namespace Microsoft.FeatureManagement
                 _definitions.Clear();
             }
 
-            IEnumerable<IConfigurationSection> microsoftFeatureManagementSection = GetMicrosoftFeatureDefinitionSections();
+            IEnumerable<IConfigurationSection> microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
 
-            foreach (IConfigurationSection featureSection in microsoftFeatureManagementSection)
+            foreach (IConfigurationSection featureSection in microsoftFeatureDefinitionSections)
             {
                 string featureName = featureSection[MicrosoftFeatureManagementFields.Id];
 
@@ -129,9 +129,9 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            IEnumerable<IConfigurationSection> dotnetFeatureManagementSection = GetDotnetFeatureDefinitionSections();
+            IEnumerable<IConfigurationSection> dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
 
-            foreach (IConfigurationSection featureSection in dotnetFeatureManagementSection)
+            foreach (IConfigurationSection featureSection in dotnetFeatureDefinitionSections)
             {
                 string featureName = featureSection.Key;
 
