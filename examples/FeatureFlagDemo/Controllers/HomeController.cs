@@ -4,10 +4,8 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using FeatureFlagDemo.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc;
-using System.Threading.Tasks;
 
 namespace FeatureFlagDemo.Controllers
 {

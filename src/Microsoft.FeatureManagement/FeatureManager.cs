@@ -268,7 +268,7 @@ namespace Microsoft.FeatureManagement
                 {
                     throw new FeatureManagementException(FeatureManagementError.MissingFeature, errorMessage);
                 }
-                
+
                 Logger?.LogDebug(errorMessage);
             }
 
