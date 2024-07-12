@@ -32,4 +32,8 @@
     </Content>
   </ItemGroup>
 
+  <PropertyGroup>
+    <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
 </Project>
