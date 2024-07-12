@@ -1,11 +1,11 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using System.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
 using FeatureFlagDemo.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc;
+using System.Diagnostics;
 
 namespace FeatureFlagDemo.Controllers
 {
