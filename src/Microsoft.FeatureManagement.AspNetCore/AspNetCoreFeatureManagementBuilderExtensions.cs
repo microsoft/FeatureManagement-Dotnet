@@ -49,7 +49,7 @@ namespace Microsoft.FeatureManagement
         }
 
         /// <summary>
-        /// Adds the <see cref="DefaultHttpTargetingContextAccessor"/> to be used for targeting and registers the targeting filter to the feature management system.
+        /// Enables the use of targeting within the application and adds a targeting context accessor that extracts targeting details from a request's HTTP context.
         /// </summary>
         /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
         /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
