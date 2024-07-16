@@ -57,11 +57,11 @@ namespace Microsoft.FeatureManagement
 
                 if (activityFeature == null)
                 {
-                    _logger.LogDebug("The IHttpActivityFeature from the IFeatureCollection was null");
+                    _logger.LogWarning("A request feature required for telemetry, IHttpActivityFeature, was not found in the request's feature collection. Removing this feature from the request's feature collection will cause telemetry emission to fail.");
                 }
                 else if (activityFeature.Activity == null)
                 {
-                    _logger.LogDebug("The Activity on the IHttpActivityFeature was null");
+                    _logger.LogWarning("A request feature required for telemetry, IHttpActivityFeature, has a null Activity property. If you have updated IHttpActivityFeature, ensure the Activity property is not null. A missing Activity will result in telemetry emission failures.");
                 }
                 else
                 {
