@@ -63,9 +63,9 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
 
                 if (string.IsNullOrEmpty(Variant))
                 {
-                    enabled = Requirement == RequirementType.All ?
-                        await features.All(async feature => await _featureManager.IsEnabledAsync(feature).ConfigureAwait(false)) :
-                        await features.Any(async feature => await _featureManager.IsEnabledAsync(feature).ConfigureAwait(false));
+                    enabled = Requirement == RequirementType.All
+                        ? await features.All(async feature => await _featureManager.IsEnabledAsync(feature).ConfigureAwait(false))
+                        : await features.Any(async feature => await _featureManager.IsEnabledAsync(feature).ConfigureAwait(false));
                 }
                 else
                 {
@@ -82,10 +82,11 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
                     }
 
                     enabled = await variants.Any(
-                        async variant => {
+                        async variant =>
+                        {
                             Variant assignedVariant = await _featureManager.GetVariantAsync(features.First()).ConfigureAwait(false);
 
-                            return variant == assignedVariant?.Name;    
+                            return variant == assignedVariant?.Name;
                         });
                 }
             }

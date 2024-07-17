@@ -12,10 +12,10 @@ namespace Microsoft.FeatureManagement.Targeting
 {
     static class TargetingEvaluator
     {
-        private static StringComparison GetComparisonType(bool ignoreCase) =>
-            ignoreCase ?
-                StringComparison.OrdinalIgnoreCase :
-                StringComparison.Ordinal;
+        private static StringComparison GetComparisonType(bool ignoreCase)
+            => ignoreCase
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
 
         const string OutOfRange = "The value is out of the accepted range.";
         const string RequiredParameter = "Value cannot be null.";
@@ -189,9 +189,9 @@ namespace Microsoft.FeatureManagement.Targeting
 
             if (sourceGroups != null)
             {
-                IEnumerable<string> normalizedGroups = ignoreCase ?
-                    sourceGroups.Select(g => g?.ToLower()) :
-                    sourceGroups;
+                IEnumerable<string> normalizedGroups = ignoreCase
+                    ? sourceGroups.Select(g => g?.ToLower())
+                    : sourceGroups;
 
                 foreach (string group in normalizedGroups)
                 {
@@ -231,15 +231,15 @@ namespace Microsoft.FeatureManagement.Targeting
                 throw new ArgumentNullException(nameof(hint));
             }
 
-            string userId = ignoreCase ?
-                targetingContext.UserId?.ToLower() :
-                targetingContext.UserId;
+            string userId = ignoreCase
+                ? targetingContext.UserId?.ToLower()
+                : targetingContext.UserId;
 
             if (targetingContext.Groups != null)
             {
-                IEnumerable<string> normalizedGroups = ignoreCase ?
-                    targetingContext.Groups.Select(g => g?.ToLower()) :
-                    targetingContext.Groups;
+                IEnumerable<string> normalizedGroups = ignoreCase
+                    ? targetingContext.Groups.Select(g => g?.ToLower())
+                    : targetingContext.Groups;
 
                 foreach (string group in normalizedGroups)
                 {
@@ -279,9 +279,9 @@ namespace Microsoft.FeatureManagement.Targeting
                 throw new ArgumentNullException(nameof(hint));
             }
 
-            string userId = ignoreCase ?
-                targetingContext.UserId?.ToLower() :
-                targetingContext.UserId;
+            string userId = ignoreCase
+                ? targetingContext.UserId?.ToLower()
+                : targetingContext.UserId;
 
             string defaultContextId = $"{userId}\n{hint}";
 
@@ -318,9 +318,9 @@ namespace Microsoft.FeatureManagement.Targeting
                 throw new ArgumentException($"Value of {nameof(from)} cannot be larger than value of {nameof(to)}.");
             }
 
-            string userId = ignoreCase ?
-                targetingContext.UserId?.ToLower() :
-                targetingContext.UserId;
+            string userId = ignoreCase
+                ? targetingContext.UserId?.ToLower()
+                : targetingContext.UserId;
 
             string contextId = $"{userId}\n{hint}";
 
@@ -344,7 +344,6 @@ namespace Microsoft.FeatureManagement.Targeting
             {
                 hash = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(contextId));
             }
-
 
             //
             // Endianness check ensures the consistency of targeting evaluation result across different architectures

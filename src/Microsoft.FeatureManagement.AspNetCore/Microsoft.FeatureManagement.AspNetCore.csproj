@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\..\build\NugetProperties.props" />
 
   <!-- Official Version -->
@@ -44,5 +44,9 @@
   <Target Name="PrepublishScript" BeforeTargets="PrepareForPublish">
     <Copy SourceFiles="$(DocumentationFile)" DestinationFolder="$(OutDir)\XMLComments" SkipUnchangedFiles="false" />
   </Target>
+
+  <PropertyGroup>
+    <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+  </PropertyGroup>
 
 </Project>
