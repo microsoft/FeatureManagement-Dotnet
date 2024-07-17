@@ -45,7 +45,7 @@ namespace BlazorServerApp
                 return false;
             }
 
-            return userAgentContext.Contains("chrome", StringComparison.OrdinalIgnoreCase) && 
+            return userAgentContext.Contains("chrome", StringComparison.OrdinalIgnoreCase) &&
                 !userAgentContext.Contains("edg", StringComparison.OrdinalIgnoreCase);
         }
 

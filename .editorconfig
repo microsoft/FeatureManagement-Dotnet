@@ -1,0 +1,39 @@
+# editorconfig.org
+
+# top-most EditorConfig file
+root = true
+
+## Default settings ##
+[*]
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+## Formatting rule ##
+# https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055
+dotnet_diagnostic.IDE0055.severity = error
+
+# 'Using' directive preferences
+dotnet_sort_system_directives_first = false
+
+# New line preferences
+dotnet_diagnostic.IDE2002.severity = error
+csharp_style_allow_blank_lines_between_consecutive_braces_experimental = false
+dotnet_diagnostic.IDE2004.severity = error
+csharp_style_allow_blank_line_after_colon_in_constructor_initializer_experimental = false
+dotnet_diagnostic.IDE2005.severity = error
+csharp_style_allow_blank_line_after_token_in_conditional_expression_experimental = false
+dotnet_diagnostic.IDE2006.severity = error
+csharp_style_allow_blank_line_after_token_in_arrow_expression_clause_experimental = false
+dotnet_diagnostic.IDE2000.severity = error
+dotnet_style_allow_multiple_blank_lines_experimental = false
+dotnet_diagnostic.IDE2003.severity = error
+dotnet_style_allow_statement_immediately_after_block_experimental = false
+
+[*.csproj]
+indent_size = 2
+charset = utf-8
+
+[*.json]
+indent_size = 2
