@@ -1,4 +1,5 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <Import Project="..\..\build\NugetProperties.props" />
 
   <!-- Official Version -->
@@ -31,7 +32,7 @@
     <PackageIconUrl>https://aka.ms/AzureAppConfigurationPackageIcon</PackageIconUrl>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.FeatureManagement\Microsoft.FeatureManagement.csproj" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

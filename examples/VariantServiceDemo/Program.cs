@@ -1,11 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using VariantServiceDemo;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Telemetry.ApplicationInsights;
-
+using VariantServiceDemo;
 
 var builder = WebApplication.CreateBuilder(args);
 

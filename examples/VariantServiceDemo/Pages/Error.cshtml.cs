@@ -24,5 +24,4 @@ namespace VariantServiceDemo.Pages
             RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
         }
     }
-
 }

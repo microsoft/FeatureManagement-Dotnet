@@ -66,7 +66,7 @@ namespace Microsoft.FeatureManagement
             services.TryAddScoped<IVariantFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
 
             var builder = new FeatureManagementBuilder(services);
-            
+
             //
             // Add built-in feature filters
             builder.AddFeatureFilter<PercentageFilter>();
@@ -158,7 +158,7 @@ namespace Microsoft.FeatureManagement
             // Add built-in feature filters
             builder.AddFeatureFilter<PercentageFilter>();
 
-            builder.AddFeatureFilter<TimeWindowFilter>(sp => 
+            builder.AddFeatureFilter<TimeWindowFilter>(sp =>
                 new TimeWindowFilter()
                 {
                     Cache = sp.GetRequiredService<IMemoryCache>()

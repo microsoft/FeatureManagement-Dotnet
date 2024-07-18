@@ -35,7 +35,6 @@ namespace Microsoft.FeatureManagement
         private IEnumerable<ISessionManager> _sessionManagers;
         private TargetingEvaluationOptions _assignerOptions;
 
-
         /// <summary>
         /// The activity source for feature management.
         /// </summary>
@@ -291,9 +290,9 @@ namespace Microsoft.FeatureManagement
                 {
                     if (evaluationEvent.FeatureDefinition.Allocation == null)
                     {
-                        evaluationEvent.VariantAssignmentReason = evaluationEvent.Enabled ?
-                            VariantAssignmentReason.DefaultWhenEnabled :
-                            VariantAssignmentReason.DefaultWhenDisabled;
+                        evaluationEvent.VariantAssignmentReason = evaluationEvent.Enabled
+                            ? VariantAssignmentReason.DefaultWhenEnabled
+                            : VariantAssignmentReason.DefaultWhenDisabled;
                     }
                     else if (!evaluationEvent.Enabled)
                     {
@@ -486,6 +485,7 @@ namespace Microsoft.FeatureManagement
                         if (featureDefinition.RequirementType == RequirementType.Any)
                         {
                             enabled = true;
+
                             break;
                         }
 

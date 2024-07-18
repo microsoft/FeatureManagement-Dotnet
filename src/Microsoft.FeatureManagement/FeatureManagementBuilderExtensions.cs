@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.FeatureManagement.FeatureFilters;
 using Microsoft.FeatureManagement.Telemetry;
@@ -53,7 +53,7 @@ namespace Microsoft.FeatureManagement
             {
                 throw new ArgumentNullException(nameof(featureName));
             }
-            
+
             if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IVariantServiceProvider<TService>)))
             {
                 throw new InvalidOperationException($"A variant service of {typeof(TService).FullName} has already been added.");

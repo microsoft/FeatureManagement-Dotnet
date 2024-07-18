@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using System.Threading.Tasks;
-using System.Threading;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
 {
