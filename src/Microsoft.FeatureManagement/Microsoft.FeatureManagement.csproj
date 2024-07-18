@@ -54,8 +54,4 @@
     <Copy SourceFiles="$(DocumentationFile)" DestinationFolder="$(OutDir)\XMLComments" SkipUnchangedFiles="false" />
   </Target>
 
-  <PropertyGroup>
-    <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
-  </PropertyGroup>
-
 </Project>
