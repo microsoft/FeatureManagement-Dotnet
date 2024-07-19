@@ -1,4 +1,5 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <Import Project="..\..\build\NugetProperties.props" />
 
   <!-- Official Version -->
@@ -6,7 +7,7 @@
     <MajorVersion>4</MajorVersion>
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
-    <PreviewVersion>-preview3</PreviewVersion>
+    <PreviewVersion>-preview4</PreviewVersion>
   </PropertyGroup>
 
   <Import Project="..\..\build\Versioning.props" />
@@ -16,15 +17,19 @@
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>..\..\build\Microsoft.FeatureManagement.snk</AssemblyOriginatorKeyFile>
-    <LangVersion>10.0</LangVersion>
+    <!-- Microsoft.FeatureManagement uses the feature of async streams which is not supported in versions of C# earlier than 8.0. 
+        The library targets on netstandard 2.0. To ensure compatibility, the minimum language version requirement should be maintained. -->
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup>
     <Description>Microsoft.FeatureManagement provides a way to develop and expose application functionality based on features. Many applications have special requirements when a new feature is developed such as when the feature should be enabled and under what conditions. This library provides a way to define these relationships, and also integrates into common .NET code patterns to make exposing these features possible.</Description>
     <Authors>Microsoft</Authors>
     <Company>Microsoft</Company>
-    <PackageProjectUrl>https://github.com/Azure/AppConfiguration</PackageProjectUrl>
-    <PackageLicenseUrl>https://licenses.nuget.org/MIT</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/microsoft/FeatureManagement-Dotnet</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/microsoft/FeatureManagement-Dotnet.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReleaseNotes>Release notes can be found at https://aka.ms/MicrosoftFeatureManagementReleaseNotes</PackageReleaseNotes>
     <PackageTags>Microsoft FeatureManagement FeatureFlags AzureAppConfiguration</PackageTags>
     <PackageIconUrl>https://aka.ms/AzureAppConfigurationPackageIcon</PackageIconUrl>
@@ -39,6 +44,7 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.1.23" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.1.10" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
   </ItemGroup>
 
   <PropertyGroup>

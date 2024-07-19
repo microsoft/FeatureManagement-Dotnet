@@ -8,7 +8,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.FeatureFilters;
-using Microsoft.FeatureManagement.Telemetry;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,10 +48,6 @@ namespace Microsoft.FeatureManagement
             {
                 FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
                 SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
-                TelemetryPublishers = sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value?.TelemetryPublisherFactories?
-                    .Select(factory => factory(sp))
-                    .ToList() ??
-                    Enumerable.Empty<ITelemetryPublisher>(),
                 Cache = sp.GetRequiredService<IMemoryCache>(),
                 Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>(),
                 Configuration = sp.GetService<IConfiguration>(),
@@ -71,12 +66,16 @@ namespace Microsoft.FeatureManagement
             services.TryAddScoped<IVariantFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
 
             var builder = new FeatureManagementBuilder(services);
-            
+
             //
             // Add built-in feature filters
             builder.AddFeatureFilter<PercentageFilter>();
 
-            builder.AddFeatureFilter<TimeWindowFilter>();
+            builder.AddFeatureFilter<TimeWindowFilter>(sp =>
+                new TimeWindowFilter()
+                {
+                    Cache = sp.GetRequiredService<IMemoryCache>()
+                });
 
             builder.AddFeatureFilter<ContextualTargetingFilter>();
 
@@ -136,10 +135,6 @@ namespace Microsoft.FeatureManagement
             {
                 FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
                 SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
-                TelemetryPublishers = sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value?.TelemetryPublisherFactories?
-                    .Select(factory => factory(sp))
-                    .ToList() ??
-                    Enumerable.Empty<ITelemetryPublisher>(),
                 Cache = sp.GetRequiredService<IMemoryCache>(),
                 Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>(),
                 Configuration = sp.GetService<IConfiguration>(),
@@ -163,7 +158,11 @@ namespace Microsoft.FeatureManagement
             // Add built-in feature filters
             builder.AddFeatureFilter<PercentageFilter>();
 
-            builder.AddFeatureFilter<TimeWindowFilter>();
+            builder.AddFeatureFilter<TimeWindowFilter>(sp =>
+                new TimeWindowFilter()
+                {
+                    Cache = sp.GetRequiredService<IMemoryCache>()
+                });
 
             builder.AddFeatureFilter<ContextualTargetingFilter>();
 

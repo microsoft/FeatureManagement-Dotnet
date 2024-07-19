@@ -1,11 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.FeatureManagement.Telemetry;
-using Microsoft.FeatureManagement;
 using EvaluationDataToApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.FeatureManagement.Telemetry.ApplicationInsights.AspNetCore;
+using Microsoft.FeatureManagement;
+using Microsoft.FeatureManagement.Telemetry.ApplicationInsights;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,7 +30,7 @@ builder.Services.AddSingleton<ITelemetryInitializer, TargetingTelemetryInitializ
 // Wire up evaluation event emission
 builder.Services.AddFeatureManagement()
     .WithTargeting<HttpContextTargetingContextAccessor>()
-    .AddTelemetryPublisher<ApplicationInsightsTelemetryPublisher>();
+    .AddApplicationInsightsTelemetryPublisher();
 
 //
 // Default code from .NET template below
@@ -56,7 +55,7 @@ app.UseAuthorization();
 app.MapRazorPages();
 
 //
-// Adds Targeting Id to HttpContext
+// Add Targeting Id to HttpContext
 app.UseMiddleware<TargetingHttpContextMiddleware>();
 
 app.Run();

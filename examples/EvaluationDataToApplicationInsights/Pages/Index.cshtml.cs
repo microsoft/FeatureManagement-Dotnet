@@ -47,7 +47,7 @@ namespace EvaluationDataToApplicationInsights.Pages
             {
                 string val = Request.Form["imageScore"];
 
-                if (val != null && 
+                if (val != null &&
                     int.TryParse(val, out int rating))
                 {
                     _telemetry.TrackEvent(

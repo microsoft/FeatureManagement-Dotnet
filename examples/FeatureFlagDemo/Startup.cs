@@ -45,7 +45,7 @@ namespace FeatureFlagDemo
 
             services.AddFeatureManagement()
                     .AddFeatureFilter<BrowserFilter>()
-                    .WithTargeting<HttpContextTargetingContextAccessor>()
+                    .WithTargeting()
                     .UseDisabledFeaturesHandler(new FeatureNotEnabledDisabledHandler());
 
             services.AddMvc(o =>
