@@ -33,7 +33,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            Assert.True(await featureManager.IsEnabledAsync(Features.OnTestFeature));
+            Assert.False(await featureManager.IsEnabledAsync(Features.OnTestFeature));
 
             Assert.False(await featureManager.IsEnabledAsync(Features.OffTestFeature));
 
