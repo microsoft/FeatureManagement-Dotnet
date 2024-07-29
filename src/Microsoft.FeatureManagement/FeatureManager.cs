@@ -225,10 +225,10 @@ namespace Microsoft.FeatureManagement
         /// Gets the assigned variant for a specific feature.
         /// </summary>
         /// <param name="feature">The name of the feature to evaluate.</param>
-        /// <param name="context">An instance of <see cref="TargetingContext"/> used to evaluate which variant the user will be assigned.</param>
+        /// <param name="context">A context providing information that can used to evaluate which variant the user will be assigned.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>A variant assigned to the user based on the feature's configured allocation.</returns>
-        public async ValueTask<Variant> GetVariantAsync(string feature, ITargetingContext context, CancellationToken cancellationToken = default)
+        public async ValueTask<Variant> GetVariantAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(feature))
             {
@@ -262,11 +262,11 @@ namespace Microsoft.FeatureManagement
 
             //
             // Determine Targeting Context
-            TargetingContext targetingContext;
+            ITargetingContext targetingContext;
 
             if (useContext)
             {
-                targetingContext = context as TargetingContext;
+                targetingContext = context as ITargetingContext;
             }
             else
             {
@@ -601,7 +601,7 @@ namespace Microsoft.FeatureManagement
             return context;
         }
 
-        private ValueTask<VariantDefinition> AssignVariantAsync(EvaluationEvent evaluationEvent, TargetingContext targetingContext, CancellationToken cancellationToken)
+        private ValueTask<VariantDefinition> AssignVariantAsync(EvaluationEvent evaluationEvent, ITargetingContext targetingContext, CancellationToken cancellationToken)
         {
             Debug.Assert(evaluationEvent != null);
 
