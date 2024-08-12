@@ -216,7 +216,7 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(feature));
             }
 
-            EvaluationEvent evaluationEvent = await EvaluateFeature<TargetingContext>(feature, context: null, useContext: false, cancellationToken);
+            EvaluationEvent evaluationEvent = await EvaluateFeature<object>(feature, context: null, useContext: false, cancellationToken);
 
             return evaluationEvent.Variant;
         }
@@ -262,13 +262,18 @@ namespace Microsoft.FeatureManagement
 
             //
             // Determine Targeting Context
-            ITargetingContext targetingContext;
+            TargetingContext targetingContext = null;
 
-            if (useContext)
+            if (useContext && context is ITargetingContext targetingInfo)
             {
-                targetingContext = context as ITargetingContext;
+                targetingContext = new TargetingContext
+                {
+                    UserId = targetingInfo.UserId,
+                    Groups = targetingInfo.Groups
+                };
             }
-            else
+
+            if (targetingContext == null)
             {
                 targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
             }
@@ -314,7 +319,7 @@ namespace Microsoft.FeatureManagement
 
                             if (useContext)
                             {
-                                message = $"A {nameof(TargetingContext)} required for variant assignment was not provided.";
+                                message = $"A {nameof(ITargetingContext)} required for variant assignment was not provided.";
                             }
                             else if (TargetingContextAccessor == null)
                             {
