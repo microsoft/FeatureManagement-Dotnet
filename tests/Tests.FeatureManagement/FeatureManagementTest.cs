@@ -503,7 +503,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
 
-            AppContext context = new AppContext();
+            var context = new AppContext();
 
             context.AccountId = "NotEnabledAccount";
 
