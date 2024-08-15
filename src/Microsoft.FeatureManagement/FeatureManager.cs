@@ -605,7 +605,7 @@ namespace Microsoft.FeatureManagement
             return context;
         }
 
-        private ValueTask<VariantDefinition> AssignVariantAsync(EvaluationEvent evaluationEvent, ITargetingContext targetingContext, CancellationToken cancellationToken)
+        private ValueTask<VariantDefinition> AssignVariantAsync(EvaluationEvent evaluationEvent, TargetingContext targetingContext, CancellationToken cancellationToken)
         {
             Debug.Assert(evaluationEvent != null);
 
