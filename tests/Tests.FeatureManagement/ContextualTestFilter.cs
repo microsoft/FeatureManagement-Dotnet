@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement
 {
-    class ContextualTestFilter : IContextualFeatureFilter<AppContext>
+    class ContextualTestFilter : IContextualFeatureFilter<IAccountContext>
     {
-        public Func<FeatureFilterEvaluationContext, AppContext, bool> ContextualCallback { get; set; }
+        public Func<FeatureFilterEvaluationContext, IAccountContext, bool> ContextualCallback { get; set; }
 
-        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, AppContext accountContext)
+        public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext context, IAccountContext accountContext)
         {
             return Task.FromResult(ContextualCallback?.Invoke(context, accountContext) ?? false);
         }
