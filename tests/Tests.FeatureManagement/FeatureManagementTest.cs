@@ -1670,7 +1670,7 @@ namespace Tests.FeatureManagement
 
             IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
 
-            AppContext context = new AppContext();
+            var context = new AppContext();
 
             context.AccountId = "NotEnabledAccount";
 

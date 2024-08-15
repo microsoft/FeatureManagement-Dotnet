@@ -144,7 +144,7 @@ namespace Microsoft.FeatureManagement
         /// Checks whether a given feature is enabled.
         /// </summary>
         /// <param name="feature">The name of the feature to check.</param>
-        /// <param name="appContext">A context that provides information that can be used to evaluate whether a feature should be on or off.</param>
+        /// <param name="appContext">A context that provides information to evaluate whether a feature should be on or off.</param>
         /// <returns>True if the feature is enabled, otherwise false.</returns>
         public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
         {
@@ -170,7 +170,7 @@ namespace Microsoft.FeatureManagement
         /// Checks whether a given feature is enabled.
         /// </summary>
         /// <param name="feature">The name of the feature to check.</param>
-        /// <param name="appContext">A context that provides information that can be used to evaluate whether a feature should be on or off.</param>
+        /// <param name="appContext">A context that provides information to evaluate whether a feature should be on or off.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>True if the feature is enabled, otherwise false.</returns>
         public async ValueTask<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, CancellationToken cancellationToken = default)
@@ -228,7 +228,7 @@ namespace Microsoft.FeatureManagement
         /// <param name="context">A context that provides information to evaluate which variant will be assigned to the user.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>A variant assigned to the user based on the feature's configured allocation.</returns>
-        public async ValueTask<Variant> GetVariantAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken = default)
+        public async ValueTask<Variant> GetVariantAsync(string feature, ITargetingContext context, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(feature))
             {
@@ -318,7 +318,7 @@ namespace Microsoft.FeatureManagement
 
                             if (useContext)
                             {
-                                message = $"A {nameof(ITargetingContext)} required for variant assignment was not provided.";
+                                message = $"The context of type {context.GetType().Name} does not implement {nameof(ITargetingContext)} for variant assignment.";
                             }
                             else if (TargetingContextAccessor == null)
                             {
@@ -500,7 +500,7 @@ namespace Microsoft.FeatureManagement
 
                     if (useAppContext)
                     {
-                        filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, typeof(TContext)) ??
+                        filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, appContext.GetType()) ??
                                  GetFeatureFilterMetadata(featureFilterConfiguration.Name);
                     }
                     else
@@ -542,7 +542,7 @@ namespace Microsoft.FeatureManagement
                     // IContextualFeatureFilter
                     if (useAppContext)
                     {
-                        ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
+                        ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, appContext.GetType());
 
                         if (contextualFilter != null &&
                             await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation)
