@@ -2,14 +2,10 @@
 // Licensed under the MIT license.
 //
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
-using System.Threading.Tasks;
 
 namespace FeatureFlagDemo.Authentication
 {
@@ -49,7 +45,7 @@ namespace FeatureFlagDemo.Authentication
 
                 foreach (string group in groups)
                 {
-                    identity.AddClaim(new Claim(ClaimTypes.GroupName, group));
+                    identity.AddClaim(new Claim(ClaimTypes.Role, group));
                 }
 
                 Logger.LogInformation($"Assigning the following groups '{string.Join(", ", groups)}' to the request.");

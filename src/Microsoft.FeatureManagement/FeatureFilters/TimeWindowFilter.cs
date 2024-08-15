@@ -34,12 +34,12 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <summary>
         /// The application memory cache to store the start time of the closest active time window. By caching this time, the time window can minimize redundant computations when evaluating recurrence.
         /// </summary>
-        public IMemoryCache Cache { get; init; }
+        public IMemoryCache Cache { get; set; }
 
         /// <summary>
         /// This property allows the time window filter in our test suite to use simulated time.
         /// </summary>
-        internal TimeProvider SystemClock { get; init; }
+        internal TimeProvider SystemClock { get; set; }
 
         /// <summary>
         /// Binds configuration representing filter parameters to <see cref="TimeWindowFilterSettings"/>.

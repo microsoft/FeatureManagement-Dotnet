@@ -1,10 +1,11 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.FeatureManagement
 {
@@ -26,8 +27,15 @@ namespace Microsoft.FeatureManagement
 
             Type implementationType = typeof(T);
 
+            //
+            // TimeWindowFilter will only be added through another overload of AddFeatureFilter 
+            if (implementationType == typeof(TimeWindowFilter))
+            {
+                return this;
+            }
+
             IEnumerable<Type> featureFilterImplementations = implementationType.GetInterfaces()
-                .Where(i => i == typeof(IFeatureFilter) || 
+                .Where(i => i == typeof(IFeatureFilter) ||
                             (i.IsGenericType && i.GetGenericTypeDefinition().IsAssignableFrom(typeof(IContextualFeatureFilter<>))));
 
             if (featureFilterImplementations.Count() > 1)
