@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// Extensions used to provide an overload for <see cref="IVariantFeatureManager.GetVariantAsync"/> that accepts a <see cref="TargetingContext"/> type directly.
+    /// Extensions used to provide an overload for <see cref="IVariantFeatureManager.GetVariantAsync(string, ITargetingContext, CancellationToken)"/> that accepts a <see cref="TargetingContext"/> type directly.
     /// </summary>
     public static class VariantFeatureManagerExtensions
     {
