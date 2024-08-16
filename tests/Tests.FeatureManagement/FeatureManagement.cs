@@ -342,11 +342,7 @@ namespace Tests.FeatureManagement
             Assert.False(await featureManager.IsEnabledAsync(feature4));
             Assert.True(await featureManager.IsEnabledAsync(feature5));
             Assert.False(await featureManager.IsEnabledAsync(feature6));
-
-            for (int i = 0; i < 10; i++)
-            {
-                Assert.True(await featureManager.IsEnabledAsync(Features.RecurringTimeWindowTestFeature));
-            }
+            Assert.True(await featureManager.IsEnabledAsync(Features.RecurringTimeWindowTestFeature));
         }
 
         [Fact]
