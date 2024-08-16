@@ -594,7 +594,7 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                     }
                 },
-                false ),
+                false )
             };
 
             ConsumeEvaluationTestData(testData);

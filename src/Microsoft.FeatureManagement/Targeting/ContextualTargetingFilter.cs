@@ -132,7 +132,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             return Task.FromResult(IsTargeted(defaultContextId, settings.Audience.DefaultRolloutPercentage));
         }
 
-
         /// <summary>
         /// Determines if a given context id should be targeted based off the provided percentage
         /// </summary>

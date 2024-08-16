@@ -1,8 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Filters;
+using System.Threading.Tasks;
 
 namespace Tests.FeatureManagement.AspNetCore
 {

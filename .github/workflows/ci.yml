@@ -1,0 +1,53 @@
+name: FeatureManagement-Dotnet CI
+
+on:
+  push:
+    branches:
+      - main
+      - preview
+      - release/*
+  pull_request:
+    branches:
+      - main
+      - preview
+      - release/*
+
+permissions:
+  security-events: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install .NET
+        run: pwsh build/install-dotnet.ps1 -RestoreOnly
+
+      - name: Restore
+        run: pwsh build.ps1 -RestoreOnly
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: 'csharp'
+
+      - name: Dotnet Build
+        run: pwsh build.ps1
+
+      - name: Dotnet Pack
+        run: pwsh pack.ps1
+
+      - name: Dotnet Test
+        run: pwsh test.ps1
+
+      - name: Publish Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: Unit Test Results
+          path: ${{ github.workspace }}/tests/**/*.trx
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
