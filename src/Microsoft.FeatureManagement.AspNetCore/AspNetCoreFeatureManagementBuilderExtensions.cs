@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -55,6 +57,12 @@ namespace Microsoft.FeatureManagement
         /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
         public static IFeatureManagementBuilder WithTargeting(this IFeatureManagementBuilder builder)
         {
+            // Add HttpContextAccessor if it doesn't already exist
+            if (!builder.Services.Any(service => service.ServiceType == typeof(IHttpContextAccessor)))
+            {
+                builder.Services.AddHttpContextAccessor();
+            }
+
             //
             // Register the targeting context accessor with the same lifetime as the feature manager
             if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
@@ -67,6 +75,18 @@ namespace Microsoft.FeatureManagement
             }
 
             builder.AddFeatureFilter<TargetingFilter>();
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Adds middleware to the application's request pipeline that adds targeting information to the HTTP context.
+        /// </summary>
+        /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
+        /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
+        public static IApplicationBuilder UseFeatureManagement(this IApplicationBuilder builder)
+        {
+            builder.UseMiddleware<TargetingHttpContextMiddleware>();
 
             return builder;
         }

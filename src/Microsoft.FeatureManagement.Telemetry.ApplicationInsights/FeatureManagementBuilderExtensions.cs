@@ -1,7 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.FeatureManagement.Telemetry.ApplicationInsights;
 
@@ -28,6 +30,8 @@ namespace Microsoft.FeatureManagement
             {
                 throw new ArgumentException($"The provided builder's services must not be null.", nameof(builder));
             }
+
+            builder.Services.AddSingleton<ITelemetryInitializer, TargetingTelemetryInitializer>();
 
             builder.Services.AddSingleton<ApplicationInsightsEventPublisher>();
 
