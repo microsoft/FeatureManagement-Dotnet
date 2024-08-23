@@ -474,7 +474,6 @@ namespace Microsoft.FeatureManagement
                     {
                         Name = section[MicrosoftFeatureManagementFields.Name],
                         ConfigurationValue = section.GetSection(MicrosoftFeatureManagementFields.VariantDefinitionConfigurationValue),
-                        ConfigurationReference = section[MicrosoftFeatureManagementFields.VariantDefinitionConfigurationReference],
                         StatusOverride = statusOverride
                     };
 
