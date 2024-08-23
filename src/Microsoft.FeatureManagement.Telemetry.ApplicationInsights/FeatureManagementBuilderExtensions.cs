@@ -15,11 +15,11 @@ namespace Microsoft.FeatureManagement
     public static class FeatureManagementBuilderExtensions
     {
         /// <summary>
-        /// Adds the <see cref="ApplicationInsightsEventPublisher"/> using <see cref="ApplicationInsightsHostedService"/> to the feature management builder.
+        /// Adds the <see cref="TargetingTelemetryInitializer"/> and the <see cref="ApplicationInsightsEventPublisher"/> using <see cref="ApplicationInsightsHostedService"/> to the feature management builder.
         /// </summary>
         /// <param name="builder">The feature management builder.</param>
         /// <returns>The feature management builder.</returns>
-        public static IFeatureManagementBuilder AddApplicationInsightsTelemetryPublisher(this IFeatureManagementBuilder builder)
+        public static IFeatureManagementBuilder AddApplicationInsightsTelemetry(this IFeatureManagementBuilder builder)
         {
             if (builder == null)
             {

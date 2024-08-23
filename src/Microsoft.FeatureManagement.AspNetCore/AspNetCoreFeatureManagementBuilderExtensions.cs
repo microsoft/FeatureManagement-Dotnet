@@ -78,17 +78,5 @@ namespace Microsoft.FeatureManagement
 
             return builder;
         }
-
-        /// <summary>
-        /// Adds middleware to the application's request pipeline that adds targeting information to the HTTP context.
-        /// </summary>
-        /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
-        /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
-        public static IApplicationBuilder UseFeatureManagement(this IApplicationBuilder builder)
-        {
-            builder.UseMiddleware<TargetingHttpContextMiddleware>();
-
-            return builder;
-        }
     }
 }
