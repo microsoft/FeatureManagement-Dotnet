@@ -37,7 +37,7 @@ builder.Services.AddSingleton<ICalculator, RemoteCalculator>();
 builder.Services.AddFeatureManagement()
     .WithTargeting<HttpContextTargetingContextAccessor>()
     .WithVariantService<ICalculator>("Calculator")
-    .AddApplicationInsightsTelemetryPublisher();
+    .AddApplicationInsightsTelemetry();
 
 var app = builder.Build();
 
