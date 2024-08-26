@@ -139,7 +139,7 @@ namespace Microsoft.FeatureManagement
         /// Checks whether a given feature is enabled.
         /// </summary>
         /// <param name="feature">The name of the feature to check.</param>
-        /// <param name="appContext">A context providing information that can be used to evaluate whether a feature should be on or off.</param>
+        /// <param name="appContext">A context that provides information to evaluate whether a feature should be on or off.</param>
         /// <returns>True if the feature is enabled, otherwise false.</returns>
         public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
         {
@@ -165,7 +165,7 @@ namespace Microsoft.FeatureManagement
         /// Checks whether a given feature is enabled.
         /// </summary>
         /// <param name="feature">The name of the feature to check.</param>
-        /// <param name="appContext">A context providing information that can be used to evaluate whether a feature should be on or off.</param>
+        /// <param name="appContext">A context that provides information to evaluate whether a feature should be on or off.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>True if the feature is enabled, otherwise false.</returns>
         public async ValueTask<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, CancellationToken cancellationToken = default)
@@ -211,7 +211,7 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(feature));
             }
 
-            EvaluationEvent evaluationEvent = await EvaluateFeature<TargetingContext>(feature, context: null, useContext: false, cancellationToken);
+            EvaluationEvent evaluationEvent = await EvaluateFeature<object>(feature, context: null, useContext: false, cancellationToken);
 
             return evaluationEvent.Variant;
         }
@@ -220,10 +220,10 @@ namespace Microsoft.FeatureManagement
         /// Gets the assigned variant for a specific feature.
         /// </summary>
         /// <param name="feature">The name of the feature to evaluate.</param>
-        /// <param name="context">An instance of <see cref="TargetingContext"/> used to evaluate which variant the user will be assigned.</param>
+        /// <param name="context">A context that provides information to evaluate which variant will be assigned to the user.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>A variant assigned to the user based on the feature's configured allocation.</returns>
-        public async ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, CancellationToken cancellationToken = default)
+        public async ValueTask<Variant> GetVariantAsync(string feature, ITargetingContext context, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(feature))
             {
@@ -257,15 +257,19 @@ namespace Microsoft.FeatureManagement
 
             //
             // Determine Targeting Context
-            TargetingContext targetingContext;
+            TargetingContext targetingContext = null;
 
-            if (useContext)
-            {
-                targetingContext = context as TargetingContext;
-            }
-            else
+            if (!useContext)
             {
                 targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
+            }
+            else if (context is ITargetingContext targetingInfo)
+            {
+                targetingContext = new TargetingContext
+                {
+                    UserId = targetingInfo.UserId,
+                    Groups = targetingInfo.Groups
+                };
             }
 
             evaluationEvent.TargetingContext = targetingContext;
@@ -309,7 +313,7 @@ namespace Microsoft.FeatureManagement
 
                             if (useContext)
                             {
-                                message = $"A {nameof(TargetingContext)} required for variant assignment was not provided.";
+                                message = $"The context of type {context.GetType().Name} does not implement {nameof(ITargetingContext)} for variant assignment.";
                             }
                             else if (TargetingContextAccessor == null)
                             {
@@ -491,7 +495,7 @@ namespace Microsoft.FeatureManagement
 
                     if (useAppContext)
                     {
-                        filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, typeof(TContext)) ??
+                        filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, appContext.GetType()) ??
                                  GetFeatureFilterMetadata(featureFilterConfiguration.Name);
                     }
                     else
@@ -533,7 +537,7 @@ namespace Microsoft.FeatureManagement
                     // IContextualFeatureFilter
                     if (useAppContext)
                     {
-                        ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, typeof(TContext));
+                        ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, appContext.GetType());
 
                         if (contextualFilter != null &&
                             await contextualFilter.EvaluateAsync(context, appContext).ConfigureAwait(false) == targetEvaluation)

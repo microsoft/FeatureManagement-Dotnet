@@ -97,7 +97,7 @@ namespace Microsoft.FeatureManagement
             return variant;
         }
 
-        public async ValueTask<Variant> GetVariantAsync(string feature, TargetingContext context, CancellationToken cancellationToken)
+        public async ValueTask<Variant> GetVariantAsync(string feature, ITargetingContext context, CancellationToken cancellationToken)
         {
             string cacheKey = GetVariantCacheKey(feature);
 
