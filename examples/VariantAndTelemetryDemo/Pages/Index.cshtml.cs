@@ -5,20 +5,14 @@ using Microsoft.FeatureManagement;
 
 namespace VariantAndTelemetryDemo.Pages
 {
-    public class IndexModel : PageModel
+    public class IndexModel(
+        IVariantFeatureManager featureManager,
+        TelemetryClient telemetry) : PageModel
     {
-        private readonly IVariantFeatureManager _featureManager;
-        private readonly TelemetryClient _telemetry;
+        private readonly IVariantFeatureManager _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
+        private readonly TelemetryClient _telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
 
         public string Username { get; set; }
-
-        public IndexModel(
-            IVariantFeatureManager featureManager,
-            TelemetryClient telemetry)
-        {
-            _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
-            _telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
-        }
 
         public async Task<IActionResult> OnGet()
         {

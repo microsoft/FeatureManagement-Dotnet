@@ -17,7 +17,7 @@ IServiceCollection services = new ServiceCollection();
 services.AddSingleton(configuration)
         .AddFeatureManagement();
 
-IUserRepository userRepository = new InMemoryUserRepository();
+InMemoryUserRepository userRepository = new InMemoryUserRepository();
 
 //
 // Get the feature manager from application services
