@@ -25,7 +25,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TargetingConsoleApp", "exam
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.FeatureManagement.Telemetry.ApplicationInsights", "src\Microsoft.FeatureManagement.Telemetry.ApplicationInsights\Microsoft.FeatureManagement.Telemetry.ApplicationInsights.csproj", "{7964DC66-B2D3-412D-B18A-86D1E07D149D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvaluationDataToApplicationInsights", "examples\EvaluationDataToApplicationInsights\EvaluationDataToApplicationInsights.csproj", "{1502529E-47E9-4306-98C4-BF6CF7C7C275}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VariantAndTelemetryDemo", "examples\VariantAndTelemetryDemo\VariantAndTelemetryDemo.csproj", "{1502529E-47E9-4306-98C4-BF6CF7C7C275}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorServerApp", "examples\BlazorServerApp\BlazorServerApp.csproj", "{12BAB5A6-4EEB-4917-B5D9-4AFB6253008E}"
 EndProject

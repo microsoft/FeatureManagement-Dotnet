@@ -1,12 +1,17 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using EvaluationDataToApplicationInsights;
-using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.FeatureManagement;
-using Microsoft.FeatureManagement.Telemetry.ApplicationInsights;
 
 var builder = WebApplication.CreateBuilder(args);
+
+//
+// Uses cookie auth for simplicity and randomizing user
+builder.Services.AddAuthentication("CookieAuth")
+    .AddCookie("CookieAuth", options =>
+    {
+        options.LoginPath = "/RandomizeUser";
+    });
 
 //
 // What a web app using app insights looks like
@@ -14,13 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages();
 
-builder.Services.AddHttpContextAccessor();
-
 builder.Services.AddApplicationInsightsTelemetry();
-
-//
-// App Insights TargetingId Tagging
-builder.Services.AddSingleton<ITelemetryInitializer, TargetingTelemetryInitializer>();
 
 //
 // Enter feature management
@@ -29,7 +28,7 @@ builder.Services.AddSingleton<ITelemetryInitializer, TargetingTelemetryInitializ
 // Including user targeting capability
 // Wire up evaluation event emission
 builder.Services.AddFeatureManagement()
-    .WithTargeting<HttpContextTargetingContextAccessor>()
+    .WithTargeting()
     .AddApplicationInsightsTelemetry();
 
 //
@@ -49,6 +48,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 
