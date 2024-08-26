@@ -503,7 +503,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
 
-            AppContext context = new AppContext();
+            var context = new AppContext();
 
             context.AccountId = "NotEnabledAccount";
 
@@ -1640,6 +1640,53 @@ namespace Tests.FeatureManagement
                         .WithVariantService<IAlgorithm>("DummyFeature2");
                 }
             );
+        }
+
+        [Fact]
+        public async Task VariantFeatureFlagWithContextualFeatureFilter()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            IServiceCollection services = new ServiceCollection();
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualTestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            ContextualTestFilter contextualTestFeatureFilter = (ContextualTestFilter)serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>().First(f => f is ContextualTestFilter);
+
+            contextualTestFeatureFilter.ContextualCallback = (ctx, accountContext) =>
+            {
+                var allowedAccounts = new List<string>();
+
+                ctx.Parameters.Bind("AllowedAccounts", allowedAccounts);
+
+                return allowedAccounts.Contains(accountContext.AccountId);
+            };
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            var context = new AppContext();
+
+            context.AccountId = "NotEnabledAccount";
+
+            Assert.False(await featureManager.IsEnabledAsync(Features.ContextualFeatureWithVariant, context));
+
+            Variant variant = await featureManager.GetVariantAsync(Features.ContextualFeatureWithVariant, context);
+
+            Assert.Equal("Small", variant.Name);
+
+            context.AccountId = "abc";
+
+            Assert.True(await featureManager.IsEnabledAsync(Features.ContextualFeatureWithVariant, context));
+
+            variant = await featureManager.GetVariantAsync(Features.ContextualFeatureWithVariant, context);
+
+            Assert.Equal("Big", variant.Name);
         }
     }
 
