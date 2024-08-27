@@ -1472,7 +1472,6 @@ namespace Tests.FeatureManagement
             Variant variant = await featureManager.GetVariantAsync(Features.VariantFeaturePercentileOn, cancellationToken);
 
             Assert.Equal("Big", variant.Name);
-            Assert.Equal("green", variant.Configuration["Color"]);
             Assert.False(await featureManager.IsEnabledAsync(Features.VariantFeaturePercentileOn, cancellationToken));
 
             variant = await featureManager.GetVariantAsync(Features.VariantFeaturePercentileOff, cancellationToken);
@@ -1540,11 +1539,6 @@ namespace Tests.FeatureManagement
             variant = await featureManager.GetVariantAsync(Features.VariantFeatureNoAllocation, cancellationToken);
 
             Assert.Null(variant);
-
-            // Verify that ConfigurationValue has priority over ConfigurationReference
-            variant = await featureManager.GetVariantAsync(Features.VariantFeatureBothConfigurations, cancellationToken);
-
-            Assert.Equal("600px", variant.Configuration.Value);
 
             // Verify that an exception is thrown for invalid StatusOverride value
             FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () =>

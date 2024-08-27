@@ -105,11 +105,6 @@ namespace Microsoft.FeatureManagement
         public ILogger Logger { get; set; }
 
         /// <summary>
-        /// The configuration reference for feature variants.
-        /// </summary>
-        public IConfiguration Configuration { get; set; }
-
-        /// <summary>
         /// The targeting context accessor for feature variant allocation.
         /// </summary>
         public ITargetingContextAccessor TargetingContextAccessor { get; set; }
@@ -859,19 +854,6 @@ namespace Microsoft.FeatureManagement
             if (variantDefinition.ConfigurationValue.Exists())
             {
                 variantConfiguration = variantDefinition.ConfigurationValue;
-            }
-            else if (!string.IsNullOrEmpty(variantDefinition.ConfigurationReference))
-            {
-                if (Configuration == null)
-                {
-                    Logger?.LogWarning($"Cannot use {nameof(variantDefinition.ConfigurationReference)} as no instance of {nameof(IConfiguration)} is present.");
-
-                    return null;
-                }
-                else
-                {
-                    variantConfiguration = Configuration.GetSection(variantDefinition.ConfigurationReference);
-                }
             }
 
             return new Variant()

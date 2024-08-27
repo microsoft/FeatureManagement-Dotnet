@@ -22,11 +22,6 @@ namespace Microsoft.FeatureManagement
         public IConfigurationSection ConfigurationValue { get; set; }
 
         /// <summary>
-        /// A reference pointing to the configuration for this variant of the feature.
-        /// </summary>
-        public string ConfigurationReference { get; set; }
-
-        /// <summary>
         /// Overrides the state of the feature if this variant has been assigned.
         /// </summary>
         public StatusOverride StatusOverride { get; set; } = StatusOverride.None;
