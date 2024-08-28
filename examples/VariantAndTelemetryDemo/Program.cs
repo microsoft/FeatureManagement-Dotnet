@@ -6,7 +6,7 @@ using Microsoft.FeatureManagement;
 var builder = WebApplication.CreateBuilder(args);
 
 //
-// Uses cookie auth for simplicity and randomizing user
+// Use cookie auth for simplicity and randomizing user
 builder.Services.AddAuthentication("CookieAuth")
     .AddCookie("CookieAuth", options =>
     {
