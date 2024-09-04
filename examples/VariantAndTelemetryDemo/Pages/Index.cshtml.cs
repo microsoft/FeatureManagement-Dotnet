@@ -12,7 +12,7 @@ namespace VariantAndTelemetryDemo.Pages
 
         public IndexModel(IVariantFeatureManager featureManager, TelemetryClient telemetry)
         {
-            _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager))
+            _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
             _telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
         }
 
