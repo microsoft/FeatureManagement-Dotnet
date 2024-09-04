@@ -20,7 +20,7 @@ Feature management provides a way to develop and expose application functionalit
 * [ASP.NET Core Web App (Razor Page)](./examples/RazorPages)
 * [ASP.NET Core Web App (MVC)](./examples/FeatureFlagDemo)
 * [Blazor Server App](./examples/BlazorServerApp)
-* [ASP.NET Core Web App with Feature Flag Telemetry](./examples/EvaluationDataToApplicationInsights)
+* [ASP.NET Core Web App with Variants and Telemetry](./examples/VariantAndTelemetryDemo)
 * [ASP.NET Core Web App with Variant Service](./examples/VariantServiceDemo)
 
 ## Contributing

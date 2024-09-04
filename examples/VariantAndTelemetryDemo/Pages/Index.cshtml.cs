@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.FeatureManagement;
 
-namespace EvaluationDataToApplicationInsights.Pages
+namespace VariantAndTelemetryDemo.Pages
 {
     public class IndexModel : PageModel
     {
@@ -22,7 +22,7 @@ namespace EvaluationDataToApplicationInsights.Pages
 
         public async Task<IActionResult> OnGet()
         {
-            Username = Request.Cookies["username"];
+            Username = HttpContext.User.Identity.Name;
 
             if (string.IsNullOrEmpty(Username))
             {
