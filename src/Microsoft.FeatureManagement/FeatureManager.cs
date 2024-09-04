@@ -698,9 +698,7 @@ namespace Microsoft.FeatureManagement
 
         private void BindSettings(IFeatureFilterMetadata filter, FeatureFilterEvaluationContext context, int filterIndex)
         {
-            IFilterParametersBinder binder = filter as IFilterParametersBinder;
-
-            if (binder == null)
+            if (!(filter is IFilterParametersBinder binder))
             {
                 return;
             }
@@ -714,13 +712,11 @@ namespace Microsoft.FeatureManagement
 
             object settings;
 
-            ConfigurationCacheItem cacheItem;
-
             string cacheKey = $"Microsoft.FeatureManagement{Environment.NewLine}{context.FeatureName}{Environment.NewLine}{filterIndex}";
 
             //
             // Check if settings already bound from configuration or the parameters have changed
-            if (!Cache.TryGetValue(cacheKey, out cacheItem) ||
+            if (!Cache.TryGetValue(cacheKey, out ConfigurationCacheItem cacheItem) ||
                 cacheItem.Parameters != context.Parameters)
             {
                 settings = binder.BindParameters(context.Parameters);
