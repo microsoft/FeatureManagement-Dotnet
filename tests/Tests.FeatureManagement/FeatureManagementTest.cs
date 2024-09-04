@@ -503,7 +503,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
 
-            AppContext context = new AppContext();
+            var context = new AppContext();
 
             context.AccountId = "NotEnabledAccount";
 
@@ -1472,7 +1472,6 @@ namespace Tests.FeatureManagement
             Variant variant = await featureManager.GetVariantAsync(Features.VariantFeaturePercentileOn, cancellationToken);
 
             Assert.Equal("Big", variant.Name);
-            Assert.Equal("green", variant.Configuration["Color"]);
             Assert.False(await featureManager.IsEnabledAsync(Features.VariantFeaturePercentileOn, cancellationToken));
 
             variant = await featureManager.GetVariantAsync(Features.VariantFeaturePercentileOff, cancellationToken);
@@ -1540,11 +1539,6 @@ namespace Tests.FeatureManagement
             variant = await featureManager.GetVariantAsync(Features.VariantFeatureNoAllocation, cancellationToken);
 
             Assert.Null(variant);
-
-            // Verify that ConfigurationValue has priority over ConfigurationReference
-            variant = await featureManager.GetVariantAsync(Features.VariantFeatureBothConfigurations, cancellationToken);
-
-            Assert.Equal("600px", variant.Configuration.Value);
 
             // Verify that an exception is thrown for invalid StatusOverride value
             FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(async () =>
@@ -1640,6 +1634,53 @@ namespace Tests.FeatureManagement
                         .WithVariantService<IAlgorithm>("DummyFeature2");
                 }
             );
+        }
+
+        [Fact]
+        public async Task VariantFeatureFlagWithContextualFeatureFilter()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            IServiceCollection services = new ServiceCollection();
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .AddFeatureFilter<ContextualTestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            ContextualTestFilter contextualTestFeatureFilter = (ContextualTestFilter)serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>().First(f => f is ContextualTestFilter);
+
+            contextualTestFeatureFilter.ContextualCallback = (ctx, accountContext) =>
+            {
+                var allowedAccounts = new List<string>();
+
+                ctx.Parameters.Bind("AllowedAccounts", allowedAccounts);
+
+                return allowedAccounts.Contains(accountContext.AccountId);
+            };
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            var context = new AppContext();
+
+            context.AccountId = "NotEnabledAccount";
+
+            Assert.False(await featureManager.IsEnabledAsync(Features.ContextualFeatureWithVariant, context));
+
+            Variant variant = await featureManager.GetVariantAsync(Features.ContextualFeatureWithVariant, context);
+
+            Assert.Equal("Small", variant.Name);
+
+            context.AccountId = "abc";
+
+            Assert.True(await featureManager.IsEnabledAsync(Features.ContextualFeatureWithVariant, context));
+
+            variant = await featureManager.GetVariantAsync(Features.ContextualFeatureWithVariant, context);
+
+            Assert.Equal("Big", variant.Name);
         }
     }
 

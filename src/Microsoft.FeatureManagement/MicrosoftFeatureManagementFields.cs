@@ -42,7 +42,6 @@ namespace Microsoft.FeatureManagement
         // Variants keywords
         public const string VariantsSectionName = "variants";
         public const string VariantDefinitionConfigurationValue = "configuration_value";
-        public const string VariantDefinitionConfigurationReference = "configuration_reference";
         public const string VariantDefinitionStatusOverride = "status_override";
 
         // Telemetry keywords
