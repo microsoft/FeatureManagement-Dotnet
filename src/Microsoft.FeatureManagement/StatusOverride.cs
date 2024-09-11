@@ -12,10 +12,12 @@ namespace Microsoft.FeatureManagement
         /// Does not affect the feature state.
         /// </summary>
         None,
+
         /// <summary>
         /// The feature will be considered enabled.
         /// </summary>
         Enabled,
+
         /// <summary>
         /// The feature will be considered disabled.
         /// </summary>

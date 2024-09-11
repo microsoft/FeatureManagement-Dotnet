@@ -4,7 +4,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.FeatureManagement.FeatureFilters;
-using Microsoft.FeatureManagement.Telemetry;
 using System;
 using System.Collections.Generic;
 using System.Linq;
