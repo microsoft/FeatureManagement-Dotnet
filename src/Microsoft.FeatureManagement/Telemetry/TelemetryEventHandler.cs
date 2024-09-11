@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.FeatureManagement.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -57,11 +58,28 @@ namespace Microsoft.FeatureManagement.Telemetry
             }
 
             // VariantAllocationPercentage
-            if (evaluationEvent.FeatureDefinition.Allocation?.Percentile != null)
+            if (evaluationEvent.VariantAssignmentReason == VariantAssignmentReason.DefaultWhenEnabled)
             {
-                tags["VariantAssignmentPercentage"] = evaluationEvent.FeatureDefinition.Allocation.Percentile
-                    .Where(p => p.Variant == evaluationEvent.Variant.Name)
-                    .Sum(p => p.To - p.From);
+                // If the variant was assigned due to DefaultWhenEnabled, the percentage is 100% - all allocated percentiles
+                double allocatedPercentage = 0;
+
+                if (evaluationEvent.FeatureDefinition.Allocation?.Percentile != null)
+                {
+                    allocatedPercentage += evaluationEvent.FeatureDefinition.Allocation.Percentile
+                        .Sum(p => p.To - p.From);
+                }
+
+                tags["VariantAssignmentPercentage"] = 100 - allocatedPercentage;
+            }
+            else if (evaluationEvent.VariantAssignmentReason == VariantAssignmentReason.Percentile)
+            {
+                // If the variant was assigned due to Percentile, the percentage is the sum of the allocated percentiles for the given variant
+                if (evaluationEvent.FeatureDefinition.Allocation?.Percentile != null)
+                {
+                    tags["VariantAssignmentPercentage"] = evaluationEvent.FeatureDefinition.Allocation.Percentile
+                        .Where(p => p.Variant == evaluationEvent.Variant?.Name)
+                        .Sum(p => p.To - p.From);
+                }
             }
 
             // DefaultWhenEnabled
@@ -147,7 +165,7 @@ namespace Microsoft.FeatureManagement.Telemetry
                 byte[] hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
                 byte[] truncatedHash = new byte[15];
                 Array.Copy(hash, truncatedHash, 15);
-                return Convert.ToBase64String(truncatedHash);
+                return truncatedHash.ToBase64Url();
             }
         }
     }
