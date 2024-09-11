@@ -57,10 +57,10 @@ namespace Microsoft.FeatureManagement.Telemetry
                 }
             }
 
-            // VariantAllocationPercentage
+            // VariantAssignmentPercentage
             if (evaluationEvent.VariantAssignmentReason == VariantAssignmentReason.DefaultWhenEnabled)
             {
-                // If the variant was assigned due to DefaultWhenEnabled, the percentage is 100% - all allocated percentiles
+                // If the variant was assigned due to DefaultWhenEnabled, the percentage reflects the unallocated percentiles
                 double allocatedPercentage = 0;
 
                 if (evaluationEvent.FeatureDefinition.Allocation?.Percentile != null)
