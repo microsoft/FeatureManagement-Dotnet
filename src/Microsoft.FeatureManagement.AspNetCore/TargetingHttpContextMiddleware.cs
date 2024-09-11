@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Logging;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement
