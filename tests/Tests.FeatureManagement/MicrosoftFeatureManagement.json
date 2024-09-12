@@ -1,0 +1,77 @@
+{
+  "feature_management": {
+    "feature_flags": [
+      {
+        "id": "OnTestFeature",
+        "enabled": true
+      },
+      {
+        "id": "OffTestFeature",
+        "enabled": false,
+        "conditions": {
+          "client_filters": [
+            {
+              "name": "AlwaysOn"
+            }
+          ]
+        }
+      },
+      {
+        "id": "ConditionalFeature",
+        "enabled": true,
+        "conditions": {
+          "client_filters": [
+            {
+              "name": "Test",
+              "parameters": {
+                "P1": "V1"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "AnyFilterFeature",
+        "enabled": true,
+        "conditions": {
+          "requirement_type": "any",
+          "client_filters": [
+            {
+              "name": "Test",
+              "parameters": {
+                "Id": "1"
+              }
+            },
+            {
+              "name": "Test",
+              "parameters": {
+                "Id": "2"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "AllFilterFeature",
+        "enabled": true,
+        "conditions": {
+          "requirement_type": "all",
+          "client_filters": [
+            {
+              "name": "Test",
+              "parameters": {
+                "Id": "1"
+              }
+            },
+            {
+              "name": "Test",
+              "parameters": {
+                "Id": "2"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
