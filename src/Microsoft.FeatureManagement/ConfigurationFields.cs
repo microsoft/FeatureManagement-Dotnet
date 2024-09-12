@@ -4,8 +4,9 @@
 
 namespace Microsoft.FeatureManagement
 {
-    internal static class DotnetFeatureManagementFields
+    internal static class ConfigurationFields
     {
+        // Enum keywords
         public const string RequirementType = "RequirementType";
 
         // Feature filters keywords

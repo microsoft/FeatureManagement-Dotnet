@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <Import Project="..\..\build\NugetProperties.props" />
 
   <!-- Official Version -->
   <PropertyGroup>
-    <MajorVersion>4</MajorVersion>
-    <MinorVersion>0</MinorVersion>
+    <MajorVersion>3</MajorVersion>
+    <MinorVersion>5</MinorVersion>
     <PatchVersion>0</PatchVersion>
   </PropertyGroup>
 
@@ -44,7 +43,6 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.1.23" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.1.10" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
-    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -17,44 +17,34 @@ This app demonstrates how to use the Feature Management library in Blazor apps.
 This app uses two feature flags: "BrowserEnhancement" and "Beta".
 
 ``` json
-"feature_management": {
-  "feature_flags": [
-    {
-      "id": "BrowserEnhancement",
-      "enabled": true,
-      "conditions": {
-        "client_filters": [
-          {
-            "name": "Browser",
-            "parameters": {
-              "AllowedBrowsers": [ "Edge" ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": "Beta",
-      "enabled": true,
-      "conditions": {
-        "client_filters": [
-          {
-            "name": "Targeting",
-            "parameters": {
-              "Audience": {
-                "DefaultRolloutPercentage": 50,
-                "Exclusion": {
-                  "Groups": [
-                    "Guests"
-                  ]
+"FeatureManagement": {
+    "BrowserEnhancement": {
+        "EnabledFor": [
+            {
+                "Name": "Browser",
+                "Parameters": {
+                    "AllowedBrowsers": [ "Edge" ]
                 }
-              }
             }
-          }
         ]
-      }
+    },
+    "Beta": {
+        "EnabledFor": [
+            {
+                "Name": "Targeting",
+                "Parameters": {
+                    "Audience": {
+                        "DefaultRolloutPercentage": 50,
+                        "Exclusion": {
+                            "Groups": [
+                                "Guests"
+                            ]
+                        }
+                    }
+                }
+            }
+        ]
     }
-  ]
 }
 ```
 
@@ -75,7 +65,6 @@ This app uses [cookie authentication](https://learn.microsoft.com/en-us/aspnet/c
 Rather than `HttpContext`, the [`AuthenticationStateProvider`](https://learn.microsoft.com/en-us/aspnet/core/blazor/security/?view=aspnetcore-8.0#authenticationstateprovider-service) service is used to obtain the user authentication state information for setting targeting context. The details can be found in the [`MyTargetingContextAccessor`](./MyTargetingContextAccessor.cs).
 
 ## Service Registration
-
 Blazor applications like this one typically pull ambient contextual data from scoped services. For example, the `UserAgentContext`, `AuthenticationStateProvider` and `ITargetingContextAccessor` are all scoped services. This pattern *breaks* if the feature management services are added as singleton, which is typical in non-blazor web apps.
 
 In Blazor, *avoid* the following
