@@ -1,0 +1,16 @@
+﻿{
+  "FeatureManagement": {
+    "OnTestFeature": true,
+    "OffTestFeature": false,
+    "ConditionalFeature": {
+      "EnabledFor": [
+        {
+          "Name": "Test",
+          "Parameters": {
+            "P1": "V1"
+          }
+        }
+      ]
+    }
+  }
+}

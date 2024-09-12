@@ -1,0 +1,47 @@
+﻿@page
+@model IndexModel
+@inject IHttpContextAccessor httpContextAccessor
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h2> Current user @Model.Username </h2>
+</div>
+
+<calculator>
+    <input id="inputA" type="number" value="0"> +
+    <input id="inputB" type="number" value="0"> =
+    <span id="result">0</span>
+    <div>
+        <button id="calculateButton" onclick="calculate()">Calculate</button>
+    </div>
+</calculator>
+
+@section Scripts {
+    <script>
+        function calculate() {
+            var a = document.getElementById('inputA').value;
+            var b = document.getElementById('inputB').value;
+
+            var calculateButton = document.getElementById('calculateButton');
+            calculateButton.textContent = 'Calculating...';
+            calculateButton.disabled = true;
+
+            fetch(`/Index?handler=Calculate&a=${a}&b=${b}`)
+                .then(response => {
+                    return response.json()
+                })
+                .then(data => {
+                    document.getElementById('result').innerText = data;
+                })
+                .catch(error => {
+                    console.error('Error:', error)
+                })
+                .finally(() => {
+                    calculateButton.textContent = 'Calculate';
+                    calculateButton.disabled = false;
+                });
+        }
+    </script>
+}
