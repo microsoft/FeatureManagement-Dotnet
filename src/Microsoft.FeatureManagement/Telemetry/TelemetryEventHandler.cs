@@ -1,12 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.FeatureManagement.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Web;
 
 namespace Microsoft.FeatureManagement.Telemetry
 {
@@ -88,85 +84,9 @@ namespace Microsoft.FeatureManagement.Telemetry
                 tags["DefaultWhenEnabled"] = evaluationEvent.FeatureDefinition.Allocation.DefaultWhenEnabled;
             }
 
-            // AllocationId
-            string allocationId = GenerateAllocationId(evaluationEvent.FeatureDefinition);
-
-            if (allocationId != null)
-            {
-                tags["AllocationId"] = allocationId;
-            }
-
             var activityEvent = new ActivityEvent("FeatureFlag", DateTimeOffset.UtcNow, tags);
 
             Activity.Current.AddEvent(activityEvent);
-        }
-
-        private static string GenerateAllocationId(FeatureDefinition featureDefinition)
-        {
-            StringBuilder inputBuilder = new StringBuilder();
-
-            // Seed
-            inputBuilder.Append($"seed={featureDefinition.Allocation?.Seed ?? ""}");
-
-            var allocatedVariants = new HashSet<string>();
-
-            // DefaultWhenEnabled
-            if (featureDefinition.Allocation?.DefaultWhenEnabled != null)
-            {
-                allocatedVariants.Add(featureDefinition.Allocation.DefaultWhenEnabled);
-            }
-
-            inputBuilder.Append("\n");
-            inputBuilder.Append($"default_when_enabled={featureDefinition.Allocation?.DefaultWhenEnabled ?? ""}");
-
-            // Percentiles
-            inputBuilder.Append("\n");
-            inputBuilder.Append("percentiles=");
-
-            if (featureDefinition.Allocation?.Percentile != null && featureDefinition.Allocation.Percentile.Any())
-            {
-                var sortedPercentiles = featureDefinition.Allocation.Percentile
-                    .Where(p => p.From != p.To)
-                    .OrderBy(p => p.From)
-                    .ToList();
-
-                allocatedVariants.UnionWith(sortedPercentiles.Select(p => p.Variant));
-
-                inputBuilder.Append(string.Join(";", sortedPercentiles.Select(p => $"{p.From},{p.Variant},{p.To}")));
-            }
-
-            // Variants
-            inputBuilder.Append("\n");
-            inputBuilder.Append("variants=");
-
-            if (allocatedVariants.Any() && featureDefinition.Variants != null && featureDefinition.Variants.Any())
-            {
-                var sortedVariants = featureDefinition.Variants
-                    .Where(variant => allocatedVariants.Contains(variant.Name))
-                    .OrderBy(variant => variant.Name)
-                    .ToList();
-
-                inputBuilder.Append(string.Join(";", sortedVariants.Select(v => $"{v.Name},{v.ConfigurationValue?.Value}")));
-            }
-
-            // If there's not a special seed and no variants allocated, return null
-            if (featureDefinition.Allocation?.Seed == null &&
-                !allocatedVariants.Any())
-            {
-                return null;
-            }
-
-            // Example input string
-            // input == "seed=123abc\ndefault_when_enabled=Control\npercentiles=0,Control,20;20,Test,100\nvariants=Control,standard;Test,special"
-            string input = inputBuilder.ToString();
-
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
-                byte[] truncatedHash = new byte[15];
-                Array.Copy(hash, truncatedHash, 15);
-                return truncatedHash.ToBase64Url();
-            }
         }
     }
 }

@@ -1738,7 +1738,6 @@ namespace Tests.FeatureManagement
 
                         string variantAssignmentPercentage = evaluationEvent.Tags.FirstOrDefault(kvp => kvp.Key == "VariantAssignmentPercentage").Value?.ToString();
                         string defaultWhenEnabled = evaluationEvent.Tags.FirstOrDefault(kvp => kvp.Key == "DefaultWhenEnabled").Value?.ToString();
-                        string allocationId = evaluationEvent.Tags.FirstOrDefault(kvp => kvp.Key == "AllocationId").Value?.ToString();
 
                         // Test telemetry cases
                         switch (featureName)
@@ -1769,7 +1768,6 @@ namespace Tests.FeatureManagement
                                 Assert.Equal(VariantAssignmentReason.DefaultWhenEnabled.ToString(), variantAssignmentReason);
                                 Assert.Equal("100", variantAssignmentPercentage);
                                 Assert.Equal("Medium", defaultWhenEnabled);
-                                Assert.Equal("kLGyMxiMp7fFb5N3cT_I", allocationId);
                                 break;
 
                             case Features.VariantFeatureDefaultDisabled:
@@ -1780,7 +1778,6 @@ namespace Tests.FeatureManagement
                                 Assert.Equal(VariantAssignmentReason.DefaultWhenDisabled.ToString(), variantAssignmentReason);
                                 Assert.Null(variantAssignmentPercentage);
                                 Assert.Null(defaultWhenEnabled);
-                                Assert.Null(allocationId);
                                 break;
 
                             case Features.VariantFeaturePercentileOn:
@@ -1805,7 +1802,6 @@ namespace Tests.FeatureManagement
                                 Assert.Equal(VariantAssignmentReason.DefaultWhenDisabled.ToString(), variantAssignmentReason);
                                 Assert.Null(variantAssignmentPercentage);
                                 Assert.Null(defaultWhenEnabled);
-                                Assert.Equal("JiCG2_6VXr16dczqxGFl", allocationId);
                                 break;
 
                             case Features.VariantFeatureUser:
@@ -1815,7 +1811,6 @@ namespace Tests.FeatureManagement
                                 Assert.Equal(VariantAssignmentReason.User.ToString(), variantAssignmentReason);
                                 Assert.Null(variantAssignmentPercentage);
                                 Assert.Null(defaultWhenEnabled);
-                                Assert.Null(allocationId);
                                 break;
 
                             case Features.VariantFeatureGroup:
@@ -1825,7 +1820,6 @@ namespace Tests.FeatureManagement
                                 Assert.Equal(VariantAssignmentReason.Group.ToString(), variantAssignmentReason);
                                 Assert.Null(variantAssignmentPercentage);
                                 Assert.Null(defaultWhenEnabled);
-                                Assert.Null(allocationId);
                                 break;
 
                             case Features.VariantFeatureNoVariants:
@@ -1835,7 +1829,6 @@ namespace Tests.FeatureManagement
                                 Assert.Equal(VariantAssignmentReason.None.ToString(), variantAssignmentReason);
                                 Assert.Null(variantAssignmentPercentage);
                                 Assert.Null(defaultWhenEnabled);
-                                Assert.Null(allocationId);
                                 break;
 
                             case Features.VariantFeatureNoAllocation:
@@ -1845,7 +1838,6 @@ namespace Tests.FeatureManagement
                                 Assert.Equal(VariantAssignmentReason.DefaultWhenEnabled.ToString(), variantAssignmentReason);
                                 Assert.Equal("100", variantAssignmentPercentage);
                                 Assert.Null(defaultWhenEnabled);
-                                Assert.Null(allocationId);
                                 break;
 
                             case Features.VariantFeatureAlwaysOffNoAllocation:
@@ -1855,7 +1847,6 @@ namespace Tests.FeatureManagement
                                 Assert.Equal(VariantAssignmentReason.DefaultWhenDisabled.ToString(), variantAssignmentReason);
                                 Assert.Null(variantAssignmentPercentage);
                                 Assert.Null(defaultWhenEnabled);
-                                Assert.Null(allocationId);
                                 break;
 
                             case Features.VariantFeatureIncorrectDefaultWhenEnabled:
@@ -1865,7 +1856,6 @@ namespace Tests.FeatureManagement
                                 Assert.Equal(VariantAssignmentReason.DefaultWhenEnabled.ToString(), variantAssignmentReason);
                                 Assert.Equal("100", variantAssignmentPercentage);
                                 Assert.Equal("Foo", defaultWhenEnabled);
-                                Assert.Equal("jGJG4WioOB6hH6rh7jOx", allocationId);
                                 break;
 
                             default:
