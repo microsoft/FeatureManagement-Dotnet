@@ -156,7 +156,7 @@ namespace Microsoft.FeatureManagement
             IEnumerable<IConfigurationSection> dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
 
             IConfigurationSection configuration = dotnetFeatureDefinitionSections
-                .LastOrDefault(section =>
+                .FirstOrDefault(section =>
                     string.Equals(section.Key, featureName, StringComparison.OrdinalIgnoreCase));
 
             if (configuration == null)
