@@ -172,7 +172,7 @@ namespace Microsoft.FeatureManagement
             IEnumerable<IConfigurationSection> microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
 
             IConfigurationSection configuration = microsoftFeatureDefinitionSections
-                .FirstOrDefault(section =>
+                .LastOrDefault(section =>
                     string.Equals(section[MicrosoftFeatureManagementFields.Id], featureName, StringComparison.OrdinalIgnoreCase));
 
             if (configuration == null)
