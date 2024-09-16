@@ -427,6 +427,26 @@ namespace Tests.FeatureManagement
 
             Assert.True(called);
         }
+
+        [Fact]
+        public async Task LastFeatureFlagWins()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            IServiceCollection services = new ServiceCollection();
+
+            services
+                .AddSingleton(configuration)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync(Features.DuplicateFlag));
+        }
     }
 
     public class FeatureManagementFeatureFilterGeneralTest

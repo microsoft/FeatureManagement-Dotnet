@@ -156,7 +156,7 @@ namespace Microsoft.FeatureManagement
             IEnumerable<IConfigurationSection> dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
 
             IConfigurationSection configuration = dotnetFeatureDefinitionSections
-                .FirstOrDefault(section =>
+                .LastOrDefault(section =>
                     string.Equals(section.Key, featureName, StringComparison.OrdinalIgnoreCase));
 
             if (configuration == null)
@@ -172,7 +172,7 @@ namespace Microsoft.FeatureManagement
             IEnumerable<IConfigurationSection> microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
 
             IConfigurationSection configuration = microsoftFeatureDefinitionSections
-                .FirstOrDefault(section =>
+                .LastOrDefault(section =>
                     string.Equals(section[MicrosoftFeatureManagementFields.Id], featureName, StringComparison.OrdinalIgnoreCase));
 
             if (configuration == null)
