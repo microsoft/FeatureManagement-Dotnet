@@ -178,8 +178,6 @@ namespace Tests.FeatureManagement.AspNetCore
 
         private static void DisableEndpointRouting(MvcOptions options)
         {
-            //
-            // Endpoint routing is disabled by default in .NET Core 2.1 since it didn't exist.
             options.EnableEndpointRouting = false;
         }
     }

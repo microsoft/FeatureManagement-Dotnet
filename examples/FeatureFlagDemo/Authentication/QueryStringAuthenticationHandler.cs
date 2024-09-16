@@ -15,13 +15,8 @@ namespace FeatureFlagDemo.Authentication
     /// 
     /// To assign a user, use the following query string structure "?username=JohnDoe&groups=MyGroup1,MyGroup2"
     /// </summary>
-    class QueryStringAuthenticationHandler : AuthenticationHandler<QueryStringAuthenticationOptions>
+    class QueryStringAuthenticationHandler(IOptionsMonitor<QueryStringAuthenticationOptions> options, ILoggerFactory logger, UrlEncoder encoder) : AuthenticationHandler<QueryStringAuthenticationOptions>(options, logger, encoder)
     {
-        public QueryStringAuthenticationHandler(IOptionsMonitor<QueryStringAuthenticationOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock)
-            : base(options, logger, encoder, clock)
-        {
-        }
-
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             var identity = new ClaimsIdentity();
@@ -32,9 +27,9 @@ namespace FeatureFlagDemo.Authentication
             {
                 string username = value.First();
 
-                identity.AddClaim(new Claim(System.Security.Claims.ClaimTypes.Name, username));
+                identity.AddClaim(new Claim(ClaimTypes.Name, username));
 
-                Logger.LogInformation($"Assigning the username '{username}' to the request.");
+                Logger.LogInformation("Assigning the username {username} to the request.", username);
             }
 
             //
@@ -48,7 +43,7 @@ namespace FeatureFlagDemo.Authentication
                     identity.AddClaim(new Claim(ClaimTypes.Role, group));
                 }
 
-                Logger.LogInformation($"Assigning the following groups '{string.Join(", ", groups)}' to the request.");
+                Logger.LogInformation("Assigning the following groups '{groups}' to the request.", string.Join(", ", groups));
             }
 
             //

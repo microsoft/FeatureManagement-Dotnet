@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <Import Project="..\..\build\NugetProperties.props" />
 
   <!-- Official Version -->
   <PropertyGroup>
-    <MajorVersion>3</MajorVersion>
-    <MinorVersion>5</MinorVersion>
+    <MajorVersion>4</MajorVersion>
+    <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
   </PropertyGroup>
 
@@ -30,7 +31,7 @@
     <PackageIconUrl>https://aka.ms/AzureAppConfigurationPackageIcon</PackageIconUrl>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.FeatureManagement\Microsoft.FeatureManagement.csproj" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
