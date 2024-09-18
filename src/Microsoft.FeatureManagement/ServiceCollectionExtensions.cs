@@ -50,7 +50,6 @@ namespace Microsoft.FeatureManagement
                 SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
                 Cache = sp.GetRequiredService<IMemoryCache>(),
                 Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>(),
-                Configuration = sp.GetService<IConfiguration>(),
                 TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
                 AssignerOptions = sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>().Value
             });
@@ -137,7 +136,6 @@ namespace Microsoft.FeatureManagement
                 SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
                 Cache = sp.GetRequiredService<IMemoryCache>(),
                 Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>(),
-                Configuration = sp.GetService<IConfiguration>(),
                 TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
                 AssignerOptions = sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>().Value
             });

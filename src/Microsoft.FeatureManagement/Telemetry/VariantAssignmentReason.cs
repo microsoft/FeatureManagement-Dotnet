@@ -9,7 +9,7 @@ namespace Microsoft.FeatureManagement.Telemetry
     public enum VariantAssignmentReason
     {
         /// <summary>
-        /// Variant allocation did not happend. No variant is assigned.
+        /// Variant allocation did not happen. No variant is assigned.
         /// </summary>
         None,
 

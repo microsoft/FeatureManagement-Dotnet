@@ -1,10 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.FeatureManagement.Telemetry;
-using System;
-using System.Collections.Generic;
-
 namespace Microsoft.FeatureManagement
 {
     /// <summary>

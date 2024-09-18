@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace EvaluationDataToApplicationInsights.Pages
+namespace VariantAndTelemetryDemo.Pages
 {
     public class CheckoutModel : PageModel
     {

@@ -3,26 +3,24 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.FeatureManagement;
 
-namespace EvaluationDataToApplicationInsights.Pages
+namespace VariantAndTelemetryDemo.Pages
 {
     public class IndexModel : PageModel
     {
         private readonly IVariantFeatureManager _featureManager;
         private readonly TelemetryClient _telemetry;
 
-        public string Username { get; set; }
-
-        public IndexModel(
-            IVariantFeatureManager featureManager,
-            TelemetryClient telemetry)
+        public IndexModel(IVariantFeatureManager featureManager, TelemetryClient telemetry)
         {
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
             _telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
         }
 
+        public string Username { get; set; }
+
         public async Task<IActionResult> OnGet()
         {
-            Username = Request.Cookies["username"];
+            Username = HttpContext.User.Identity.Name;
 
             if (string.IsNullOrEmpty(Username))
             {
