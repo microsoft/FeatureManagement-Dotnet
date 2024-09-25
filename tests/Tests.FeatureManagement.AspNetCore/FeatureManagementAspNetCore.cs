@@ -5,10 +5,12 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FeatureManagement;
+using Microsoft.FeatureManagement.Mvc.TagHelpers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -179,6 +181,73 @@ namespace Tests.FeatureManagement.AspNetCore
         private static void DisableEndpointRouting(MvcOptions options)
         {
             options.EnableEndpointRouting = false;
+        }
+    }
+
+    public class CustomImplementationsFeatureManagementTests
+    {
+        public class CustomIFeatureManager : IFeatureManager
+        {
+            public IAsyncEnumerable<string> GetFeatureNamesAsync()
+            {
+                return new string[1] { "Test" }.ToAsyncEnumerable();
+            }
+
+            public async Task<bool> IsEnabledAsync(string feature)
+            {
+                return await Task.FromResult(feature == "Test");
+            }
+
+            public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
+            {
+                return await Task.FromResult(feature == "Test");
+            }
+        }
+
+        [Fact]
+        public async Task CustomIFeatureManagerAspNetCoreTest()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services.AddSingleton(config)
+                    .AddSingleton<IFeatureManager, CustomIFeatureManager>()
+                    .AddFeatureManagement(); // Shouldn't override
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync("Test"));
+            Assert.False(await featureManager.IsEnabledAsync("NotTest"));
+
+            // FeatureTagHelper should use available IFeatureManager
+            FeatureTagHelper featureTagHelper = new FeatureTagHelper(serviceProvider.GetRequiredService<IFeatureManagerSnapshot>(), serviceProvider.GetRequiredService<IVariantFeatureManagerSnapshot>());
+            TagHelperOutput tagHelperOutput = new TagHelperOutput("TestTag", new TagHelperAttributeList(), (aBool, aHtmlEncoder) => { return null; });
+
+            // Test returns true, so it shouldn't be modified
+            featureTagHelper.Name = "Test";
+            Assert.False(tagHelperOutput.IsContentModified);
+            await featureTagHelper.ProcessAsync(null, tagHelperOutput);
+            Assert.False(tagHelperOutput.IsContentModified);
+
+            tagHelperOutput.Reinitialize("TestTag", TagMode.StartTagAndEndTag);
+
+            // NotTest returns false, so it should be modified
+            featureTagHelper.Name = "NotTest";
+            Assert.False(tagHelperOutput.IsContentModified);
+            await featureTagHelper.ProcessAsync(null, tagHelperOutput);
+            Assert.True(tagHelperOutput.IsContentModified);
+
+            tagHelperOutput.Reinitialize("TestTag", TagMode.StartTagAndEndTag);
+
+            // When variant is used, Test flag should no longer exist and return false
+            featureTagHelper.Name = "Test";
+            featureTagHelper.Variant = "Something";
+            Assert.False(tagHelperOutput.IsContentModified);
+            await featureTagHelper.ProcessAsync(null, tagHelperOutput);
+            Assert.True(tagHelperOutput.IsContentModified);
         }
     }
 }

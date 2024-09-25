@@ -16,19 +16,38 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     class FeatureManagerSnapshot : IFeatureManagerSnapshot, IVariantFeatureManagerSnapshot
     {
-        private readonly IVariantFeatureManager _featureManager;
-        private readonly ConcurrentDictionary<string, ValueTask<bool>> _flagCache = new ConcurrentDictionary<string, ValueTask<bool>>();
+        private readonly IFeatureManager _featureManager;
+        private readonly IVariantFeatureManager _variantFeatureManager;
+        private readonly ConcurrentDictionary<string, Task<bool>> _flagCache = new ConcurrentDictionary<string, Task<bool>>();
+        private readonly ConcurrentDictionary<string, ValueTask<bool>> _variantFlagCache = new ConcurrentDictionary<string, ValueTask<bool>>();
         private readonly ConcurrentDictionary<string, Variant> _variantCache = new ConcurrentDictionary<string, Variant>();
         private IEnumerable<string> _featureNames;
 
-        public FeatureManagerSnapshot(IVariantFeatureManager featureManager)
+        // Takes both a feature manager and a variant feature manager for backwards compatibility.
+        public FeatureManagerSnapshot(IFeatureManager featureManager, IVariantFeatureManager variantFeatureManager)
         {
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
+            _variantFeatureManager = variantFeatureManager ?? throw new ArgumentNullException(nameof(variantFeatureManager));
         }
 
-        public IAsyncEnumerable<string> GetFeatureNamesAsync()
+        public async IAsyncEnumerable<string> GetFeatureNamesAsync()
         {
-            return GetFeatureNamesAsync(CancellationToken.None);
+            if (_featureNames == null)
+            {
+                var featureNames = new List<string>();
+
+                await foreach (string featureName in _featureManager.GetFeatureNamesAsync().ConfigureAwait(false))
+                {
+                    featureNames.Add(featureName);
+                }
+
+                _featureNames = featureNames;
+            }
+
+            foreach (string featureName in _featureNames)
+            {
+                yield return featureName;
+            }
         }
 
         public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
@@ -37,7 +56,7 @@ namespace Microsoft.FeatureManagement
             {
                 var featureNames = new List<string>();
 
-                await foreach (string featureName in _featureManager.GetFeatureNamesAsync(cancellationToken).ConfigureAwait(false))
+                await foreach (string featureName in _variantFeatureManager.GetFeatureNamesAsync(cancellationToken).ConfigureAwait(false))
                 {
                     featureNames.Add(featureName);
                 }
@@ -55,28 +74,28 @@ namespace Microsoft.FeatureManagement
         {
             return _flagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key, CancellationToken.None)).AsTask();
+                (key) => _featureManager.IsEnabledAsync(key));
         }
 
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
         {
             return _flagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key, context, CancellationToken.None)).AsTask();
+                (key) => _featureManager.IsEnabledAsync(key, context));
         }
 
         public ValueTask<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
         {
-            return _flagCache.GetOrAdd(
+            return _variantFlagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key, cancellationToken));
+                (key) => _variantFeatureManager.IsEnabledAsync(key, cancellationToken));
         }
 
         public ValueTask<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
         {
-            return _flagCache.GetOrAdd(
+            return _variantFlagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key, context, cancellationToken));
+                (key) => _variantFeatureManager.IsEnabledAsync(key, context, cancellationToken));
         }
 
         public async ValueTask<Variant> GetVariantAsync(string feature, CancellationToken cancellationToken)
@@ -90,7 +109,7 @@ namespace Microsoft.FeatureManagement
                 return _variantCache[cacheKey];
             }
 
-            Variant variant = await _featureManager.GetVariantAsync(feature, cancellationToken).ConfigureAwait(false);
+            Variant variant = await _variantFeatureManager.GetVariantAsync(feature, cancellationToken).ConfigureAwait(false);
 
             _variantCache[cacheKey] = variant;
 
@@ -108,7 +127,7 @@ namespace Microsoft.FeatureManagement
                 return _variantCache[cacheKey];
             }
 
-            Variant variant = await _featureManager.GetVariantAsync(feature, context, cancellationToken).ConfigureAwait(false);
+            Variant variant = await _variantFeatureManager.GetVariantAsync(feature, context, cancellationToken).ConfigureAwait(false);
 
             _variantCache[cacheKey] = variant;
 
