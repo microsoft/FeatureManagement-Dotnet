@@ -39,12 +39,13 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
         public string Variant { get; set; }
 
         /// <summary>
-        /// Creates a feature tag helper. Takes both a feature manager and a variant feature manager for backwards compatibility.
+        /// Creates a feature tag helper.
         /// </summary>
         /// <param name="featureManager">The feature manager snapshot to use to evaluate feature state.</param>
         /// <param name="variantFeatureManager">The variant feature manager snapshot to use to evaluate feature state.</param>
         public FeatureTagHelper(IFeatureManagerSnapshot featureManager, IVariantFeatureManagerSnapshot variantFeatureManager)
         {
+            // Takes both a feature manager and a variant feature manager for backwards compatibility.
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
             _variantFeatureManager = variantFeatureManager ?? throw new ArgumentNullException(nameof(variantFeatureManager));
         }
