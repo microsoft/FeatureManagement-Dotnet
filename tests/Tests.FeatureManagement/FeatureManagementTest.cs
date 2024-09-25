@@ -1917,10 +1917,10 @@ namespace Tests.FeatureManagement
             Assert.False(await featureManagerSnapshot.IsEnabledAsync("NotTest"));
             Assert.False(await featureManagerSnapshot.IsEnabledAsync("OnTestFeature"));
 
-            // But use IVariantFeatureManager when using new interface
-            Assert.False(await featureManagerSnapshot.IsEnabledAsync("Test", CancellationToken.None));
+            // Use snapshot results even though IVariantFeatureManager would be called here
+            Assert.True(await featureManagerSnapshot.IsEnabledAsync("Test", CancellationToken.None));
             Assert.False(await featureManagerSnapshot.IsEnabledAsync("NotTest", CancellationToken.None));
-            Assert.True(await featureManagerSnapshot.IsEnabledAsync("OnTestFeature", CancellationToken.None));
+            Assert.False(await featureManagerSnapshot.IsEnabledAsync("OnTestFeature", CancellationToken.None));
         }
 
         [Fact]

@@ -18,8 +18,7 @@ namespace Microsoft.FeatureManagement
     {
         private readonly IFeatureManager _featureManager;
         private readonly IVariantFeatureManager _variantFeatureManager;
-        private readonly ConcurrentDictionary<string, Task<bool>> _flagCache = new ConcurrentDictionary<string, Task<bool>>();
-        private readonly ConcurrentDictionary<string, ValueTask<bool>> _variantFlagCache = new ConcurrentDictionary<string, ValueTask<bool>>();
+        private readonly ConcurrentDictionary<string, ValueTask<bool>> _flagCache = new ConcurrentDictionary<string, ValueTask<bool>>();
         private readonly ConcurrentDictionary<string, Variant> _variantCache = new ConcurrentDictionary<string, Variant>();
         private IEnumerable<string> _featureNames;
 
@@ -74,26 +73,26 @@ namespace Microsoft.FeatureManagement
         {
             return _flagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key));
+                (key) => new ValueTask<bool>(_featureManager.IsEnabledAsync(key))).AsTask();
         }
 
         public Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
         {
             return _flagCache.GetOrAdd(
                 feature,
-                (key) => _featureManager.IsEnabledAsync(key, context));
+                (key) => new ValueTask<bool>(_featureManager.IsEnabledAsync(key, context))).AsTask();
         }
 
         public ValueTask<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken)
         {
-            return _variantFlagCache.GetOrAdd(
+            return _flagCache.GetOrAdd(
                 feature,
                 (key) => _variantFeatureManager.IsEnabledAsync(key, cancellationToken));
         }
 
         public ValueTask<bool> IsEnabledAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken)
         {
-            return _variantFlagCache.GetOrAdd(
+            return _flagCache.GetOrAdd(
                 feature,
                 (key) => _variantFeatureManager.IsEnabledAsync(key, context, cancellationToken));
         }
