@@ -36,6 +36,11 @@ namespace Microsoft.FeatureManagement.Telemetry
         /// <summary>
         /// The variant is assigned because of the percentile allocation when a feature flag is enabled.
         /// </summary>
-        Percentile
+        Percentile,
+
+        /// <summary>
+        /// The variant is assigned because of a matching filter.
+        /// </summary>
+        Filter
     }
 }

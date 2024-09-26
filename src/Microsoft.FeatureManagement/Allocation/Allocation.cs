@@ -36,6 +36,11 @@ namespace Microsoft.FeatureManagement
         public IEnumerable<PercentileAllocation> Percentile { get; set; }
 
         /// <summary>
+        /// Describes a mapping of contextual filters to variants.
+        /// </summary>
+        public IEnumerable<ContextualFilterAllocation> AllocatedFor { get; set; }
+
+        /// <summary>
         /// Maps users to the same percentile across multiple feature flags.
         /// </summary>
         public string Seed { get; set; }

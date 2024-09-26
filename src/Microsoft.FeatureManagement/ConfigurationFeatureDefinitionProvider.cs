@@ -451,6 +451,15 @@ namespace Microsoft.FeatureManagement
                             To = to
                         };
                     }),
+                    AllocatedFor = allocationSection.GetSection(MicrosoftFeatureManagementFields.ClientFilters).GetChildren().Select(filterAllocation =>
+                    {
+                        return new ContextualFilterAllocation()
+                        {
+                            Name = filterAllocation[MicrosoftFeatureManagementFields.Name],
+                            Parameters = new ConfigurationWrapper(filterAllocation.GetSection(MicrosoftFeatureManagementFields.Parameters)),
+                            Variant = filterAllocation[MicrosoftFeatureManagementFields.AllocationVariantKeyword]
+                        };
+                    }),
                     Seed = allocationSection[MicrosoftFeatureManagementFields.AllocationSeed]
                 };
             }

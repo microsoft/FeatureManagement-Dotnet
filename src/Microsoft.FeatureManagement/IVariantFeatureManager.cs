@@ -52,6 +52,6 @@ namespace Microsoft.FeatureManagement
         /// <param name="context">A context that provides information to evaluate which variant will be assigned to the user.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>A variant assigned to the user based on the feature's configured allocation.</returns>
-        ValueTask<Variant> GetVariantAsync(string feature, ITargetingContext context, CancellationToken cancellationToken = default);
+        ValueTask<Variant> GetVariantAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken = default);
     }
 }

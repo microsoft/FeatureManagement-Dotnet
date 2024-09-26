@@ -223,7 +223,31 @@ namespace Microsoft.FeatureManagement
         /// <param name="context">A context that provides information to evaluate which variant will be assigned to the user.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>A variant assigned to the user based on the feature's configured allocation.</returns>
-        public async ValueTask<Variant> GetVariantAsync(string feature, ITargetingContext context, CancellationToken cancellationToken = default)
+        // public async ValueTask<Variant> GetVariantAsync(string feature, ITargetingContext context, CancellationToken cancellationToken = default)
+        // {
+        //     if (string.IsNullOrEmpty(feature))
+        //     {
+        //         throw new ArgumentNullException(nameof(feature));
+        //     }
+
+        //     if (context == null)
+        //     {
+        //         throw new ArgumentNullException(nameof(context));
+        //     }
+
+        //     EvaluationEvent evaluationEvent = await EvaluateFeature(feature, context, useContext: true, cancellationToken);
+
+        //     return evaluationEvent.Variant;
+        // }
+
+        /// <summary>
+        /// Gets the assigned variant for a specific feature.
+        /// </summary>
+        /// <param name="feature">The name of the feature to evaluate.</param>
+        /// <param name="context">A context that provides information to evaluate which variant will be assigned to the user.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>A variant assigned to the user based on the feature's configured allocation.</returns>
+        public async ValueTask<Variant> GetVariantAsync<TContext>(string feature, TContext context, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(feature))
             {
@@ -307,15 +331,11 @@ namespace Microsoft.FeatureManagement
                     }
                     else
                     {
-                        if (targetingContext == null)
+                        if (context == null && targetingContext == null)
                         {
                             string message;
 
-                            if (useContext)
-                            {
-                                message = $"The context of type {context.GetType().Name} does not implement {nameof(ITargetingContext)} for variant assignment.";
-                            }
-                            else if (TargetingContextAccessor == null)
+                            if (TargetingContextAccessor == null)
                             {
                                 message = $"No instance of {nameof(ITargetingContextAccessor)} could be found for variant assignment.";
                             }
@@ -330,6 +350,10 @@ namespace Microsoft.FeatureManagement
                         if (targetingContext != null && evaluationEvent.FeatureDefinition.Allocation != null)
                         {
                             variantDefinition = await AssignVariantAsync(evaluationEvent, targetingContext, cancellationToken).ConfigureAwait(false);
+                        }
+                        else if (context != null && evaluationEvent.FeatureDefinition.Allocation != null)
+                        {
+                            variantDefinition = await AssignVariantAsync(evaluationEvent, context, cancellationToken).ConfigureAwait(false);
                         }
 
                         if (evaluationEvent.VariantAssignmentReason == VariantAssignmentReason.None)
@@ -600,100 +624,188 @@ namespace Microsoft.FeatureManagement
             return context;
         }
 
-        private ValueTask<VariantDefinition> AssignVariantAsync(EvaluationEvent evaluationEvent, TargetingContext targetingContext, CancellationToken cancellationToken)
+        private async ValueTask<VariantDefinition> AssignVariantAsync<TContext>(EvaluationEvent evaluationEvent, TContext context, CancellationToken cancellationToken)
         {
             Debug.Assert(evaluationEvent != null);
-
-            Debug.Assert(targetingContext != null);
 
             Debug.Assert(evaluationEvent.FeatureDefinition.Allocation != null);
 
             VariantDefinition variant = null;
 
-            if (evaluationEvent.FeatureDefinition.Allocation.User != null)
+            if (context is ITargetingContext targetingContext)
             {
-                foreach (UserAllocation user in evaluationEvent.FeatureDefinition.Allocation.User)
+                if (evaluationEvent.FeatureDefinition.Allocation.User != null)
                 {
-                    if (TargetingEvaluator.IsTargeted(targetingContext.UserId, user.Users, _assignerOptions.IgnoreCase))
+                    foreach (UserAllocation user in evaluationEvent.FeatureDefinition.Allocation.User)
                     {
-                        if (string.IsNullOrEmpty(user.Variant))
+                        if (TargetingEvaluator.IsTargeted(targetingContext.UserId, user.Users, _assignerOptions.IgnoreCase))
                         {
-                            Logger?.LogWarning($"Missing variant name for user allocation in feature {evaluationEvent.FeatureDefinition.Name}");
+                            if (string.IsNullOrEmpty(user.Variant))
+                            {
+                                Logger?.LogWarning($"Missing variant name for user allocation in feature {evaluationEvent.FeatureDefinition.Name}");
 
-                            return new ValueTask<VariantDefinition>((VariantDefinition)null);
+                                return null;
+                            }
+
+                            Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
+
+                            evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.User;
+
+                            return evaluationEvent.FeatureDefinition
+                                    .Variants
+                                    .FirstOrDefault(variant =>
+                                        variant.Name == user.Variant);
                         }
+                    }
+                }
 
-                        Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
+                if (evaluationEvent.FeatureDefinition.Allocation.Group != null)
+                {
+                    foreach (GroupAllocation group in evaluationEvent.FeatureDefinition.Allocation.Group)
+                    {
+                        if (TargetingEvaluator.IsTargeted(targetingContext.Groups, group.Groups, _assignerOptions.IgnoreCase))
+                        {
+                            if (string.IsNullOrEmpty(group.Variant))
+                            {
+                                Logger?.LogWarning($"Missing variant name for group allocation in feature {evaluationEvent.FeatureDefinition.Name}");
 
-                        evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.User;
+                                return null;
+                            }
 
-                        return new ValueTask<VariantDefinition>(
-                            evaluationEvent.FeatureDefinition
-                                .Variants
-                                .FirstOrDefault(variant =>
-                                    variant.Name == user.Variant));
+                            Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
+
+                            evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.Group;
+
+                            return evaluationEvent.FeatureDefinition
+                                    .Variants
+                                    .FirstOrDefault(variant =>
+                                        variant.Name == group.Variant);
+                        }
+                    }
+                }
+
+                if (evaluationEvent.FeatureDefinition.Allocation.Percentile != null)
+                {
+                    foreach (PercentileAllocation percentile in evaluationEvent.FeatureDefinition.Allocation.Percentile)
+                    {
+                        if (TargetingEvaluator.IsTargeted(
+                            targetingContext,
+                            percentile.From,
+                            percentile.To,
+                            _assignerOptions.IgnoreCase,
+                            evaluationEvent.FeatureDefinition.Allocation.Seed ?? $"allocation\n{evaluationEvent.FeatureDefinition.Name}"))
+                        {
+                            if (string.IsNullOrEmpty(percentile.Variant))
+                            {
+                                Logger?.LogWarning($"Missing variant name for percentile allocation in feature {evaluationEvent.FeatureDefinition.Name}");
+
+                                return null;
+                            }
+
+                            Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
+
+                            evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.Percentile;
+
+                            return evaluationEvent.FeatureDefinition
+                                    .Variants
+                                    .FirstOrDefault(variant =>
+                                        variant.Name == percentile.Variant);
+                        }
                     }
                 }
             }
 
-            if (evaluationEvent.FeatureDefinition.Allocation.Group != null)
+            if (evaluationEvent.FeatureDefinition.Allocation.AllocatedFor != null)
             {
-                foreach (GroupAllocation group in evaluationEvent.FeatureDefinition.Allocation.Group)
-                {
-                    if (TargetingEvaluator.IsTargeted(targetingContext.Groups, group.Groups, _assignerOptions.IgnoreCase))
-                    {
-                        if (string.IsNullOrEmpty(group.Variant))
-                        {
-                            Logger?.LogWarning($"Missing variant name for group allocation in feature {evaluationEvent.FeatureDefinition.Name}");
+                //
+                // Keep track of the index of the filter we are evaluating
+                int filterIndex = -1;
 
-                            return new ValueTask<VariantDefinition>((VariantDefinition)null);
+                //
+                // For all enabling filters listed in the feature's state, evaluate them according to requirement type
+                foreach (ContextualFilterAllocation featureFilterConfiguration in evaluationEvent.FeatureDefinition.Allocation.AllocatedFor)
+                {
+                    filterIndex++;
+
+                    //
+                    // Handle AlwaysOn and On filters
+                    if (string.Equals(featureFilterConfiguration.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(featureFilterConfiguration.Name, "On", StringComparison.OrdinalIgnoreCase))
+                    {
+                        evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.Filter;
+                        return evaluationEvent.FeatureDefinition
+                                    .Variants
+                                    .FirstOrDefault(variant =>
+                                        variant.Name == featureFilterConfiguration.Variant);
+                    }
+
+                    IFeatureFilterMetadata filter = GetFeatureFilterMetadata(featureFilterConfiguration.Name, context.GetType()) ??
+                                GetFeatureFilterMetadata(featureFilterConfiguration.Name);
+
+                    if (filter == null)
+                    {
+                        if (_featureFilters.Any(f => IsMatchingName(f.GetType(), featureFilterConfiguration.Name)))
+                        {
+                            //
+                            // Cannot find the appropriate registered feature filter which matches the filter name and the provided context type.
+                            // But there is a registered feature filter which matches the filter name.
+                            continue;
                         }
 
-                        Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
+                        string errorMessage = $"The feature filter '{featureFilterConfiguration.Name}' specified for feature '{evaluationEvent.FeatureDefinition.Name}' was not found.";
 
-                        evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.Group;
+                        if (!_options.IgnoreMissingFeatureFilters)
+                        {
+                            throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
+                        }
 
-                        return new ValueTask<VariantDefinition>(
-                            evaluationEvent.FeatureDefinition
-                                .Variants
-                                .FirstOrDefault(variant =>
-                                    variant.Name == group.Variant));
+                        Logger?.LogWarning(errorMessage);
+
+                        continue;
+                    }
+
+                    var evaluationContext = new FeatureFilterEvaluationContext()
+                    {
+                        FeatureName = evaluationEvent.FeatureDefinition.Name,
+                        Parameters = featureFilterConfiguration.Parameters
+                    };
+
+                    BindSettings(filter, evaluationContext, filterIndex);
+
+                    //
+                    // IContextualFeatureFilter
+                    if (context != null)
+                    {
+                        ContextualFeatureFilterEvaluator contextualFilter = GetContextualFeatureFilter(featureFilterConfiguration.Name, context.GetType());
+
+                        if (contextualFilter != null &&
+                            await contextualFilter.EvaluateAsync(evaluationContext, context).ConfigureAwait(false))
+                        {
+                            evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.Filter;
+                            return evaluationEvent.FeatureDefinition
+                                    .Variants
+                                    .FirstOrDefault(variant =>
+                                        variant.Name == featureFilterConfiguration.Variant);
+                        }
+                    }
+
+                    //
+                    // IFeatureFilter
+                    if (filter is IFeatureFilter featureFilter)
+                    {
+                        if (await featureFilter.EvaluateAsync(evaluationContext).ConfigureAwait(false))
+                        {
+                            evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.Filter;
+                            return evaluationEvent.FeatureDefinition
+                                    .Variants
+                                    .FirstOrDefault(variant =>
+                                        variant.Name == featureFilterConfiguration.Variant);
+                        }
                     }
                 }
             }
 
-            if (evaluationEvent.FeatureDefinition.Allocation.Percentile != null)
-            {
-                foreach (PercentileAllocation percentile in evaluationEvent.FeatureDefinition.Allocation.Percentile)
-                {
-                    if (TargetingEvaluator.IsTargeted(
-                        targetingContext,
-                        percentile.From,
-                        percentile.To,
-                        _assignerOptions.IgnoreCase,
-                        evaluationEvent.FeatureDefinition.Allocation.Seed ?? $"allocation\n{evaluationEvent.FeatureDefinition.Name}"))
-                    {
-                        if (string.IsNullOrEmpty(percentile.Variant))
-                        {
-                            Logger?.LogWarning($"Missing variant name for percentile allocation in feature {evaluationEvent.FeatureDefinition.Name}");
-
-                            return new ValueTask<VariantDefinition>((VariantDefinition)null);
-                        }
-
-                        Debug.Assert(evaluationEvent.FeatureDefinition.Variants != null);
-
-                        evaluationEvent.VariantAssignmentReason = VariantAssignmentReason.Percentile;
-
-                        return new ValueTask<VariantDefinition>(
-                            evaluationEvent.FeatureDefinition
-                                .Variants
-                                .FirstOrDefault(variant =>
-                                    variant.Name == percentile.Variant));
-                    }
-                }
-            }
-
-            return new ValueTask<VariantDefinition>(variant);
+            return variant;
         }
 
         private void BindSettings(IFeatureFilterMetadata filter, FeatureFilterEvaluationContext context, int filterIndex)
