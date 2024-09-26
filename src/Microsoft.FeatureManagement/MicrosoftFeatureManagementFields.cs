@@ -32,6 +32,7 @@ namespace Microsoft.FeatureManagement
         public const string PercentileAllocationSectionName = "percentile";
         public const string PercentileAllocationFrom = "from";
         public const string PercentileAllocationTo = "to";
+        public const string FilterAllocationSectionName = ClientFilters;
         public const string AllocationSeed = "seed";
 
         //
