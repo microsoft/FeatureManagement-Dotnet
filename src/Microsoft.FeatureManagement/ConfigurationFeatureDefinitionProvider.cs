@@ -23,7 +23,7 @@ namespace Microsoft.FeatureManagement
         // provider to be marked for caching as well.
 
         private readonly IConfiguration _configuration;
-        private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
+        private readonly ConcurrentDictionary<string, Task<FeatureDefinition>> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
         private readonly bool _microsoftFeatureManagementSchemaEnabled;
@@ -35,7 +35,7 @@ namespace Microsoft.FeatureManagement
         public ConfigurationFeatureDefinitionProvider(IConfiguration configuration)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _definitions = new ConcurrentDictionary<string, FeatureDefinition>();
+            _definitions = new ConcurrentDictionary<string, Task<FeatureDefinition>>();
 
             _changeSubscription = ChangeToken.OnChange(
                 () => _configuration.GetReloadToken(),
@@ -99,9 +99,12 @@ namespace Microsoft.FeatureManagement
 
             //
             // Query by feature name
-            FeatureDefinition definition = _definitions.GetOrAdd(featureName, (name) => ReadFeatureDefinition(name));
+            if (!_definitions.ContainsKey(featureName))
+            {
+                _definitions[featureName] = Task.FromResult(ReadFeatureDefinition(featureName));
+            }
 
-            return Task.FromResult(definition);
+            return _definitions[featureName];
         }
 
         /// <summary>
@@ -133,7 +136,16 @@ namespace Microsoft.FeatureManagement
 
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                yield return  _definitions.GetOrAdd(featureName, (_) => ReadFeatureDefinition(featureSection));
+                if (_definitions.ContainsKey(featureName))
+                {
+                    yield return _definitions[featureName].Result;
+                }
+                else
+                {
+                    FeatureDefinition definition = ReadFeatureDefinition(featureSection);
+                    _definitions[featureName] = Task.FromResult(definition);
+                    yield return definition;
+                }
             }
         }
 
@@ -374,8 +386,8 @@ namespace Microsoft.FeatureManagement
                     .FirstOrDefault(section =>
                         string.Equals(
                             section.Key,
-                            _microsoftFeatureManagementSchemaEnabled ? 
-                                MicrosoftFeatureManagementFields.FeatureManagementSectionName : 
+                            _microsoftFeatureManagementSchemaEnabled ?
+                                MicrosoftFeatureManagementFields.FeatureManagementSectionName :
                                 ConfigurationFields.FeatureManagementSectionName,
                             StringComparison.OrdinalIgnoreCase));
 

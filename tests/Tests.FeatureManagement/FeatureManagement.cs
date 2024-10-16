@@ -175,7 +175,7 @@ namespace Tests.FeatureManagement
             var appContext = new AppContext();
 
             var dummyContext = new DummyContext();
-            
+
             var targetingContext = new TargetingContext();
 
             Assert.True(await featureManager.IsEnabledAsync(featureName));
@@ -271,7 +271,7 @@ namespace Tests.FeatureManagement
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             ServiceCollection services = new ServiceCollection();
-            
+
             var targetingContextAccessor = new OnDemandTargetingContextAccessor();
 
             services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor);
