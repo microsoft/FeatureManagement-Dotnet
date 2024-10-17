@@ -24,7 +24,7 @@ namespace Microsoft.FeatureManagement
         // provider to be marked for caching as well.
 
         private readonly IConfiguration _configuration;
-        private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
+        private readonly ConcurrentDictionary<string, Task<FeatureDefinition>> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
 
@@ -37,7 +37,7 @@ namespace Microsoft.FeatureManagement
         public ConfigurationFeatureDefinitionProvider(IConfiguration configuration)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _definitions = new ConcurrentDictionary<string, FeatureDefinition>();
+            _definitions = new ConcurrentDictionary<string, Task<FeatureDefinition>>();
 
             _changeSubscription = ChangeToken.OnChange(
                 () => _configuration.GetReloadToken(),
@@ -86,10 +86,13 @@ namespace Microsoft.FeatureManagement
                 _definitions.Clear();
             }
 
-            return Task.FromResult(
-                _definitions.GetOrAdd(
-                    featureName,
-                    (_) => GetMicrosoftSchemaFeatureDefinition(featureName) ?? GetDotnetSchemaFeatureDefinition(featureName)));
+            if (!_definitions.ContainsKey(featureName))
+            {
+                _definitions[featureName] =
+                    Task.FromResult(GetMicrosoftSchemaFeatureDefinition(featureName) ?? GetDotnetSchemaFeatureDefinition(featureName));
+            }
+
+            return _definitions[featureName];
         }
 
         /// <summary>
@@ -98,7 +101,7 @@ namespace Microsoft.FeatureManagement
         /// <returns>An enumerator which provides asynchronous iteration over feature definitions.</returns>
         //
         // The async key word is necessary for creating IAsyncEnumerable.
-        // The need to disable this warning occurs when implementaing async stream synchronously. 
+        // The need to disable this warning occurs when implementing async stream synchronously. 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998
@@ -121,7 +124,17 @@ namespace Microsoft.FeatureManagement
 
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                FeatureDefinition definition = _definitions.GetOrAdd(featureName, (_) => ParseMicrosoftSchemaFeatureDefinition(featureSection));
+                FeatureDefinition definition;
+
+                if (!_definitions.ContainsKey(featureName))
+                {
+                    definition = ParseMicrosoftSchemaFeatureDefinition(featureSection);
+                    _definitions[featureName] = Task.FromResult(definition);
+                }
+                else
+                {
+                    definition = _definitions[featureName].Result;
+                }
 
                 if (definition != null)
                 {
@@ -142,7 +155,17 @@ namespace Microsoft.FeatureManagement
 
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                FeatureDefinition definition = _definitions.GetOrAdd(featureName, (_) => ParseDotnetSchemaFeatureDefinition(featureSection));
+                FeatureDefinition definition;
+
+                if (!_definitions.ContainsKey(featureName))
+                {
+                    definition = ParseDotnetSchemaFeatureDefinition(featureSection);
+                    _definitions[featureName] = Task.FromResult(definition);
+                }
+                else
+                {
+                    definition = _definitions[featureName].Result;
+                }
 
                 if (definition != null)
                 {
