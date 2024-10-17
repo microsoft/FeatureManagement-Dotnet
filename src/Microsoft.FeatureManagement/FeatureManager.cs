@@ -23,8 +23,8 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     public sealed class FeatureManager : IFeatureManager, IVariantFeatureManager
     {
-        private const string FeatureDefinitionNotFoundError = "The feature definition for the feature '{featureName}' was not found.";
-        private const string FeatureFilterNotFoundError = "The feature filter '{featureFilterName}' specified for feature '{featureName}' was not found.";
+        private const string FeatureDefinitionNotFoundError = "The feature definition for the feature '{0}' was not found.";
+        private const string FeatureFilterNotFoundError = "The feature filter '{0}' specified for feature '{1}' was not found.";
 
         private const string AlwaysOnFilterName = "AlwaysOn";
         private const string OnFilterName = "On";
