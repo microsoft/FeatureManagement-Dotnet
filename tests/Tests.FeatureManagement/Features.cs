@@ -31,5 +31,6 @@ namespace Tests.FeatureManagement
         public const string OnTelemetryTestFeature = "OnTelemetryTestFeature";
         public const string OffTelemetryTestFeature = "OffTelemetryTestFeature";
         public const string ContextualFeatureWithVariant = "ContextualFeatureWithVariant";
+        public const string DuplicateFlag = "DuplicateFlag";
     }
 }

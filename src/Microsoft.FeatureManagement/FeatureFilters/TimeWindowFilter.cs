@@ -39,7 +39,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <summary>
         /// This property allows the time window filter in our test suite to use simulated time.
         /// </summary>
-        internal ISystemClock SystemClock { get; set; }
+        internal TimeProvider SystemClock { get; set; }
 
         /// <summary>
         /// Binds configuration representing filter parameters to <see cref="TimeWindowFilterSettings"/>.
@@ -74,7 +74,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Check if prebound settings available, otherwise bind from parameters.
             TimeWindowFilterSettings settings = (TimeWindowFilterSettings)context.Settings ?? (TimeWindowFilterSettings)BindParameters(context.Parameters);
 
-            DateTimeOffset now = SystemClock?.UtcNow ?? DateTimeOffset.UtcNow;
+            DateTimeOffset now = SystemClock?.GetUtcNow() ?? DateTimeOffset.UtcNow;
 
             if (!settings.Start.HasValue && !settings.End.HasValue)
             {
@@ -129,7 +129,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
         private DateTimeOffset? ReloadClosestStart(TimeWindowFilterSettings settings)
         {
-            DateTimeOffset now = SystemClock?.UtcNow ?? DateTimeOffset.UtcNow;
+            DateTimeOffset now = SystemClock?.GetUtcNow() ?? DateTimeOffset.UtcNow;
 
             DateTimeOffset? closestStart = RecurrenceEvaluator.CalculateClosestStart(now, settings);
 
