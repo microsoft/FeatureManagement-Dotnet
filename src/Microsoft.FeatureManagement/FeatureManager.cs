@@ -373,7 +373,7 @@ namespace Microsoft.FeatureManagement
                     Activity.Current != null &&
                     Activity.Current.IsAllDataRequested)
                 {
-                    TelemetryEventHandler.HandleEvaluationEvent(evaluationEvent, Logger);
+                    FeatureEvaluationTelemetry.Publish(evaluationEvent, Logger);
                 }
             }
 

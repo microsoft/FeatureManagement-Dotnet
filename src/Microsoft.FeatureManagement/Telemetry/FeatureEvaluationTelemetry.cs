@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace Microsoft.FeatureManagement.Telemetry
 {
-    internal static class TelemetryEventHandler
+    internal static class FeatureEvaluationTelemetry
     {
         private static readonly string EvaluationEventVersion = "1.0.0";
 
@@ -15,10 +15,22 @@ namespace Microsoft.FeatureManagement.Telemetry
         /// </summary>
         /// <param name="evaluationEvent">The <see cref="EvaluationEvent"/> to publish as an <see cref="ActivityEvent"/></param>
         /// <param name="logger">Optional logger to log warnings to</param>
-        public static void HandleEvaluationEvent(EvaluationEvent evaluationEvent, ILogger logger)
+        public static void Publish(EvaluationEvent evaluationEvent, ILogger logger)
         {
-            Debug.Assert(evaluationEvent != null);
-            Debug.Assert(evaluationEvent.FeatureDefinition != null);
+            if (Activity.Current == null)
+            {
+                throw new InvalidOperationException("An Activity must be created before calling this method.");
+            }
+
+            if (evaluationEvent == null)
+            {
+                throw new ArgumentNullException(nameof(evaluationEvent));
+            }
+
+            if (evaluationEvent.FeatureDefinition == null)
+            {
+                throw new ArgumentNullException(nameof(evaluationEvent.FeatureDefinition));
+            }
 
             var tags = new ActivityTagsCollection()
             {
