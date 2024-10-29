@@ -163,7 +163,7 @@ namespace Microsoft.FeatureManagement
                 .FirstOrDefault(section =>
                     string.Equals(section.Key, featureName, StringComparison.OrdinalIgnoreCase));
 
-            if (configuration == null)
+            if (dotnetFeatureDefinitionConfiguration == null)
             {
                 return null;
             }
@@ -179,7 +179,7 @@ namespace Microsoft.FeatureManagement
                 .LastOrDefault(section =>
                     string.Equals(section[MicrosoftFeatureManagementFields.Id], featureName, StringComparison.OrdinalIgnoreCase));
 
-            if (configuration == null)
+            if (microsoftFeatureDefinitionConfiguration == null)
             {
                 return null;
             }
