@@ -27,7 +27,7 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, Task<FeatureDefinition>> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
-        public Func<string, Task<FeatureDefinition>> schemaReadFunc;
+        private Func<string, Task<FeatureDefinition>> getFeatureDefinitionFunc;
 
         const string ParseValueErrorString = "Invalid setting '{0}' with value '{1}' for feature '{2}'.";
 
@@ -44,9 +44,9 @@ namespace Microsoft.FeatureManagement
                 () => _configuration.GetReloadToken(),
                 () => _stale = 1);
 
-            schemaReadFunc = (featureName) =>
+            getFeatureDefinitionFunc = (featureName) =>
             {
-                return Task.FromResult(GetMicrosoftSchemaFeatureDefinition(featureName, _configuration) ?? GetDotnetSchemaFeatureDefinition(featureName, _configuration, RootConfigurationFallbackEnabled));
+                return Task.FromResult(GetMicrosoftSchemaFeatureDefinition(featureName) ?? GetDotnetSchemaFeatureDefinition(featureName));
             };
         }
 
@@ -93,7 +93,7 @@ namespace Microsoft.FeatureManagement
                 _definitions.Clear();
             }
 
-            return _definitions.GetOrAdd(featureName, schemaReadFunc);
+            return _definitions.GetOrAdd(featureName, getFeatureDefinitionFunc);
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace Microsoft.FeatureManagement
                 _definitions.Clear();
             }
 
-            IEnumerable<IConfigurationSection> microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections(_configuration);
+            IEnumerable<IConfigurationSection> microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
 
             foreach (IConfigurationSection featureSection in microsoftFeatureDefinitionSections)
             {
@@ -125,7 +125,7 @@ namespace Microsoft.FeatureManagement
 
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                FeatureDefinition definition = _definitions.GetOrAdd(featureName, schemaReadFunc).Result;
+                FeatureDefinition definition = _definitions.GetOrAdd(featureName, getFeatureDefinitionFunc).Result;
 
                 if (definition != null)
                 {
@@ -133,7 +133,7 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            IEnumerable<IConfigurationSection> dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections(_configuration, RootConfigurationFallbackEnabled);
+            IEnumerable<IConfigurationSection> dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
 
             foreach (IConfigurationSection featureSection in dotnetFeatureDefinitionSections)
             {
@@ -146,7 +146,7 @@ namespace Microsoft.FeatureManagement
 
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                FeatureDefinition definition = _definitions.GetOrAdd(featureName, schemaReadFunc).Result;
+                FeatureDefinition definition = _definitions.GetOrAdd(featureName, getFeatureDefinitionFunc).Result;
 
                 if (definition != null)
                 {
@@ -155,9 +155,9 @@ namespace Microsoft.FeatureManagement
             }
         }
 
-        private static FeatureDefinition GetDotnetSchemaFeatureDefinition(string featureName, IConfiguration configuration, bool rootConfigurationFallbackEnabled)
+        private FeatureDefinition GetDotnetSchemaFeatureDefinition(string featureName)
         {
-            IEnumerable<IConfigurationSection> dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections(configuration, rootConfigurationFallbackEnabled);
+            IEnumerable<IConfigurationSection> dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
 
             IConfigurationSection dotnetFeatureDefinitionConfiguration = dotnetFeatureDefinitionSections
                 .FirstOrDefault(section =>
@@ -171,9 +171,9 @@ namespace Microsoft.FeatureManagement
             return ParseDotnetSchemaFeatureDefinition(dotnetFeatureDefinitionConfiguration);
         }
 
-        private static FeatureDefinition GetMicrosoftSchemaFeatureDefinition(string featureName, IConfiguration configuration)
+        private FeatureDefinition GetMicrosoftSchemaFeatureDefinition(string featureName)
         {
-            IEnumerable<IConfigurationSection> microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections(configuration);
+            IEnumerable<IConfigurationSection> microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
 
             IConfigurationSection microsoftFeatureDefinitionConfiguration = microsoftFeatureDefinitionSections
                 .LastOrDefault(section =>
@@ -187,9 +187,9 @@ namespace Microsoft.FeatureManagement
             return ParseMicrosoftSchemaFeatureDefinition(microsoftFeatureDefinitionConfiguration);
         }
 
-        private static IEnumerable<IConfigurationSection> GetDotnetFeatureDefinitionSections(IConfiguration configuration, bool rootConfigurationFallbackEnabled)
+        private IEnumerable<IConfigurationSection> GetDotnetFeatureDefinitionSections()
         {
-            IConfigurationSection featureManagementConfigurationSection = configuration.GetSection(DotnetFeatureManagementFields.FeatureManagementSectionName);
+            IConfigurationSection featureManagementConfigurationSection = _configuration.GetSection(DotnetFeatureManagementFields.FeatureManagementSectionName);
 
             if (featureManagementConfigurationSection.Exists())
             {
@@ -199,25 +199,25 @@ namespace Microsoft.FeatureManagement
             //
             // Root configuration fallback only applies to .NET schema.
             // If Microsoft schema can be found, root configuration fallback will not be effective.
-            if (rootConfigurationFallbackEnabled &&
-                !configuration.GetChildren()
+            if (RootConfigurationFallbackEnabled &&
+                !_configuration.GetChildren()
                     .Any(section =>
                         string.Equals(section.Key, MicrosoftFeatureManagementFields.FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase)))
             {
-                return configuration.GetChildren();
+                return _configuration.GetChildren();
             }
 
             return Enumerable.Empty<IConfigurationSection>();
         }
 
-        private static IEnumerable<IConfigurationSection> GetMicrosoftFeatureDefinitionSections(IConfiguration configuration)
+        private IEnumerable<IConfigurationSection> GetMicrosoftFeatureDefinitionSections()
         {
-            return configuration.GetSection(MicrosoftFeatureManagementFields.FeatureManagementSectionName)
+            return _configuration.GetSection(MicrosoftFeatureManagementFields.FeatureManagementSectionName)
                 .GetSection(MicrosoftFeatureManagementFields.FeatureFlagsSectionName)
                 .GetChildren();
         }
 
-        private static FeatureDefinition ParseDotnetSchemaFeatureDefinition(IConfigurationSection configurationSection)
+        private FeatureDefinition ParseDotnetSchemaFeatureDefinition(IConfigurationSection configurationSection)
         {
             /*
               
@@ -308,7 +308,7 @@ namespace Microsoft.FeatureManagement
             };
         }
 
-        private static FeatureDefinition ParseMicrosoftSchemaFeatureDefinition(IConfigurationSection configurationSection)
+        private FeatureDefinition ParseMicrosoftSchemaFeatureDefinition(IConfigurationSection configurationSection)
         {
             /*
             
