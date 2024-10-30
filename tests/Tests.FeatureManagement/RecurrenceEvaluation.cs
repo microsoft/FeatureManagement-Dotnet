@@ -7,6 +7,7 @@ using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Tests.FeatureManagement
@@ -1614,7 +1615,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async void RecurrenceEvaluationThroughCacheTest()
+        public async Task RecurrenceEvaluationThroughCacheTest()
         {
             OnDemandClock mockedTimeProvider = new OnDemandClock();
 
