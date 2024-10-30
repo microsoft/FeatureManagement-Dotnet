@@ -27,7 +27,7 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, Task<FeatureDefinition>> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
-        private Func<string, Task<FeatureDefinition>> getFeatureDefinitionFunc;
+        private Func<string, Task<FeatureDefinition>> _getFeatureDefinitionFunc;
 
         const string ParseValueErrorString = "Invalid setting '{0}' with value '{1}' for feature '{2}'.";
 
@@ -44,7 +44,7 @@ namespace Microsoft.FeatureManagement
                 () => _configuration.GetReloadToken(),
                 () => _stale = 1);
 
-            getFeatureDefinitionFunc = (featureName) =>
+            _getFeatureDefinitionFunc = (featureName) =>
             {
                 return Task.FromResult(GetMicrosoftSchemaFeatureDefinition(featureName) ?? GetDotnetSchemaFeatureDefinition(featureName));
             };
@@ -75,7 +75,6 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="featureName">The name of the feature to retrieve the definition for.</param>
         /// <returns>The feature's definition.</returns>
-
         public Task<FeatureDefinition> GetFeatureDefinitionAsync(string featureName)
         {
             if (featureName == null)
@@ -93,7 +92,7 @@ namespace Microsoft.FeatureManagement
                 _definitions.Clear();
             }
 
-            return _definitions.GetOrAdd(featureName, getFeatureDefinitionFunc);
+            return _definitions.GetOrAdd(featureName, _getFeatureDefinitionFunc);
         }
 
         /// <summary>
@@ -125,7 +124,7 @@ namespace Microsoft.FeatureManagement
 
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                FeatureDefinition definition = _definitions.GetOrAdd(featureName, getFeatureDefinitionFunc).Result;
+                FeatureDefinition definition = _definitions.GetOrAdd(featureName, _getFeatureDefinitionFunc).Result;
 
                 if (definition != null)
                 {
@@ -146,7 +145,7 @@ namespace Microsoft.FeatureManagement
 
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                FeatureDefinition definition = _definitions.GetOrAdd(featureName, getFeatureDefinitionFunc).Result;
+                FeatureDefinition definition = _definitions.GetOrAdd(featureName, _getFeatureDefinitionFunc).Result;
 
                 if (definition != null)
                 {
