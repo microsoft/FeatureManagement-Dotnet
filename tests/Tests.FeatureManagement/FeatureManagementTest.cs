@@ -281,7 +281,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task ThreadsafeSnapshot()
+        public async Task ThreadSafeSnapshot()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
@@ -793,7 +793,7 @@ namespace Tests.FeatureManagement
         }
     }
 
-    public class FeatureManagementBuiltinFeatureFilterTest
+    public class FeatureManagementBuiltInFeatureFilterTest
     {
         [Fact]
         public async Task TimeWindow()
@@ -1242,7 +1242,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task ThreadsafeSnapshot()
+        public async Task ThreadSafeSnapshot()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
@@ -1974,6 +1974,53 @@ namespace Tests.FeatureManagement
             await featureManager.IsEnabledAsync(Features.ConditionalFeature);
 
             Assert.True(called);
+        }
+    }
+
+    public class PerformanceTests
+    {
+        [Fact]
+        public async Task BooleanFlagManyTimes()
+        {
+            var services = new ServiceCollection();
+
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            services.AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            bool result;
+
+            for (int i = 0; i < 100000; i++)
+            {
+                result = await featureManager.IsEnabledAsync("OnTestFeature");
+            }
+        }
+
+        [Fact]
+        public async Task MissingFlagManyTimes()
+        {
+            var services = new ServiceCollection();
+
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            services.AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            bool result;
+
+            for (int i = 0; i < 100000; i++)
+            {
+                result = await featureManager.IsEnabledAsync("DoesNotExist");
+            }
         }
     }
 }
