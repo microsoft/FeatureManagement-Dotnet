@@ -24,9 +24,10 @@ namespace Microsoft.FeatureManagement
         // provider to be marked for caching as well.
 
         private readonly IConfiguration _configuration;
-        private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
+        private readonly ConcurrentDictionary<string, Task<FeatureDefinition>> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
+        private Func<string, Task<FeatureDefinition>> _getFeatureDefinitionFunc;
 
         const string ParseValueErrorString = "Invalid setting '{0}' with value '{1}' for feature '{2}'.";
 
@@ -37,11 +38,16 @@ namespace Microsoft.FeatureManagement
         public ConfigurationFeatureDefinitionProvider(IConfiguration configuration)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _definitions = new ConcurrentDictionary<string, FeatureDefinition>();
+            _definitions = new ConcurrentDictionary<string, Task<FeatureDefinition>>();
 
             _changeSubscription = ChangeToken.OnChange(
                 () => _configuration.GetReloadToken(),
                 () => _stale = 1);
+
+            _getFeatureDefinitionFunc = (featureName) =>
+            {
+                return Task.FromResult(GetMicrosoftSchemaFeatureDefinition(featureName) ?? GetDotnetSchemaFeatureDefinition(featureName));
+            };
         }
 
         /// <summary>
@@ -86,10 +92,7 @@ namespace Microsoft.FeatureManagement
                 _definitions.Clear();
             }
 
-            return Task.FromResult(
-                _definitions.GetOrAdd(
-                    featureName,
-                    (_) => GetMicrosoftSchemaFeatureDefinition(featureName) ?? GetDotnetSchemaFeatureDefinition(featureName)));
+            return _definitions.GetOrAdd(featureName, _getFeatureDefinitionFunc);
         }
 
         /// <summary>
@@ -98,7 +101,7 @@ namespace Microsoft.FeatureManagement
         /// <returns>An enumerator which provides asynchronous iteration over feature definitions.</returns>
         //
         // The async key word is necessary for creating IAsyncEnumerable.
-        // The need to disable this warning occurs when implementaing async stream synchronously. 
+        // The need to disable this warning occurs when implementing async stream synchronously. 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998
@@ -121,7 +124,7 @@ namespace Microsoft.FeatureManagement
 
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                FeatureDefinition definition = _definitions.GetOrAdd(featureName, (_) => ParseMicrosoftSchemaFeatureDefinition(featureSection));
+                FeatureDefinition definition = _definitions.GetOrAdd(featureName, _getFeatureDefinitionFunc).Result;
 
                 if (definition != null)
                 {
@@ -142,7 +145,7 @@ namespace Microsoft.FeatureManagement
 
                 //
                 // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                FeatureDefinition definition = _definitions.GetOrAdd(featureName, (_) => ParseDotnetSchemaFeatureDefinition(featureSection));
+                FeatureDefinition definition = _definitions.GetOrAdd(featureName, _getFeatureDefinitionFunc).Result;
 
                 if (definition != null)
                 {
@@ -155,32 +158,32 @@ namespace Microsoft.FeatureManagement
         {
             IEnumerable<IConfigurationSection> dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
 
-            IConfigurationSection configuration = dotnetFeatureDefinitionSections
+            IConfigurationSection dotnetFeatureDefinitionConfiguration = dotnetFeatureDefinitionSections
                 .FirstOrDefault(section =>
                     string.Equals(section.Key, featureName, StringComparison.OrdinalIgnoreCase));
 
-            if (configuration == null)
+            if (dotnetFeatureDefinitionConfiguration == null)
             {
                 return null;
             }
 
-            return ParseDotnetSchemaFeatureDefinition(configuration);
+            return ParseDotnetSchemaFeatureDefinition(dotnetFeatureDefinitionConfiguration);
         }
 
         private FeatureDefinition GetMicrosoftSchemaFeatureDefinition(string featureName)
         {
             IEnumerable<IConfigurationSection> microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
 
-            IConfigurationSection configuration = microsoftFeatureDefinitionSections
+            IConfigurationSection microsoftFeatureDefinitionConfiguration = microsoftFeatureDefinitionSections
                 .LastOrDefault(section =>
                     string.Equals(section[MicrosoftFeatureManagementFields.Id], featureName, StringComparison.OrdinalIgnoreCase));
 
-            if (configuration == null)
+            if (microsoftFeatureDefinitionConfiguration == null)
             {
                 return null;
             }
 
-            return ParseMicrosoftSchemaFeatureDefinition(configuration);
+            return ParseMicrosoftSchemaFeatureDefinition(microsoftFeatureDefinitionConfiguration);
         }
 
         private IEnumerable<IConfigurationSection> GetDotnetFeatureDefinitionSections()
@@ -518,7 +521,7 @@ namespace Microsoft.FeatureManagement
             };
         }
 
-        private T ParseEnum<T>(string feature, string rawValue, string fieldKeyword)
+        private static T ParseEnum<T>(string feature, string rawValue, string fieldKeyword)
             where T : struct, Enum
         {
             Debug.Assert(!string.IsNullOrEmpty(rawValue));
@@ -533,7 +536,7 @@ namespace Microsoft.FeatureManagement
             return value;
         }
 
-        private double ParseDouble(string feature, string rawValue, string fieldKeyword)
+        private static double ParseDouble(string feature, string rawValue, string fieldKeyword)
         {
             Debug.Assert(!string.IsNullOrEmpty(rawValue));
 
@@ -547,7 +550,7 @@ namespace Microsoft.FeatureManagement
             return value;
         }
 
-        private bool ParseBool(string feature, string rawValue, string fieldKeyword)
+        private static bool ParseBool(string feature, string rawValue, string fieldKeyword)
         {
             Debug.Assert(!string.IsNullOrEmpty(rawValue));
 
