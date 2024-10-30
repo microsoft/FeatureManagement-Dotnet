@@ -27,7 +27,7 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, Task<FeatureDefinition>> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
-        private Func<string, Task<FeatureDefinition>> _getFeatureDefinitionFunc;
+        private readonly Func<string, Task<FeatureDefinition>> _getFeatureDefinitionFunc;
 
         const string ParseValueErrorString = "Invalid setting '{0}' with value '{1}' for feature '{2}'.";
 
