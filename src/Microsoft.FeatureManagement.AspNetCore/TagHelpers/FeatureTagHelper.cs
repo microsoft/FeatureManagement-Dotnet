@@ -14,7 +14,8 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
     /// </summary>
     public class FeatureTagHelper : TagHelper
     {
-        private readonly IVariantFeatureManager _featureManager;
+        private readonly IFeatureManager _featureManager;
+        private readonly IVariantFeatureManager _variantFeatureManager;
 
         /// <summary>
         /// A feature name, or comma separated list of feature names, for which the content should be rendered. By default, all specified features must be enabled to render the content, but this requirement can be controlled by the <see cref="Requirement"/> property.
@@ -41,9 +42,12 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
         /// Creates a feature tag helper.
         /// </summary>
         /// <param name="featureManager">The feature manager snapshot to use to evaluate feature state.</param>
-        public FeatureTagHelper(IVariantFeatureManagerSnapshot featureManager)
+        /// <param name="variantFeatureManager">The variant feature manager snapshot to use to evaluate feature state.</param>
+        public FeatureTagHelper(IFeatureManagerSnapshot featureManager, IVariantFeatureManagerSnapshot variantFeatureManager)
         {
+            // Takes both a feature manager and a variant feature manager for backwards compatibility.
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
+            _variantFeatureManager = variantFeatureManager ?? throw new ArgumentNullException(nameof(variantFeatureManager));
         }
 
         /// <summary>
@@ -84,7 +88,7 @@ namespace Microsoft.FeatureManagement.Mvc.TagHelpers
                     enabled = await variants.Any(
                         async variant =>
                         {
-                            Variant assignedVariant = await _featureManager.GetVariantAsync(features.First()).ConfigureAwait(false);
+                            Variant assignedVariant = await _variantFeatureManager.GetVariantAsync(features.First()).ConfigureAwait(false);
 
                             return variant == assignedVariant?.Name;
                         });

@@ -95,7 +95,7 @@ namespace Microsoft.FeatureManagement.Mvc
         public RequirementType RequirementType { get; }
 
         /// <summary>
-        /// Performs controller action pre-procesing to ensure that any or all of the specified features are enabled.
+        /// Performs controller action pre-processing to ensure that any or all of the specified features are enabled.
         /// </summary>
         /// <param name="context">The context of the MVC action.</param>
         /// <param name="next">The action delegate.</param>
