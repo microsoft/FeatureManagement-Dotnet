@@ -194,6 +194,11 @@ namespace Microsoft.FeatureManagement.Mvc
                              ? await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false))
                              : await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
 
+            if (Negate)
+            {
+                enabled = !enabled;
+            }
+
             if (enabled)
             {
                 await next.Invoke().ConfigureAwait(false);
