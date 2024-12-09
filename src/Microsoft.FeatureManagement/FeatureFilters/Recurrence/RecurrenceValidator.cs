@@ -347,28 +347,27 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 return true;
             }
 
-            DateTime firstDayOfThisWeek = DateTime.Today.AddDays(
-                DaysPerWeek - CalculateWeeklyDayOffset(DateTime.Today.DayOfWeek, firstDayOfWeek));
-
             List<DayOfWeek> sortedDaysOfWeek = SortDaysOfWeek(daysOfWeek, firstDayOfWeek);
 
-            DateTime prev = DateTime.MinValue;
+            DayOfWeek firstDay = sortedDaysOfWeek.First(); // the closest occurrence day to the first day of week
+
+            DateTime firstOccurrenceOfThisWeek = DateTime.Today.AddDays(
+                DaysPerWeek - CalculateWeeklyDayOffset(DateTime.Today.DayOfWeek, firstDay));
+
+            DateTime prev = firstOccurrenceOfThisWeek;
 
             TimeSpan minGap = TimeSpan.FromDays(DaysPerWeek);
 
-            foreach (DayOfWeek dayOfWeek in sortedDaysOfWeek)
+            foreach (DayOfWeek dayOfWeek in sortedDaysOfWeek.Skip(1))
             {
-                DateTime date = firstDayOfThisWeek.AddDays(
-                        CalculateWeeklyDayOffset(dayOfWeek, firstDayOfWeek));
+                DateTime date = firstOccurrenceOfThisWeek.AddDays(
+                        CalculateWeeklyDayOffset(dayOfWeek, firstDay));
 
-                if (prev != DateTime.MinValue)
+                TimeSpan gap = date - prev;
+
+                if (gap < minGap)
                 {
-                    TimeSpan gap = date - prev;
-
-                    if (gap < minGap)
-                    {
-                        minGap = gap;
-                    }
+                    minGap = gap;
                 }
 
                 prev = date;
@@ -378,12 +377,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // It may across weeks. Check the next week if the interval is one week.
             if (interval == 1)
             {
-                DateTime firstDayOfNextWeek = firstDayOfThisWeek.AddDays(DaysPerWeek);
+                DateTime firstOccurrenceOfNextWeek = firstOccurrenceOfThisWeek.AddDays(DaysPerWeek);
 
-                DateTime firstOccurrenceInNextWeek = firstDayOfNextWeek.AddDays(
-                    CalculateWeeklyDayOffset(sortedDaysOfWeek.First(), firstDayOfWeek)); // firstDayOfWeek may not in the sortedDaysOfWeek
-
-                TimeSpan gap = firstOccurrenceInNextWeek - prev;
+                TimeSpan gap = firstOccurrenceOfNextWeek - prev;
 
                 if (gap < minGap)
                 {
