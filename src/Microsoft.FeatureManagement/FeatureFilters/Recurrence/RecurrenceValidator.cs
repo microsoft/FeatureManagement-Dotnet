@@ -360,8 +360,8 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             foreach (DayOfWeek dayOfWeek in sortedDaysOfWeek.Skip(1))
             {
-                DateTime date = firstOccurrenceOfThisWeek.AddDays(
-                        CalculateWeeklyDayOffset(dayOfWeek, firstDay));
+                DateTime date = prev.AddDays(
+                        CalculateWeeklyDayOffset(dayOfWeek, prev.DayOfWeek));
 
                 TimeSpan gap = date - prev;
 
