@@ -291,6 +291,7 @@ namespace Tests.FeatureManagement
                     {
                         Type = RecurrencePatternType.Weekly,
                         Interval = 1,
+                        FirstDayOfWeek = DayOfWeek.Sunday,
                         DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Tuesday, DayOfWeek.Saturday } // The time window duration should be shorter than 3 days because the gap between Saturday in the previous week and Tuesday in this week is 3 days.
                     },
                     Range = new RecurrenceRange()
@@ -299,7 +300,7 @@ namespace Tests.FeatureManagement
 
             //
             // The settings is valid. No exception should be thrown.
-            RecurrenceEvaluator.IsMatch(DateTimeOffset.UtcNow, settings);
+            Assert.True(RecurrenceValidator.TryValidateSettings(settings, out string paramName, out string errorMessage));
 
             settings = new TimeWindowFilterSettings()
             {
@@ -320,7 +321,49 @@ namespace Tests.FeatureManagement
 
             //
             // The settings is valid. No exception should be thrown.
-            RecurrenceEvaluator.IsMatch(DateTimeOffset.UtcNow, settings);
+            Assert.True(RecurrenceValidator.TryValidateSettings(settings, out paramName, out errorMessage));
+
+            settings = new TimeWindowFilterSettings()
+            {
+                Start = DateTimeOffset.Parse("2024-1-15T00:00:00+08:00"), // Monday
+                End = DateTimeOffset.Parse("2024-1-17T00:00:00+08:00"), // Time window duration is 2 days.
+                Recurrence = new Recurrence()
+                {
+                    Pattern = new RecurrencePattern()
+                    {
+                        Type = RecurrencePatternType.Weekly,
+                        Interval = 1,
+                        FirstDayOfWeek = DayOfWeek.Sunday,
+                        DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Monday, DayOfWeek.Saturday }
+                    },
+                    Range = new RecurrenceRange()
+                }
+            };
+
+            //
+            // The settings is valid. No exception should be thrown.
+            Assert.True(RecurrenceValidator.TryValidateSettings(settings, out paramName, out errorMessage));
+
+            settings = new TimeWindowFilterSettings()
+            {
+                Start = DateTimeOffset.Parse("2024-1-15T00:00:00+08:00"), // Monday
+                End = DateTimeOffset.Parse("2024-1-17T00:00:01+08:00"), // Time window duration is more than 2 days.
+                Recurrence = new Recurrence()
+                {
+                    Pattern = new RecurrencePattern()
+                    {
+                        Type = RecurrencePatternType.Weekly,
+                        Interval = 1,
+                        FirstDayOfWeek = DayOfWeek.Sunday,
+                        DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Monday, DayOfWeek.Saturday }
+                    },
+                    Range = new RecurrenceRange()
+                }
+            };
+
+            Assert.False(RecurrenceValidator.TryValidateSettings(settings, out paramName, out errorMessage));
+            Assert.Equal(ParamName.End, paramName);
+            Assert.Equal(ErrorMessage.TimeWindowDurationOutOfRange, errorMessage);
 
             settings = new TimeWindowFilterSettings()
             {
@@ -339,7 +382,7 @@ namespace Tests.FeatureManagement
                 }
             };
 
-            Assert.False(RecurrenceValidator.TryValidateSettings(settings, out string paramName, out string errorMessage));
+            Assert.False(RecurrenceValidator.TryValidateSettings(settings, out paramName, out errorMessage));
             Assert.Equal(ParamName.End, paramName);
             Assert.Equal(ErrorMessage.TimeWindowDurationOutOfRange, errorMessage);
         }

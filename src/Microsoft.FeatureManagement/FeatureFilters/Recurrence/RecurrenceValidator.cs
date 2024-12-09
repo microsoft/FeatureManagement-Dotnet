@@ -381,7 +381,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 DateTime firstDayOfNextWeek = firstDayOfThisWeek.AddDays(DaysPerWeek);
 
                 DateTime firstOccurrenceInNextWeek = firstDayOfNextWeek.AddDays(
-                    CalculateWeeklyDayOffset(sortedDaysOfWeek.First(), firstDayOfWeek));
+                    CalculateWeeklyDayOffset(sortedDaysOfWeek.First(), firstDayOfWeek)); // firstDayOfWeek may not in the sortedDaysOfWeek
 
                 TimeSpan gap = firstOccurrenceInNextWeek - prev;
 
