@@ -347,7 +347,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// </summary>
         private static List<DayOfWeek> SortDaysOfWeek(IEnumerable<DayOfWeek> daysOfWeek, DayOfWeek firstDayOfWeek)
         {
-            List<DayOfWeek> result = daysOfWeek.ToList();
+            List<DayOfWeek> result = daysOfWeek.Distinct().ToList(); // dedup
 
             result.Sort((x, y) =>
                 CalculateWeeklyDayOffset(x, firstDayOfWeek)
