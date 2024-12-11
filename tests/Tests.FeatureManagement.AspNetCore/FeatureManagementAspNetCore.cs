@@ -97,9 +97,13 @@ namespace Tests.FeatureManagement.AspNetCore
 
             HttpResponseMessage gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             HttpResponseMessage gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
+            HttpResponseMessage gateAllNegateResponse = await testServer.CreateClient().GetAsync("gateAllNegate");
+            HttpResponseMessage gateAnyNegateResponse = await testServer.CreateClient().GetAsync("gateAnyNegate");
 
             Assert.Equal(HttpStatusCode.OK, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, gateAllNegateResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, gateAnyNegateResponse.StatusCode);
 
             //
             // Enable 1/2 features
@@ -107,9 +111,13 @@ namespace Tests.FeatureManagement.AspNetCore
 
             gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
+            gateAllNegateResponse = await testServer.CreateClient().GetAsync("gateAllNegate");
+            gateAnyNegateResponse = await testServer.CreateClient().GetAsync("gateAnyNegate");
 
             Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, gateAllNegateResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, gateAnyNegateResponse.StatusCode);
 
             //
             // Enable no
@@ -117,9 +125,13 @@ namespace Tests.FeatureManagement.AspNetCore
 
             gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
+            gateAllNegateResponse = await testServer.CreateClient().GetAsync("gateAllNegate");
+            gateAnyNegateResponse = await testServer.CreateClient().GetAsync("gateAnyNegate");
 
             Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, gateAnyResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, gateAllNegateResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, gateAnyNegateResponse.StatusCode);
         }
 
         [Fact]
@@ -153,9 +165,13 @@ namespace Tests.FeatureManagement.AspNetCore
 
             HttpResponseMessage gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
             HttpResponseMessage gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
+            HttpResponseMessage gateAllNegateResponse = await testServer.CreateClient().GetAsync("RazorTestAllNegate");
+            HttpResponseMessage gateAnyNegateResponse = await testServer.CreateClient().GetAsync("RazorTestAnyNegate");
 
             Assert.Equal(HttpStatusCode.OK, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, gateAllNegateResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, gateAnyNegateResponse.StatusCode);
 
             //
             // Enable 1/2 features
@@ -163,9 +179,13 @@ namespace Tests.FeatureManagement.AspNetCore
 
             gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
+            gateAllNegateResponse = await testServer.CreateClient().GetAsync("RazorTestAllNegate");
+            gateAnyNegateResponse = await testServer.CreateClient().GetAsync("RazorTestAnyNegate");
 
             Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, gateAllNegateResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, gateAnyNegateResponse.StatusCode);
 
             //
             // Enable no
@@ -173,9 +193,13 @@ namespace Tests.FeatureManagement.AspNetCore
 
             gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
+            gateAllNegateResponse = await testServer.CreateClient().GetAsync("RazorTestAllNegate");
+            gateAnyNegateResponse = await testServer.CreateClient().GetAsync("RazorTestAnyNegate");
 
             Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, gateAnyResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, gateAllNegateResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, gateAnyNegateResponse.StatusCode);
         }
 
         private static void DisableEndpointRouting(MvcOptions options)
