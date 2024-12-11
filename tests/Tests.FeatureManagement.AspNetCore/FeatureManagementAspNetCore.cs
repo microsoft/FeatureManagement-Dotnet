@@ -119,7 +119,6 @@ namespace Tests.FeatureManagement.AspNetCore
             Assert.Equal(HttpStatusCode.OK, gateAllNegateResponse.StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, gateAnyNegateResponse.StatusCode);
 
-
             //
             // Enable no
             testFeatureFilter.Callback = ctx => Task.FromResult(false);
