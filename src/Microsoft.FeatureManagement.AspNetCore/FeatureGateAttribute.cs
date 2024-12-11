@@ -22,7 +22,7 @@ namespace Microsoft.FeatureManagement.Mvc
         /// </summary>
         /// <param name="features">The names of the features that the attribute will represent.</param>
         public FeatureGateAttribute(params string[] features)
-            : this(RequirementType.All, features)
+            : this(RequirementType.All, false, features)
         {
         }
 
@@ -32,6 +32,27 @@ namespace Microsoft.FeatureManagement.Mvc
         /// <param name="requirementType">Specifies whether all or any of the provided features should be enabled in order to pass.</param>
         /// <param name="features">The names of the features that the attribute will represent.</param>
         public FeatureGateAttribute(RequirementType requirementType, params string[] features)
+            : this(requirementType, false, features)
+        {
+        }
+
+        /// <summary>
+        /// Creates an attribute that can be used to gate actions or pages. The gate can be configured to negate the evaluation result.
+        /// </summary>
+        /// <param name="negate">Specifies the evaluation for the provided features gate should be negated.</param>
+        /// <param name="features">The names of the features that the attribute will represent.</param>
+        public FeatureGateAttribute(bool negate, params string[] features)
+            : this(RequirementType.All, negate, features)
+        {
+        }
+
+        /// <summary>
+        /// Creates an attribute that can be used to gate actions or pages. The gate can be configured to require all or any of the provided feature(s) to pass or negate the evaluation result.
+        /// </summary>
+        /// <param name="requirementType">Specifies whether all or any of the provided features should be enabled in order to pass.</param>
+        /// <param name="negate">Specifies the evaluation for the provided features gate should be negated.</param>
+        /// <param name="features">The names of the features that the attribute will represent.</param>
+        public FeatureGateAttribute(RequirementType requirementType, bool negate, params string[] features)
         {
             if (features == null || features.Length == 0)
             {
@@ -41,6 +62,8 @@ namespace Microsoft.FeatureManagement.Mvc
             Features = features;
 
             RequirementType = requirementType;
+
+            Negate = negate;
         }
 
         /// <summary>
@@ -48,7 +71,7 @@ namespace Microsoft.FeatureManagement.Mvc
         /// </summary>
         /// <param name="features">A set of enums representing the features that the attribute will represent.</param>
         public FeatureGateAttribute(params object[] features)
-            : this(RequirementType.All, features)
+            : this(RequirementType.All, false, features)
         {
         }
 
@@ -58,6 +81,27 @@ namespace Microsoft.FeatureManagement.Mvc
         /// <param name="requirementType">Specifies whether all or any of the provided features should be enabled in order to pass.</param>
         /// <param name="features">A set of enums representing the features that the attribute will represent.</param>
         public FeatureGateAttribute(RequirementType requirementType, params object[] features)
+            : this(requirementType, false, features)
+        {
+        }
+
+        /// <summary>
+        /// Creates an attribute that can be used to gate actions or pages. The gate can be configured to negate the evaluation result.
+        /// </summary>
+        /// <param name="negate">Specifies the evaluation for the provided features gate should be negated.</param>
+        /// <param name="features">A set of enums representing the features that the attribute will represent.</param>
+        public FeatureGateAttribute(bool negate, params object[] features)
+            : this(RequirementType.All, negate, features)
+        {
+        }
+
+        /// <summary>
+        /// Creates an attribute that can be used to gate actions or pages. The gate can be configured to require all or any of the provided feature(s) to pass or negate the evaluation result.
+        /// </summary>
+        /// <param name="requirementType">Specifies whether all or any of the provided features should be enabled in order to pass.</param>
+        /// <param name="negate">Specifies the evaluation for the provided features gate should be negated.</param>
+        /// <param name="features">A set of enums representing the features that the attribute will represent.</param>
+        public FeatureGateAttribute(RequirementType requirementType, bool negate, params object[] features)
         {
             if (features == null || features.Length == 0)
             {
@@ -82,6 +126,8 @@ namespace Microsoft.FeatureManagement.Mvc
             Features = fs;
 
             RequirementType = requirementType;
+
+            Negate = negate;
         }
 
         /// <summary>
@@ -93,6 +139,11 @@ namespace Microsoft.FeatureManagement.Mvc
         /// Controls whether any or all features in <see cref="FeatureGateAttribute.Features"/> should be enabled to pass.
         /// </summary>
         public RequirementType RequirementType { get; }
+
+        /// <summary>
+        ///  Negates the evaluation for whether or not a feature gate should activate.
+        /// </summary>
+        public bool Negate { get; }
 
         /// <summary>
         /// Performs controller action pre-processing to ensure that any or all of the specified features are enabled.
@@ -109,6 +160,11 @@ namespace Microsoft.FeatureManagement.Mvc
             bool enabled = RequirementType == RequirementType.All
                              ? await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false))
                              : await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
+
+            if (Negate)
+            {
+                enabled = !enabled;
+            }
 
             if (enabled)
             {
@@ -137,6 +193,11 @@ namespace Microsoft.FeatureManagement.Mvc
             bool enabled = RequirementType == RequirementType.All
                              ? await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false))
                              : await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
+
+            if (Negate)
+            {
+                enabled = !enabled;
+            }
 
             if (enabled)
             {
