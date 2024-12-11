@@ -1,10 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc;
 
 namespace RazorPages.Pages
 {
-    [FeatureGate(requirementType: RequirementType.Any, negate: false, ["Home"])]
+    [FeatureGate("Home")]
     public class IndexModel : PageModel
     {
         private readonly ILogger<IndexModel> _logger;
