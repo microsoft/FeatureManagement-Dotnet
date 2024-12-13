@@ -5,10 +5,12 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FeatureManagement;
+using Microsoft.FeatureManagement.Mvc.TagHelpers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -95,9 +97,13 @@ namespace Tests.FeatureManagement.AspNetCore
 
             HttpResponseMessage gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             HttpResponseMessage gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
+            HttpResponseMessage gateAllNegateResponse = await testServer.CreateClient().GetAsync("gateAllNegate");
+            HttpResponseMessage gateAnyNegateResponse = await testServer.CreateClient().GetAsync("gateAnyNegate");
 
             Assert.Equal(HttpStatusCode.OK, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, gateAllNegateResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, gateAnyNegateResponse.StatusCode);
 
             //
             // Enable 1/2 features
@@ -105,9 +111,13 @@ namespace Tests.FeatureManagement.AspNetCore
 
             gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
+            gateAllNegateResponse = await testServer.CreateClient().GetAsync("gateAllNegate");
+            gateAnyNegateResponse = await testServer.CreateClient().GetAsync("gateAnyNegate");
 
             Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, gateAllNegateResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, gateAnyNegateResponse.StatusCode);
 
             //
             // Enable no
@@ -115,9 +125,13 @@ namespace Tests.FeatureManagement.AspNetCore
 
             gateAllResponse = await testServer.CreateClient().GetAsync("gateAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("gateAny");
+            gateAllNegateResponse = await testServer.CreateClient().GetAsync("gateAllNegate");
+            gateAnyNegateResponse = await testServer.CreateClient().GetAsync("gateAnyNegate");
 
             Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, gateAnyResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, gateAllNegateResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, gateAnyNegateResponse.StatusCode);
         }
 
         [Fact]
@@ -151,9 +165,13 @@ namespace Tests.FeatureManagement.AspNetCore
 
             HttpResponseMessage gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
             HttpResponseMessage gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
+            HttpResponseMessage gateAllNegateResponse = await testServer.CreateClient().GetAsync("RazorTestAllNegate");
+            HttpResponseMessage gateAnyNegateResponse = await testServer.CreateClient().GetAsync("RazorTestAnyNegate");
 
             Assert.Equal(HttpStatusCode.OK, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, gateAllNegateResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, gateAnyNegateResponse.StatusCode);
 
             //
             // Enable 1/2 features
@@ -161,9 +179,13 @@ namespace Tests.FeatureManagement.AspNetCore
 
             gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
+            gateAllNegateResponse = await testServer.CreateClient().GetAsync("RazorTestAllNegate");
+            gateAnyNegateResponse = await testServer.CreateClient().GetAsync("RazorTestAnyNegate");
 
             Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.OK, gateAnyResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, gateAllNegateResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, gateAnyNegateResponse.StatusCode);
 
             //
             // Enable no
@@ -171,16 +193,85 @@ namespace Tests.FeatureManagement.AspNetCore
 
             gateAllResponse = await testServer.CreateClient().GetAsync("RazorTestAll");
             gateAnyResponse = await testServer.CreateClient().GetAsync("RazorTestAny");
+            gateAllNegateResponse = await testServer.CreateClient().GetAsync("RazorTestAllNegate");
+            gateAnyNegateResponse = await testServer.CreateClient().GetAsync("RazorTestAnyNegate");
 
             Assert.Equal(HttpStatusCode.NotFound, gateAllResponse.StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, gateAnyResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, gateAllNegateResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, gateAnyNegateResponse.StatusCode);
         }
 
         private static void DisableEndpointRouting(MvcOptions options)
         {
-            //
-            // Endpoint routing is disabled by default in .NET Core 2.1 since it didn't exist.
             options.EnableEndpointRouting = false;
+        }
+    }
+
+    public class CustomImplementationsFeatureManagementTests
+    {
+        public class CustomIFeatureManager : IFeatureManager
+        {
+            public IAsyncEnumerable<string> GetFeatureNamesAsync()
+            {
+                return new string[1] { "Test" }.ToAsyncEnumerable();
+            }
+
+            public async Task<bool> IsEnabledAsync(string feature)
+            {
+                return await Task.FromResult(feature == "Test");
+            }
+
+            public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext context)
+            {
+                return await Task.FromResult(feature == "Test");
+            }
+        }
+
+        [Fact]
+        public async Task CustomIFeatureManagerAspNetCoreTest()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services.AddSingleton(config)
+                    .AddSingleton<IFeatureManager, CustomIFeatureManager>()
+                    .AddFeatureManagement(); // Shouldn't override
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync("Test"));
+            Assert.False(await featureManager.IsEnabledAsync("NotTest"));
+
+            // FeatureTagHelper should use available IFeatureManager
+            FeatureTagHelper featureTagHelper = new FeatureTagHelper(serviceProvider.GetRequiredService<IFeatureManagerSnapshot>(), serviceProvider.GetRequiredService<IVariantFeatureManagerSnapshot>());
+            TagHelperOutput tagHelperOutput = new TagHelperOutput("TestTag", new TagHelperAttributeList(), (aBool, aHtmlEncoder) => { return null; });
+
+            // Test returns true, so it shouldn't be modified
+            featureTagHelper.Name = "Test";
+            Assert.False(tagHelperOutput.IsContentModified);
+            await featureTagHelper.ProcessAsync(null, tagHelperOutput);
+            Assert.False(tagHelperOutput.IsContentModified);
+
+            tagHelperOutput.Reinitialize("TestTag", TagMode.StartTagAndEndTag);
+
+            // NotTest returns false, so it should be modified
+            featureTagHelper.Name = "NotTest";
+            Assert.False(tagHelperOutput.IsContentModified);
+            await featureTagHelper.ProcessAsync(null, tagHelperOutput);
+            Assert.True(tagHelperOutput.IsContentModified);
+
+            tagHelperOutput.Reinitialize("TestTag", TagMode.StartTagAndEndTag);
+
+            // When variant is used, Test flag should no longer exist and return false
+            featureTagHelper.Name = "Test";
+            featureTagHelper.Variant = "Something";
+            Assert.False(tagHelperOutput.IsContentModified);
+            await featureTagHelper.ProcessAsync(null, tagHelperOutput);
+            Assert.True(tagHelperOutput.IsContentModified);
         }
     }
 }

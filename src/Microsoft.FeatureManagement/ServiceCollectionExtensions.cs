@@ -34,42 +34,25 @@ namespace Microsoft.FeatureManagement
                     "Scoped feature management has been registered.");
             }
 
-            services.AddLogging();
+            AddCommonFeatureManagementServices(services);
 
-            services.AddMemoryCache();
+            services.AddSingleton(sp => new FeatureManager(
+                            sp.GetRequiredService<IFeatureDefinitionProvider>(),
+                            sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
+            {
+                FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
+                Cache = sp.GetRequiredService<IMemoryCache>(),
+                Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>(),
+                TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
+                AssignerOptions = sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>().Value
+            });
 
-            //
-            // Add required services
-            services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
+            services.TryAddSingleton<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 
-            services.AddSingleton<IFeatureManager>(sp =>
-                new FeatureManager(
-                    sp.GetRequiredService<IFeatureDefinitionProvider>(),
-                    sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
-                {
-                    FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
-                    SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
-                    Cache = sp.GetRequiredService<IMemoryCache>(),
-                    Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>()
-                });
+            services.TryAddSingleton<IVariantFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 
-            services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
-
-            var builder = new FeatureManagementBuilder(services);
-
-            //
-            // Add built-in feature filters
-            builder.AddFeatureFilter<PercentageFilter>();
-
-            builder.AddFeatureFilter<TimeWindowFilter>(sp =>
-                new TimeWindowFilter()
-                {
-                    Cache = sp.GetRequiredService<IMemoryCache>()
-                });
-
-            builder.AddFeatureFilter<ContextualTargetingFilter>();
-
-            return builder;
+            return GetFeatureManagementBuilder(services);
         }
 
         /// <summary>
@@ -111,42 +94,25 @@ namespace Microsoft.FeatureManagement
                     "Singleton feature management has been registered.");
             }
 
-            services.AddLogging();
+            AddCommonFeatureManagementServices(services);
 
-            services.AddMemoryCache();
+            services.AddScoped(sp => new FeatureManager(
+                            sp.GetRequiredService<IFeatureDefinitionProvider>(),
+                            sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
+            {
+                FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
+                Cache = sp.GetRequiredService<IMemoryCache>(),
+                Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>(),
+                TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
+                AssignerOptions = sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>().Value
+            });
 
-            //
-            // Add required services
-            services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
+            services.TryAddScoped<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 
-            services.AddScoped<IFeatureManager>(sp =>
-                new FeatureManager(
-                    sp.GetRequiredService<IFeatureDefinitionProvider>(),
-                    sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
-                {
-                    FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
-                    SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
-                    Cache = sp.GetRequiredService<IMemoryCache>(),
-                    Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>()
-                });
+            services.TryAddScoped<IVariantFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 
-            services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
-
-            var builder = new FeatureManagementBuilder(services);
-
-            //
-            // Add built-in feature filters
-            builder.AddFeatureFilter<PercentageFilter>();
-
-            builder.AddFeatureFilter<TimeWindowFilter>(sp =>
-                new TimeWindowFilter()
-                {
-                    Cache = sp.GetRequiredService<IMemoryCache>()
-                });
-
-            builder.AddFeatureFilter<ContextualTargetingFilter>();
-
-            return builder;
+            return GetFeatureManagementBuilder(services);
         }
 
         /// <summary>
@@ -171,6 +137,40 @@ namespace Microsoft.FeatureManagement
                 });
 
             return services.AddScopedFeatureManagement();
+        }
+
+        private static void AddCommonFeatureManagementServices(IServiceCollection services)
+        {
+            services.AddLogging();
+
+            services.AddMemoryCache();
+
+            services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
+
+            services.AddScoped<FeatureManagerSnapshot>();
+
+            services.TryAddScoped<IFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
+
+            services.TryAddScoped<IVariantFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
+        }
+
+        private static IFeatureManagementBuilder GetFeatureManagementBuilder(IServiceCollection services)
+        {
+            var builder = new FeatureManagementBuilder(services);
+
+            //
+            // Add built-in feature filters
+            builder.AddFeatureFilter<PercentageFilter>();
+
+            builder.AddFeatureFilter<TimeWindowFilter>(sp =>
+                new TimeWindowFilter()
+                {
+                    Cache = sp.GetRequiredService<IMemoryCache>()
+                });
+
+            builder.AddFeatureFilter<ContextualTargetingFilter>();
+
+            return builder;
         }
     }
 }
