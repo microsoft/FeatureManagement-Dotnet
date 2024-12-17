@@ -356,8 +356,10 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
             TimeSpan minGap = TimeSpan.FromDays(DaysPerWeek);
 
-            foreach (DayOfWeek dayOfWeek in sortedDaysOfWeek.Skip(1))
+            for (int i = 1; i < sortedDaysOfWeek.Count(); i++) // start from the second day to calculate the gap
             {
+                DayOfWeek dayOfWeek = sortedDaysOfWeek[i];
+
                 TimeSpan gap = TimeSpan.FromDays(CalculateWeeklyDayOffset(dayOfWeek, prev));
 
                 if (gap < minGap)
