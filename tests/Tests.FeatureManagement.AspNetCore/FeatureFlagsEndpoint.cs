@@ -18,13 +18,23 @@ namespace Tests.FeatureManagement.AspNetCore
 {
     public class TestTargetingContextAccessor : ITargetingContextAccessor
     {
+        private readonly string _userId;
+        private readonly string[] _groups;
+
+        public TestTargetingContextAccessor(string userId = "testUser", string[] groups = null)
+        {
+            _userId = userId;
+            _groups = groups ?? new[] { "testGroup" };
+        }
+
         public ValueTask<TargetingContext> GetContextAsync()
         {
-            return new ValueTask<TargetingContext>(new TargetingContext
+            var context = new TargetingContext
             {
-                UserId = "testUser",
-                Groups = new[] { "testGroup" }
-            });
+                UserId = _userId,
+                Groups = _groups
+            };
+            return new ValueTask<TargetingContext>(context);
         }
     }
 
@@ -32,11 +42,18 @@ namespace Tests.FeatureManagement.AspNetCore
     {
         private readonly IHost _host;
         private readonly HttpClient _client;
-        private readonly bool _featureEnabled;
+        private readonly IDictionary<string, string> _featureSettings;
+        private readonly ITargetingContextAccessor _targetingContextAccessor;
 
-        public FeatureTestServer(bool featureEnabled = true)
+        public FeatureTestServer(
+            IDictionary<string, string> featureSettings = null,
+            ITargetingContextAccessor targetingContextAccessor = null)
         {
-            _featureEnabled = featureEnabled;
+            _featureSettings = featureSettings ?? new Dictionary<string, string>
+            {
+                ["FeatureManagement:TestFeature"] = "true"
+            };
+            _targetingContextAccessor = targetingContextAccessor ?? new TestTargetingContextAccessor();
             _host = CreateHostBuilder().Build();
             _host.Start();
             _client = _host.GetTestServer().CreateClient();
@@ -45,10 +62,7 @@ namespace Tests.FeatureManagement.AspNetCore
         private IHostBuilder CreateHostBuilder()
         {
             var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string>
-                {
-                    ["FeatureManagement:TestFeature"] = _featureEnabled.ToString().ToLower()
-                })
+                .AddInMemoryCollection(_featureSettings)
                 .Build();
 
             return Host.CreateDefaultBuilder()
@@ -59,22 +73,21 @@ namespace Tests.FeatureManagement.AspNetCore
                         .ConfigureServices(services =>
                         {
                             services.AddSingleton<IConfiguration>(configuration);
-                            services.AddSingleton<ITargetingContextAccessor, TestTargetingContextAccessor>();
-                            services.AddFeatureManagement();
+                            services.AddSingleton(_targetingContextAccessor);
+                            services.AddFeatureManagement()
+                                    .AddFeatureFilter<TargetingFilter>();
                             services.AddRouting();
                         })
                         .Configure(app =>
                         {
                             app.UseRouting();
+                            app.UseMiddleware<TargetingHttpContextMiddleware>();
                             app.UseEndpoints(endpoints =>
                             {
                                 endpoints.MapGet("/test", new Func<string>(() => "Feature Enabled"))
-                                    .WithFeatureFlag("TestFeature", () =>
-                                        new TargetingContext
-                                        {
-                                            UserId = "testUser",
-                                            Groups = new[] { "testGroup" }
-                                        });
+                                    .WithFeatureFlag("TestFeature");
+                                endpoints.MapGet("/test-targeting", new Func<string>(() => "Feature With Targeting Enabled"))
+                                    .WithFeatureFlag("TestFeatureWithTargeting");
                             });
                         });
                 });
@@ -94,7 +107,12 @@ namespace Tests.FeatureManagement.AspNetCore
         [Fact]
         public async Task WhenFeatureEnabled_ReturnsSuccess()
         {
-            using var server = new FeatureTestServer(featureEnabled: true);
+            var settings = new Dictionary<string, string>
+            {
+                ["FeatureManagement:TestFeature"] = "true"
+            };
+
+            using var server = new FeatureTestServer(featureSettings: settings);
             var response = await server.Client.GetAsync("/test");
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
         }
@@ -102,8 +120,59 @@ namespace Tests.FeatureManagement.AspNetCore
         [Fact]
         public async Task WhenFeatureDisabled_ReturnsNotFound()
         {
-            using var server = new FeatureTestServer(featureEnabled: false);
+            var settings = new Dictionary<string, string>
+            {
+                ["FeatureManagement:TestFeature"] = "false"
+            };
+
+            using var server = new FeatureTestServer(featureSettings: settings);
             var response = await server.Client.GetAsync("/test");
+            Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task WhenTargetingEnabled_AndUserInTarget_ReturnsSuccess()
+        {
+            var settings = new Dictionary<string, string>
+            {
+                ["FeatureManagement:TestFeatureWithTargeting:EnabledFor:0:Name"] = "Targeting",
+                ["FeatureManagement:TestFeatureWithTargeting:EnabledFor:0:Parameters:Audience:Users:0"] = "targetUser",
+                ["FeatureManagement:TestFeature:EnabledFor:0:Parameters:Audience:Groups:0:Name"] = "targetGroup",
+                ["FeatureManagement:TestFeature:EnabledFor:0:Parameters:Audience:Groups:0:RolloutPercentage"] = "100",
+            };
+
+            var targetingAccessor = new TestTargetingContextAccessor(
+                userId: "targetUser",
+                groups: new[] { "targetGroup" }
+            );
+            using var server = new FeatureTestServer(
+                featureSettings: settings,
+                targetingContextAccessor: targetingAccessor
+            );
+            var response = await server.Client.GetAsync("/test-targeting");
+            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task WhenTargetingEnabled_AndUserNotInTarget_ReturnsNotFound()
+        {
+            var settings = new Dictionary<string, string>
+            {
+                ["FeatureManagement:TestFeatureWithTargeting:EnabledFor:0:Name"] = "Targeting",
+                ["FeatureManagement:TestFeatureWithTargeting:EnabledFor:0:Parameters:Audience:Users:0"] = "targetUser",
+                ["FeatureManagement:TestFeature:EnabledFor:0:Parameters:Audience:Groups:0:Name"] = "targetGroup",
+                ["FeatureManagement:TestFeature:EnabledFor:0:Parameters:Audience:Groups:0:RolloutPercentage"] = "100",
+            };
+
+            var targetingAccessor = new TestTargetingContextAccessor(
+                userId: "nonTargetUser",
+                groups: new[] { "nonTargetGroup" }
+            );
+            using var server = new FeatureTestServer(
+                featureSettings: settings,
+                targetingContextAccessor: targetingAccessor
+            );
+            var response = await server.Client.GetAsync("/test-targeting");
             Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
         }
     }
