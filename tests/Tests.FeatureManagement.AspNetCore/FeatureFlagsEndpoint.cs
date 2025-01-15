@@ -1,4 +1,3 @@
-#if NET7_0_OR_GREATER
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
@@ -85,9 +84,9 @@ namespace Tests.FeatureManagement.AspNetCore
                             app.UseEndpoints(endpoints =>
                             {
                                 endpoints.MapGet("/test", new Func<string>(() => "Feature Enabled"))
-                                    .WithFeatureFlag("TestFeature");
+                                    .WithFeatureGate("TestFeature");
                                 endpoints.MapGet("/test-targeting", new Func<string>(() => "Feature With Targeting Enabled"))
-                                    .WithFeatureFlag("TestFeatureWithTargeting");
+                                    .WithFeatureGate("TestFeatureWithTargeting");
                             });
                         });
                 });
@@ -177,4 +176,3 @@ namespace Tests.FeatureManagement.AspNetCore
         }
     }
 }
-#endif

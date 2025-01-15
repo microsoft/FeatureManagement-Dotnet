@@ -1,11 +1,8 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.FeatureManagement.FeatureFilters;
-using System;
 using System.Threading.Tasks;
 
-#if NET7_0_OR_GREATER
 namespace Microsoft.FeatureManagement.AspNetCore;
 
 /// <summary>
@@ -28,10 +25,10 @@ public static class FeatureFlagsEndpointFilterExtensions
     /// <example>
     /// <code>
     /// endpoints.MapGet("/api/feature", () => "Feature Enabled")
-    ///     .WithFeatureFlag("MyFeature");
+    ///     .WithFeatureGate("MyFeature");
     /// </code>
     /// </example>
-    public static TBuilder WithFeatureFlag<TBuilder>(
+    public static TBuilder WithFeatureGate<TBuilder>(
         this TBuilder builder,
         string featureName) where TBuilder : IEndpointConventionBuilder
     {
@@ -76,4 +73,3 @@ public class FeatureFlagsEndpointFilter : IEndpointFilter
         return featureFlag ? await next(context) : Results.NotFound();
     }
 }
-#endif
