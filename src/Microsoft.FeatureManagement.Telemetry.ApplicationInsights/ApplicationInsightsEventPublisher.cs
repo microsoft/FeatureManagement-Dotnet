@@ -52,7 +52,7 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
             foreach (var tag in activityEvent.Tags)
             {
                 // FeatureEvaluation event schema: https://github.com/microsoft/FeatureManagement/blob/main/Schema/FeatureEvaluationEvent/FeatureEvaluationEvent.v1.0.0.schema.json
-                if (tag.Key == "VariantAssignmentReason" && tag.Value is VariantAssignmentReason reason)
+                if (tag.Value is VariantAssignmentReason reason)
                 {
                     switch (reason)
                     {
@@ -78,9 +78,9 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
                             throw new ArgumentOutOfRangeException(nameof(activityEvent), "The variant assignment reason is unrecognizable.");
                     }
                 }
-                else if (tag.Key == "Enabled" && tag.Value is bool enabled)
+                else if (tag.Value is bool val)
                 {
-                    properties[tag.Key] = enabled ? "True" : "False";
+                    properties[tag.Key] = val ? "True" : "False";
                 }
                 else
                 {
