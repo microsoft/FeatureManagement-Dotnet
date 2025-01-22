@@ -13,15 +13,15 @@ namespace Microsoft.FeatureManagement.AspNetCore
     /// <summary>
     /// An endpoint filter that requires a feature flag to be enabled.
     /// </summary>
-    internal class FeatureFlagsEndpointFilter : IEndpointFilter
+    internal class FeatureGateEndpointFilter : IEndpointFilter
     {
         public string FeatureName { get; }
 
         /// <summary>
-        /// Creates a new instance of <see cref="FeatureFlagsEndpointFilter"/>.
+        /// Creates a new instance of <see cref="FeatureGateEndpointFilter"/>.
         /// </summary>
         /// <param name="featureName">The name of the feature flag to evaluate for this endpoint.</param>
-        public FeatureFlagsEndpointFilter(string featureName)
+        public FeatureGateEndpointFilter(string featureName)
         {
             if (string.IsNullOrEmpty(featureName))
             {

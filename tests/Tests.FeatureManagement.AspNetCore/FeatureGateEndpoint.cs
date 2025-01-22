@@ -104,7 +104,7 @@ namespace Tests.FeatureManagement.AspNetCore
         }
     }
 
-    public class FeatureFlagsEndpointFilterTests
+    public class FeatureGateEndpointFilterTests
     {
         [Fact]
         public async Task WhenFeatureEnabled_ReturnsSuccess()

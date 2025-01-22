@@ -3,16 +3,13 @@
 //
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.AspNetCore
 {
     /// <summary>
     /// Extension methods that provide feature management integration for ASP.NET Core endpoint building.
     /// </summary>
-    public static class FeatureFlagsEndpointFilterExtensions
+    public static class FeatureGateEndpointFilterExtensions
     {
         /// <summary>
         /// Adds a feature flag filter to the endpoint that controls access based on feature state.
@@ -33,7 +30,7 @@ namespace Microsoft.FeatureManagement.AspNetCore
         /// </example>
         public static IEndpointConventionBuilder WithFeatureGate(this IEndpointConventionBuilder builder, string featureName)
         {
-            return builder.AddEndpointFilter(new FeatureFlagsEndpointFilter(featureName));
+            return builder.AddEndpointFilter(new FeatureGateEndpointFilter(featureName));
         }
     }
 }
