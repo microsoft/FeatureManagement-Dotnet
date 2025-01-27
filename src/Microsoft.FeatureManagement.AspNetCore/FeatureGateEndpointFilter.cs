@@ -1,50 +1,94 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
-//
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Microsoft.FeatureManagement.AspNetCore
 {
-
     /// <summary>
-    /// An endpoint filter that requires a feature flag to be enabled.
+    /// An endpoint filter that controls access based on feature flag states.
     /// </summary>
-    internal class FeatureGateEndpointFilter : IEndpointFilter
+    public sealed class FeatureGateEndpointFilter : IEndpointFilter
     {
-        public string FeatureName { get; }
+        /// <summary>
+        /// Gets the collection of feature flags to evaluate.
+        /// </summary>
+        public IReadOnlyCollection<string> Features;
+        /// <summary>
+        /// Gets the type of requirement (All or Any) for feature evaluation.
+        /// </summary>
+        public RequirementType RequirementType;
+        /// <summary>
+        /// Gets whether the feature evaluation result should be negated.
+        /// </summary>
+        public bool Negate;
 
         /// <summary>
-        /// Creates a new instance of <see cref="FeatureGateEndpointFilter"/>.
+        /// Initializes a new instance of the <see cref="FeatureGateEndpointFilter"/> class.
         /// </summary>
-        /// <param name="featureName">The name of the feature flag to evaluate for this endpoint.</param>
-        public FeatureGateEndpointFilter(string featureName)
+        /// <param name="features">The collection of feature flags to evaluate.</param>
+        /// <exception cref="ArgumentNullException">Thrown when features collection is null or empty.</exception>
+        public FeatureGateEndpointFilter(params string[] features)
+            : this(RequirementType.All, false, features)
         {
-            if (string.IsNullOrEmpty(featureName))
-            {
-                throw new ArgumentNullException(nameof(featureName));
-            }
-
-            FeatureName = featureName;
         }
 
         /// <summary>
-        /// Invokes the feature flag filter to control endpoint access based on feature state.
+        /// Initializes a new instance of the <see cref="FeatureGateEndpointFilter"/> class.
         /// </summary>
-        /// <param name="context">The endpoint filter invocation context containing the current HTTP context.</param>
+        /// <param name="requirementType">The type of requirement for feature evaluation.</param>
+        /// <param name="features">The collection of feature flags to evaluate.</param>
+        /// <exception cref="ArgumentNullException">Thrown when features collection is null or empty.</exception>
+        public FeatureGateEndpointFilter(RequirementType requirementType, params string[] features)
+            : this(requirementType, false, features)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FeatureGateEndpointFilter"/> class.
+        /// </summary>
+        /// <param name="requirementType">The type of requirement for feature evaluation.</param>
+        /// <param name="negate">Whether to negate the feature evaluation result.</param>
+        /// <param name="features">The collection of feature flags to evaluate.</param>
+        /// <exception cref="ArgumentNullException">Thrown when features collection is null or empty.</exception>
+        public FeatureGateEndpointFilter(RequirementType requirementType, bool negate, params string[] features)
+        {
+            if (features == null || features.Length == 0)
+            {
+                throw new ArgumentNullException(nameof(features), "Features collection cannot be null or empty.");
+            }
+
+            Features = features.ToList().AsReadOnly();
+            RequirementType = requirementType;
+            Negate = negate;
+        }
+
+        /// <summary>
+        /// Invokes the feature flag filter to control endpoint access based on feature states.
+        /// </summary>
+        /// <param name="context">The endpoint filter invocation context.</param>
         /// <param name="next">The delegate representing the next filter in the pipeline.</param>
         /// <returns>
-        /// A <see cref="NotFound"/> if the feature is disabled, otherwise continues the pipeline by calling the next delegate.
-        /// Returns a ValueTask containing the result object.
+        /// A <see cref="NotFound"/> result if access is denied, otherwise continues the pipeline.
         /// </returns>
         public async ValueTask<object> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
         {
-            IVariantFeatureManagerSnapshot fm = context.HttpContext.RequestServices.GetRequiredService<IVariantFeatureManagerSnapshot>();
+            IVariantFeatureManager fm = context.HttpContext.RequestServices.GetRequiredService<IVariantFeatureManagerSnapshot>();
 
-            return await fm.IsEnabledAsync(FeatureName, context.HttpContext.RequestAborted) ? await next(context) : Results.NotFound();
+            bool enabled = RequirementType == RequirementType.All
+                ? await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false))
+                : await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
+            var isAllowed = Negate ? !enabled : enabled;
+
+            return isAllowed
+                ? await next(context).ConfigureAwait(false)
+                : Results.NotFound();
         }
     }
 }
