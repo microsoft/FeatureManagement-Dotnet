@@ -13,27 +13,6 @@ namespace Microsoft.FeatureManagement.AspNetCore
     public static class FeatureGateEndpointFilterExtensions
     {
         /// <summary>
-        /// Adds a feature gated filter to the endpoint that controls access based on whether a feature is enabled.
-        /// </summary>
-        /// <param name="builder">The endpoint convention builder.</param>
-        /// <param name="feature">The name of the feature flag to evaluate.</param>
-        /// <returns>The endpoint convention builder for chaining.</returns>
-        /// <remarks>
-        /// This extension method enables feature flag control over endpoint access.
-        /// When the feature is disabled, requests to the endpoint will return a 404 Not Found response.
-        /// </remarks>
-        /// <example>
-        /// <code>
-        /// endpoints.MapGet("/api/feature", () => "Feature Enabled")
-        ///     .WithFeatureGate("MyFeature");
-        /// </code>
-        /// </example>
-        public static IEndpointConventionBuilder WithFeatureGate(this IEndpointConventionBuilder builder, string feature)
-        {
-            return builder.AddEndpointFilter(new FeatureGateEndpointFilter(feature));
-        }
-
-        /// <summary>
         /// Adds a feature flag filter to the endpoint that controls access based on multiple feature states.
         /// All features must be enabled for access to be granted.
         /// </summary>

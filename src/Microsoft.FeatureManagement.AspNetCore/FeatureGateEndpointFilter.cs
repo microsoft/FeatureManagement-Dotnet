@@ -15,7 +15,7 @@ namespace Microsoft.FeatureManagement.AspNetCore
     /// <summary>
     /// An endpoint filter that controls access based on feature flag states.
     /// </summary>
-    public sealed class FeatureGateEndpointFilter : IEndpointFilter
+    internal sealed class FeatureGateEndpointFilter : IEndpointFilter
     {
         /// <summary>
         /// Gets the collection of feature flags to evaluate.
