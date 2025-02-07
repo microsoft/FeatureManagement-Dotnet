@@ -1,5 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
+//
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -19,15 +20,15 @@ namespace Microsoft.FeatureManagement.AspNetCore
         /// <summary>
         /// Gets the collection of feature flags to evaluate.
         /// </summary>
-        public IReadOnlyCollection<string> Features;
+        public IEnumerable<string> Features { get; }
         /// <summary>
         /// Gets the type of requirement (All or Any) for feature evaluation.
         /// </summary>
-        public RequirementType RequirementType;
+        public RequirementType RequirementType { get; }
         /// <summary>
         /// Gets whether the feature evaluation result should be negated.
         /// </summary>
-        public bool Negate;
+        public bool Negate { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FeatureGateEndpointFilter"/> class.
@@ -40,9 +41,9 @@ namespace Microsoft.FeatureManagement.AspNetCore
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FeatureGateEndpointFilter"/> class.
+        /// Creates a new instance of the <see cref="FeatureGateEndpointFilter"/> class.
         /// </summary>
-        /// <param name="requirementType">The type of requirement for feature evaluation.</param>
+        /// <param name="requirementType">Specifies whether all or any of the provided features should be enabled in order to pass.</param>
         /// <param name="features">The collection of feature flags to evaluate.</param>
         /// <exception cref="ArgumentNullException">Thrown when features collection is null or empty.</exception>
         public FeatureGateEndpointFilter(RequirementType requirementType, params string[] features)
@@ -51,17 +52,17 @@ namespace Microsoft.FeatureManagement.AspNetCore
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FeatureGateEndpointFilter"/> class.
+        /// Creates a new instance of the <see cref="FeatureGateEndpointFilter"/> class.
         /// </summary>
-        /// <param name="requirementType">The type of requirement for feature evaluation.</param>
-        /// <param name="negate">Whether to negate the feature evaluation result.</param>
+        /// <param name="requirementType">Specifies whether all or any of the provided features should be enabled in order to pass.</param>
+        /// <param name="negate">Specifies whether the feature evaluation result should be negated.</param>
         /// <param name="features">The collection of feature flags to evaluate.</param>
         /// <exception cref="ArgumentNullException">Thrown when features collection is null or empty.</exception>
         public FeatureGateEndpointFilter(RequirementType requirementType, bool negate, params string[] features)
         {
             if (features == null || features.Length == 0)
             {
-                throw new ArgumentNullException(nameof(features), "Features collection cannot be null or empty.");
+                throw new ArgumentNullException(nameof(features));
             }
 
             Features = features.ToList().AsReadOnly();
@@ -84,6 +85,7 @@ namespace Microsoft.FeatureManagement.AspNetCore
             bool enabled = RequirementType == RequirementType.All
                 ? await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false))
                 : await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
+
             var isAllowed = Negate ? !enabled : enabled;
 
             return isAllowed
