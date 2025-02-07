@@ -20,15 +20,17 @@ namespace Microsoft.FeatureManagement.AspNetCore
         /// <summary>
         /// Gets the collection of feature flags to evaluate.
         /// </summary>
-        public IEnumerable<string> Features { get; }
+        private readonly IEnumerable<string> _features;
+
         /// <summary>
         /// Gets the type of requirement (All or Any) for feature evaluation.
         /// </summary>
-        public RequirementType RequirementType { get; }
+        private readonly RequirementType _requirementType;
+
         /// <summary>
         /// Gets whether the feature evaluation result should be negated.
         /// </summary>
-        public bool Negate { get; }
+        private readonly bool _negate;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FeatureGateEndpointFilter"/> class.
@@ -36,7 +38,7 @@ namespace Microsoft.FeatureManagement.AspNetCore
         /// <param name="features">The collection of feature flags to evaluate.</param>
         /// <exception cref="ArgumentNullException">Thrown when features collection is null or empty.</exception>
         public FeatureGateEndpointFilter(params string[] features)
-            : this(RequirementType.All, false, features)
+            : this(RequirementType.All, negate: false, features)
         {
         }
 
@@ -47,7 +49,7 @@ namespace Microsoft.FeatureManagement.AspNetCore
         /// <param name="features">The collection of feature flags to evaluate.</param>
         /// <exception cref="ArgumentNullException">Thrown when features collection is null or empty.</exception>
         public FeatureGateEndpointFilter(RequirementType requirementType, params string[] features)
-            : this(requirementType, false, features)
+            : this(requirementType, negate: false, features)
         {
         }
 
@@ -65,9 +67,9 @@ namespace Microsoft.FeatureManagement.AspNetCore
                 throw new ArgumentNullException(nameof(features));
             }
 
-            Features = features.ToList().AsReadOnly();
-            RequirementType = requirementType;
-            Negate = negate;
+            _features = features;
+            _requirementType = requirementType;
+            _negate = negate;
         }
 
         /// <summary>
@@ -82,11 +84,11 @@ namespace Microsoft.FeatureManagement.AspNetCore
         {
             IVariantFeatureManager fm = context.HttpContext.RequestServices.GetRequiredService<IVariantFeatureManagerSnapshot>();
 
-            bool enabled = RequirementType == RequirementType.All
-                ? await Features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false))
-                : await Features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
+            bool enabled = _requirementType == RequirementType.All
+                ? await _features.All(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false))
+                : await _features.Any(async feature => await fm.IsEnabledAsync(feature).ConfigureAwait(false));
 
-            var isAllowed = Negate ? !enabled : enabled;
+            bool isAllowed = _negate ? !enabled : enabled;
 
             return isAllowed
                 ? await next(context).ConfigureAwait(false)

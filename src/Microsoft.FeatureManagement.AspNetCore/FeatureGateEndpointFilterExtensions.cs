@@ -13,7 +13,7 @@ namespace Microsoft.FeatureManagement.AspNetCore
     public static class FeatureGateEndpointFilterExtensions
     {
         /// <summary>
-        /// Adds a feature flag filter to the endpoint that controls access based on multiple feature states.
+        /// Adds a filter to the endpoint that gates access based on whether one or more features are enabled.
         /// All features must be enabled for access to be granted.
         /// </summary>
         /// <param name="builder">The endpoint convention builder.</param>
@@ -25,7 +25,7 @@ namespace Microsoft.FeatureManagement.AspNetCore
         }
 
         /// <summary>
-        /// Adds a feature flag filter to the endpoint with specified requirement type for multiple features.
+        /// Adds a filter to the endpoint with specified requirement type for multiple features.
         /// </summary>
         /// <param name="builder">The endpoint convention builder.</param>
         /// <param name="requirementType">Specifies whether all or any of the provided features should be enabled in order to pass.</param>
@@ -37,7 +37,7 @@ namespace Microsoft.FeatureManagement.AspNetCore
         }
 
         /// <summary>
-        /// Adds a feature flag filter to the endpoint with negation capability for multiple features.
+        /// Adds a filter to the endpoint with negation capability for multiple features.
         /// </summary>
         /// <param name="builder">The endpoint convention builder.</param>
         /// <param name="negate">Specifies whether the feature evaluation result should be negated.</param>
@@ -49,7 +49,7 @@ namespace Microsoft.FeatureManagement.AspNetCore
         }
 
         /// <summary>
-        /// Adds a feature flag filter to the endpoint with full control over requirement type and negation.
+        /// Adds a filter to the endpoint with full control over requirement type and negation.
         /// </summary>
         /// <param name="builder">The endpoint convention builder.</param>
         /// <param name="requirementType">Specifies whether all or any of the provided features should be enabled in order to pass.</param>
