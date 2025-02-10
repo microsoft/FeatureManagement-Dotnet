@@ -10,9 +10,7 @@ IConfiguration configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
     .Build();
 
-IFeatureDefinitionProvider featureDefinitionProvider = new ConfigurationFeatureDefinitionProvider(configuration);
-
-var featureManager = new FeatureManager(featureDefinitionProvider)
+var featureManager = new FeatureManager(new ConfigurationFeatureDefinitionProvider(configuration))
 {
     FeatureFilters = new List<IFeatureFilterMetadata> { new AccountIdFilter() }
 };
