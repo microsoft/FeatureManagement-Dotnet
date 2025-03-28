@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 //
 using Microsoft.Extensions.Configuration;
+using System.Threading;
 
 namespace Microsoft.FeatureManagement
 {
@@ -25,5 +26,10 @@ namespace Microsoft.FeatureManagement
         /// The settings are made available for <see cref="IFeatureFilter"/>s that implement <see cref="IFilterParametersBinder"/>.
         /// </summary>
         public object Settings { get; set; }
+
+        /// <summary>
+        /// A cancellation token that can be used to request cancellation of the feature evaluation operation.
+        /// </summary>
+        public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
     }
 }

@@ -472,6 +472,11 @@ namespace Microsoft.FeatureManagement
                 // For all enabling filters listed in the feature's state, evaluate them according to requirement type
                 foreach (FeatureFilterConfiguration featureFilterConfiguration in featureDefinition.EnabledFor)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+
                     filterIndex++;
 
                     //
@@ -524,7 +529,8 @@ namespace Microsoft.FeatureManagement
                     var context = new FeatureFilterEvaluationContext()
                     {
                         FeatureName = featureDefinition.Name,
-                        Parameters = featureFilterConfiguration.Parameters
+                        Parameters = featureFilterConfiguration.Parameters,
+                        CancellationToken = cancellationToken
                     };
 
                     BindSettings(filter, context, filterIndex);
@@ -611,6 +617,11 @@ namespace Microsoft.FeatureManagement
             {
                 foreach (UserAllocation user in evaluationEvent.FeatureDefinition.Allocation.User)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+
                     if (TargetingEvaluator.IsTargeted(targetingContext.UserId, user.Users, _assignerOptions.IgnoreCase))
                     {
                         if (string.IsNullOrEmpty(user.Variant))
@@ -637,6 +648,11 @@ namespace Microsoft.FeatureManagement
             {
                 foreach (GroupAllocation group in evaluationEvent.FeatureDefinition.Allocation.Group)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+
                     if (TargetingEvaluator.IsTargeted(targetingContext.Groups, group.Groups, _assignerOptions.IgnoreCase))
                     {
                         if (string.IsNullOrEmpty(group.Variant))
@@ -663,6 +679,11 @@ namespace Microsoft.FeatureManagement
             {
                 foreach (PercentileAllocation percentile in evaluationEvent.FeatureDefinition.Allocation.Percentile)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+
                     if (TargetingEvaluator.IsTargeted(
                         targetingContext,
                         percentile.From,
@@ -795,7 +816,7 @@ namespace Microsoft.FeatureManagement
             //
             // Feature filters can have namespaces in their alias
             // If a feature is configured to use a filter without a namespace such as 'MyFilter', then it can match 'MyOrg.MyProduct.MyFilter' or simply 'MyFilter'
-            // If a feature is configured to use a filter with a namespace such as 'MyOrg.MyProduct.MyFilter' then it can only match 'MyOrg.MyProduct.MyFilter' 
+            // If a feature is configured to use a filter with a namespace such as 'MyOrg.MyProduct.MyFilter' then it can only match 'MyOrg.MyProduct.MyFilter'
             if (filterName.Contains('.'))
             {
                 //
