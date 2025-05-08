@@ -196,11 +196,17 @@ namespace Microsoft.FeatureManagement
         /// <returns>An enumerator which provides asynchronous iteration over the feature names registered in the feature manager.</returns>
         public async IAsyncEnumerable<string> GetFeatureNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            var featureNamesReturned = new HashSet<string>();
             await foreach (FeatureDefinition featureDefinition in _featureDefinitionProvider.GetAllFeatureDefinitionsAsync().ConfigureAwait(false))
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                yield return featureDefinition.Name;
+                if (!featureNamesReturned.Contains(featureDefinition.Name))
+                {
+                    yield return featureDefinition.Name;
+
+                    featureNamesReturned.Add(featureDefinition.Name);
+                }
             }
         }
 

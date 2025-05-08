@@ -394,6 +394,79 @@ namespace Tests.FeatureManagement
 
             Assert.True(await featureManager.IsEnabledAsync(Features.DuplicateFlag));
         }
+
+        [Fact]
+        public async Task DedupesFeatureNames()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { $"FeatureManagement:{Features.DuplicateFlag}", "False" }
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { $"FeatureManagement:{Features.DuplicateFlag}", "True" }
+                })
+                .Build();
+
+            IServiceCollection services = new ServiceCollection();
+
+            services
+                .AddSingleton(configuration)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            var featureNames = await featureManager.GetFeatureNamesAsync().ToListAsync();
+            Assert.Equal(featureNames.Distinct().Count(), featureNames.Count);
+            Assert.True(await featureManager.IsEnabledAsync(Features.DuplicateFlag));
+        }
+    }
+
+    public class FeatureManagementMultipleSchemasTest
+    {
+        [Fact]
+        public async Task DedupesFeatureNames()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.MultipleSchemas.json")
+            .Build();
+
+            IServiceCollection services = new ServiceCollection();
+
+            services
+                .AddSingleton(configuration)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            var featureNames = await featureManager.GetFeatureNamesAsync().ToListAsync();
+            Assert.Equal(featureNames.Distinct().Count(), featureNames.Count);
+        }
+
+        [Fact]
+        public async Task PrioritizesMicrosoftSchemaConfiguration()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.MultipleSchemas.json")
+                .Build();
+
+            IServiceCollection services = new ServiceCollection();
+
+            services
+                .AddSingleton(configuration)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync(Features.DuplicateFlag));
+        }
     }
 
     public class FeatureManagementFeatureFilterGeneralTest
