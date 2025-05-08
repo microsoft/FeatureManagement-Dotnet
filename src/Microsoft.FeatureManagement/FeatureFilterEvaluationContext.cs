@@ -30,6 +30,6 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// A cancellation token that can be used to request cancellation of the feature evaluation operation.
         /// </summary>
-        public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
+        public CancellationToken CancellationToken { get; set; }
     }
 }

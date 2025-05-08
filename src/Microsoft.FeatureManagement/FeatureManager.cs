@@ -472,10 +472,7 @@ namespace Microsoft.FeatureManagement
                 // For all enabling filters listed in the feature's state, evaluate them according to requirement type
                 foreach (FeatureFilterConfiguration featureFilterConfiguration in featureDefinition.EnabledFor)
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                    }
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     filterIndex++;
 
@@ -617,10 +614,7 @@ namespace Microsoft.FeatureManagement
             {
                 foreach (UserAllocation user in evaluationEvent.FeatureDefinition.Allocation.User)
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                    }
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     if (TargetingEvaluator.IsTargeted(targetingContext.UserId, user.Users, _assignerOptions.IgnoreCase))
                     {
@@ -648,10 +642,7 @@ namespace Microsoft.FeatureManagement
             {
                 foreach (GroupAllocation group in evaluationEvent.FeatureDefinition.Allocation.Group)
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                    }
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     if (TargetingEvaluator.IsTargeted(targetingContext.Groups, group.Groups, _assignerOptions.IgnoreCase))
                     {
@@ -679,10 +670,7 @@ namespace Microsoft.FeatureManagement
             {
                 foreach (PercentileAllocation percentile in evaluationEvent.FeatureDefinition.Allocation.Percentile)
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                    }
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     if (TargetingEvaluator.IsTargeted(
                         targetingContext,
