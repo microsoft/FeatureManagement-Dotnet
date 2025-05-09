@@ -380,6 +380,7 @@ namespace Microsoft.FeatureManagement
             Debug.Assert(evaluationEvent != null);
             Debug.Assert(evaluationEvent.FeatureDefinition != null);
 
+            // FeatureEvaluation event schema: https://github.com/microsoft/FeatureManagement/blob/main/Schema/FeatureEvaluationEvent/FeatureEvaluationEvent.v1.0.0.schema.json
             var tags = new ActivityTagsCollection()
             {
                 { "FeatureName", evaluationEvent.FeatureDefinition.Name },

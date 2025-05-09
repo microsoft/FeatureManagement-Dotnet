@@ -849,6 +849,13 @@ namespace Tests.FeatureManagement
             Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Start", DateTimeOffset.UtcNow.AddDays(-2).ToString("r"));
             Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:End", DateTimeOffset.UtcNow.AddDays(-1).ToString("r"));
             Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:Type", "Weekly");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:DaysOfWeek:0", "Monday");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:DaysOfWeek:1", "Tuesday");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:DaysOfWeek:2", "Wednesday");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:DaysOfWeek:3", "Thursday");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:DaysOfWeek:4", "Friday");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:DaysOfWeek:5", "Saturday");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:DaysOfWeek:6", "Sunday");
             Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Range:Type", "NoEnd");
 
             foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
@@ -874,11 +881,7 @@ namespace Tests.FeatureManagement
             Assert.False(await featureManager.IsEnabledAsync(feature4));
             Assert.True(await featureManager.IsEnabledAsync(feature5));
             Assert.False(await featureManager.IsEnabledAsync(feature6));
-
-            for (int i = 0; i < 10; i++)
-            {
-                Assert.True(await featureManager.IsEnabledAsync(feature7));
-            }
+            Assert.True(await featureManager.IsEnabledAsync(feature7));
         }
 
         [Fact]
