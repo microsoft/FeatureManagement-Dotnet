@@ -218,17 +218,28 @@ namespace Microsoft.FeatureManagement
 
         private IEnumerable<IConfigurationSection> GetMicrosoftFeatureDefinitionSections()
         {
-            var configurationRoot = _configuration as IConfigurationRoot;
-            if (configurationRoot == null)
-            {
-                // Fallback to current behavior if not an IConfigurationRoot
-                return _configuration
-                    .GetSection(MicrosoftFeatureManagementFields.FeatureManagementSectionName)
-                    .GetSection(MicrosoftFeatureManagementFields.FeatureFlagsSectionName)
-                    .GetChildren();
-            }
+            var featureDefinitionSections = new List<IConfigurationSection>();
 
-            var mergedSections = new List<IConfigurationSection>();
+            FindFeatureFlags(_configuration, featureDefinitionSections);
+
+            return featureDefinitionSections;
+        }
+
+        private void FindFeatureFlags(IConfiguration configuration, List<IConfigurationSection> featureDefinitionSections)
+        {
+            if (!(configuration is IConfigurationRoot configurationRoot))
+            {
+                IConfigurationSection featureFlagsSection = configuration
+                    .GetSection(MicrosoftFeatureManagementFields.FeatureManagementSectionName)
+                    .GetSection(MicrosoftFeatureManagementFields.FeatureFlagsSectionName);
+
+                if (featureFlagsSection.Exists())
+                {
+                    featureDefinitionSections.AddRange(featureFlagsSection.GetChildren());
+                }
+
+                return;
+            }
 
             foreach (IConfigurationProvider provider in configurationRoot.Providers)
             {
@@ -248,18 +259,14 @@ namespace Microsoft.FeatureManagement
 
                     if (featureFlagsSection.Exists())
                     {
-                        mergedSections.AddRange(featureFlagsSection.GetChildren());
+                        featureDefinitionSections.AddRange(featureFlagsSection.GetChildren());
                     }
                 }
                 else if (provider is ChainedConfigurationProvider chainedProvider)
                 {
-                    IConfigurationSection featureFlagsSection = chainedProvider.Configuration
-                        .GetSection(MicrosoftFeatureManagementFields.FeatureManagementSectionName)
-                        .GetSection(MicrosoftFeatureManagementFields.FeatureFlagsSectionName);
+                    FindFeatureFlags(chainedProvider.Configuration, featureDefinitionSections);
                 }
             }
-
-            return mergedSections;
         }
 
         private FeatureDefinition ParseDotnetSchemaFeatureDefinition(IConfigurationSection configurationSection)

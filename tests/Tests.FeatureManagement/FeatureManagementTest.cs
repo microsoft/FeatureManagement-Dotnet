@@ -394,6 +394,50 @@ namespace Tests.FeatureManagement
 
             Assert.True(await featureManager.IsEnabledAsync(Features.DuplicateFlag));
         }
+
+        [Fact]
+        public async Task MergesFeatureFlagsFromDifferentConfigurationSources()
+        {
+            /*
+             * appsettings1.json
+             * Feature1: true
+             * Feature2: true
+             * FeatureA: true
+             * 
+             * appsettings2.json
+             * Feature1: true
+             * Feature2: false
+             * FeatureB: true
+             * 
+             * appsettings3.json
+             * Feature1: false
+             * Feature2: false
+             * FeatureC: true
+             */
+
+            IConfiguration configuration1 = new ConfigurationBuilder()
+                .AddJsonFile("appsettings1.json")
+                .AddJsonFile("appsettings2.json")
+                .Build();
+
+            IConfiguration configuration2 = new ConfigurationBuilder()
+                .AddConfiguration(configuration1) // chained configuration
+                .AddJsonFile("appsettings3.json")
+                .Build();
+
+            var featureManager1 = new FeatureManager(new ConfigurationFeatureDefinitionProvider(configuration1));
+            Assert.True(await featureManager1.IsEnabledAsync("FeatureA"));
+            Assert.True(await featureManager1.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager1.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager1.IsEnabledAsync("Feature2")); // appsettings2 should override appsettings1
+
+            var featureManager2 = new FeatureManager(new ConfigurationFeatureDefinitionProvider(configuration2));
+            Assert.True(await featureManager2.IsEnabledAsync("FeatureA"));
+            Assert.True(await featureManager2.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager2.IsEnabledAsync("FeatureC"));
+            Assert.False(await featureManager2.IsEnabledAsync("Feature1")); // appsettings3 should override previous settings
+            Assert.False(await featureManager2.IsEnabledAsync("Feature2")); // appsettings3 should override previous settings
+        }
     }
 
     public class FeatureManagementFeatureFilterGeneralTest
