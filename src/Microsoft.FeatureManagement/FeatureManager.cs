@@ -368,54 +368,11 @@ namespace Microsoft.FeatureManagement
                     Activity.Current != null &&
                     Activity.Current.IsAllDataRequested)
                 {
-                    AddEvaluationActivityEvent(evaluationEvent);
+                    FeatureEvaluationTelemetry.Publish(evaluationEvent, Logger);
                 }
             }
 
             return evaluationEvent;
-        }
-
-        private void AddEvaluationActivityEvent(EvaluationEvent evaluationEvent)
-        {
-            Debug.Assert(evaluationEvent != null);
-            Debug.Assert(evaluationEvent.FeatureDefinition != null);
-
-            var tags = new ActivityTagsCollection()
-            {
-                { "FeatureName", evaluationEvent.FeatureDefinition.Name },
-                { "Enabled", evaluationEvent.Enabled },
-                { "VariantAssignmentReason", evaluationEvent.VariantAssignmentReason },
-                { "Version", ActivitySource.Version }
-            };
-
-            if (!string.IsNullOrEmpty(evaluationEvent.TargetingContext?.UserId))
-            {
-                tags["TargetingId"] = evaluationEvent.TargetingContext.UserId;
-            }
-
-            if (!string.IsNullOrEmpty(evaluationEvent.Variant?.Name))
-            {
-                tags["Variant"] = evaluationEvent.Variant.Name;
-            }
-
-            if (evaluationEvent.FeatureDefinition.Telemetry.Metadata != null)
-            {
-                foreach (KeyValuePair<string, string> kvp in evaluationEvent.FeatureDefinition.Telemetry.Metadata)
-                {
-                    if (tags.ContainsKey(kvp.Key))
-                    {
-                        Logger?.LogWarning("{key} from telemetry metadata will be ignored, as it would override an existing key.", kvp.Key);
-
-                        continue;
-                    }
-
-                    tags[kvp.Key] = kvp.Value;
-                }
-            }
-
-            var activityEvent = new ActivityEvent("FeatureFlag", DateTimeOffset.UtcNow, tags);
-
-            Activity.Current.AddEvent(activityEvent);
         }
 
         private async ValueTask<bool> IsEnabledAsync<TContext>(FeatureDefinition featureDefinition, TContext appContext, bool useAppContext, CancellationToken cancellationToken)
@@ -472,6 +429,8 @@ namespace Microsoft.FeatureManagement
                 // For all enabling filters listed in the feature's state, evaluate them according to requirement type
                 foreach (FeatureFilterConfiguration featureFilterConfiguration in featureDefinition.EnabledFor)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     filterIndex++;
 
                     //
@@ -524,7 +483,8 @@ namespace Microsoft.FeatureManagement
                     var context = new FeatureFilterEvaluationContext()
                     {
                         FeatureName = featureDefinition.Name,
-                        Parameters = featureFilterConfiguration.Parameters
+                        Parameters = featureFilterConfiguration.Parameters,
+                        CancellationToken = cancellationToken
                     };
 
                     BindSettings(filter, context, filterIndex);
@@ -611,6 +571,8 @@ namespace Microsoft.FeatureManagement
             {
                 foreach (UserAllocation user in evaluationEvent.FeatureDefinition.Allocation.User)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     if (TargetingEvaluator.IsTargeted(targetingContext.UserId, user.Users, _assignerOptions.IgnoreCase))
                     {
                         if (string.IsNullOrEmpty(user.Variant))
@@ -637,6 +599,8 @@ namespace Microsoft.FeatureManagement
             {
                 foreach (GroupAllocation group in evaluationEvent.FeatureDefinition.Allocation.Group)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     if (TargetingEvaluator.IsTargeted(targetingContext.Groups, group.Groups, _assignerOptions.IgnoreCase))
                     {
                         if (string.IsNullOrEmpty(group.Variant))
@@ -663,6 +627,8 @@ namespace Microsoft.FeatureManagement
             {
                 foreach (PercentileAllocation percentile in evaluationEvent.FeatureDefinition.Allocation.Percentile)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     if (TargetingEvaluator.IsTargeted(
                         targetingContext,
                         percentile.From,
@@ -795,7 +761,7 @@ namespace Microsoft.FeatureManagement
             //
             // Feature filters can have namespaces in their alias
             // If a feature is configured to use a filter without a namespace such as 'MyFilter', then it can match 'MyOrg.MyProduct.MyFilter' or simply 'MyFilter'
-            // If a feature is configured to use a filter with a namespace such as 'MyOrg.MyProduct.MyFilter' then it can only match 'MyOrg.MyProduct.MyFilter' 
+            // If a feature is configured to use a filter with a namespace such as 'MyOrg.MyProduct.MyFilter' then it can only match 'MyOrg.MyProduct.MyFilter'
             if (filterName.Contains('.'))
             {
                 //

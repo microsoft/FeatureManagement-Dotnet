@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.FeatureManagement;
+using System.Security.Claims;
 
 namespace VariantServiceDemo.Pages
 {
@@ -19,11 +21,22 @@ namespace VariantServiceDemo.Pages
         {
             //
             // generate a new visitor
-            string visitor = Random.Shared.Next().ToString();
+            Username = Random.Shared.Next().ToString();
 
-            Response.Cookies.Append("username", visitor);
+            // Clear Application Insights cookies and 
+            Response.Cookies.Delete("ai_user");
+            Response.Cookies.Delete("ai_session");
 
-            Username = visitor;
+            // Generate new user claim
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, Username)
+            };
+
+            var identity = new ClaimsIdentity(claims, "CookieAuth");
+            var principal = new ClaimsPrincipal(identity);
+
+            HttpContext.SignInAsync("CookieAuth", principal);
 
             return Page();
         }
