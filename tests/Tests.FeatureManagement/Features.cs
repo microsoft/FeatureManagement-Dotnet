@@ -23,6 +23,7 @@ namespace Tests.FeatureManagement
         public const string VariantFeatureGroup = "VariantFeatureGroup";
         public const string VariantFeatureNoVariants = "VariantFeatureNoVariants";
         public const string VariantFeatureNoAllocation = "VariantFeatureNoAllocation";
+        public const string VariantFeatureIncorrectDefaultWhenEnabled = "VariantFeatureIncorrectDefaultWhenEnabled";
         public const string VariantFeatureAlwaysOffNoAllocation = "VariantFeatureAlwaysOffNoAllocation";
         public const string VariantFeatureInvalidStatusOverride = "VariantFeatureInvalidStatusOverride";
         public const string VariantFeatureInvalidFromTo = "VariantFeatureInvalidFromTo";
