@@ -1706,6 +1706,9 @@ namespace Tests.FeatureManagement
                         string label = evaluationEvent.Tags.FirstOrDefault(kvp => kvp.Key == "Label").Value?.ToString();
                         string firstTag = evaluationEvent.Tags.FirstOrDefault(kvp => kvp.Key == "Tags.Tag1").Value?.ToString();
 
+                        string variantAssignmentPercentage = evaluationEvent.Tags.FirstOrDefault(kvp => kvp.Key == "VariantAssignmentPercentage").Value?.ToString();
+                        string defaultWhenEnabled = evaluationEvent.Tags.FirstOrDefault(kvp => kvp.Key == "DefaultWhenEnabled").Value?.ToString();
+
                         // Test telemetry cases
                         switch (featureName)
                         {
@@ -1733,6 +1736,8 @@ namespace Tests.FeatureManagement
                                 Assert.Equal("True", enabled);
                                 Assert.Equal("Medium", variantName);
                                 Assert.Equal(VariantAssignmentReason.DefaultWhenEnabled.ToString(), variantAssignmentReason);
+                                Assert.Equal("100", variantAssignmentPercentage);
+                                Assert.Equal("Medium", defaultWhenEnabled);
                                 break;
 
                             case Features.VariantFeatureDefaultDisabled:
@@ -1741,6 +1746,8 @@ namespace Tests.FeatureManagement
                                 Assert.Equal("False", enabled);
                                 Assert.Equal("Small", variantName);
                                 Assert.Equal(VariantAssignmentReason.DefaultWhenDisabled.ToString(), variantAssignmentReason);
+                                Assert.Null(variantAssignmentPercentage);
+                                Assert.Null(defaultWhenEnabled);
                                 break;
 
                             case Features.VariantFeaturePercentileOn:
@@ -1763,6 +1770,8 @@ namespace Tests.FeatureManagement
                                 currentTest = 0;
                                 Assert.Null(variantName);
                                 Assert.Equal(VariantAssignmentReason.DefaultWhenDisabled.ToString(), variantAssignmentReason);
+                                Assert.Null(variantAssignmentPercentage);
+                                Assert.Null(defaultWhenEnabled);
                                 break;
 
                             case Features.VariantFeatureUser:
@@ -1770,6 +1779,8 @@ namespace Tests.FeatureManagement
                                 currentTest = 0;
                                 Assert.Equal("Small", variantName);
                                 Assert.Equal(VariantAssignmentReason.User.ToString(), variantAssignmentReason);
+                                Assert.Null(variantAssignmentPercentage);
+                                Assert.Null(defaultWhenEnabled);
                                 break;
 
                             case Features.VariantFeatureGroup:
@@ -1777,6 +1788,8 @@ namespace Tests.FeatureManagement
                                 currentTest = 0;
                                 Assert.Equal("Small", variantName);
                                 Assert.Equal(VariantAssignmentReason.Group.ToString(), variantAssignmentReason);
+                                Assert.Null(variantAssignmentPercentage);
+                                Assert.Null(defaultWhenEnabled);
                                 break;
 
                             case Features.VariantFeatureNoVariants:
@@ -1784,6 +1797,8 @@ namespace Tests.FeatureManagement
                                 currentTest = 0;
                                 Assert.Null(variantName);
                                 Assert.Equal(VariantAssignmentReason.None.ToString(), variantAssignmentReason);
+                                Assert.Null(variantAssignmentPercentage);
+                                Assert.Null(defaultWhenEnabled);
                                 break;
 
                             case Features.VariantFeatureNoAllocation:
@@ -1791,6 +1806,8 @@ namespace Tests.FeatureManagement
                                 currentTest = 0;
                                 Assert.Null(variantName);
                                 Assert.Equal(VariantAssignmentReason.DefaultWhenEnabled.ToString(), variantAssignmentReason);
+                                Assert.Equal("100", variantAssignmentPercentage);
+                                Assert.Null(defaultWhenEnabled);
                                 break;
 
                             case Features.VariantFeatureAlwaysOffNoAllocation:
@@ -1798,6 +1815,17 @@ namespace Tests.FeatureManagement
                                 currentTest = 0;
                                 Assert.Null(variantName);
                                 Assert.Equal(VariantAssignmentReason.DefaultWhenDisabled.ToString(), variantAssignmentReason);
+                                Assert.Null(variantAssignmentPercentage);
+                                Assert.Null(defaultWhenEnabled);
+                                break;
+
+                            case Features.VariantFeatureIncorrectDefaultWhenEnabled:
+                                Assert.Equal(13, currentTest);
+                                currentTest = 0;
+                                Assert.Null(variantName);
+                                Assert.Equal(VariantAssignmentReason.DefaultWhenEnabled.ToString(), variantAssignmentReason);
+                                Assert.Equal("100", variantAssignmentPercentage);
+                                Assert.Equal("Foo", defaultWhenEnabled);
                                 break;
 
                             default:
@@ -1860,6 +1888,10 @@ namespace Tests.FeatureManagement
 
             currentTest = 12;
             await featureManager.GetVariantAsync(Features.VariantFeatureAlwaysOffNoAllocation, cancellationToken);
+            Assert.Equal(0, currentTest);
+
+            currentTest = 13;
+            await featureManager.GetVariantAsync(Features.VariantFeatureIncorrectDefaultWhenEnabled, cancellationToken);
             Assert.Equal(0, currentTest);
 
             // Test a feature with telemetry disabled- should throw if the listener hits it
