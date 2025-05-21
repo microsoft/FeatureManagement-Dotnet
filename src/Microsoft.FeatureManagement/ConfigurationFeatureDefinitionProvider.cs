@@ -227,7 +227,9 @@ namespace Microsoft.FeatureManagement
 
         private void FindFeatureFlags(IConfiguration configuration, List<IConfigurationSection> featureDefinitionSections)
         {
-            if (!(configuration is IConfigurationRoot configurationRoot))
+            if (!(configuration is IConfigurationRoot configurationRoot) ||
+                configurationRoot.Providers.Any(provider =>
+                    !(provider is ConfigurationProvider) && !(provider is ChainedConfigurationProvider)))
             {
                 IConfigurationSection featureFlagsSection = configuration
                     .GetSection(MicrosoftFeatureManagementFields.FeatureManagementSectionName)
