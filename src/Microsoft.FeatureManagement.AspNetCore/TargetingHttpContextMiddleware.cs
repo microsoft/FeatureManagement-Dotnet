@@ -19,7 +19,7 @@ namespace Microsoft.FeatureManagement
         private readonly RequestDelegate _next;
         private readonly ILogger _logger;
 
-        private const string TargetingIdKey = $"Microsoft.FeatureManagement.TargetingId";
+        private const string TargetingIdKey = "TargetingId";
 
         /// <summary>
         /// Creates an instance of the TargetingHttpContextMiddleware
