@@ -9,7 +9,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,7 +22,6 @@ namespace Microsoft.FeatureManagement
         //
         // IFeatureDefinitionProviderCacheable interface is only used to mark this provider as cacheable. This allows our test suite's
         // provider to be marked for caching as well.
-        private static readonly PropertyInfo _propertyInfo = typeof(ConfigurationProvider).GetProperty("Data", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         private readonly IConfiguration _configuration;
         private IEnumerable<IConfigurationSection> _dotnetFeatureDefinitionSections;
         private IEnumerable<IConfigurationSection> _microsoftFeatureDefinitionSections;
@@ -245,15 +243,13 @@ namespace Microsoft.FeatureManagement
 
             foreach (IConfigurationProvider provider in configurationRoot.Providers)
             {
-                if (provider is ConfigurationProvider configProvider)
+                if (provider is ConfigurationProvider configurationProvider)
                 {
-                    var data = _propertyInfo.GetValue(configProvider) as IDictionary<string, string>;
-
                     //
                     // Cannot use the original provider directly as its reload token is subscribed
-                    var configurationProvider = new OnDemandConfigurationProvider(data);
+                    var onDemandConfigurationProvider = new OnDemandConfigurationProvider(configurationProvider);
 
-                    var onDemandConfigurationRoot = new ConfigurationRoot(new[] { configurationProvider });
+                    var onDemandConfigurationRoot = new ConfigurationRoot(new[] { onDemandConfigurationProvider });
 
                     IConfigurationSection featureFlagsSection = onDemandConfigurationRoot
                         .GetSection(MicrosoftFeatureManagementFields.FeatureManagementSectionName)
