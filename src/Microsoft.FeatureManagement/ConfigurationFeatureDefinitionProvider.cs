@@ -23,8 +23,8 @@ namespace Microsoft.FeatureManagement
         // IFeatureDefinitionProviderCacheable interface is only used to mark this provider as cacheable. This allows our test suite's
         // provider to be marked for caching as well.
         private readonly IConfiguration _configuration;
-        private IEnumerable<IConfigurationSection> _dotnetFeatureDefinitionSections;
-        private IEnumerable<IConfigurationSection> _microsoftFeatureDefinitionSections;
+        private Lazy<IEnumerable<IConfigurationSection>> _dotnetFeatureDefinitionSections;
+        private Lazy<IEnumerable<IConfigurationSection>> _microsoftFeatureDefinitionSections;
         private readonly ConcurrentDictionary<string, Task<FeatureDefinition>> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
@@ -50,9 +50,9 @@ namespace Microsoft.FeatureManagement
                 return Task.FromResult(GetMicrosoftSchemaFeatureDefinition(featureName) ?? GetDotnetSchemaFeatureDefinition(featureName));
             };
 
-            _dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
+            _dotnetFeatureDefinitionSections = new Lazy<IEnumerable<IConfigurationSection>>(GetDotnetFeatureDefinitionSections);
 
-            _microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
+            _microsoftFeatureDefinitionSections = new Lazy<IEnumerable<IConfigurationSection>>(GetMicrosoftFeatureDefinitionSections);
         }
 
         /// <summary>
@@ -96,9 +96,9 @@ namespace Microsoft.FeatureManagement
             {
                 _definitions.Clear();
 
-                _dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
+                _dotnetFeatureDefinitionSections = new Lazy<IEnumerable<IConfigurationSection>>(GetDotnetFeatureDefinitionSections);
 
-                _microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
+                _microsoftFeatureDefinitionSections = new Lazy<IEnumerable<IConfigurationSection>>(GetMicrosoftFeatureDefinitionSections);
             }
 
             return _definitions.GetOrAdd(featureName, _getFeatureDefinitionFunc);
@@ -119,12 +119,12 @@ namespace Microsoft.FeatureManagement
             {
                 _definitions.Clear();
 
-                _dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
+                _dotnetFeatureDefinitionSections = new Lazy<IEnumerable<IConfigurationSection>>(GetDotnetFeatureDefinitionSections);
 
-                _microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
+                _microsoftFeatureDefinitionSections = new Lazy<IEnumerable<IConfigurationSection>>(GetMicrosoftFeatureDefinitionSections);
             }
 
-            foreach (IConfigurationSection featureSection in _microsoftFeatureDefinitionSections)
+            foreach (IConfigurationSection featureSection in _microsoftFeatureDefinitionSections.Value)
             {
                 string featureName = featureSection[MicrosoftFeatureManagementFields.Id];
 
@@ -143,7 +143,7 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            foreach (IConfigurationSection featureSection in _dotnetFeatureDefinitionSections)
+            foreach (IConfigurationSection featureSection in _dotnetFeatureDefinitionSections.Value)
             {
                 string featureName = featureSection.Key;
 
@@ -165,7 +165,7 @@ namespace Microsoft.FeatureManagement
 
         private FeatureDefinition GetDotnetSchemaFeatureDefinition(string featureName)
         {
-            IConfigurationSection dotnetFeatureDefinitionConfiguration = _dotnetFeatureDefinitionSections
+            IConfigurationSection dotnetFeatureDefinitionConfiguration = _dotnetFeatureDefinitionSections.Value
                 .FirstOrDefault(section =>
                     string.Equals(section.Key, featureName, StringComparison.OrdinalIgnoreCase));
 
@@ -179,7 +179,7 @@ namespace Microsoft.FeatureManagement
 
         private FeatureDefinition GetMicrosoftSchemaFeatureDefinition(string featureName)
         {
-            IConfigurationSection microsoftFeatureDefinitionConfiguration = _microsoftFeatureDefinitionSections
+            IConfigurationSection microsoftFeatureDefinitionConfiguration = _microsoftFeatureDefinitionSections.Value
                 .LastOrDefault(section =>
                     string.Equals(section[MicrosoftFeatureManagementFields.Id], featureName, StringComparison.OrdinalIgnoreCase));
 
