@@ -23,11 +23,12 @@ namespace Microsoft.FeatureManagement
         // IFeatureDefinitionProviderCacheable interface is only used to mark this provider as cacheable. This allows our test suite's
         // provider to be marked for caching as well.
         private readonly IConfiguration _configuration;
-        private Lazy<IEnumerable<IConfigurationSection>> _dotnetFeatureDefinitionSections;
-        private Lazy<IEnumerable<IConfigurationSection>> _microsoftFeatureDefinitionSections;
+        private IEnumerable<IConfigurationSection> _dotnetFeatureDefinitionSections;
+        private IEnumerable<IConfigurationSection> _microsoftFeatureDefinitionSections;
         private readonly ConcurrentDictionary<string, Task<FeatureDefinition>> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
+        private int _initialized = 0;
         private readonly Func<string, Task<FeatureDefinition>> _getFeatureDefinitionFunc;
 
         const string ParseValueErrorString = "Invalid setting '{0}' with value '{1}' for feature '{2}'.";
@@ -49,10 +50,6 @@ namespace Microsoft.FeatureManagement
             {
                 return Task.FromResult(GetMicrosoftSchemaFeatureDefinition(featureName) ?? GetDotnetSchemaFeatureDefinition(featureName));
             };
-
-            _dotnetFeatureDefinitionSections = new Lazy<IEnumerable<IConfigurationSection>>(GetDotnetFeatureDefinitionSections);
-
-            _microsoftFeatureDefinitionSections = new Lazy<IEnumerable<IConfigurationSection>>(GetMicrosoftFeatureDefinitionSections);
         }
 
         /// <summary>
@@ -92,13 +89,15 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentException($"The value '{ConfigurationPath.KeyDelimiter}' is not allowed in the feature name.", nameof(featureName));
             }
 
+            EnsureInit();
+
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
+                _dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
+
+                _microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
+
                 _definitions.Clear();
-
-                _dotnetFeatureDefinitionSections = new Lazy<IEnumerable<IConfigurationSection>>(GetDotnetFeatureDefinitionSections);
-
-                _microsoftFeatureDefinitionSections = new Lazy<IEnumerable<IConfigurationSection>>(GetMicrosoftFeatureDefinitionSections);
             }
 
             return _definitions.GetOrAdd(featureName, _getFeatureDefinitionFunc);
@@ -115,16 +114,18 @@ namespace Microsoft.FeatureManagement
         public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998
         {
+            EnsureInit();
+
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
+                _dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
+
+                _microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
+
                 _definitions.Clear();
-
-                _dotnetFeatureDefinitionSections = new Lazy<IEnumerable<IConfigurationSection>>(GetDotnetFeatureDefinitionSections);
-
-                _microsoftFeatureDefinitionSections = new Lazy<IEnumerable<IConfigurationSection>>(GetMicrosoftFeatureDefinitionSections);
             }
 
-            foreach (IConfigurationSection featureSection in _microsoftFeatureDefinitionSections.Value)
+            foreach (IConfigurationSection featureSection in _microsoftFeatureDefinitionSections)
             {
                 string featureName = featureSection[MicrosoftFeatureManagementFields.Id];
 
@@ -143,7 +144,7 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
-            foreach (IConfigurationSection featureSection in _dotnetFeatureDefinitionSections.Value)
+            foreach (IConfigurationSection featureSection in _dotnetFeatureDefinitionSections)
             {
                 string featureName = featureSection.Key;
 
@@ -163,9 +164,21 @@ namespace Microsoft.FeatureManagement
             }
         }
 
+        private void EnsureInit()
+        {
+            if (_initialized == 0)
+            {
+                _dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
+
+                _microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
+
+                _initialized = 1;
+            }
+        }
+
         private FeatureDefinition GetDotnetSchemaFeatureDefinition(string featureName)
         {
-            IConfigurationSection dotnetFeatureDefinitionConfiguration = _dotnetFeatureDefinitionSections.Value
+            IConfigurationSection dotnetFeatureDefinitionConfiguration = _dotnetFeatureDefinitionSections
                 .FirstOrDefault(section =>
                     string.Equals(section.Key, featureName, StringComparison.OrdinalIgnoreCase));
 
@@ -179,7 +192,7 @@ namespace Microsoft.FeatureManagement
 
         private FeatureDefinition GetMicrosoftSchemaFeatureDefinition(string featureName)
         {
-            IConfigurationSection microsoftFeatureDefinitionConfiguration = _microsoftFeatureDefinitionSections.Value
+            IConfigurationSection microsoftFeatureDefinitionConfiguration = _microsoftFeatureDefinitionSections
                 .LastOrDefault(section =>
                     string.Equals(section[MicrosoftFeatureManagementFields.Id], featureName, StringComparison.OrdinalIgnoreCase));
 
