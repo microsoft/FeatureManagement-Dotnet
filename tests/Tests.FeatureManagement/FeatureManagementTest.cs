@@ -90,7 +90,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            //Assert.True(await featureManager.IsEnabledAsync("FeatureX"));
+            Assert.True(await featureManager.IsEnabledAsync("FeatureX"));
 
             string json = @"
             {

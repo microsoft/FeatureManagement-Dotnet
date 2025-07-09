@@ -28,6 +28,7 @@ namespace Microsoft.FeatureManagement
         private readonly ConcurrentDictionary<string, Task<FeatureDefinition>> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
+        private int _initialized = 0;
         private readonly Func<string, Task<FeatureDefinition>> _getFeatureDefinitionFunc;
 
         const string ParseValueErrorString = "Invalid setting '{0}' with value '{1}' for feature '{2}'.";
@@ -49,10 +50,6 @@ namespace Microsoft.FeatureManagement
             {
                 return Task.FromResult(GetMicrosoftSchemaFeatureDefinition(featureName) ?? GetDotnetSchemaFeatureDefinition(featureName));
             };
-
-            _dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
-
-            _microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
         }
 
         /// <summary>
@@ -92,13 +89,15 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentException($"The value '{ConfigurationPath.KeyDelimiter}' is not allowed in the feature name.", nameof(featureName));
             }
 
+            EnsureInit();
+
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
-                _definitions.Clear();
-
                 _dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
 
                 _microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
+
+                _definitions.Clear();
             }
 
             return _definitions.GetOrAdd(featureName, _getFeatureDefinitionFunc);
@@ -115,13 +114,15 @@ namespace Microsoft.FeatureManagement
         public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998
         {
+            EnsureInit();
+
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
-                _definitions.Clear();
-
                 _dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
 
                 _microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
+
+                _definitions.Clear();
             }
 
             foreach (IConfigurationSection featureSection in _microsoftFeatureDefinitionSections)
@@ -160,6 +161,18 @@ namespace Microsoft.FeatureManagement
                 {
                     yield return definition;
                 }
+            }
+        }
+
+        private void EnsureInit()
+        {
+            if (_initialized == 0)
+            {
+                _dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
+
+                _microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
+
+                _initialized = 1;
             }
         }
 
