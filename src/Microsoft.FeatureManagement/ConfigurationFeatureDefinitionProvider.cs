@@ -400,6 +400,96 @@ namespace Microsoft.FeatureManagement
                     }
                 }
 
+                if (additionalDefinition.Allocation != null)
+                {
+                    if (mergedAllocation == null)
+                    {
+                        mergedAllocation = additionalDefinition.Allocation;
+                    }
+                    else
+                    {
+                        // Merge allocation properties, only override if not null
+                        if (!string.IsNullOrEmpty(additionalDefinition.Allocation.DefaultWhenEnabled))
+                        {
+                            mergedAllocation.DefaultWhenEnabled = additionalDefinition.Allocation.DefaultWhenEnabled;
+                        }
+
+                        if (!string.IsNullOrEmpty(additionalDefinition.Allocation.DefaultWhenDisabled))
+                        {
+                            mergedAllocation.DefaultWhenDisabled = additionalDefinition.Allocation.DefaultWhenDisabled;
+                        }
+
+                        if (!string.IsNullOrEmpty(additionalDefinition.Allocation.Seed))
+                        {
+                            mergedAllocation.Seed = additionalDefinition.Allocation.Seed;
+                        }
+
+                        if (additionalDefinition.Allocation.User != null)
+                        {
+                            var mergedUserAllocations = new List<UserAllocation>(mergedAllocation.User ?? Enumerable.Empty<UserAllocation>());
+
+                            foreach (UserAllocation userAllocation in additionalDefinition.Allocation.User)
+                            {
+                                int existingIndex = mergedUserAllocations.FindIndex(u => string.Equals(u.Variant, userAllocation.Variant, StringComparison.OrdinalIgnoreCase));
+
+                                if (existingIndex >= 0)
+                                {
+                                    mergedUserAllocations[existingIndex] = userAllocation;
+                                }
+                                else
+                                {
+                                    mergedUserAllocations.Add(userAllocation);
+                                }
+                            }
+
+                            mergedAllocation.User = mergedUserAllocations;
+                        }
+
+                        if (additionalDefinition.Allocation.Group != null)
+                        {
+                            var mergedGroupAllocations = new List<GroupAllocation>(mergedAllocation.Group ?? Enumerable.Empty<GroupAllocation>());
+
+                            foreach (GroupAllocation groupAllocation in additionalDefinition.Allocation.Group)
+                            {
+                                int existingIndex = mergedGroupAllocations.FindIndex(g => string.Equals(g.Variant, groupAllocation.Variant, StringComparison.OrdinalIgnoreCase));
+
+                                if (existingIndex >= 0)
+                                {
+                                    mergedGroupAllocations[existingIndex] = groupAllocation;
+                                }
+                                else
+                                {
+                                    mergedGroupAllocations.Add(groupAllocation);
+                                }
+                            }
+
+                            mergedAllocation.Group = mergedGroupAllocations;
+                        }
+
+                        // Merge Percentile allocations - replace existing allocations with same variant name
+                        if (additionalDefinition.Allocation.Percentile != null)
+                        {
+                            var mergedPercentileAllocations = new List<PercentileAllocation>(mergedAllocation.Percentile ?? Enumerable.Empty<PercentileAllocation>());
+
+                            foreach (PercentileAllocation percentileAllocation in additionalDefinition.Allocation.Percentile)
+                            {
+                                int existingIndex = mergedPercentileAllocations.FindIndex(p => string.Equals(p.Variant, percentileAllocation.Variant, StringComparison.OrdinalIgnoreCase));
+
+                                if (existingIndex >= 0)
+                                {
+                                    mergedPercentileAllocations[existingIndex] = percentileAllocation;
+                                }
+                                else
+                                {
+                                    mergedPercentileAllocations.Add(percentileAllocation);
+                                }
+                            }
+
+                            mergedAllocation.Percentile = mergedPercentileAllocations;
+                        }
+                    }
+                }
+
                 if (additionalDefinition.Telemetry?.Metadata != null)
                 {
                     foreach (KeyValuePair<string, string> kvp in additionalDefinition.Telemetry.Metadata)
@@ -410,11 +500,6 @@ namespace Microsoft.FeatureManagement
 
                 mergedRequirementType = additionalDefinition.RequirementType;
                 mergedStatus = additionalDefinition.Status;
-
-                if (additionalDefinition.Allocation != null)
-                {
-                    mergedAllocation = additionalDefinition.Allocation;
-                }
 
                 if (additionalDefinition.Telemetry != null)
                 {
