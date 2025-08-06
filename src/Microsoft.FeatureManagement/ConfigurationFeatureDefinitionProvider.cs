@@ -24,11 +24,12 @@ namespace Microsoft.FeatureManagement
         // provider to be marked for caching as well.
         private readonly IConfiguration _configuration;
         private IEnumerable<IConfigurationSection> _dotnetFeatureDefinitionSections;
-        private IEnumerable<IConfigurationSection> _microsoftFeatureDefinitionSections;
+        private ConcurrentDictionary<string, List<IConfigurationSection>> _microsoftFeatureDefinitionsByName;
         private readonly ConcurrentDictionary<string, Task<FeatureDefinition>> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
         private int _initialized = 0;
+        private readonly object _initLock = new object();
         private readonly Func<string, Task<FeatureDefinition>> _getFeatureDefinitionFunc;
 
         const string ParseValueErrorString = "Invalid setting '{0}' with value '{1}' for feature '{2}'.";
@@ -93,9 +94,11 @@ namespace Microsoft.FeatureManagement
 
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
+                Console.WriteLine("Feature definitions are stale, reloading...");
+
                 _dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
 
-                _microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
+                GetMicrosoftFeatureDefinitions();
 
                 _definitions.Clear();
             }
@@ -118,37 +121,48 @@ namespace Microsoft.FeatureManagement
 
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
+                Console.WriteLine("Feature definitions are stale, reloading...");
+
                 _dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
 
-                _microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
+                GetMicrosoftFeatureDefinitions();
 
                 _definitions.Clear();
             }
 
-            foreach (IConfigurationSection featureSection in _microsoftFeatureDefinitionSections)
+            // Use hashset to avoid duplicate feature names
+            var returnedFeatures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (_microsoftFeatureDefinitionsByName != null)
             {
-                string featureName = featureSection[MicrosoftFeatureManagementFields.Id];
-
-                if (string.IsNullOrEmpty(featureName))
+                foreach (KeyValuePair<string, List<IConfigurationSection>> kvp in _microsoftFeatureDefinitionsByName)
                 {
-                    continue;
-                }
+                    string featureName = kvp.Key;
 
-                //
-                // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                FeatureDefinition definition = _definitions.GetOrAdd(featureName, _getFeatureDefinitionFunc).Result;
+                    if (returnedFeatures.Contains(featureName))
+                    {
+                        continue;
+                    }
 
-                if (definition != null)
-                {
-                    yield return definition;
+                    //
+                    // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
+                    FeatureDefinition definition = _definitions.GetOrAdd(featureName, _getFeatureDefinitionFunc).Result;
+
+                    if (definition != null)
+                    {
+                        returnedFeatures.Add(featureName);
+
+                        yield return definition;
+                    }
                 }
             }
 
+            // Return .NET schema features for any features not already returned
             foreach (IConfigurationSection featureSection in _dotnetFeatureDefinitionSections)
             {
                 string featureName = featureSection.Key;
 
-                if (string.IsNullOrEmpty(featureName))
+                if (string.IsNullOrEmpty(featureName) || returnedFeatures.Contains(featureName))
                 {
                     continue;
                 }
@@ -159,6 +173,8 @@ namespace Microsoft.FeatureManagement
 
                 if (definition != null)
                 {
+                    returnedFeatures.Add(featureName);
+
                     yield return definition;
                 }
             }
@@ -168,11 +184,17 @@ namespace Microsoft.FeatureManagement
         {
             if (_initialized == 0)
             {
-                _dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
+                lock (_initLock)
+                {
+                    if (_initialized == 0)
+                    {
+                        _dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
 
-                _microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
+                        GetMicrosoftFeatureDefinitions();
 
-                _initialized = 1;
+                        _initialized = 1;
+                    }
+                }
             }
         }
 
@@ -192,16 +214,12 @@ namespace Microsoft.FeatureManagement
 
         private FeatureDefinition GetMicrosoftSchemaFeatureDefinition(string featureName)
         {
-            IConfigurationSection microsoftFeatureDefinitionConfiguration = _microsoftFeatureDefinitionSections
-                .LastOrDefault(section =>
-                    string.Equals(section[MicrosoftFeatureManagementFields.Id], featureName, StringComparison.OrdinalIgnoreCase));
-
-            if (microsoftFeatureDefinitionConfiguration == null)
+            if (_microsoftFeatureDefinitionsByName.TryGetValue(featureName, out List<IConfigurationSection> featureSections))
             {
-                return null;
+                return MergeMicrosoftSchemaFeatureDefinitions(featureName, featureSections);
             }
 
-            return ParseMicrosoftSchemaFeatureDefinition(microsoftFeatureDefinitionConfiguration);
+            return null;
         }
 
         private IEnumerable<IConfigurationSection> GetDotnetFeatureDefinitionSections()
@@ -227,16 +245,16 @@ namespace Microsoft.FeatureManagement
             return Enumerable.Empty<IConfigurationSection>();
         }
 
-        private IEnumerable<IConfigurationSection> GetMicrosoftFeatureDefinitionSections()
+        private void GetMicrosoftFeatureDefinitions()
         {
-            var featureDefinitionSections = new List<IConfigurationSection>();
+            var featureDefinitionsByName = new ConcurrentDictionary<string, List<IConfigurationSection>>(StringComparer.OrdinalIgnoreCase);
 
-            FindFeatureFlags(_configuration, featureDefinitionSections);
+            FindFeatureFlags(_configuration, featureDefinitionsByName);
 
-            return featureDefinitionSections;
+            _microsoftFeatureDefinitionsByName = featureDefinitionsByName;
         }
 
-        private void FindFeatureFlags(IConfiguration configuration, List<IConfigurationSection> featureDefinitionSections)
+        private void FindFeatureFlags(IConfiguration configuration, ConcurrentDictionary<string, List<IConfigurationSection>> featureDefinitionsByName)
         {
             if (!(configuration is IConfigurationRoot configurationRoot) ||
                 configurationRoot.Providers.Any(provider =>
@@ -248,7 +266,7 @@ namespace Microsoft.FeatureManagement
 
                 if (featureFlagsSection.Exists())
                 {
-                    featureDefinitionSections.AddRange(featureFlagsSection.GetChildren());
+                    AddFeatureFlagsToCollection(featureFlagsSection.GetChildren(), featureDefinitionsByName);
                 }
 
                 return;
@@ -270,14 +288,154 @@ namespace Microsoft.FeatureManagement
 
                     if (featureFlagsSection.Exists())
                     {
-                        featureDefinitionSections.AddRange(featureFlagsSection.GetChildren());
+                        AddFeatureFlagsToCollection(featureFlagsSection.GetChildren(), featureDefinitionsByName);
                     }
                 }
                 else if (provider is ChainedConfigurationProvider chainedProvider)
                 {
-                    FindFeatureFlags(chainedProvider.Configuration, featureDefinitionSections);
+                    FindFeatureFlags(chainedProvider.Configuration, featureDefinitionsByName);
                 }
             }
+        }
+
+        private void AddFeatureFlagsToCollection(IEnumerable<IConfigurationSection> featureSections, ConcurrentDictionary<string, List<IConfigurationSection>> featureDefinitionsByName)
+        {
+            foreach (IConfigurationSection section in featureSections)
+            {
+                string featureName = section[MicrosoftFeatureManagementFields.Id];
+
+                if (!string.IsNullOrEmpty(featureName))
+                {
+                    featureDefinitionsByName.AddOrUpdate(
+                        featureName,
+                        new List<IConfigurationSection> { section },
+                        (key, existingList) =>
+                        {
+                            existingList.Add(section);
+                            return existingList;
+                        });
+                }
+            }
+        }
+
+        private FeatureDefinition MergeMicrosoftSchemaFeatureDefinitions(string featureName, List<IConfigurationSection> configurationSections)
+        {
+            if (!configurationSections.Any())
+            {
+                return null;
+            }
+
+            FeatureDefinition baseDefinition = ParseMicrosoftSchemaFeatureDefinition(configurationSections.First());
+
+            if (configurationSections.Count == 1)
+            {
+                return baseDefinition;
+            }
+
+            // Merge subsequent definitions, last definition wins in case of conflicts.
+            var mergedEnabledFor = new List<FeatureFilterConfiguration>(baseDefinition.EnabledFor ?? Enumerable.Empty<FeatureFilterConfiguration>());
+
+            var mergedVariants = new List<VariantDefinition>(baseDefinition.Variants ?? Enumerable.Empty<VariantDefinition>());
+
+            var mergedTelemetryMetadata = new Dictionary<string, string>();
+
+            if (baseDefinition.Telemetry?.Metadata != null)
+            {
+                foreach (var kvp in baseDefinition.Telemetry.Metadata)
+                {
+                    mergedTelemetryMetadata[kvp.Key] = kvp.Value;
+                }
+            }
+
+            RequirementType mergedRequirementType = baseDefinition.RequirementType;
+
+            FeatureStatus mergedStatus = baseDefinition.Status;
+
+            Allocation mergedAllocation = baseDefinition.Allocation;
+
+            bool mergedTelemetryEnabled = baseDefinition.Telemetry?.Enabled ?? false;
+
+            foreach (IConfigurationSection section in configurationSections.Skip(1))
+            {
+                FeatureDefinition additionalDefinition = ParseMicrosoftSchemaFeatureDefinition(section);
+
+                if (additionalDefinition == null)
+                {
+                    continue;
+                }
+
+                if (additionalDefinition.EnabledFor != null)
+                {
+                    foreach (FeatureFilterConfiguration filter in additionalDefinition.EnabledFor)
+                    {
+                        int existingIndex = mergedEnabledFor.FindIndex(f => string.Equals(f.Name, filter.Name, StringComparison.OrdinalIgnoreCase));
+
+                        if (existingIndex >= 0)
+                        {
+                            // Replace the previous feature filter definition
+                            mergedEnabledFor[existingIndex] = filter;
+                        }
+                        else
+                        {
+                            mergedEnabledFor.Add(filter);
+                        }
+                    }
+                }
+
+                if (additionalDefinition.Variants != null)
+                {
+                    foreach (VariantDefinition variant in additionalDefinition.Variants)
+                    {
+                        int existingIndex = mergedVariants.FindIndex(v => string.Equals(v.Name, variant.Name, StringComparison.OrdinalIgnoreCase));
+
+                        if (existingIndex >= 0)
+                        {
+                            // Replace the previous variant definition
+                            mergedVariants[existingIndex] = variant;
+                        }
+                        else
+                        {
+                            mergedVariants.Add(variant);
+                        }
+                    }
+                }
+
+                if (additionalDefinition.Telemetry?.Metadata != null)
+                {
+                    foreach (KeyValuePair<string, string> kvp in additionalDefinition.Telemetry.Metadata)
+                    {
+                        mergedTelemetryMetadata[kvp.Key] = kvp.Value;
+                    }
+                }
+
+                mergedRequirementType = additionalDefinition.RequirementType;
+                mergedStatus = additionalDefinition.Status;
+
+                if (additionalDefinition.Allocation != null)
+                {
+                    mergedAllocation = additionalDefinition.Allocation;
+                }
+
+                if (additionalDefinition.Telemetry != null)
+                {
+                    mergedTelemetryEnabled = additionalDefinition.Telemetry.Enabled;
+                }
+            }
+
+            return new FeatureDefinition()
+            {
+                Name = featureName,
+                EnabledFor = mergedEnabledFor,
+                RequirementType = mergedRequirementType,
+                Status = mergedStatus,
+                Allocation = mergedAllocation,
+                Variants = mergedVariants,
+                Telemetry = new TelemetryConfiguration
+                {
+                    Enabled = mergedTelemetryEnabled,
+                    Metadata = mergedTelemetryMetadata
+                }
+            };
         }
 
         private FeatureDefinition ParseDotnetSchemaFeatureDefinition(IConfigurationSection configurationSection)
