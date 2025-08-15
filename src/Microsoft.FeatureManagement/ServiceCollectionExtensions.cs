@@ -36,17 +36,18 @@ namespace Microsoft.FeatureManagement
 
             AddCommonFeatureManagementServices(services);
 
-            services.AddSingleton(sp => new FeatureManager(
-                            sp.GetRequiredService<IFeatureDefinitionProvider>(),
-                            sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
-            {
-                FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
-                SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
-                Cache = sp.GetRequiredService<IMemoryCache>(),
-                Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>(),
-                TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
-                AssignerOptions = sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>().Value
-            });
+            services.AddSingleton(sp =>
+                new FeatureManager(
+                    sp.GetRequiredService<IFeatureDefinitionProvider>(),
+                    sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
+                {
+                    FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                    SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
+                    Cache = sp.GetRequiredService<IMemoryCache>(),
+                    Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>(),
+                    TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
+                    AssignerOptions = sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>().Value
+                });
 
             services.TryAddSingleton<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 
@@ -70,7 +71,9 @@ namespace Microsoft.FeatureManagement
             }
 
             services.AddSingleton<IFeatureDefinitionProvider>(sp =>
-                new ConfigurationFeatureDefinitionProvider(configuration)
+                new ConfigurationFeatureDefinitionProvider(
+                    configuration,
+                    sp.GetRequiredService<IOptions<ConfigurationFeatureDefinitionProviderOptions>>().Value)
                 {
                     RootConfigurationFallbackEnabled = true,
                     Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<ConfigurationFeatureDefinitionProvider>()
@@ -96,17 +99,18 @@ namespace Microsoft.FeatureManagement
 
             AddCommonFeatureManagementServices(services);
 
-            services.AddScoped(sp => new FeatureManager(
-                            sp.GetRequiredService<IFeatureDefinitionProvider>(),
-                            sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
-            {
-                FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
-                SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
-                Cache = sp.GetRequiredService<IMemoryCache>(),
-                Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>(),
-                TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
-                AssignerOptions = sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>().Value
-            });
+            services.AddScoped(sp =>
+                new FeatureManager(
+                    sp.GetRequiredService<IFeatureDefinitionProvider>(),
+                    sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
+                {
+                    FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                    SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
+                    Cache = sp.GetRequiredService<IMemoryCache>(),
+                    Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>(),
+                    TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
+                    AssignerOptions = sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>().Value
+                });
 
             services.TryAddScoped<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 
@@ -130,7 +134,9 @@ namespace Microsoft.FeatureManagement
             }
 
             services.AddSingleton<IFeatureDefinitionProvider>(sp =>
-                new ConfigurationFeatureDefinitionProvider(configuration)
+                new ConfigurationFeatureDefinitionProvider(
+                    configuration,
+                    sp.GetRequiredService<IOptions<ConfigurationFeatureDefinitionProviderOptions>>().Value)
                 {
                     RootConfigurationFallbackEnabled = true,
                     Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<ConfigurationFeatureDefinitionProvider>()
@@ -145,7 +151,11 @@ namespace Microsoft.FeatureManagement
 
             services.AddMemoryCache();
 
-            services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
+            services.TryAddSingleton<IFeatureDefinitionProvider>(sp =>
+                new ConfigurationFeatureDefinitionProvider(
+                    sp.GetRequiredService<IConfiguration>(),
+                    sp.GetRequiredService<IOptions<ConfigurationFeatureDefinitionProviderOptions>>().Value)
+            );
 
             services.AddScoped<FeatureManagerSnapshot>();
 
