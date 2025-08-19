@@ -400,7 +400,7 @@ namespace Tests.FeatureManagement
         {
             var mergeOptions = new ConfigurationFeatureDefinitionProviderOptions()
             {
-                DisableCustomConfigurationMerging = false
+                CustomConfigurationMergingEnabled = true
             };
 
             /*
@@ -469,7 +469,7 @@ namespace Tests.FeatureManagement
             var services1 = new ServiceCollection();
             services1.Configure<ConfigurationFeatureDefinitionProviderOptions>(o =>
             {
-                o.DisableCustomConfigurationMerging = false;
+                o.CustomConfigurationMergingEnabled = true;
             });
 
             services1
@@ -487,7 +487,7 @@ namespace Tests.FeatureManagement
             var services2 = new ServiceCollection();
             services2.Configure<ConfigurationFeatureDefinitionProviderOptions>(o =>
             {
-                o.DisableCustomConfigurationMerging = true;
+                o.CustomConfigurationMergingEnabled = false;
             });
 
             services2

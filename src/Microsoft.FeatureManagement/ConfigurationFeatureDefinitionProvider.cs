@@ -234,7 +234,7 @@ namespace Microsoft.FeatureManagement
 
         private IEnumerable<IConfigurationSection> GetMicrosoftFeatureDefinitionSections()
         {
-            if (_options.DisableCustomConfigurationMerging)
+            if (!_options.CustomConfigurationMergingEnabled)
             {
                 return _configuration.GetSection(MicrosoftFeatureManagementFields.FeatureManagementSectionName)
                     .GetSection(MicrosoftFeatureManagementFields.FeatureFlagsSectionName)
