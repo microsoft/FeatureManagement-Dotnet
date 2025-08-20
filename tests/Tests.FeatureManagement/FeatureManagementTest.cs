@@ -467,14 +467,13 @@ namespace Tests.FeatureManagement
             //
             // DI usage
             var services1 = new ServiceCollection();
+            services1
+                .AddSingleton(configuration2)
+                .AddFeatureManagement();
             services1.Configure<ConfigurationFeatureDefinitionProviderOptions>(o =>
             {
                 o.CustomConfigurationMergingEnabled = true;
             });
-
-            services1
-                .AddSingleton(configuration2)
-                .AddFeatureManagement();
             ServiceProvider serviceProvider1 = services1.BuildServiceProvider();
             IFeatureManager featureManager5 = serviceProvider1.GetRequiredService<IFeatureManager>();
 
@@ -485,11 +484,6 @@ namespace Tests.FeatureManagement
             Assert.False(await featureManager5.IsEnabledAsync("Feature2"));
 
             var services2 = new ServiceCollection();
-            services2.Configure<ConfigurationFeatureDefinitionProviderOptions>(o =>
-            {
-                o.CustomConfigurationMergingEnabled = false;
-            });
-
             services2
                 .AddSingleton(configuration2)
                 .AddFeatureManagement();
@@ -501,6 +495,34 @@ namespace Tests.FeatureManagement
             Assert.True(await featureManager6.IsEnabledAsync("FeatureC"));
             Assert.False(await featureManager6.IsEnabledAsync("Feature1"));
             Assert.False(await featureManager6.IsEnabledAsync("Feature2"));
+
+            var services3 = new ServiceCollection();
+            services3
+                .AddFeatureManagement(configuration2);
+            services3.Configure<ConfigurationFeatureDefinitionProviderOptions>(o =>
+            {
+                o.CustomConfigurationMergingEnabled = true;
+            });
+            ServiceProvider serviceProvider3 = services3.BuildServiceProvider();
+            IFeatureManager featureManager7 = serviceProvider3.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager7.IsEnabledAsync("FeatureA"));
+            Assert.True(await featureManager7.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager7.IsEnabledAsync("FeatureC"));
+            Assert.False(await featureManager7.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager7.IsEnabledAsync("Feature2"));
+
+            var services4 = new ServiceCollection();
+            services4
+                .AddFeatureManagement(configuration2);
+            ServiceProvider serviceProvider4 = services4.BuildServiceProvider();
+            IFeatureManager featureManager8 = serviceProvider4.GetRequiredService<IFeatureManager>();
+
+            Assert.False(await featureManager8.IsEnabledAsync("FeatureA"));
+            Assert.False(await featureManager8.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager8.IsEnabledAsync("FeatureC"));
+            Assert.False(await featureManager8.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager8.IsEnabledAsync("Feature2"));
         }
     }
 
