@@ -23,6 +23,7 @@ namespace Microsoft.FeatureManagement
         // IFeatureDefinitionProviderCacheable interface is only used to mark this provider as cacheable. This allows our test suite's
         // provider to be marked for caching as well.
         private readonly IConfiguration _configuration;
+        private readonly ConfigurationFeatureDefinitionProviderOptions _options;
         private IEnumerable<IConfigurationSection> _dotnetFeatureDefinitionSections;
         private IEnumerable<IConfigurationSection> _microsoftFeatureDefinitionSections;
         private readonly ConcurrentDictionary<string, Task<FeatureDefinition>> _definitions;
@@ -37,9 +38,13 @@ namespace Microsoft.FeatureManagement
         /// Creates a configuration feature definition provider.
         /// </summary>
         /// <param name="configuration">The configuration of feature definitions.</param>
-        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration)
+        /// <param name="options">The options for the configuration feature definition provider.</param>
+        public ConfigurationFeatureDefinitionProvider(
+            IConfiguration configuration,
+            ConfigurationFeatureDefinitionProviderOptions options = null)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _options = options ?? new ConfigurationFeatureDefinitionProviderOptions();
             _definitions = new ConcurrentDictionary<string, Task<FeatureDefinition>>();
 
             _changeSubscription = ChangeToken.OnChange(
@@ -229,6 +234,13 @@ namespace Microsoft.FeatureManagement
 
         private IEnumerable<IConfigurationSection> GetMicrosoftFeatureDefinitionSections()
         {
+            if (!_options.CustomConfigurationMergingEnabled)
+            {
+                return _configuration.GetSection(MicrosoftFeatureManagementFields.FeatureManagementSectionName)
+                    .GetSection(MicrosoftFeatureManagementFields.FeatureFlagsSectionName)
+                    .GetChildren();
+            }
+
             var featureDefinitionSections = new List<IConfigurationSection>();
 
             FindFeatureFlags(_configuration, featureDefinitionSections);
