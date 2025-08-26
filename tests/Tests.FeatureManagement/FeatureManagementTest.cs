@@ -398,6 +398,11 @@ namespace Tests.FeatureManagement
         [Fact]
         public async Task MergesFeatureFlagsFromDifferentConfigurationSources()
         {
+            var mergeOptions = new ConfigurationFeatureDefinitionProviderOptions()
+            {
+                CustomConfigurationMergingEnabled = true
+            };
+
             /*
              * appsettings1.json
              * Feature1: true
@@ -425,18 +430,99 @@ namespace Tests.FeatureManagement
                 .AddJsonFile("appsettings3.json")
                 .Build();
 
-            var featureManager1 = new FeatureManager(new ConfigurationFeatureDefinitionProvider(configuration1));
+            var featureManager1 = new FeatureManager(new ConfigurationFeatureDefinitionProvider(configuration1, mergeOptions));
             Assert.True(await featureManager1.IsEnabledAsync("FeatureA"));
             Assert.True(await featureManager1.IsEnabledAsync("FeatureB"));
             Assert.True(await featureManager1.IsEnabledAsync("Feature1"));
             Assert.False(await featureManager1.IsEnabledAsync("Feature2")); // appsettings2 should override appsettings1
 
-            var featureManager2 = new FeatureManager(new ConfigurationFeatureDefinitionProvider(configuration2));
+            var featureManager2 = new FeatureManager(new ConfigurationFeatureDefinitionProvider(configuration2, mergeOptions));
             Assert.True(await featureManager2.IsEnabledAsync("FeatureA"));
             Assert.True(await featureManager2.IsEnabledAsync("FeatureB"));
             Assert.True(await featureManager2.IsEnabledAsync("FeatureC"));
             Assert.False(await featureManager2.IsEnabledAsync("Feature1")); // appsettings3 should override previous settings
             Assert.False(await featureManager2.IsEnabledAsync("Feature2")); // appsettings3 should override previous settings
+
+            //
+            // default behavior
+            var featureManager3 = new FeatureManager(new ConfigurationFeatureDefinitionProvider(configuration1));
+            Assert.False(await featureManager3.IsEnabledAsync("FeatureA")); // it will be overridden by FeatureB
+            Assert.True(await featureManager3.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager3.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager3.IsEnabledAsync("Feature2")); // appsettings2 should override appsettings1
+
+            IConfiguration configuration3 = new ConfigurationBuilder()
+                .AddJsonFile("appsettings1.json")
+                .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["feature_management:feature_flags:0:enabled"] = bool.FalseString,
+                    ["feature_management:feature_flags:1:enabled"] = bool.FalseString,
+                })
+                .Build();
+            var featureManager4 = new FeatureManager(new ConfigurationFeatureDefinitionProvider(configuration3));
+            Assert.False(await featureManager4.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager4.IsEnabledAsync("Feature2"));
+            Assert.True(await featureManager4.IsEnabledAsync("FeatureA"));
+
+            //
+            // DI usage
+            var services1 = new ServiceCollection();
+            services1
+                .AddSingleton(configuration2)
+                .AddFeatureManagement();
+            services1.Configure<ConfigurationFeatureDefinitionProviderOptions>(o =>
+            {
+                o.CustomConfigurationMergingEnabled = true;
+            });
+            ServiceProvider serviceProvider1 = services1.BuildServiceProvider();
+            IFeatureManager featureManager5 = serviceProvider1.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager5.IsEnabledAsync("FeatureA"));
+            Assert.True(await featureManager5.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager5.IsEnabledAsync("FeatureC"));
+            Assert.False(await featureManager5.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager5.IsEnabledAsync("Feature2"));
+
+            var services2 = new ServiceCollection();
+            services2
+                .AddSingleton(configuration2)
+                .AddFeatureManagement();
+            ServiceProvider serviceProvider2 = services2.BuildServiceProvider();
+            IFeatureManager featureManager6 = serviceProvider2.GetRequiredService<IFeatureManager>();
+
+            Assert.False(await featureManager6.IsEnabledAsync("FeatureA"));
+            Assert.False(await featureManager6.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager6.IsEnabledAsync("FeatureC"));
+            Assert.False(await featureManager6.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager6.IsEnabledAsync("Feature2"));
+
+            var services3 = new ServiceCollection();
+            services3
+                .AddFeatureManagement(configuration2);
+            services3.Configure<ConfigurationFeatureDefinitionProviderOptions>(o =>
+            {
+                o.CustomConfigurationMergingEnabled = true;
+            });
+            ServiceProvider serviceProvider3 = services3.BuildServiceProvider();
+            IFeatureManager featureManager7 = serviceProvider3.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager7.IsEnabledAsync("FeatureA"));
+            Assert.True(await featureManager7.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager7.IsEnabledAsync("FeatureC"));
+            Assert.False(await featureManager7.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager7.IsEnabledAsync("Feature2"));
+
+            var services4 = new ServiceCollection();
+            services4
+                .AddFeatureManagement(configuration2);
+            ServiceProvider serviceProvider4 = services4.BuildServiceProvider();
+            IFeatureManager featureManager8 = serviceProvider4.GetRequiredService<IFeatureManager>();
+
+            Assert.False(await featureManager8.IsEnabledAsync("FeatureA"));
+            Assert.False(await featureManager8.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager8.IsEnabledAsync("FeatureC"));
+            Assert.False(await featureManager8.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager8.IsEnabledAsync("Feature2"));
         }
     }
 
