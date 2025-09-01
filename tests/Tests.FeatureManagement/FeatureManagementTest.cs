@@ -333,6 +333,67 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task ReturnsCachedResultFromSnapshot()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            IVariantFeatureManager featureManagerSnapshot = serviceProvider.GetRequiredService<IVariantFeatureManagerSnapshot>();
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            int callCount = 0;
+            bool filterEnabled = true;
+
+            testFeatureFilter.Callback = (evaluationContext) =>
+            {
+                callCount++;
+                return Task.FromResult(filterEnabled);
+            };
+
+            // First evaluation - filter is enabled and should return true
+            bool result1 = await featureManagerSnapshot.IsEnabledAsync(Features.ConditionalFeature);
+            Assert.Equal(1, callCount);
+            Assert.True(result1);
+
+            Variant variant1 = await featureManagerSnapshot.GetVariantAsync(Features.ConditionalFeature);
+            Assert.Equal(2, callCount);
+            Assert.Equal("DefaultWhenEnabled", variant1.Name);
+
+            // "Shut down" the feature filter
+            filterEnabled = false;
+
+            // Second evaluation - should use cached value despite filter being shut down
+            bool result2 = await featureManagerSnapshot.IsEnabledAsync(Features.ConditionalFeature);
+            Assert.Equal(2, callCount);
+            Assert.True(result2);
+
+            Variant variant2 = await featureManagerSnapshot.GetVariantAsync(Features.ConditionalFeature);
+            Assert.Equal(2, callCount);
+            Assert.Equal("DefaultWhenEnabled", variant2.Name);
+
+            bool result3 = await featureManager.IsEnabledAsync(Features.ConditionalFeature);
+            Assert.Equal(3, callCount);
+            Assert.False(result3);
+
+            Variant variant3 = await featureManager.GetVariantAsync(Features.ConditionalFeature);
+            Assert.Equal(4, callCount);
+            Assert.Equal("DefaultWhenDisabled", variant3.Name);
+        }
+
+        [Fact]
         public void AddsScopedFeatureManagement()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
