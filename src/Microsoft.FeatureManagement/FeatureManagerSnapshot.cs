@@ -103,7 +103,7 @@ namespace Microsoft.FeatureManagement
 
             //
             // First, check local cache
-            if (_variantCache.ContainsKey(feature))
+            if (_variantCache.ContainsKey(cacheKey))
             {
                 return _variantCache[cacheKey];
             }
@@ -121,7 +121,7 @@ namespace Microsoft.FeatureManagement
 
             //
             // First, check local cache
-            if (_variantCache.ContainsKey(feature))
+            if (_variantCache.ContainsKey(cacheKey))
             {
                 return _variantCache[cacheKey];
             }
