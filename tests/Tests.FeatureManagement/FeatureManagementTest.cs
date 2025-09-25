@@ -584,6 +584,20 @@ namespace Tests.FeatureManagement
             Assert.True(await featureManager8.IsEnabledAsync("FeatureC"));
             Assert.False(await featureManager8.IsEnabledAsync("Feature1"));
             Assert.False(await featureManager8.IsEnabledAsync("Feature2"));
+
+            var configurationManager = new ConfigurationManager();
+            configurationManager
+                .AddJsonFile("appsettings1.json")
+                .AddJsonFile("appsettings2.json");
+
+            var services = new ServiceCollection();
+            services.AddFeatureManagement();
+
+            var featureManager9 = new FeatureManager(new ConfigurationFeatureDefinitionProvider(configurationManager, mergeOptions));
+            Assert.True(await featureManager9.IsEnabledAsync("FeatureA"));
+            Assert.True(await featureManager9.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager9.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager9.IsEnabledAsync("Feature2")); // appsettings2 should override appsettings1
         }
     }
 
