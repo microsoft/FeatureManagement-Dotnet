@@ -1,13 +1,11 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using System.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
 using FeatureFlagDemo.Models;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc;
-using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace FeatureFlagDemo.Controllers
 {
@@ -33,7 +31,7 @@ namespace FeatureFlagDemo.Controllers
             if (await _featureManager.IsEnabledAsync(MyFeatureFlags.CustomViewData))
             {
                 ViewData["Message"] = $"This is FANCY CONTENT you can see only if '{MyFeatureFlags.CustomViewData}' is enabled.";
-            };
+            }
 
             return View();
         }

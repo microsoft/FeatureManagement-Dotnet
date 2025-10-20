@@ -7,7 +7,7 @@ using Microsoft.FeatureManagement.Mvc;
 
 namespace FeatureFlagDemo.Controllers
 {
-    public class BetaController: Controller
+    public class BetaController : Controller
     {
         private readonly IFeatureManager _featureManager;
 
