@@ -175,7 +175,8 @@ namespace Microsoft.FeatureManagement
             builder.AddFeatureFilter<TimeWindowFilter>(sp =>
                 new TimeWindowFilter()
                 {
-                    Cache = sp.GetRequiredService<IMemoryCache>()
+                    Cache = sp.GetRequiredService<IMemoryCache>(),
+                    SystemClock = sp.GetService<TimeProvider>() ?? TimeProvider.System,
                 });
 
             builder.AddFeatureFilter<ContextualTargetingFilter>();
