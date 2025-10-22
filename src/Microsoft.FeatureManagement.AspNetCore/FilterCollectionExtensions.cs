@@ -16,12 +16,12 @@ namespace Microsoft.FeatureManagement
         /// <typeparam name="TFilterType">The MVC filter to add and use if the feature is enabled.</typeparam>
         /// <param name="filters">The filter collection to add to.</param>
         /// <param name="feature">The feature that will need to enabled to trigger the execution of the MVC filter.</param>
-        /// <returns></returns>
+        /// <returns>The reference to the added filter metadata.</returns>
         public static IFilterMetadata AddForFeature<TFilterType>(this FilterCollection filters, string feature) where TFilterType : IAsyncActionFilter
         {
-            IFilterMetadata filterMetadata = null;
+            IFilterMetadata filterMetadata = new FeatureGatedAsyncActionFilter<TFilterType>(RequirementType.Any, false, feature);
 
-            filters.Add(new FeatureGatedAsyncActionFilter<TFilterType>(RequirementType.Any, false, feature));
+            filters.Add(filterMetadata);
 
             return filterMetadata;
         }
@@ -32,12 +32,14 @@ namespace Microsoft.FeatureManagement
         /// <typeparam name="TFilterType">The MVC filter to add and use if the feature is enabled.</typeparam>
         /// <param name="filters">The filter collection to add to.</param>
         /// <param name="features">The features that control whether the MVC filter executes.</param>
-        /// <returns>The reference to the filter collection.</returns>
-        public static FilterCollection AddForFeature<TFilterType>(this FilterCollection filters, params string[] features) where TFilterType : IAsyncActionFilter
+        /// <returns>The reference to the added filter metadata.</returns>
+        public static IFilterMetadata AddForFeature<TFilterType>(this FilterCollection filters, params string[] features) where TFilterType : IAsyncActionFilter
         {
-            filters.Add(new FeatureGatedAsyncActionFilter<TFilterType>(RequirementType.Any, false, features));
+            IFilterMetadata filterMetadata = new FeatureGatedAsyncActionFilter<TFilterType>(RequirementType.Any, false, features);
 
-            return filters;
+            filters.Add(filterMetadata);
+
+            return filterMetadata;
         }
 
         /// <summary>
@@ -47,12 +49,14 @@ namespace Microsoft.FeatureManagement
         /// <param name="filters">The filter collection to add to.</param>
         /// <param name="requirementType">Specifies whether all or any of the provided features should be enabled.</param>
         /// <param name="features">The features that control whether the MVC filter executes.</param>
-        /// <returns>The reference to the filter collection.</returns>
-        public static FilterCollection AddForFeature<TFilterType>(this FilterCollection filters, RequirementType requirementType, params string[] features) where TFilterType : IAsyncActionFilter
+        /// <returns>The reference to the added filter metadata.</returns>
+        public static IFilterMetadata AddForFeature<TFilterType>(this FilterCollection filters, RequirementType requirementType, params string[] features) where TFilterType : IAsyncActionFilter
         {
-            filters.Add(new FeatureGatedAsyncActionFilter<TFilterType>(requirementType, false, features));
+            IFilterMetadata filterMetadata = new FeatureGatedAsyncActionFilter<TFilterType>(requirementType, false, features);
 
-            return filters;
+            filters.Add(filterMetadata);
+
+            return filterMetadata;
         }
 
         /// <summary>
@@ -63,12 +67,14 @@ namespace Microsoft.FeatureManagement
         /// <param name="requirementType">Specifies whether all or any of the provided features should be enabled.</param>
         /// <param name="negate">Whether to negate the evaluation result for the provided features set.</param>
         /// <param name="features">The features that control whether the MVC filter executes.</param>
-        /// <returns>The reference to the filter collection.</returns>
-        public static FilterCollection AddForFeature<TFilterType>(this FilterCollection filters, RequirementType requirementType, bool negate, params string[] features) where TFilterType : IAsyncActionFilter
+        /// <returns>The reference to the added filter metadata.</returns>
+        public static IFilterMetadata AddForFeature<TFilterType>(this FilterCollection filters, RequirementType requirementType, bool negate, params string[] features) where TFilterType : IAsyncActionFilter
         {
-            filters.Add(new FeatureGatedAsyncActionFilter<TFilterType>(requirementType, negate, features));
+            IFilterMetadata filterMetadata = new FeatureGatedAsyncActionFilter<TFilterType>(requirementType, negate, features);
 
-            return filters;
+            filters.Add(filterMetadata);
+
+            return filterMetadata;
         }
     }
 }
