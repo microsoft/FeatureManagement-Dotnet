@@ -34,12 +34,12 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// <summary>
         /// The application memory cache to store the start time of the closest active time window. By caching this time, the time window can minimize redundant computations when evaluating recurrence.
         /// </summary>
-        public IMemoryCache Cache { get; init; }
+        public IMemoryCache Cache { get; set; }
 
         /// <summary>
-        /// This property allows the time window filter in our test suite to use simulated time.
+        /// This property allows the time window filter to use custom <see cref="TimeProvider"/>.
         /// </summary>
-        internal ISystemClock SystemClock { get; init; }
+        public TimeProvider SystemClock { get; set; }
 
         /// <summary>
         /// Binds configuration representing filter parameters to <see cref="TimeWindowFilterSettings"/>.
@@ -74,7 +74,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Check if prebound settings available, otherwise bind from parameters.
             TimeWindowFilterSettings settings = (TimeWindowFilterSettings)context.Settings ?? (TimeWindowFilterSettings)BindParameters(context.Parameters);
 
-            DateTimeOffset now = SystemClock?.UtcNow ?? DateTimeOffset.UtcNow;
+            DateTimeOffset now = SystemClock?.GetUtcNow() ?? DateTimeOffset.UtcNow;
 
             if (!settings.Start.HasValue && !settings.End.HasValue)
             {
@@ -129,7 +129,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
 
         private DateTimeOffset? ReloadClosestStart(TimeWindowFilterSettings settings)
         {
-            DateTimeOffset now = SystemClock?.UtcNow ?? DateTimeOffset.UtcNow;
+            DateTimeOffset now = SystemClock?.GetUtcNow() ?? DateTimeOffset.UtcNow;
 
             DateTimeOffset? closestStart = RecurrenceEvaluator.CalculateClosestStart(now, settings);
 

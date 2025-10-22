@@ -7,6 +7,7 @@ using Microsoft.FeatureManagement.FeatureFilters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Tests.FeatureManagement
@@ -290,6 +291,7 @@ namespace Tests.FeatureManagement
                     {
                         Type = RecurrencePatternType.Weekly,
                         Interval = 1,
+                        FirstDayOfWeek = DayOfWeek.Sunday,
                         DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Tuesday, DayOfWeek.Saturday } // The time window duration should be shorter than 3 days because the gap between Saturday in the previous week and Tuesday in this week is 3 days.
                     },
                     Range = new RecurrenceRange()
@@ -298,7 +300,7 @@ namespace Tests.FeatureManagement
 
             //
             // The settings is valid. No exception should be thrown.
-            RecurrenceEvaluator.IsMatch(DateTimeOffset.UtcNow, settings);
+            Assert.True(RecurrenceValidator.TryValidateSettings(settings, out string paramName, out string errorMessage));
 
             settings = new TimeWindowFilterSettings()
             {
@@ -319,7 +321,49 @@ namespace Tests.FeatureManagement
 
             //
             // The settings is valid. No exception should be thrown.
-            RecurrenceEvaluator.IsMatch(DateTimeOffset.UtcNow, settings);
+            Assert.True(RecurrenceValidator.TryValidateSettings(settings, out paramName, out errorMessage));
+
+            settings = new TimeWindowFilterSettings()
+            {
+                Start = DateTimeOffset.Parse("2024-1-15T00:00:00+08:00"), // Monday
+                End = DateTimeOffset.Parse("2024-1-17T00:00:00+08:00"), // Time window duration is 2 days.
+                Recurrence = new Recurrence()
+                {
+                    Pattern = new RecurrencePattern()
+                    {
+                        Type = RecurrencePatternType.Weekly,
+                        Interval = 1,
+                        FirstDayOfWeek = DayOfWeek.Sunday,
+                        DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Monday, DayOfWeek.Saturday }
+                    },
+                    Range = new RecurrenceRange()
+                }
+            };
+
+            //
+            // The settings is valid. No exception should be thrown.
+            Assert.True(RecurrenceValidator.TryValidateSettings(settings, out paramName, out errorMessage));
+
+            settings = new TimeWindowFilterSettings()
+            {
+                Start = DateTimeOffset.Parse("2024-1-15T00:00:00+08:00"), // Monday
+                End = DateTimeOffset.Parse("2024-1-17T00:00:01+08:00"), // Time window duration is more than 2 days.
+                Recurrence = new Recurrence()
+                {
+                    Pattern = new RecurrencePattern()
+                    {
+                        Type = RecurrencePatternType.Weekly,
+                        Interval = 1,
+                        FirstDayOfWeek = DayOfWeek.Sunday,
+                        DaysOfWeek = new List<DayOfWeek>() { DayOfWeek.Monday, DayOfWeek.Saturday }
+                    },
+                    Range = new RecurrenceRange()
+                }
+            };
+
+            Assert.False(RecurrenceValidator.TryValidateSettings(settings, out paramName, out errorMessage));
+            Assert.Equal(ParamName.End, paramName);
+            Assert.Equal(ErrorMessage.TimeWindowDurationOutOfRange, errorMessage);
 
             settings = new TimeWindowFilterSettings()
             {
@@ -338,7 +382,7 @@ namespace Tests.FeatureManagement
                 }
             };
 
-            Assert.False(RecurrenceValidator.TryValidateSettings(settings, out string paramName, out string errorMessage));
+            Assert.False(RecurrenceValidator.TryValidateSettings(settings, out paramName, out errorMessage));
             Assert.Equal(ParamName.End, paramName);
             Assert.Equal(ErrorMessage.TimeWindowDurationOutOfRange, errorMessage);
         }
@@ -594,7 +638,7 @@ namespace Tests.FeatureManagement
                         Range = new RecurrenceRange()
                     }
                 },
-                false ),
+                false )
             };
 
             ConsumeEvaluationTestData(testData);
@@ -1614,19 +1658,19 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async void RecurrenceEvaluationThroughCacheTest()
+        public async Task RecurrenceEvaluationThroughCacheTest()
         {
-            OnDemandClock mockedTimeProvider = new OnDemandClock();
+            var mockedTimeProvider = new OnDemandClock();
 
-            var mockedTimeWindowFilter = new TimeWindowFilter()
+            using (var cache = new TestCache())
             {
-                Cache = new MemoryCache(new MemoryCacheOptions()),
-                SystemClock = mockedTimeProvider
-            };
+                var mockedTimeWindowFilter = new TimeWindowFilter()
+                {
+                    Cache = cache,
+                    SystemClock = mockedTimeProvider
+                };
 
-            var context = new FeatureFilterEvaluationContext()
-            {
-                Settings = new TimeWindowFilterSettings()
+                TimeWindowFilterSettings settings = new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"), // Thursday
                     End = DateTimeOffset.Parse("2024-2-1T12:00:00+08:00"),
@@ -1643,43 +1687,80 @@ namespace Tests.FeatureManagement
                             EndDate = DateTimeOffset.Parse("2024-2-5T12:00:00+08:00")
                         }
                     }
-                }
-            };
+                };
 
-            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-2T23:00:00+08:00");
+                var context = new FeatureFilterEvaluationContext()
+                {
+                    Settings = settings
+                };
 
-            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
+                DateTimeOffset? closestStart;
+                Assert.False(cache.TryGetValue(settings, out closestStart));
+                Assert.Equal(0, cache.CountOfEntryCreation);
 
-            for (int i = 0; i < 12; i++)
-            {
-                mockedTimeProvider.UtcNow = mockedTimeProvider.UtcNow.AddHours(1);
-                Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
-            }
-
-            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-3T11:59:59+08:00");
-            Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
-
-            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-3T12:00:00+08:00");
-            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
-
-            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-5T00:00:00+08:00");
-            Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
-
-            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-5T12:00:00+08:00");
-            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
-
-            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-7T00:00:00+08:00");
-            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
-
-            for (int i = 0; i < 10; i++ )
-            {
-                mockedTimeProvider.UtcNow = mockedTimeProvider.UtcNow.AddDays(1);
+                mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-2T23:00:00+08:00");
                 Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
+                Assert.True(cache.TryGetValue(settings, out closestStart));
+                Assert.Equal(DateTimeOffset.Parse("2024-2-3T00:00:00+08:00"), closestStart);
+                Assert.Equal(1, cache.CountOfEntryCreation);
+
+                for (int i = 0; i < 12; i++)
+                {
+                    mockedTimeProvider.UtcNow = mockedTimeProvider.UtcNow.AddHours(1);
+                    Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
+                    Assert.True(cache.TryGetValue(settings, out closestStart));
+                    Assert.Equal(DateTimeOffset.Parse("2024-2-3T00:00:00+08:00"), closestStart);
+                    Assert.Equal(1, cache.CountOfEntryCreation);
+                }
+
+                mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-3T11:59:59+08:00");
+                Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
+                Assert.True(cache.TryGetValue(settings, out closestStart));
+                Assert.Equal(DateTimeOffset.Parse("2024-2-3T00:00:00+08:00"), closestStart);
+                Assert.Equal(1, cache.CountOfEntryCreation);
+
+                mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-3T12:00:00+08:00");
+                Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
+                Assert.True(cache.TryGetValue(settings, out closestStart));
+                Assert.Equal(DateTimeOffset.Parse("2024-2-5T00:00:00+08:00"), closestStart);
+
+                mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-5T00:00:00+08:00");
+                Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
+                Assert.True(cache.TryGetValue(settings, out closestStart));
+                Assert.Equal(DateTimeOffset.Parse("2024-2-5T00:00:00+08:00"), closestStart);
+                Assert.Equal(2, cache.CountOfEntryCreation);
+
+                mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-5T12:00:00+08:00");
+                Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
+                Assert.True(cache.TryGetValue(settings, out closestStart));
+                Assert.Null(closestStart);
+                Assert.Equal(3, cache.CountOfEntryCreation);
+
+                mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-7T00:00:00+08:00");
+                Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
+                Assert.True(cache.TryGetValue(settings, out closestStart));
+                Assert.Null(closestStart);
+                Assert.Equal(3, cache.CountOfEntryCreation);
+
+                for (int i = 0; i < 10; i++)
+                {
+                    mockedTimeProvider.UtcNow = mockedTimeProvider.UtcNow.AddDays(1);
+                    Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
+                    Assert.True(cache.TryGetValue(settings, out closestStart));
+                    Assert.Null(closestStart);
+                    Assert.Equal(3, cache.CountOfEntryCreation);
+                }
             }
 
-            context = new FeatureFilterEvaluationContext()
+            using (var cache = new TestCache())
             {
-                Settings = new TimeWindowFilterSettings()
+                var mockedTimeWindowFilter = new TimeWindowFilter()
+                {
+                    Cache = cache,
+                    SystemClock = mockedTimeProvider
+                };
+
+                var settings = new TimeWindowFilterSettings()
                 {
                     Start = DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"), // Thursday
                     End = DateTimeOffset.Parse("2024-2-1T12:00:00+08:00"),
@@ -1697,43 +1778,82 @@ namespace Tests.FeatureManagement
                             NumberOfOccurrences = 2
                         }
                     }
-                }
-            };
+                };
 
-            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-1-31T23:00:00+08:00");
-            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
+                var context = new FeatureFilterEvaluationContext()
+                {
+                    Settings = settings
+                };
 
-            for (int i = 0; i < 12; i++)
-            {
-                mockedTimeProvider.UtcNow = mockedTimeProvider.UtcNow.AddHours(1);
-                Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
-            }
+                DateTimeOffset? closestStart;
+                Assert.False(cache.TryGetValue(settings, out closestStart));
+                Assert.Equal(0, cache.CountOfEntryCreation);
 
-            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-1T11:59:59+08:00");
-            Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
-
-            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-1T12:00:00+08:00");
-            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
-
-            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-2T00:00:00+08:00"); // Friday
-            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
-
-            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-4T00:00:00+08:00"); // Sunday
-            Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
-
-            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-4T06:00:00+08:00");
-            Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
-
-            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-4T12:01:00+08:00");
-            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
-
-            mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-8T00:00:00+08:00");
-            Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
-
-            for (int i = 0; i < 10; i++)
-            {
-                mockedTimeProvider.UtcNow = mockedTimeProvider.UtcNow.AddDays(1);
+                mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-1-31T23:00:00+08:00");
                 Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
+                Assert.True(cache.TryGetValue(settings, out closestStart));
+                Assert.Equal(DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"), closestStart);
+                Assert.Equal(1, cache.CountOfEntryCreation);
+
+                for (int i = 0; i < 12; i++)
+                {
+                    mockedTimeProvider.UtcNow = mockedTimeProvider.UtcNow.AddHours(1);
+                    Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
+                    Assert.True(cache.TryGetValue(settings, out closestStart));
+                    Assert.Equal(DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"), closestStart);
+                    Assert.Equal(1, cache.CountOfEntryCreation);
+                }
+
+                mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-1T11:59:59+08:00");
+                Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
+                Assert.True(cache.TryGetValue(settings, out closestStart));
+                Assert.Equal(DateTimeOffset.Parse("2024-2-1T00:00:00+08:00"), closestStart);
+                Assert.Equal(1, cache.CountOfEntryCreation);
+
+                mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-1T12:00:00+08:00");
+                Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
+                Assert.True(cache.TryGetValue(settings, out closestStart));
+                Assert.Equal(DateTimeOffset.Parse("2024-2-4T00:00:00+08:00"), closestStart);
+                Assert.Equal(2, cache.CountOfEntryCreation);
+
+                mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-2T00:00:00+08:00"); // Friday
+                Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
+                Assert.True(cache.TryGetValue(settings, out closestStart));
+                Assert.Equal(DateTimeOffset.Parse("2024-2-4T00:00:00+08:00"), closestStart);
+                Assert.Equal(2, cache.CountOfEntryCreation);
+
+                mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-4T00:00:00+08:00"); // Sunday
+                Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
+                Assert.True(cache.TryGetValue(settings, out closestStart));
+                Assert.Equal(DateTimeOffset.Parse("2024-2-4T00:00:00+08:00"), closestStart);
+                Assert.Equal(2, cache.CountOfEntryCreation);
+
+                mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-4T06:00:00+08:00");
+                Assert.True(await mockedTimeWindowFilter.EvaluateAsync(context));
+                Assert.True(cache.TryGetValue(settings, out closestStart));
+                Assert.Equal(DateTimeOffset.Parse("2024-2-4T00:00:00+08:00"), closestStart);
+                Assert.Equal(2, cache.CountOfEntryCreation);
+
+                mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-4T12:01:00+08:00");
+                Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
+                Assert.True(cache.TryGetValue(settings, out closestStart));
+                Assert.Null(closestStart);
+                Assert.Equal(3, cache.CountOfEntryCreation);
+
+                mockedTimeProvider.UtcNow = DateTimeOffset.Parse("2024-2-8T00:00:00+08:00");
+                Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
+                Assert.True(cache.TryGetValue(settings, out closestStart));
+                Assert.Null(closestStart);
+                Assert.Equal(3, cache.CountOfEntryCreation);
+
+                for (int i = 0; i < 10; i++)
+                {
+                    mockedTimeProvider.UtcNow = mockedTimeProvider.UtcNow.AddDays(1);
+                    Assert.False(await mockedTimeWindowFilter.EvaluateAsync(context));
+                    Assert.True(cache.TryGetValue(settings, out closestStart));
+                    Assert.Null(closestStart);
+                    Assert.Equal(3, cache.CountOfEntryCreation);
+                }
             }
         }
     }

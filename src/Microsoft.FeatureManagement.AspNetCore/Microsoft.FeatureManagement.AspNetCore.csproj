@@ -1,17 +1,18 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <Import Project="..\..\build\NugetProperties.props" />
 
   <!-- Official Version -->
   <PropertyGroup>
-    <MajorVersion>3</MajorVersion>
+    <MajorVersion>4</MajorVersion>
     <MinorVersion>3</MinorVersion>
-    <PatchVersion>1</PatchVersion>
+    <PatchVersion>0</PatchVersion>
   </PropertyGroup>
 
   <Import Project="..\..\build\Versioning.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>..\..\build\Microsoft.FeatureManagement.snk</AssemblyOriginatorKeyFile>
@@ -30,7 +31,7 @@
     <PackageIconUrl>https://aka.ms/AzureAppConfigurationPackageIcon</PackageIconUrl>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.FeatureManagement\Microsoft.FeatureManagement.csproj" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+//
+using Microsoft.Extensions.Configuration;
 using Microsoft.FeatureManagement;
 
 //
@@ -8,45 +10,35 @@ IConfiguration configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
     .Build();
 
-//
-// Setup application services + feature management
-IServiceCollection services = new ServiceCollection();
-
-services.AddSingleton(configuration)
-        .AddFeatureManagement()
-        .AddFeatureFilter<AccountIdFilter>();
-
-//
-// Get the feature manager from application services
-using (ServiceProvider serviceProvider = services.BuildServiceProvider())
+var featureManager = new FeatureManager(new ConfigurationFeatureDefinitionProvider(configuration))
 {
-    IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+    FeatureFilters = new List<IFeatureFilterMetadata> { new AccountIdFilter() }
+};
 
-    var accounts = new List<string>()
-    {
-        "abc",
-        "adef",
-        "abcdefghijklmnopqrstuvwxyz"
-    };
+var accounts = new List<string>()
+{
+    "abc",
+    "adef",
+    "abcdefghijklmnopqrstuvwxyz"
+};
+
+//
+// Mimic work items in a task-driven console application
+foreach (var account in accounts)
+{
+    const string FeatureName = "Beta";
 
     //
-    // Mimic work items in a task-driven console application
-    foreach (var account in accounts)
+    // Check if feature enabled
+    //
+    var accountServiceContext = new AccountServiceContext
     {
-        const string FeatureName = "Beta";
+        AccountId = account
+    };
 
-        //
-        // Check if feature enabled
-        //
-        var accountServiceContext = new AccountServiceContext
-        {
-            AccountId = account
-        };
+    bool enabled = await featureManager.IsEnabledAsync(FeatureName, accountServiceContext);
 
-        bool enabled = await featureManager.IsEnabledAsync(FeatureName, accountServiceContext);
-
-        //
-        // Output results
-        Console.WriteLine($"The {FeatureName} feature is {(enabled ? "enabled" : "disabled")} for the '{account}' account.");
-    }
+    //
+    // Output results
+    Console.WriteLine($"The {FeatureName} feature is {(enabled ? "enabled" : "disabled")} for the '{account}' account.");
 }

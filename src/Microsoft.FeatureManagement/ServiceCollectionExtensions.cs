@@ -34,42 +34,26 @@ namespace Microsoft.FeatureManagement
                     "Scoped feature management has been registered.");
             }
 
-            services.AddLogging();
+            AddCommonFeatureManagementServices(services);
 
-            services.AddMemoryCache();
-
-            //
-            // Add required services
-            services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
-
-            services.AddSingleton<IFeatureManager>(sp => 
+            services.AddSingleton(sp =>
                 new FeatureManager(
                     sp.GetRequiredService<IFeatureDefinitionProvider>(),
                     sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
-                    {
-                        FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
-                        SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
-                        Cache = sp.GetRequiredService<IMemoryCache>(),
-                        Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>()
-                    });
-
-            services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
-
-            var builder = new FeatureManagementBuilder(services);
-            
-            //
-            // Add built-in feature filters
-            builder.AddFeatureFilter<PercentageFilter>();
-
-            builder.AddFeatureFilter<TimeWindowFilter>(sp =>
-                new TimeWindowFilter()
                 {
-                    Cache = sp.GetRequiredService<IMemoryCache>()
+                    FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                    SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
+                    Cache = sp.GetRequiredService<IMemoryCache>(),
+                    Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>(),
+                    TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
+                    AssignerOptions = sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>().Value
                 });
 
-            builder.AddFeatureFilter<ContextualTargetingFilter>();
+            services.TryAddSingleton<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 
-            return builder;
+            services.TryAddSingleton<IVariantFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
+
+            return GetFeatureManagementBuilder(services);
         }
 
         /// <summary>
@@ -87,7 +71,9 @@ namespace Microsoft.FeatureManagement
             }
 
             services.AddSingleton<IFeatureDefinitionProvider>(sp =>
-                new ConfigurationFeatureDefinitionProvider(configuration)
+                new ConfigurationFeatureDefinitionProvider(
+                    configuration,
+                    sp.GetRequiredService<IOptions<ConfigurationFeatureDefinitionProviderOptions>>().Value)
                 {
                     RootConfigurationFallbackEnabled = true,
                     Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<ConfigurationFeatureDefinitionProvider>()
@@ -111,42 +97,26 @@ namespace Microsoft.FeatureManagement
                     "Singleton feature management has been registered.");
             }
 
-            services.AddLogging();
+            AddCommonFeatureManagementServices(services);
 
-            services.AddMemoryCache();
-
-            //
-            // Add required services
-            services.TryAddSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
-
-            services.AddScoped<IFeatureManager>(sp => 
+            services.AddScoped(sp =>
                 new FeatureManager(
                     sp.GetRequiredService<IFeatureDefinitionProvider>(),
                     sp.GetRequiredService<IOptions<FeatureManagementOptions>>().Value)
-                    {
-                        FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
-                        SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
-                        Cache = sp.GetRequiredService<IMemoryCache>(),
-                        Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>()
-                    });
-
-            services.AddScoped<IFeatureManagerSnapshot, FeatureManagerSnapshot>();
-
-            var builder = new FeatureManagementBuilder(services);
-
-            //
-            // Add built-in feature filters
-            builder.AddFeatureFilter<PercentageFilter>();
-
-            builder.AddFeatureFilter<TimeWindowFilter>(sp => 
-                new TimeWindowFilter()
                 {
-                    Cache = sp.GetRequiredService<IMemoryCache>()
+                    FeatureFilters = sp.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>(),
+                    SessionManagers = sp.GetRequiredService<IEnumerable<ISessionManager>>(),
+                    Cache = sp.GetRequiredService<IMemoryCache>(),
+                    Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<FeatureManager>(),
+                    TargetingContextAccessor = sp.GetService<ITargetingContextAccessor>(),
+                    AssignerOptions = sp.GetRequiredService<IOptions<TargetingEvaluationOptions>>().Value
                 });
 
-            builder.AddFeatureFilter<ContextualTargetingFilter>();
+            services.TryAddScoped<IFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
 
-            return builder;
+            services.TryAddScoped<IVariantFeatureManager>(sp => sp.GetRequiredService<FeatureManager>());
+
+            return GetFeatureManagementBuilder(services);
         }
 
         /// <summary>
@@ -164,13 +134,54 @@ namespace Microsoft.FeatureManagement
             }
 
             services.AddSingleton<IFeatureDefinitionProvider>(sp =>
-                new ConfigurationFeatureDefinitionProvider(configuration)
+                new ConfigurationFeatureDefinitionProvider(
+                    configuration,
+                    sp.GetRequiredService<IOptions<ConfigurationFeatureDefinitionProviderOptions>>().Value)
                 {
                     RootConfigurationFallbackEnabled = true,
                     Logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger<ConfigurationFeatureDefinitionProvider>()
                 });
 
             return services.AddScopedFeatureManagement();
+        }
+
+        private static void AddCommonFeatureManagementServices(IServiceCollection services)
+        {
+            services.AddLogging();
+
+            services.AddMemoryCache();
+
+            services.TryAddSingleton<IFeatureDefinitionProvider>(sp =>
+                new ConfigurationFeatureDefinitionProvider(
+                    sp.GetRequiredService<IConfiguration>(),
+                    sp.GetRequiredService<IOptions<ConfigurationFeatureDefinitionProviderOptions>>().Value)
+            );
+
+            services.AddScoped<FeatureManagerSnapshot>();
+
+            services.TryAddScoped<IFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
+
+            services.TryAddScoped<IVariantFeatureManagerSnapshot>(sp => sp.GetRequiredService<FeatureManagerSnapshot>());
+        }
+
+        private static IFeatureManagementBuilder GetFeatureManagementBuilder(IServiceCollection services)
+        {
+            var builder = new FeatureManagementBuilder(services);
+
+            //
+            // Add built-in feature filters
+            builder.AddFeatureFilter<PercentageFilter>();
+
+            builder.AddFeatureFilter<TimeWindowFilter>(sp =>
+                new TimeWindowFilter()
+                {
+                    Cache = sp.GetRequiredService<IMemoryCache>(),
+                    SystemClock = sp.GetService<TimeProvider>() ?? TimeProvider.System,
+                });
+
+            builder.AddFeatureFilter<ContextualTargetingFilter>();
+
+            return builder;
         }
     }
 }

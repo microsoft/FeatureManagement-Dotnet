@@ -339,7 +339,6 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             return ((int)day1 - (int)day2 + DaysPerWeek) % DaysPerWeek;
         }
 
-
         /// <summary>
         /// Sorts a collection of days of week based on their offsets from a specified first day of week.
         /// <param name="daysOfWeek">A collection of days of week.</param>
@@ -348,7 +347,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         /// </summary>
         private static List<DayOfWeek> SortDaysOfWeek(IEnumerable<DayOfWeek> daysOfWeek, DayOfWeek firstDayOfWeek)
         {
-            List<DayOfWeek> result = daysOfWeek.ToList();
+            List<DayOfWeek> result = daysOfWeek.Distinct().ToList(); // dedup
 
             result.Sort((x, y) =>
                 CalculateWeeklyDayOffset(x, firstDayOfWeek)

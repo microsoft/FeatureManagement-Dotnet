@@ -21,7 +21,8 @@ $LogDirectory = "$PSScriptRoot\buildlogs"
 $targetProjects = @(
 
     "Microsoft.FeatureManagement",
-    "Microsoft.FeatureManagement.AspNetCore"
+    "Microsoft.FeatureManagement.AspNetCore",
+    "Microsoft.FeatureManagement.Telemetry.ApplicationInsights"
 )
 
 # Create the log directory.

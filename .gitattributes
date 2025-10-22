@@ -1,0 +1,3 @@
+# If there are abnormal line endings in any file, run "git add --renormalize <file_name>", 
+# review the changes, and commit them to fix the line endings.
+* text=auto
