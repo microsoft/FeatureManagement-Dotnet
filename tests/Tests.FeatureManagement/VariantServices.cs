@@ -1,4 +1,5 @@
 ﻿using Microsoft.FeatureManagement;
+using System.Collections.Generic;
 
 namespace Tests.FeatureManagement
 {
@@ -75,13 +76,13 @@ namespace Tests.FeatureManagement
     // Tracker to record which services are instantiated
     class InstantiationTracker
     {
-        private readonly System.Collections.Generic.List<string> _instantiatedServices = new System.Collections.Generic.List<string>();
+        private readonly List<string> _instantiatedServices = new List<string>();
 
         public void RecordInstantiation(string serviceName)
         {
             _instantiatedServices.Add(serviceName);
         }
 
-        public System.Collections.Generic.IReadOnlyList<string> InstantiatedServices => _instantiatedServices.AsReadOnly();
+        public IReadOnlyList<string> InstantiatedServices => _instantiatedServices.AsReadOnly();
     }
 }

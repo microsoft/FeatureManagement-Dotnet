@@ -37,7 +37,11 @@ namespace Microsoft.FeatureManagement
             else
             {
                 // For factory-based registrations where type is unknown upfront,
-                // we lazily determine it by invoking the factory once
+                // we lazily determine it by invoking the factory once.
+                // Note: The factory will be invoked to get the type when checking for a match,
+                // which means the instance is created at that point. This is acceptable because
+                // it only happens when we're looking for a match, and the instance is cached.
+                // Alternative approaches would require breaking changes to the registration API.
                 _implementationType = new Lazy<Type>(() =>
                 {
                     TService instance = factory();
