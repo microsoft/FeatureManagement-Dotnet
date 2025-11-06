@@ -12,11 +12,47 @@ using System.Threading.Tasks;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
+    /// Holds factory metadata for lazy service instantiation.
+    /// </summary>
+    internal class VariantServiceFactory<TService> where TService : class
+    {
+        private readonly Lazy<Type> _implementationType;
+
+        public Type ImplementationType => _implementationType.Value;
+        public Func<TService> Factory { get; }
+
+        public VariantServiceFactory(Type implementationType, Func<TService> factory)
+        {
+            if (factory == null)
+            {
+                throw new ArgumentNullException(nameof(factory));
+            }
+
+            Factory = factory;
+
+            if (implementationType != null)
+            {
+                _implementationType = new Lazy<Type>(() => implementationType);
+            }
+            else
+            {
+                // For factory-based registrations where type is unknown upfront,
+                // we lazily determine it by invoking the factory once
+                _implementationType = new Lazy<Type>(() =>
+                {
+                    TService instance = factory();
+                    return instance?.GetType();
+                });
+            }
+        }
+    }
+
+    /// <summary>
     /// Used to get different implementations of TService depending on the assigned variant from a specific variant feature flag.
     /// </summary>
     internal class VariantServiceProvider<TService> : IVariantServiceProvider<TService> where TService : class
     {
-        private readonly IEnumerable<TService> _services;
+        private readonly IEnumerable<VariantServiceFactory<TService>> _serviceFactories;
         private readonly IVariantFeatureManager _featureManager;
         private readonly string _featureName;
         private readonly ConcurrentDictionary<string, TService> _variantServiceCache;
@@ -26,15 +62,15 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="featureName">The feature flag that should be used to determine which variant of the service should be used.</param>
         /// <param name="featureManager">The feature manager to get the assigned variant of the feature flag.</param>
-        /// <param name="services">Implementation variants of TService.</param>
+        /// <param name="serviceFactories">Factory delegates for implementation variants of TService.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureName"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureManager"/> is null.</exception>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="services"/> is null.</exception>
-        public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IEnumerable<TService> services)
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="serviceFactories"/> is null.</exception>
+        public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IEnumerable<VariantServiceFactory<TService>> serviceFactories)
         {
             _featureName = featureName ?? throw new ArgumentNullException(nameof(featureName));
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
-            _services = services ?? throw new ArgumentNullException(nameof(services));
+            _serviceFactories = serviceFactories ?? throw new ArgumentNullException(nameof(serviceFactories));
             _variantServiceCache = new ConcurrentDictionary<string, TService>();
         }
 
@@ -55,10 +91,15 @@ namespace Microsoft.FeatureManagement
             {
                 implementation = _variantServiceCache.GetOrAdd(
                     variant.Name,
-                    (_) => _services.FirstOrDefault(
-                        service => IsMatchingVariantName(
-                            service.GetType(),
-                            variant.Name))
+                    (_) =>
+                    {
+                        // Find the matching factory by checking the implementation type
+                        VariantServiceFactory<TService> matchingFactory = _serviceFactories.FirstOrDefault(
+                            factory => IsMatchingVariantName(factory.ImplementationType, variant.Name));
+
+                        // Only invoke the factory if a match is found (lazy instantiation)
+                        return matchingFactory?.Factory();
+                    }
                 );
             }
 

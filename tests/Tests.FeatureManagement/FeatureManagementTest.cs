@@ -1812,6 +1812,57 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task VariantServiceProviderLazyInstantiation()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            IServiceCollection services = new ServiceCollection();
+
+            // Add a singleton tracker to observe which services are instantiated
+            var tracker = new InstantiationTracker();
+            services.AddSingleton(tracker);
+
+            // Add variant implementations of IAlgorithm
+            services.AddSingleton<IAlgorithm, AlgorithmAlpha>();
+            services.AddSingleton<IAlgorithm, AlgorithmGamma>();
+            services.AddSingleton<IAlgorithm, AlgorithmDelta>();
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TargetingFilter>()
+                .WithVariantService<IAlgorithm>(Features.VariantImplementationFeature);
+
+            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
+
+            services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor);
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantServiceProvider<IAlgorithm> featuredAlgorithm = serviceProvider.GetRequiredService<IVariantServiceProvider<IAlgorithm>>();
+
+            // At this point, no services should have been instantiated yet
+            // This is what we want to achieve with lazy instantiation
+            Assert.Empty(tracker.InstantiatedServices);
+
+            // Set user to resolve to "AlgorithmAlpha" variant
+            targetingContextAccessor.Current = new TargetingContext
+            {
+                UserId = "UserAlpha"
+            };
+
+            // Now request the service - only AlgorithmAlpha should be instantiated
+            IAlgorithm algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+
+            // Verify that only the selected variant was instantiated
+            Assert.Single(tracker.InstantiatedServices);
+            Assert.Contains("Alpha", tracker.InstantiatedServices);
+            Assert.NotNull(algorithm);
+            Assert.Equal("Alpha", algorithm.Style);
+        }
+
+        [Fact]
         public async Task VariantFeatureFlagWithContextualFeatureFilter()
         {
             IConfiguration configuration = new ConfigurationBuilder()

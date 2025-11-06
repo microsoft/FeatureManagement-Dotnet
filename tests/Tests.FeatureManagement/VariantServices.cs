@@ -37,4 +37,51 @@ namespace Tests.FeatureManagement
             Style = style;
         }
     }
+
+    // Test service with tracking for lazy instantiation tests
+    class AlgorithmAlpha : IAlgorithm
+    {
+        public string Style { get; set; }
+
+        public AlgorithmAlpha(InstantiationTracker tracker)
+        {
+            Style = "Alpha";
+            tracker.RecordInstantiation("Alpha");
+        }
+    }
+
+    class AlgorithmGamma : IAlgorithm
+    {
+        public string Style { get; set; }
+
+        public AlgorithmGamma(InstantiationTracker tracker)
+        {
+            Style = "Gamma";
+            tracker.RecordInstantiation("Gamma");
+        }
+    }
+
+    class AlgorithmDelta : IAlgorithm
+    {
+        public string Style { get; set; }
+
+        public AlgorithmDelta(InstantiationTracker tracker)
+        {
+            Style = "Delta";
+            tracker.RecordInstantiation("Delta");
+        }
+    }
+
+    // Tracker to record which services are instantiated
+    class InstantiationTracker
+    {
+        private readonly System.Collections.Generic.List<string> _instantiatedServices = new System.Collections.Generic.List<string>();
+
+        public void RecordInstantiation(string serviceName)
+        {
+            _instantiatedServices.Add(serviceName);
+        }
+
+        public System.Collections.Generic.IReadOnlyList<string> InstantiatedServices => _instantiatedServices.AsReadOnly();
+    }
 }
