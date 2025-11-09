@@ -60,17 +60,27 @@ namespace Microsoft.FeatureManagement
 
             if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
             {
-                builder.Services.AddScoped<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
-                    featureName,
-                    sp.GetRequiredService<IVariantFeatureManager>(),
-                    sp.GetRequiredService<IEnumerable<TService>>()));
+                builder.Services.AddScoped<IVariantServiceProvider<TService>>(sp =>
+                {
+                    IEnumerable<ServiceDescriptor> serviceDescriptors = builder.Services.Where(d => d.ServiceType == typeof(TService));
+                    return new VariantServiceProvider<TService>(
+                        featureName,
+                        sp.GetRequiredService<IVariantFeatureManager>(),
+                        serviceDescriptors,
+                        sp);
+                });
             }
             else
             {
-                builder.Services.AddSingleton<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
-                    featureName,
-                    sp.GetRequiredService<IVariantFeatureManager>(),
-                    sp.GetRequiredService<IEnumerable<TService>>()));
+                builder.Services.AddSingleton<IVariantServiceProvider<TService>>(sp =>
+                {
+                    IEnumerable<ServiceDescriptor> serviceDescriptors = builder.Services.Where(d => d.ServiceType == typeof(TService));
+                    return new VariantServiceProvider<TService>(
+                        featureName,
+                        sp.GetRequiredService<IVariantFeatureManager>(),
+                        serviceDescriptors,
+                        sp);
+                });
             }
 
             return builder;
