@@ -1803,59 +1803,75 @@ namespace Tests.FeatureManagement
             services = new ServiceCollection();
 
             Assert.Throws<InvalidOperationException>(() =>
-                {
-                    services.AddFeatureManagement()
-                        .WithVariantService<IAlgorithm>("DummyFeature1")
-                        .WithVariantService<IAlgorithm>("DummyFeature2");
-                }
+            {
+                services.AddFeatureManagement()
+                    .WithVariantService<IAlgorithm>("DummyFeature1")
+                    .WithVariantService<IAlgorithm>("DummyFeature2");
+            }
             );
         }
 
         [Fact]
-        public async Task VariantFeatureFlagWithContextualFeatureFilter()
+        public async Task VariantServiceLazyInstantiation()
         {
+            // Reset counters
+            AlgorithmBeta.Instances = 0;
+            AlgorithmOmega.Instances = 0;
+
             IConfiguration configuration = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json")
                 .Build();
 
             IServiceCollection services = new ServiceCollection();
 
+            services.AddSingleton<IAlgorithm, AlgorithmBeta>();
+            services.AddSingleton<IAlgorithm, AlgorithmSigma>();
+            services.AddSingleton<IAlgorithm>(sp => new AlgorithmOmega("OMEGA"));
+
             services.AddSingleton(configuration)
                 .AddFeatureManagement()
-                .AddFeatureFilter<ContextualTestFilter>();
+                .AddFeatureFilter<TargetingFilter>()
+                .WithVariantService<IAlgorithm>(Features.VariantImplementationFeature);
+
+            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
+            services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor);
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
-            ContextualTestFilter contextualTestFeatureFilter = (ContextualTestFilter)serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>().First(f => f is ContextualTestFilter);
+            // At this point none of the implementations should have been instantiated yet because provider hasn't requested them.
+            Assert.Equal(0, AlgorithmBeta.Instances);
+            Assert.Equal(0, AlgorithmOmega.Instances);
 
-            contextualTestFeatureFilter.ContextualCallback = (ctx, accountContext) =>
-            {
-                var allowedAccounts = new List<string>();
-
-                ctx.Parameters.Bind("AllowedAccounts", allowedAccounts);
-
-                return allowedAccounts.Contains(accountContext.AccountId);
-            };
-
+            IVariantServiceProvider<IAlgorithm> variantProvider = serviceProvider.GetRequiredService<IVariantServiceProvider<IAlgorithm>>();
             IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
 
-            var context = new AppContext();
+            targetingContextAccessor.Current = new TargetingContext { UserId = "Guest" };
+            IAlgorithm algorithm = await variantProvider.GetServiceAsync(CancellationToken.None);
+            Assert.Null(algorithm);
+            Assert.Equal(0, AlgorithmBeta.Instances);
+            Assert.Equal(0, AlgorithmOmega.Instances);
 
-            context.AccountId = "NotEnabledAccount";
+            targetingContextAccessor.Current = new TargetingContext { UserId = "UserBeta" };
+            algorithm = await variantProvider.GetServiceAsync(CancellationToken.None);
+            Assert.NotNull(algorithm);
+            Assert.Equal("Beta", algorithm.Style);
+            Assert.Equal(1, AlgorithmBeta.Instances);
+            Assert.Equal(0, AlgorithmOmega.Instances);
 
-            Assert.False(await featureManager.IsEnabledAsync(Features.ContextualFeatureWithVariant, context));
+            targetingContextAccessor.Current = new TargetingContext { UserId = "UserOmega" };
+            algorithm = await variantProvider.GetServiceAsync(CancellationToken.None);
+            Assert.NotNull(algorithm);
+            Assert.Equal("OMEGA", algorithm.Style);
+            Assert.Equal(1, AlgorithmBeta.Instances);
+            Assert.Equal(1, AlgorithmOmega.Instances);
 
-            Variant variant = await featureManager.GetVariantAsync(Features.ContextualFeatureWithVariant, context);
-
-            Assert.Equal("Small", variant.Name);
-
-            context.AccountId = "abc";
-
-            Assert.True(await featureManager.IsEnabledAsync(Features.ContextualFeatureWithVariant, context));
-
-            variant = await featureManager.GetVariantAsync(Features.ContextualFeatureWithVariant, context);
-
-            Assert.Equal("Big", variant.Name);
+            // Re-resolve Beta variant should not create additional instance because singleton already constructed previously
+            targetingContextAccessor.Current = new TargetingContext { UserId = "UserBeta" };
+            algorithm = await variantProvider.GetServiceAsync(CancellationToken.None);
+            Assert.NotNull(algorithm);
+            Assert.Equal("Beta", algorithm.Style);
+            Assert.Equal(1, AlgorithmBeta.Instances);
+            Assert.Equal(1, AlgorithmOmega.Instances);
         }
     }
 
