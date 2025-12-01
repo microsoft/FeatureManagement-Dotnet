@@ -40,7 +40,25 @@ namespace Microsoft.FeatureManagement
             }
 
             builder.Services.ConfigureOpenTelemetryTracerProvider(builder => builder.AddProcessor(new TargetingActivityProcessor()));
+
+            // Ensure TargetingActivityProcessor is added before other processors (like Exporters)
+            // This is done by moving the configuration callback to the beginning of the service collection
+            var tracerDescriptor = builder.Services.LastOrDefault(d => d.ServiceType.FullName == "OpenTelemetry.Trace.IConfigureTracerProviderBuilder");
+            if (tracerDescriptor != null)
+            {
+                builder.Services.Remove(tracerDescriptor);
+                builder.Services.Insert(0, tracerDescriptor);
+            }
+
             builder.Services.ConfigureOpenTelemetryLoggerProvider(builder => builder.AddProcessor(new TargetingLogProcessor()));
+
+            // Ensure TargetingLogProcessor is added before other processors
+            var loggerDescriptor = builder.Services.LastOrDefault(d => d.ServiceType.FullName == "OpenTelemetry.Logs.IConfigureLoggerProviderBuilder");
+            if (loggerDescriptor != null)
+            {
+                builder.Services.Remove(loggerDescriptor);
+                builder.Services.Insert(0, loggerDescriptor);
+            }
 
             return builder;
         }
