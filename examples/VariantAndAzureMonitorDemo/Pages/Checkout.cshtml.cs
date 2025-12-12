@@ -18,12 +18,14 @@ namespace VariantAndAzureMonitorDemo.Pages
 
         public IActionResult OnPost()
         {
+            long amount = Random.Shared.Next(1, 100);
+
             // Track the checkout event using ILogger custom event
-            _logger.LogInformation("{microsoft.custom_event.name} {success}", "checkout", "yes");
+            _logger.LogCheckout(amount);
 
             // Track the checkout amount metric
             var checkoutAmountHistogram = _meter.CreateHistogram<long>("checkoutAmount");
-            checkoutAmountHistogram.Record(Random.Shared.Next(1, 100));
+            checkoutAmountHistogram.Record(amount);
 
             TempData["CheckedOut"] = true;
 
