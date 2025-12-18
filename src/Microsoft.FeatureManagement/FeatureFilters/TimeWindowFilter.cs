@@ -37,9 +37,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         public IMemoryCache Cache { get; set; }
 
         /// <summary>
-        /// This property allows the time window filter to use custom <see cref="TimeProvider"/>.
+        /// This property allows the time window filter in our test suite to use simulated time.
         /// </summary>
-        public TimeProvider SystemClock { get; set; }
+        internal TimeProvider SystemClock { get; set; }
 
         /// <summary>
         /// Binds configuration representing filter parameters to <see cref="TimeWindowFilterSettings"/>.
