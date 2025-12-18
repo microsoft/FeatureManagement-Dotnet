@@ -48,6 +48,11 @@ namespace FeatureFlagDemo
                     .WithTargeting()
                     .UseDisabledFeaturesHandler(new FeatureNotEnabledDisabledHandler());
 
+            if (!string.IsNullOrEmpty(Configuration["AppConfiguration:ConnectionString"]))
+            {
+                services.AddAzureAppConfiguration();
+            }
+
             services.AddMvc(o =>
             {
                 o.Filters.AddForFeature<ThirdPartyActionFilter>(MyFeatureFlags.EnhancedPipeline);
@@ -67,7 +72,10 @@ namespace FeatureFlagDemo
                 app.UseHsts();
             }
 
-            app.UseAzureAppConfiguration();
+            if (!string.IsNullOrEmpty(Configuration["AppConfiguration:ConnectionString"]))
+            {
+                app.UseAzureAppConfiguration();
+            }
 
             app.UseAuthentication();
 
