@@ -33,6 +33,12 @@ namespace FeatureFlagDemo
                             o.UseFeatureFlags();
                         });
                     }
+                    else
+                    {
+                        //
+                        // Disable Azure App Configuration provider when connection string is not configured
+                        Environment.SetEnvironmentVariable("AZURE_APP_CONFIGURATION_PROVIDER_DISABLED", "true");
+                    }
                 })
                 .UseStartup<Startup>();
         }
