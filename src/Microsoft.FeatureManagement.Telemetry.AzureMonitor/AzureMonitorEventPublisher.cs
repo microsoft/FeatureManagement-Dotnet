@@ -91,7 +91,35 @@ namespace Microsoft.FeatureManagement.Telemetry.AzureMonitor
                 }
             }
 
-            _logger.LogFeatureEvaluation("FeatureEvaluation", properties);
+            LogFeatureEvaluation("FeatureEvaluation", properties);
+        }
+
+        private void LogFeatureEvaluation(string eventName, Dictionary<string, object> properties)
+        {
+            if (string.IsNullOrEmpty(eventName))
+            {
+                throw new ArgumentException("Event name cannot be null or empty.", nameof(eventName));
+            }
+
+            // Build the message template dynamically with placeholders for each property
+            var templateBuilder = new System.Text.StringBuilder("{microsoft.custom_event.name}");
+            var args = new List<object> { eventName };
+
+            if (properties != null && properties.Count > 0)
+            {
+                foreach (var kvp in properties)
+                {
+                    templateBuilder.Append($" {{{kvp.Key}}}");
+                    args.Add(kvp.Value);
+                }
+            }
+
+            // Use structured logging to ensure each property becomes a separate custom dimension
+            _logger.Log(
+                LogLevel.Information,
+                new EventId(1, "microsoft.custom_event.name"),
+                templateBuilder.ToString(),
+                args.ToArray());
         }
     }
 }
