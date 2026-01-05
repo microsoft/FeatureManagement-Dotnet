@@ -1,0 +1,21 @@
+﻿@page
+@model CheckoutModel
+@{
+    ViewData["Title"] = "Checkout";
+}
+<h1>@ViewData["Title"]</h1>
+
+<p>Click Below To Check Out!</p>
+
+<form method="post">
+    <button type="submit" id="checkout" name="checkout">
+        Check Out
+    </button>
+</form>
+
+@if (TempData["CheckedOut"] != null)
+{
+    <script>
+        alert('Checked Out!');
+    </script>
+}
