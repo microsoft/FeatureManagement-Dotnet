@@ -1,7 +1,3 @@
-using Microsoft.Extensions.Logging;
-
-#nullable enable
-
 namespace VariantAndAzureMonitorDemo
 {
     public static class LoggerExtensions
@@ -15,6 +11,7 @@ namespace VariantAndAzureMonitorDemo
             LogLevel.Information,
             new EventId(1, "microsoft.custom_event.name"),
             "{microsoft.custom_event.name} {success} {amount}");
+
         public static void LogVote(this ILogger logger, int rating)
         {
             _vote(logger, "Vote", rating, null);

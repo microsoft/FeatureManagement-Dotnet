@@ -24,10 +24,11 @@ namespace Tests.FeatureManagement.Telemetry.AzureMonitor
             // 1. User adds OpenTelemetry and Exporter
             // Note: In a real app, UseAzureMonitor() would add the exporter.
             // We simulate this by adding a processor that acts as an exporter.
+            var exportProcessor = new SimpleActivityExportProcessor(exporter);
             services.AddOpenTelemetry()
                 .WithTracing(builder => builder
                     .AddSource("TestTracer")
-                    .AddProcessor(new SimpleActivityExportProcessor(exporter)));
+                    .AddProcessor(exportProcessor));
 
             // 2. User adds FeatureManagement and AzureMonitorTelemetry
             services.AddFeatureManagement()
@@ -35,10 +36,9 @@ namespace Tests.FeatureManagement.Telemetry.AzureMonitor
 
             using var serviceProvider = services.BuildServiceProvider();
             var tracerProvider = serviceProvider.GetRequiredService<TracerProvider>();
-            var tracer = tracerProvider.GetTracer("TestTracer");
 
             // 3. Start Activity with Baggage
-            var source = new ActivitySource("TestTracer");
+            using var source = new ActivitySource("TestTracer");
             using (var listener = new ActivityListener
             {
                 ShouldListenTo = _ => true,
@@ -61,6 +61,8 @@ namespace Tests.FeatureManagement.Telemetry.AzureMonitor
 
             // If TargetingProcessor ran first, the tag should be present.
             Assert.Contains(tags, t => t.Key == "TargetingId" && t.Value == "User123");
+
+            exportProcessor.Dispose();
         }
 
         private class InMemoryExporter : BaseExporter<Activity>
