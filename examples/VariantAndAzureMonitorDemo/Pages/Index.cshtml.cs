@@ -56,7 +56,7 @@ namespace VariantAndAzureMonitorDemo.Pages
                     imageRatingHistogram.Record(rating);
 
                     // Track the vote event using ILogger custom event
-                    _logger.LogVote();
+                    _logger.LogVote(rating);
                 }
             }
 
