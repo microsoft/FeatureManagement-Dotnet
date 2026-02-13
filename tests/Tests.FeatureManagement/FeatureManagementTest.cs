@@ -281,6 +281,36 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task SessionManagerQueriedWhenFeatureDefinitionIsNull()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            ISessionManager sessionManager = new TestSessionManager();
+
+            await sessionManager.SetAsync("UnexistedFeature", true);
+
+            services
+                .AddSingleton(config)
+                .AddSingleton<ISessionManager>(sessionManager)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            // Feature doesn't exist in configuration, but should return true from session
+            Assert.True(await featureManager.IsEnabledAsync("UnexistedFeature"));
+
+            // Set the feature to false in session
+            await sessionManager.SetAsync("UnexistedFeature", false);
+
+            // Should return false from session
+            Assert.False(await featureManager.IsEnabledAsync("UnexistedFeature"));
+        }
+
+        [Fact]
         public async Task ThreadSafeSnapshot()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
