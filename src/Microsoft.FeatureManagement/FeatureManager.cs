@@ -371,6 +371,20 @@ namespace Microsoft.FeatureManagement
                     FeatureEvaluationTelemetry.Publish(evaluationEvent, Logger);
                 }
             }
+            else if (_sessionManagers != null)
+            {
+                foreach (ISessionManager sessionManager in _sessionManagers)
+                {
+                    bool? readSessionResult = await sessionManager.GetAsync(feature).ConfigureAwait(false);
+
+                    if (readSessionResult.HasValue)
+                    {
+                        evaluationEvent.Enabled = readSessionResult.Value;
+
+                        break;
+                    }
+                }
+            }
 
             return evaluationEvent;
         }
