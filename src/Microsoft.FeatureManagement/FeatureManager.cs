@@ -355,14 +355,6 @@ namespace Microsoft.FeatureManagement
                     }
                 }
 
-                if (_sessionManagers != null)
-                {
-                    foreach (ISessionManager sessionManager in _sessionManagers)
-                    {
-                        await sessionManager.SetAsync(evaluationEvent.FeatureDefinition.Name, evaluationEvent.Enabled).ConfigureAwait(false);
-                    }
-                }
-
                 // Only add an activity event if telemetry is enabled for the feature and the activity is valid
                 if (telemetryEnabled &&
                     Activity.Current != null &&
@@ -383,6 +375,14 @@ namespace Microsoft.FeatureManagement
 
                         break;
                     }
+                }
+            }
+
+            if (_sessionManagers != null)
+            {
+                foreach (ISessionManager sessionManager in _sessionManagers)
+                {
+                    await sessionManager.SetAsync(feature, evaluationEvent.Enabled).ConfigureAwait(false);
                 }
             }
 
