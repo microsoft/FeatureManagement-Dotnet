@@ -38,10 +38,18 @@ namespace Microsoft.FeatureManagement
         /// Creates a configuration feature definition provider.
         /// </summary>
         /// <param name="configuration">The configuration of feature definitions.</param>
+        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration) : this(configuration, null)
+        {
+        }
+
+        /// <summary>
+        /// Creates a configuration feature definition provider.
+        /// </summary>
+        /// <param name="configuration">The configuration of feature definitions.</param>
         /// <param name="options">The options for the configuration feature definition provider.</param>
         public ConfigurationFeatureDefinitionProvider(
             IConfiguration configuration,
-            ConfigurationFeatureDefinitionProviderOptions options = null)
+            ConfigurationFeatureDefinitionProviderOptions options)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _options = options ?? new ConfigurationFeatureDefinitionProviderOptions();
