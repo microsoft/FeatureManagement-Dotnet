@@ -56,6 +56,7 @@ namespace Microsoft.FeatureManagement
             IEnumerable<string> groups = httpContext.User.Identities
                 .SelectMany(identity => identity.Claims.Where(c => c.Type == identity.RoleClaimType))
                 .Select(c => c.Value)
+                .Distinct()
                 .ToList();
 
             TargetingContext targetingContext = new TargetingContext
