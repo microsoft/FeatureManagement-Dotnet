@@ -54,7 +54,7 @@ namespace Microsoft.FeatureManagement
             //
             // Treat claims of type Role as groups
             IEnumerable<string> groups = httpContext.User.Identities
-                .SelectMany(identity => identity.Claims.Where(c => c.Type == identity.RoleClaimType))
+                .SelectMany(identity => identity.Claims.Where(c => c.Type == identity.RoleClaimType || c.Type == ClaimTypes.Role))
                 .Select(c => c.Value)
                 .Distinct()
                 .ToList();
