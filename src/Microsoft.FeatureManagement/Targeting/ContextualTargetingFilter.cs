@@ -68,8 +68,10 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
 
             //
-            // Check if prebound settings available, otherwise bind from parameters.
-            TargetingFilterSettings settings = (TargetingFilterSettings)context.Settings ?? (TargetingFilterSettings)BindParameters(context.Parameters);
+            // Check if ParameterObject available (takes precedence), then prebound settings, otherwise bind from parameters.
+            TargetingFilterSettings settings = context.ParameterObject != null
+                ? (TargetingFilterSettings)context.ParameterObject
+                : (TargetingFilterSettings)context.Settings ?? (TargetingFilterSettings)BindParameters(context.Parameters);
 
             return Task.FromResult(TargetingEvaluator.IsTargeted(targetingContext, settings, _options.IgnoreCase, context.FeatureName));
         }

@@ -22,6 +22,12 @@ namespace Microsoft.FeatureManagement
         public IConfiguration Parameters { get; set; }
 
         /// <summary>
+        /// A strongly-typed parameter object, if any, provided by a custom <see cref="IFeatureDefinitionProvider"/>.
+        /// When set, feature filters should prefer this over <see cref="Parameters"/>.
+        /// </summary>
+        public object ParameterObject { get; set; }
+
+        /// <summary>
         /// A settings object, if any, that has been pre-bound from <see cref="Parameters"/>.
         /// The settings are made available for <see cref="IFeatureFilter"/>s that implement <see cref="IFilterParametersBinder"/>.
         /// </summary>

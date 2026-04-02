@@ -71,8 +71,10 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
 
             //
-            // Check if prebound settings available, otherwise bind from parameters.
-            TimeWindowFilterSettings settings = (TimeWindowFilterSettings)context.Settings ?? (TimeWindowFilterSettings)BindParameters(context.Parameters);
+            // Check if ParameterObject available (takes precedence), then prebound settings, otherwise bind from parameters.
+            TimeWindowFilterSettings settings = context.ParameterObject != null
+                ? (TimeWindowFilterSettings)context.ParameterObject
+                : (TimeWindowFilterSettings)context.Settings ?? (TimeWindowFilterSettings)BindParameters(context.Parameters);
 
             DateTimeOffset now = SystemClock?.GetUtcNow() ?? DateTimeOffset.UtcNow;
 

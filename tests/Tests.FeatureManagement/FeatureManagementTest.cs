@@ -1051,6 +1051,124 @@ namespace Tests.FeatureManagement
 
             Assert.True(called);
         }
+
+        [Fact]
+        public async Task UsesParameterObject()
+        {
+            var parameterObject = new object();
+
+            FeatureFilterConfiguration testFilterConfiguration = new FeatureFilterConfiguration
+            {
+                Name = "Test",
+                ParameterObject = parameterObject
+            };
+
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = Features.ConditionalFeature,
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            testFilterConfiguration
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            testFeatureFilter.Callback = (evaluationContext) =>
+            {
+                //
+                // When ParameterObject is set, it should be available on the context
+                // so custom filters can use it with their own precedence logic.
+                Assert.Same(parameterObject, evaluationContext.ParameterObject);
+
+                return Task.FromResult(true);
+            };
+
+            bool result = await featureManager.IsEnabledAsync(Features.ConditionalFeature);
+
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task ParameterObjectFallsBackToParametersWhenNull()
+        {
+            FeatureFilterConfiguration testFilterConfiguration = new FeatureFilterConfiguration
+            {
+                Name = "Test",
+                ParameterObject = null
+            };
+
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = Features.ConditionalFeature,
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            testFilterConfiguration
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            bool binderCalled = false;
+
+            testFeatureFilter.ParametersBinderCallback = (parameters) =>
+            {
+                binderCalled = true;
+
+                return parameters;
+            };
+
+            testFeatureFilter.Callback = (evaluationContext) =>
+            {
+                //
+                // When ParameterObject is null, Settings should be populated
+                // by IFilterParametersBinder as usual.
+                Assert.Null(evaluationContext.ParameterObject);
+                Assert.NotNull(evaluationContext.Settings);
+
+                return Task.FromResult(true);
+            };
+
+            bool result = await featureManager.IsEnabledAsync(Features.ConditionalFeature);
+
+            Assert.True(result);
+
+            Assert.True(binderCalled);
+        }
     }
 
     public class FeatureManagementBuiltInFeatureFilterTest
@@ -1670,6 +1788,142 @@ namespace Tests.FeatureManagement
             IFeatureManager featureManager = provider.GetRequiredService<IFeatureManager>();
 
             Assert.True(await featureManager.IsEnabledAsync("CustomFilterFeature"));
+        }
+
+        [Fact]
+        public async Task PercentageFilterUsesParameterObject()
+        {
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = "PercentageFeature",
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            new FeatureFilterConfiguration
+                            {
+                                Name = "Microsoft.Percentage",
+                                ParameterObject = new PercentageFilterSettings { Value = 100 }
+                            }
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync("PercentageFeature"));
+        }
+
+        [Fact]
+        public async Task TimeWindowFilterUsesParameterObject()
+        {
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = "TimeWindowFeature",
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            new FeatureFilterConfiguration
+                            {
+                                Name = "Microsoft.TimeWindow",
+                                ParameterObject = new TimeWindowFilterSettings
+                                {
+                                    Start = DateTimeOffset.UtcNow.AddDays(-1),
+                                    End = DateTimeOffset.UtcNow.AddDays(1)
+                                }
+                            }
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync("TimeWindowFeature"));
+        }
+
+        [Fact]
+        public async Task PercentageFilterThrowsOnInvalidParameterObjectType()
+        {
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = "BadFeature",
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            new FeatureFilterConfiguration
+                            {
+                                Name = "Microsoft.Percentage",
+                                ParameterObject = "wrong type"
+                            }
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            await Assert.ThrowsAsync<InvalidCastException>(() => featureManager.IsEnabledAsync("BadFeature"));
+        }
+
+        [Fact]
+        public async Task TimeWindowFilterThrowsOnInvalidParameterObjectType()
+        {
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = "BadFeature",
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            new FeatureFilterConfiguration
+                            {
+                                Name = "Microsoft.TimeWindow",
+                                ParameterObject = 42
+                            }
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            await Assert.ThrowsAsync<InvalidCastException>(() => featureManager.IsEnabledAsync("BadFeature"));
         }
     }
 
