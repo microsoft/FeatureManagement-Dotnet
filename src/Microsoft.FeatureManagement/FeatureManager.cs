@@ -419,15 +419,6 @@ namespace Microsoft.FeatureManagement
             else
             {
                 //
-                // Ensure no conflicts in the feature definition
-                if (featureDefinition.RequirementType == RequirementType.All && _options.IgnoreMissingFeatureFilters)
-                {
-                    throw new FeatureManagementException(
-                        FeatureManagementError.Conflict,
-                        $"The 'IgnoreMissingFeatureFilters' flag cannot be used in combination with a feature of requirement type 'All'.");
-                }
-
-                //
                 // If the requirement type is all, we default to true. Requirement type All will end on a false
                 enabled = featureDefinition.RequirementType == RequirementType.All;
 
@@ -490,6 +481,15 @@ namespace Microsoft.FeatureManagement
                         }
 
                         Logger?.LogWarning(FeatureFilterNotFoundError, featureFilterConfiguration.Name, featureDefinition.Name);
+
+                        //
+                        // If requirement type is All, a missing filter means the feature cannot be enabled
+                        if (featureDefinition.RequirementType == RequirementType.All)
+                        {
+                            enabled = false;
+
+                            break;
+                        }
 
                         continue;
                     }
