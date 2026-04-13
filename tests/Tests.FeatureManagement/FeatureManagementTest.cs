@@ -1053,14 +1053,14 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task UsesParameterObject()
+        public async Task UsesParametersObject()
         {
             var parameterObject = new object();
 
             FeatureFilterConfiguration testFilterConfiguration = new FeatureFilterConfiguration
             {
                 Name = "Test",
-                ParameterObject = parameterObject
+                ParametersObject = parameterObject
             };
 
             var services = new ServiceCollection();
@@ -1094,9 +1094,9 @@ namespace Tests.FeatureManagement
             testFeatureFilter.Callback = (evaluationContext) =>
             {
                 //
-                // When ParameterObject is set, it should be available on the context
+                // When ParametersObject is set, it should be available on the context
                 // so custom filters can use it with their own precedence logic.
-                Assert.Same(parameterObject, evaluationContext.ParameterObject);
+                Assert.Same(parameterObject, evaluationContext.ParametersObject);
 
                 return Task.FromResult(true);
             };
@@ -1107,12 +1107,12 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task ParameterObjectFallsBackToParametersWhenNull()
+        public async Task ParametersObjectFallsBackToParametersWhenNull()
         {
             FeatureFilterConfiguration testFilterConfiguration = new FeatureFilterConfiguration
             {
                 Name = "Test",
-                ParameterObject = null
+                ParametersObject = null
             };
 
             var services = new ServiceCollection();
@@ -1155,9 +1155,9 @@ namespace Tests.FeatureManagement
             testFeatureFilter.Callback = (evaluationContext) =>
             {
                 //
-                // When ParameterObject is null, Settings should be populated
+                // When ParametersObject is null, Settings should be populated
                 // by IFilterParametersBinder as usual.
-                Assert.Null(evaluationContext.ParameterObject);
+                Assert.Null(evaluationContext.ParametersObject);
                 Assert.NotNull(evaluationContext.Settings);
 
                 return Task.FromResult(true);
@@ -1791,7 +1791,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task PercentageFilterUsesParameterObject()
+        public async Task PercentageFilterUsesParametersObject()
         {
             var services = new ServiceCollection();
 
@@ -1806,7 +1806,7 @@ namespace Tests.FeatureManagement
                             new FeatureFilterConfiguration
                             {
                                 Name = "Microsoft.Percentage",
-                                ParameterObject = new PercentageFilterSettings { Value = 100 }
+                                ParametersObject = new PercentageFilterSettings { Value = 100 }
                             }
                         }
                     }
@@ -1824,7 +1824,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task TimeWindowFilterUsesParameterObject()
+        public async Task TimeWindowFilterUsesParametersObject()
         {
             var services = new ServiceCollection();
 
@@ -1839,7 +1839,7 @@ namespace Tests.FeatureManagement
                             new FeatureFilterConfiguration
                             {
                                 Name = "Microsoft.TimeWindow",
-                                ParameterObject = new TimeWindowFilterSettings
+                                ParametersObject = new TimeWindowFilterSettings
                                 {
                                     Start = DateTimeOffset.UtcNow.AddDays(-1),
                                     End = DateTimeOffset.UtcNow.AddDays(1)
@@ -1861,7 +1861,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task PercentageFilterThrowsOnInvalidParameterObjectType()
+        public async Task PercentageFilterThrowsOnInvalidParametersObjectType()
         {
             var services = new ServiceCollection();
 
@@ -1876,7 +1876,7 @@ namespace Tests.FeatureManagement
                             new FeatureFilterConfiguration
                             {
                                 Name = "Microsoft.Percentage",
-                                ParameterObject = "wrong type"
+                                ParametersObject = "wrong type"
                             }
                         }
                     }
@@ -1890,11 +1890,13 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            await Assert.ThrowsAsync<InvalidCastException>(() => featureManager.IsEnabledAsync("BadFeature"));
+            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(() => featureManager.IsEnabledAsync("BadFeature"));
+
+            Assert.Equal(FeatureManagementError.InvalidParametersObject, e.Error);
         }
 
         [Fact]
-        public async Task TimeWindowFilterThrowsOnInvalidParameterObjectType()
+        public async Task TimeWindowFilterThrowsOnInvalidParametersObjectType()
         {
             var services = new ServiceCollection();
 
@@ -1909,7 +1911,7 @@ namespace Tests.FeatureManagement
                             new FeatureFilterConfiguration
                             {
                                 Name = "Microsoft.TimeWindow",
-                                ParameterObject = 42
+                                ParametersObject = 42
                             }
                         }
                     }
@@ -1923,7 +1925,9 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            await Assert.ThrowsAsync<InvalidCastException>(() => featureManager.IsEnabledAsync("BadFeature"));
+            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(() => featureManager.IsEnabledAsync("BadFeature"));
+
+            Assert.Equal(FeatureManagementError.InvalidParametersObject, e.Error);
         }
     }
 

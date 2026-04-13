@@ -68,10 +68,24 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
 
             //
-            // Check if ParameterObject available (takes precedence), then prebound settings, otherwise bind from parameters.
-            TargetingFilterSettings settings = context.ParameterObject != null
-                ? (TargetingFilterSettings)context.ParameterObject
-                : (TargetingFilterSettings)context.Settings ?? (TargetingFilterSettings)BindParameters(context.Parameters);
+            // Check if ParametersObject available (takes precedence), then prebound settings, otherwise bind from parameters.
+            TargetingFilterSettings settings;
+
+            if (context.ParametersObject != null)
+            {
+                if (!(context.ParametersObject is TargetingFilterSettings parametersObject))
+                {
+                    throw new FeatureManagementException(
+                        FeatureManagementError.InvalidParametersObject,
+                        $"The '{Alias}' feature filter for feature '{context.FeatureName}' has a {nameof(context.ParametersObject)} of type '{context.ParametersObject.GetType()}', but expected '{typeof(TargetingFilterSettings)}'.");
+                }
+
+                settings = parametersObject;
+            }
+            else
+            {
+                settings = (TargetingFilterSettings)context.Settings ?? (TargetingFilterSettings)BindParameters(context.Parameters);
+            }
 
             return Task.FromResult(TargetingEvaluator.IsTargeted(targetingContext, settings, _options.IgnoreCase, context.FeatureName));
         }

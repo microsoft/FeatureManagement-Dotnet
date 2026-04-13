@@ -71,10 +71,24 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             }
 
             //
-            // Check if ParameterObject available (takes precedence), then prebound settings, otherwise bind from parameters.
-            TimeWindowFilterSettings settings = context.ParameterObject != null
-                ? (TimeWindowFilterSettings)context.ParameterObject
-                : (TimeWindowFilterSettings)context.Settings ?? (TimeWindowFilterSettings)BindParameters(context.Parameters);
+            // Check if ParametersObject available (takes precedence), then prebound settings, otherwise bind from parameters.
+            TimeWindowFilterSettings settings;
+
+            if (context.ParametersObject != null)
+            {
+                if (!(context.ParametersObject is TimeWindowFilterSettings parametersObject))
+                {
+                    throw new FeatureManagementException(
+                        FeatureManagementError.InvalidParametersObject,
+                        $"The '{Alias}' feature filter for feature '{context.FeatureName}' has a {nameof(context.ParametersObject)} of type '{context.ParametersObject.GetType()}', but expected '{typeof(TimeWindowFilterSettings)}'.");
+                }
+
+                settings = parametersObject;
+            }
+            else
+            {
+                settings = (TimeWindowFilterSettings)context.Settings ?? (TimeWindowFilterSettings)BindParameters(context.Parameters);
+            }
 
             DateTimeOffset now = SystemClock?.GetUtcNow() ?? DateTimeOffset.UtcNow;
 

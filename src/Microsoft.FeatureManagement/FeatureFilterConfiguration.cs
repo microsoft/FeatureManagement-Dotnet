@@ -27,6 +27,6 @@ namespace Microsoft.FeatureManagement
         /// instead of constructing an <see cref="IConfiguration"/> instance.
         /// When set, feature filters should prefer this over <see cref="Parameters"/>.
         /// </summary>
-        public object ParameterObject { get; set; }
+        public object ParametersObject { get; set; }
     }
 }
