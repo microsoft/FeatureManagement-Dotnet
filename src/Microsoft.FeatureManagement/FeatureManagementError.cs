@@ -31,11 +31,6 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The given configuration setting was invalid.
         /// </summary>
-        InvalidConfigurationSetting,
-
-        /// <summary>
-        /// The <see cref="FeatureFilterConfiguration.ParametersObject"/> provided for a feature filter is not of the expected type.
-        /// </summary>
-        InvalidParametersObject
+        InvalidConfigurationSetting
     }
 }

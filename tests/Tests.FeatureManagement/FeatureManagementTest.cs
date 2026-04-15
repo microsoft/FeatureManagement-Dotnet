@@ -1890,9 +1890,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(() => featureManager.IsEnabledAsync("BadFeature"));
-
-            Assert.Equal(FeatureManagementError.InvalidParametersObject, e.Error);
+            await Assert.ThrowsAsync<ArgumentException>(() => featureManager.IsEnabledAsync("BadFeature"));
         }
 
         [Fact]
@@ -1925,9 +1923,7 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            FeatureManagementException e = await Assert.ThrowsAsync<FeatureManagementException>(() => featureManager.IsEnabledAsync("BadFeature"));
-
-            Assert.Equal(FeatureManagementError.InvalidParametersObject, e.Error);
+            await Assert.ThrowsAsync<ArgumentException>(() => featureManager.IsEnabledAsync("BadFeature"));
         }
     }
 

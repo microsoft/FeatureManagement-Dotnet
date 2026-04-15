@@ -22,7 +22,7 @@ namespace Microsoft.FeatureManagement
         public IConfiguration Parameters { get; set; }
 
         /// <summary>
-        /// The settings provided for the feature filter to use when evaluating whether the feature should be enabled. This property takes precedence over Parameters if both are provided.
+        /// The settings provided for the feature filter to use when evaluating whether the feature should be enabled. This property takes precedence over <see cref="Settings"/> if both are provided.
         /// </summary>
         public object ParametersObject { get; set; }
 

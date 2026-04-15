@@ -22,7 +22,7 @@ namespace Microsoft.FeatureManagement
         public IConfiguration Parameters { get; set; } = new ConfigurationRoot(new List<IConfigurationProvider>());
 
         /// <summary>
-        /// A strongly-typed parameter object that can be used as an alternative to <see cref="Parameters"/>.
+        /// A parameter object that can be used as an alternative to <see cref="Parameters"/>.
         /// Custom <see cref="IFeatureDefinitionProvider"/> implementations can populate this property directly
         /// instead of constructing an <see cref="IConfiguration"/> instance.
         /// When set, feature filters should prefer this over <see cref="Parameters"/>.
