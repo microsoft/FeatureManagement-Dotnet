@@ -967,10 +967,10 @@ namespace Tests.FeatureManagement
             FeatureFilterConfiguration testFilterConfiguration = new FeatureFilterConfiguration
             {
                 Name = "Test",
-                Parameters = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()
+                Parameters = new ConfigurationWrapper(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()
                 {
                     { "P1", "V1" },
-                }).Build()
+                }).Build())
             };
 
             var services = new ServiceCollection();
@@ -1039,7 +1039,7 @@ namespace Tests.FeatureManagement
 
             //
             // Cache break.
-            testFilterConfiguration.Parameters = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()).Build();
+            testFilterConfiguration.Parameters = new ConfigurationWrapper(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()).Build());
 
             binderCalled = false;
 
