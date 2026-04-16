@@ -498,6 +498,7 @@ namespace Microsoft.FeatureManagement
                     {
                         FeatureName = featureDefinition.Name,
                         Parameters = featureFilterConfiguration.Parameters,
+                        ParametersObject = featureFilterConfiguration.ParametersObject,
                         CancellationToken = cancellationToken
                     };
 
