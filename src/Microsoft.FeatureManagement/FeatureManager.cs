@@ -498,6 +498,7 @@ namespace Microsoft.FeatureManagement
                     {
                         FeatureName = featureDefinition.Name,
                         Parameters = featureFilterConfiguration.Parameters,
+                        ParametersObject = featureFilterConfiguration.ParametersObject,
                         CancellationToken = cancellationToken
                     };
 
@@ -680,7 +681,7 @@ namespace Microsoft.FeatureManagement
                 return;
             }
 
-            if (!(_featureDefinitionProvider is IFeatureDefinitionProviderCacheable) || Cache == null)
+            if (!(context.Parameters is ConfigurationWrapper) || Cache == null)
             {
                 context.Settings = binder.BindParameters(context.Parameters);
 
