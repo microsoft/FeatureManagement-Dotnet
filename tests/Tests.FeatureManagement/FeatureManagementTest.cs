@@ -796,7 +796,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task RequirementTypeAllExceptions()
+        public async Task RequirementTypeAllWithIgnoreMissingFeatureFilters()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
@@ -816,12 +816,12 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
+            //
+            // AllFilterFeature has RequirementType.All with missing filters.
+            // With IgnoreMissingFeatureFilters enabled, the feature should be treated as disabled.
             string allFilterFeature = Features.AllFilterFeature;
 
-            await Assert.ThrowsAsync<FeatureManagementException>(async () =>
-            {
-                await featureManager.IsEnabledAsync(allFilterFeature);
-            });
+            Assert.False(await featureManager.IsEnabledAsync(allFilterFeature));
         }
 
         [Fact]
