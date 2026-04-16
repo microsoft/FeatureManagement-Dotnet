@@ -53,7 +53,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Check if ParametersObject available (takes precedence), then prebound settings, otherwise bind from parameters.
             PercentageFilterSettings settings;
 
-            if (context.ParametersObject != null && !(context.ParametersObject is PercentageFilterSettings parametersObject))
+            if (context.ParametersObject != null && !(context.ParametersObject is PercentageFilterSettings))
             {
                 throw new ArgumentException(
                     $"The '{Alias}' feature filter for feature '{context.FeatureName}' has a {nameof(context.ParametersObject)} of type '{context.ParametersObject.GetType()}', but expected '{typeof(PercentageFilterSettings)}'.",

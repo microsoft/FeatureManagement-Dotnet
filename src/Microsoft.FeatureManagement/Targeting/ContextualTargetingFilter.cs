@@ -71,7 +71,7 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             // Check if ParametersObject available (takes precedence), then prebound settings, otherwise bind from parameters.
             TargetingFilterSettings settings;
 
-            if (context.ParametersObject != null && !(context.ParametersObject is TargetingFilterSettings parametersObject))
+            if (context.ParametersObject != null && !(context.ParametersObject is TargetingFilterSettings))
             {
                 throw new ArgumentException(
                     $"The '{Alias}' feature filter for feature '{context.FeatureName}' has a {nameof(context.ParametersObject)} of type '{context.ParametersObject.GetType()}', but expected '{typeof(TargetingFilterSettings)}'.",
