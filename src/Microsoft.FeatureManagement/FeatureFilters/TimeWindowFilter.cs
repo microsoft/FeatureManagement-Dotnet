@@ -70,18 +70,16 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 throw new ArgumentNullException(nameof(context));
             }
 
-            //
-            // Check if ParametersObject available (takes precedence), then prebound settings, otherwise bind from parameters.
-            TimeWindowFilterSettings settings;
-
-            if (context.ParametersObject != null && !(context.ParametersObject is TimeWindowFilterSettings))
+            if (context.Settings != null && !(context.Settings is TimeWindowFilterSettings))
             {
                 throw new ArgumentException(
-                    $"The '{Alias}' feature filter for feature '{context.FeatureName}' has a {nameof(context.ParametersObject)} of type '{context.ParametersObject.GetType()}', but expected '{typeof(TimeWindowFilterSettings)}'.",
-                    nameof(context.ParametersObject));
+                    $"The '{Alias}' feature filter for feature '{context.FeatureName}' has a {nameof(context.Settings)} value of type '{context.Settings.GetType()}', but expected '{typeof(TimeWindowFilterSettings)}'.",
+                    nameof(context.Settings));
             }
 
-            settings = (TimeWindowFilterSettings)context.ParametersObject ?? (TimeWindowFilterSettings)context.Settings ?? (TimeWindowFilterSettings)BindParameters(context.Parameters);
+            //
+            // Check if prebound settings available, otherwise bind from parameters.
+            TimeWindowFilterSettings settings = (TimeWindowFilterSettings)context.Settings ?? (TimeWindowFilterSettings)BindParameters(context.Parameters);
 
             DateTimeOffset now = SystemClock?.GetUtcNow() ?? DateTimeOffset.UtcNow;
 
