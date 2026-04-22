@@ -17,11 +17,8 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// A feature definition provider that pulls feature definitions from the .NET Core <see cref="IConfiguration"/> system.
     /// </summary>
-    public sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable, IFeatureDefinitionProviderCacheable
+    public sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable
     {
-        //
-        // IFeatureDefinitionProviderCacheable interface is only used to mark this provider as cacheable. This allows our test suite's
-        // provider to be marked for caching as well.
         private readonly IConfiguration _configuration;
         private readonly ConfigurationFeatureDefinitionProviderOptions _options;
         private IEnumerable<IConfigurationSection> _dotnetFeatureDefinitionSections;
@@ -38,10 +35,18 @@ namespace Microsoft.FeatureManagement
         /// Creates a configuration feature definition provider.
         /// </summary>
         /// <param name="configuration">The configuration of feature definitions.</param>
+        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration) : this(configuration, null)
+        {
+        }
+
+        /// <summary>
+        /// Creates a configuration feature definition provider.
+        /// </summary>
+        /// <param name="configuration">The configuration of feature definitions.</param>
         /// <param name="options">The options for the configuration feature definition provider.</param>
         public ConfigurationFeatureDefinitionProvider(
             IConfiguration configuration,
-            ConfigurationFeatureDefinitionProviderOptions options = null)
+            ConfigurationFeatureDefinitionProviderOptions options)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _options = options ?? new ConfigurationFeatureDefinitionProviderOptions();

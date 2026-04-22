@@ -355,20 +355,34 @@ namespace Microsoft.FeatureManagement
                     }
                 }
 
-                if (_sessionManagers != null)
-                {
-                    foreach (ISessionManager sessionManager in _sessionManagers)
-                    {
-                        await sessionManager.SetAsync(evaluationEvent.FeatureDefinition.Name, evaluationEvent.Enabled).ConfigureAwait(false);
-                    }
-                }
-
                 // Only add an activity event if telemetry is enabled for the feature and the activity is valid
                 if (telemetryEnabled &&
                     Activity.Current != null &&
                     Activity.Current.IsAllDataRequested)
                 {
                     FeatureEvaluationTelemetry.Publish(evaluationEvent, Logger);
+                }
+            }
+            else if (_sessionManagers != null)
+            {
+                foreach (ISessionManager sessionManager in _sessionManagers)
+                {
+                    bool? readSessionResult = await sessionManager.GetAsync(feature).ConfigureAwait(false);
+
+                    if (readSessionResult.HasValue)
+                    {
+                        evaluationEvent.Enabled = readSessionResult.Value;
+
+                        break;
+                    }
+                }
+            }
+
+            if (_sessionManagers != null)
+            {
+                foreach (ISessionManager sessionManager in _sessionManagers)
+                {
+                    await sessionManager.SetAsync(feature, evaluationEvent.Enabled).ConfigureAwait(false);
                 }
             }
 
@@ -404,15 +418,6 @@ namespace Microsoft.FeatureManagement
             }
             else
             {
-                //
-                // Ensure no conflicts in the feature definition
-                if (featureDefinition.RequirementType == RequirementType.All && _options.IgnoreMissingFeatureFilters)
-                {
-                    throw new FeatureManagementException(
-                        FeatureManagementError.Conflict,
-                        $"The 'IgnoreMissingFeatureFilters' flag cannot be used in combination with a feature of requirement type 'All'.");
-                }
-
                 //
                 // If the requirement type is all, we default to true. Requirement type All will end on a false
                 enabled = featureDefinition.RequirementType == RequirementType.All;
@@ -477,6 +482,15 @@ namespace Microsoft.FeatureManagement
 
                         Logger?.LogWarning(FeatureFilterNotFoundError, featureFilterConfiguration.Name, featureDefinition.Name);
 
+                        //
+                        // If requirement type is All, a missing filter means the feature cannot be enabled
+                        if (featureDefinition.RequirementType == RequirementType.All)
+                        {
+                            enabled = false;
+
+                            break;
+                        }
+
                         continue;
                     }
 
@@ -484,6 +498,7 @@ namespace Microsoft.FeatureManagement
                     {
                         FeatureName = featureDefinition.Name,
                         Parameters = featureFilterConfiguration.Parameters,
+                        ParametersObject = featureFilterConfiguration.ParametersObject,
                         CancellationToken = cancellationToken
                     };
 
@@ -666,7 +681,7 @@ namespace Microsoft.FeatureManagement
                 return;
             }
 
-            if (!(_featureDefinitionProvider is IFeatureDefinitionProviderCacheable) || Cache == null)
+            if (!(context.Parameters is ConfigurationWrapper) || Cache == null)
             {
                 context.Settings = binder.BindParameters(context.Parameters);
 
