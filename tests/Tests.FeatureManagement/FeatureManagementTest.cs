@@ -1925,6 +1925,121 @@ namespace Tests.FeatureManagement
 
             await Assert.ThrowsAsync<ArgumentException>(() => featureManager.IsEnabledAsync("BadFeature"));
         }
+
+        [Fact]
+        public async Task TargetingFilterUsesParametersObject()
+        {
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = "TargetingFeature",
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            new FeatureFilterConfiguration
+                            {
+                                Name = "Microsoft.Targeting",
+                                ParametersObject = new TargetingFilterSettings
+                                {
+                                    Audience = new Audience
+                                    {
+                                        Users = new List<string> { "Jeff" },
+                                        Groups = new List<GroupRollout>
+                                        {
+                                            new GroupRollout
+                                            {
+                                                Name = "Ring1",
+                                                RolloutPercentage = 100
+                                            }
+                                        },
+                                        DefaultRolloutPercentage = 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            //
+            // Targeted user should be enabled
+            var targetingContext = new TargetingContext
+            {
+                UserId = "Jeff",
+                Groups = new List<string> { "Ring0" }
+            };
+
+            Assert.True(await featureManager.IsEnabledAsync("TargetingFeature", targetingContext));
+
+            //
+            // User in targeted group should be enabled
+            targetingContext = new TargetingContext
+            {
+                UserId = "NotTargeted",
+                Groups = new List<string> { "Ring1" }
+            };
+
+            Assert.True(await featureManager.IsEnabledAsync("TargetingFeature", targetingContext));
+
+            //
+            // Non-targeted user should be disabled (0% default rollout)
+            targetingContext = new TargetingContext
+            {
+                UserId = "NotTargeted",
+                Groups = new List<string> { "Ring0" }
+            };
+
+            Assert.False(await featureManager.IsEnabledAsync("TargetingFeature", targetingContext));
+        }
+
+        [Fact]
+        public async Task TargetingFilterThrowsOnInvalidParametersObjectType()
+        {
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = "BadFeature",
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            new FeatureFilterConfiguration
+                            {
+                                Name = "Microsoft.Targeting",
+                                ParametersObject = "wrong type"
+                            }
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            var targetingContext = new TargetingContext
+            {
+                UserId = "Jeff",
+                Groups = new List<string>()
+            };
+
+            await Assert.ThrowsAsync<ArgumentException>(() => featureManager.IsEnabledAsync("BadFeature", targetingContext).AsTask());
+        }
     }
 
     public class FeatureManagementVariantTest

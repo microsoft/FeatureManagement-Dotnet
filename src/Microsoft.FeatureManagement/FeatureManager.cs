@@ -681,6 +681,12 @@ namespace Microsoft.FeatureManagement
                 return;
             }
 
+            // Skip parameter binding if the provider has already supplied a parameters object.
+            if (context.ParametersObject != null)
+            {
+                return;
+            }
+
             if (!(context.Parameters is ConfigurationWrapper) || Cache == null)
             {
                 context.Settings = binder.BindParameters(context.Parameters);
