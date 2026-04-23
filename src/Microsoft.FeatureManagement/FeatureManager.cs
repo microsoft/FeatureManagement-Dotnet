@@ -498,11 +498,14 @@ namespace Microsoft.FeatureManagement
                     {
                         FeatureName = featureDefinition.Name,
                         Parameters = featureFilterConfiguration.Parameters,
-                        ParametersObject = featureFilterConfiguration.ParametersObject,
+                        Settings = featureFilterConfiguration.ParametersObject,
                         CancellationToken = cancellationToken
                     };
 
-                    BindSettings(filter, context, filterIndex);
+                    if (context.Settings == null)
+                    {
+                        BindSettings(filter, context, filterIndex);
+                    }
 
                     //
                     // IContextualFeatureFilter
@@ -677,6 +680,12 @@ namespace Microsoft.FeatureManagement
         private void BindSettings(IFeatureFilterMetadata filter, FeatureFilterEvaluationContext context, int filterIndex)
         {
             if (!(filter is IFilterParametersBinder binder))
+            {
+                return;
+            }
+
+            // Skip parameter binding if the provider has already supplied a parameters object.
+            if (context.Settings != null)
             {
                 return;
             }
