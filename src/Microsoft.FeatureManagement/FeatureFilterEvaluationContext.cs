@@ -22,13 +22,12 @@ namespace Microsoft.FeatureManagement
         public IConfiguration Parameters { get; set; }
 
         /// <summary>
-        /// The settings provided for the feature filter to use when evaluating whether the feature should be enabled. This property takes precedence over <see cref="Settings"/> and <see cref="Parameters"/> if both are provided.
-        /// </summary>
-        public object ParametersObject { get; set; }
-
-        /// <summary>
-        /// A settings object, if any, that has been pre-bound from <see cref="Parameters"/>.
-        /// The settings are made available for <see cref="IFeatureFilter"/>s that implement <see cref="IFilterParametersBinder"/>.
+        /// A settings object, if any, provided for the feature filter to use when evaluating whether the feature should be enabled.
+        /// This property is populated in two cases:
+        /// <list type="bullet">
+        /// <item>For features that provide parameters as an object, via <see cref="FeatureFilterConfiguration.ParametersObject"/>.</item>
+        /// <item>For <see cref="IFeatureFilter"/>s that implement <see cref="IFilterParametersBinder"/>.</item>
+        /// </list>
         /// </summary>
         public object Settings { get; set; }
 

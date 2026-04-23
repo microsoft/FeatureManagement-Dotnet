@@ -49,18 +49,16 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 throw new ArgumentNullException(nameof(context));
             }
 
-            //
-            // Check if ParametersObject available (takes precedence), then prebound settings, otherwise bind from parameters.
-            PercentageFilterSettings settings;
-
-            if (context.ParametersObject != null && !(context.ParametersObject is PercentageFilterSettings))
+            if (context.Settings != null && !(context.Settings is PercentageFilterSettings))
             {
                 throw new ArgumentException(
-                    $"The '{Alias}' feature filter for feature '{context.FeatureName}' has a {nameof(context.ParametersObject)} of type '{context.ParametersObject.GetType()}', but expected '{typeof(PercentageFilterSettings)}'.",
-                    nameof(context.ParametersObject));
+                    $"The '{Alias}' feature filter for feature '{context.FeatureName}' has a {nameof(context.Settings)} value of type '{context.Settings.GetType()}', but expected '{typeof(PercentageFilterSettings)}'.",
+                    nameof(context.Settings));
             }
 
-            settings = (PercentageFilterSettings)context.ParametersObject ?? (PercentageFilterSettings)context.Settings ?? (PercentageFilterSettings)BindParameters(context.Parameters);
+            //
+            // Check if prebound settings available, otherwise bind from parameters.
+            PercentageFilterSettings settings = (PercentageFilterSettings)context.Settings ?? (PercentageFilterSettings)BindParameters(context.Parameters);
 
             bool result = true;
 
