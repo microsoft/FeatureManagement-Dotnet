@@ -685,9 +685,8 @@ namespace Microsoft.FeatureManagement
             }
 
             // Skip parameter binding if the provider has already supplied a parameters object.
-            if (context.ParametersObject != null)
+            if (context.Settings != null)
             {
-                context.Settings = context.ParametersObject;
                 return;
             }
 
