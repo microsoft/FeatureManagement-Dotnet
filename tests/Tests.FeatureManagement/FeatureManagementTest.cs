@@ -1094,9 +1094,9 @@ namespace Tests.FeatureManagement
             testFeatureFilter.Callback = (evaluationContext) =>
             {
                 //
-                // When ParametersObject is set, it should be available on the context
-                // so custom filters can use it with their own precedence logic.
-                Assert.Same(parameterObject, evaluationContext.ParametersObject);
+                // When ParametersObject is set, it should be available on the context via settings
+                // so custom filters can use it.
+                Assert.Same(parameterObject, evaluationContext.Settings);
 
                 return Task.FromResult(true);
             };
@@ -1157,7 +1157,6 @@ namespace Tests.FeatureManagement
                 //
                 // When ParametersObject is null, Settings should be populated
                 // by IFilterParametersBinder as usual.
-                Assert.Null(evaluationContext.ParametersObject);
                 Assert.NotNull(evaluationContext.Settings);
 
                 return Task.FromResult(true);

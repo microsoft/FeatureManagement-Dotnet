@@ -498,11 +498,14 @@ namespace Microsoft.FeatureManagement
                     {
                         FeatureName = featureDefinition.Name,
                         Parameters = featureFilterConfiguration.Parameters,
-                        ParametersObject = featureFilterConfiguration.ParametersObject,
+                        Settings = featureFilterConfiguration.ParametersObject,
                         CancellationToken = cancellationToken
                     };
 
-                    BindSettings(filter, context, filterIndex);
+                    if (context.Settings == null)
+                    {
+                        BindSettings(filter, context, filterIndex);
+                    }
 
                     //
                     // IContextualFeatureFilter
