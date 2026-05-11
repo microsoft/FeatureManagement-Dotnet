@@ -29,5 +29,5 @@ This eliminates the need for verbose `IConfiguration` construction with magic st
 ## Running
 
 ```
-dotnet run
+dotnet run --project examples/ParametersObjectConsoleApp/ParametersObjectConsoleApp.csproj
 ```

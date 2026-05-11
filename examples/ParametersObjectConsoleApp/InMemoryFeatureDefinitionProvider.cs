@@ -3,7 +3,7 @@
 //
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
-namespace ParameterObjectConsoleApp
+namespace ParametersObjectConsoleApp
 {
     /// <summary>
     /// A custom feature definition provider that supplies targeting filter settings

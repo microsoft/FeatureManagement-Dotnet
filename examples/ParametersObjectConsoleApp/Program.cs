@@ -3,7 +3,7 @@
 //
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.FeatureFilters;
-using ParameterObjectConsoleApp;
+using ParametersObjectConsoleApp;
 
 //
 // Create a feature manager using a custom definition provider
