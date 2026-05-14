@@ -524,12 +524,12 @@ namespace Tests.FeatureManagement
              * Feature1: true
              * Feature2: true
              * FeatureA: true
-             * 
+             *
              * appsettings2.json
              * Feature1: true
              * Feature2: false
              * FeatureB: true
-             * 
+             *
              * appsettings3.json
              * Feature1: false
              * Feature2: false
@@ -2166,9 +2166,9 @@ namespace Tests.FeatureManagement
 
             IServiceCollection services = new ServiceCollection();
 
-            services.AddSingleton<IAlgorithm, AlgorithmBeta>();
-            services.AddSingleton<IAlgorithm, AlgorithmSigma>();
-            services.AddSingleton<IAlgorithm>(sp => new AlgorithmOmega("OMEGA"));
+            services.AddKeyedSingleton<IAlgorithm, AlgorithmBeta>(nameof(AlgorithmBeta));
+            services.AddKeyedSingleton<IAlgorithm, AlgorithmSigma>(nameof(AlgorithmSigma));
+            services.AddKeyedSingleton<IAlgorithm>("Omega", (sp, _) => new AlgorithmOmega("OMEGA"));
 
             services.AddSingleton(configuration)
                 .AddFeatureManagement()
@@ -2180,6 +2180,83 @@ namespace Tests.FeatureManagement
             services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor);
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            IVariantServiceProvider<IAlgorithm> featuredAlgorithm = serviceProvider.GetRequiredService<IVariantServiceProvider<IAlgorithm>>();
+
+            targetingContextAccessor.Current = new TargetingContext
+            {
+                UserId = "Guest"
+            };
+
+            IAlgorithm algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+
+            Assert.Null(algorithm);
+
+            targetingContextAccessor.Current = new TargetingContext
+            {
+                UserId = "UserSigma"
+            };
+
+            algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+
+            Assert.Null(algorithm);
+
+            targetingContextAccessor.Current = new TargetingContext
+            {
+                UserId = "UserBeta"
+            };
+
+            algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+
+            Assert.NotNull(algorithm);
+            Assert.Equal("Beta", algorithm.Style);
+
+            targetingContextAccessor.Current = new TargetingContext
+            {
+                UserId = "UserOmega"
+            };
+
+            algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+
+            Assert.NotNull(algorithm);
+            Assert.Equal("OMEGA", algorithm.Style);
+
+            services = new ServiceCollection();
+
+            Assert.Throws<InvalidOperationException>(() =>
+                {
+                    services.AddFeatureManagement()
+                        .WithVariantService<IAlgorithm>("DummyFeature1")
+                        .WithVariantService<IAlgorithm>("DummyFeature2");
+                }
+            );
+        }
+
+        [Fact]
+        public async Task VariantBasedInjectionScoped()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            IServiceCollection services = new ServiceCollection();
+
+            services.AddKeyedScoped<IAlgorithm, AlgorithmBeta>(nameof(AlgorithmBeta));
+            services.AddKeyedScoped<IAlgorithm, AlgorithmSigma>(nameof(AlgorithmSigma));
+            services.AddKeyedScoped<IAlgorithm>("Omega", (sp, _) => new AlgorithmOmega("OMEGA"));
+
+            services.AddSingleton(configuration)
+                .AddScopedFeatureManagement()
+                .AddFeatureFilter<TargetingFilter>()
+                .WithVariantService<IAlgorithm>(Features.VariantImplementationFeature);
+
+            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
+
+            services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor);
+
+            var serviceProvider = services.BuildServiceProvider().CreateScope().ServiceProvider;
 
             IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
 

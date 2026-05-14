@@ -1,11 +1,11 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,7 +16,7 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     internal class VariantServiceProvider<TService> : IVariantServiceProvider<TService> where TService : class
     {
-        private readonly IEnumerable<TService> _services;
+        private readonly IServiceProvider _serviceProvider;
         private readonly IVariantFeatureManager _featureManager;
         private readonly string _featureName;
         private readonly ConcurrentDictionary<string, TService> _variantServiceCache;
@@ -26,15 +26,15 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="featureName">The feature flag that should be used to determine which variant of the service should be used.</param>
         /// <param name="featureManager">The feature manager to get the assigned variant of the feature flag.</param>
-        /// <param name="services">Implementation variants of TService.</param>
+        /// <param name="keyedServiceProvider">Access to Implementation variants of TService.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureName"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureManager"/> is null.</exception>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="services"/> is null.</exception>
-        public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IEnumerable<TService> services)
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="keyedServiceProvider"/> is null.</exception>
+        public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IServiceProvider keyedServiceProvider)
         {
             _featureName = featureName ?? throw new ArgumentNullException(nameof(featureName));
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
-            _services = services ?? throw new ArgumentNullException(nameof(services));
+            _serviceProvider = keyedServiceProvider ?? throw new ArgumentNullException(nameof(keyedServiceProvider));
             _variantServiceCache = new ConcurrentDictionary<string, TService>();
         }
 
@@ -55,26 +55,10 @@ namespace Microsoft.FeatureManagement
             {
                 implementation = _variantServiceCache.GetOrAdd(
                     variant.Name,
-                    (_) => _services.FirstOrDefault(
-                        service => IsMatchingVariantName(
-                            service.GetType(),
-                            variant.Name))
-                );
+                    key => _serviceProvider.GetKeyedService<TService>(key));
             }
 
             return implementation;
-        }
-
-        private bool IsMatchingVariantName(Type implementationType, string variantName)
-        {
-            string implementationName = ((VariantServiceAliasAttribute)Attribute.GetCustomAttribute(implementationType, typeof(VariantServiceAliasAttribute)))?.Alias;
-
-            if (implementationName == null)
-            {
-                implementationName = implementationType.Name;
-            }
-
-            return string.Equals(implementationName, variantName, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
