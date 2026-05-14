@@ -26,15 +26,15 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="featureName">The feature flag that should be used to determine which variant of the service should be used.</param>
         /// <param name="featureManager">The feature manager to get the assigned variant of the feature flag.</param>
-        /// <param name="keyedServiceProvider">Access to Implementation variants of TService.</param>
+        /// <param name="serviceProvider">Access to Implementation variants of TService.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureName"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureManager"/> is null.</exception>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="keyedServiceProvider"/> is null.</exception>
-        public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IServiceProvider keyedServiceProvider)
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="serviceProvider"/> is null.</exception>
+        public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IServiceProvider serviceProvider)
         {
             _featureName = featureName ?? throw new ArgumentNullException(nameof(featureName));
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
-            _serviceProvider = keyedServiceProvider ?? throw new ArgumentNullException(nameof(keyedServiceProvider));
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _variantServiceCache = new ConcurrentDictionary<string, TService>();
         }
 
