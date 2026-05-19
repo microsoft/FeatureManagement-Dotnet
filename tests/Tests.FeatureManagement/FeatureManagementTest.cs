@@ -2166,9 +2166,9 @@ namespace Tests.FeatureManagement
 
             IServiceCollection services = new ServiceCollection();
 
-            services.AddKeyedSingleton<IAlgorithm, AlgorithmBeta>(nameof(AlgorithmBeta));
-            services.AddKeyedSingleton<IAlgorithm, AlgorithmSigma>(nameof(AlgorithmSigma));
-            services.AddKeyedSingleton<IAlgorithm>("Omega", (sp, _) => new AlgorithmOmega("OMEGA"));
+            services.AddSingleton<IAlgorithm, AlgorithmBeta>();
+            services.AddSingleton<IAlgorithm, AlgorithmSigma>();
+            services.AddSingleton<IAlgorithm>(sp => new AlgorithmOmega("OMEGA"));
 
             services.AddSingleton(configuration)
                 .AddFeatureManagement()
@@ -2235,7 +2235,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task VariantBasedInjectionScoped()
+        public async Task LazyVariantBasedInjectionScoped()
         {
             IConfiguration configuration = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json")
@@ -2250,7 +2250,7 @@ namespace Tests.FeatureManagement
             services.AddSingleton(configuration)
                 .AddScopedFeatureManagement()
                 .AddFeatureFilter<TargetingFilter>()
-                .WithVariantService<IAlgorithm>(Features.VariantImplementationFeature);
+                .WithLazyVariantService<IAlgorithm>(Features.VariantImplementationFeature);
 
             var targetingContextAccessor = new OnDemandTargetingContextAccessor();
 
