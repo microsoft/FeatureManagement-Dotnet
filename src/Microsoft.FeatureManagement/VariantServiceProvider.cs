@@ -12,7 +12,8 @@ using System.Threading.Tasks;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// Used to get different implementations of TService depending on the assigned variant from a specific variant feature flag.
+    /// Used to get different implementations of TService depending on the assigned variant from a specific variant feature flag.<br/>
+    /// All implementations are loaded into memory by default.
     /// </summary>
     internal class VariantServiceProvider<TService> : IVariantServiceProvider<TService> where TService : class
     {
