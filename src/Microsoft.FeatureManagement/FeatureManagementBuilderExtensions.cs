@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Microsoft.FeatureManagement
@@ -57,19 +58,20 @@ namespace Microsoft.FeatureManagement
                 throw new InvalidOperationException($"A variant service of {typeof(TService).FullName} has already been added.");
             }
 
-            var variantSpLifetime = builder.Services
-                .Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) &&
-                                   descriptor.Lifetime == ServiceLifetime.Scoped)
-                ? ServiceLifetime.Scoped
-                : ServiceLifetime.Singleton;
-            builder.Services.Add(
-                ServiceDescriptor.Describe(
-                    typeof(IVariantServiceProvider<TService>),
-                    sp => new VariantServiceProvider<TService>(
-                        featureName,
-                        sp.GetRequiredService<IVariantFeatureManager>(),
-                        sp),
-                    variantSpLifetime));
+            if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
+            {
+                builder.Services.AddScoped<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
+                    featureName,
+                    sp.GetRequiredService<IVariantFeatureManager>(),
+                    sp.GetRequiredService<IEnumerable<TService>>()));
+            }
+            else
+            {
+                builder.Services.AddSingleton<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
+                    featureName,
+                    sp.GetRequiredService<IVariantFeatureManager>(),
+                    sp.GetRequiredService<IEnumerable<TService>>()));
+            }
 
             return builder;
         }
