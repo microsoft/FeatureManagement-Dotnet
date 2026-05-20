@@ -16,7 +16,7 @@
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>..\..\build\Microsoft.FeatureManagement.snk</AssemblyOriginatorKeyFile>
-    <!-- Microsoft.FeatureManagement uses the feature of async streams which is not supported in versions of C# earlier than 8.0. 
+    <!-- Microsoft.FeatureManagement uses the feature of async streams which is not supported in versions of C# earlier than 8.0.
         The library targets on netstandard 2.0. To ensure compatibility, the minimum language version requirement should be maintained. -->
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
@@ -44,7 +44,6 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.2" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
   </ItemGroup>
