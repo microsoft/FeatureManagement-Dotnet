@@ -17,7 +17,7 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     internal class LazyVariantServiceProvider<TService> : IVariantServiceProvider<TService> where TService : class
     {
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IKeyedServiceProvider _serviceProvider;
         private readonly IVariantFeatureManager _featureManager;
         private readonly string _featureName;
         private readonly ConcurrentDictionary<string, TService> _variantServiceCache;
@@ -31,7 +31,7 @@ namespace Microsoft.FeatureManagement
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureName"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureManager"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="serviceProvider"/> is null.</exception>
-        public LazyVariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IServiceProvider serviceProvider)
+        public LazyVariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IKeyedServiceProvider serviceProvider)
         {
             _featureName = featureName ?? throw new ArgumentNullException(nameof(featureName));
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));

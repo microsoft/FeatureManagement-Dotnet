@@ -2250,7 +2250,7 @@ namespace Tests.FeatureManagement
             services.AddSingleton(configuration)
                 .AddScopedFeatureManagement()
                 .AddFeatureFilter<TargetingFilter>()
-                .WithLazyVariantService<IAlgorithm>(Features.VariantImplementationFeature);
+                .WithVariantService<IAlgorithm>(Features.VariantImplementationFeature, useKeyedService: true);
 
             var targetingContextAccessor = new OnDemandTargetingContextAccessor();
 
