@@ -19,10 +19,11 @@ builder.Services.AddAuthentication("CookieAuth");
 builder.Services.AddApplicationInsightsTelemetry();
 
 //
-// Add variant implementations of ICalculator
-builder.Services.AddSingleton<ICalculator, DefaultCalculator>();
+// Add variant implementations of ICalculator using keyed services so that only the
+// implementation matching the assigned variant is instantiated on demand.
+builder.Services.AddKeyedSingleton<ICalculator, DefaultCalculator>("DefaultCalculator");
 
-builder.Services.AddSingleton<ICalculator, RemoteCalculator>();
+builder.Services.AddKeyedSingleton<ICalculator, RemoteCalculator>("RemoteCalculator");
 
 //
 // Enter feature management

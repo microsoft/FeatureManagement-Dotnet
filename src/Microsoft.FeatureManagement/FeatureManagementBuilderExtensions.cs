@@ -63,14 +63,14 @@ namespace Microsoft.FeatureManagement
                 builder.Services.AddScoped<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
                     featureName,
                     sp.GetRequiredService<IVariantFeatureManager>(),
-                    sp.GetRequiredService<IEnumerable<TService>>()));
+                    sp));
             }
             else
             {
                 builder.Services.AddSingleton<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
                     featureName,
                     sp.GetRequiredService<IVariantFeatureManager>(),
-                    sp.GetRequiredService<IEnumerable<TService>>()));
+                    sp));
             }
 
             return builder;
