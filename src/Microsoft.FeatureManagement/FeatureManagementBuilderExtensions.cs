@@ -48,6 +48,21 @@ namespace Microsoft.FeatureManagement
         /// <exception cref="InvalidOperationException">Thrown if a variant service of the type has already been added.</exception>
         public static IFeatureManagementBuilder WithVariantService<TService>(this IFeatureManagementBuilder builder, string featureName) where TService : class
         {
+            return WithVariantService<TService>(builder, featureName, VariantServiceMatch.Variant);
+        }
+
+        /// <summary>
+        /// Adds a <see cref="VariantServiceProvider{TService}"/> to the feature management system that selects the implementation
+        /// by either the assigned variant name or the enabled status of the feature flag.
+        /// </summary>
+        /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
+        /// <param name="featureName">The feature flag that should be used to determine which implementation of the service should be used.</param>
+        /// <param name="matchMode">Describes whether the implementation is matched by variant name or by feature flag status.</param>
+        /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if feature name parameter is null.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if a variant service of the type has already been added.</exception>
+        public static IFeatureManagementBuilder WithVariantService<TService>(this IFeatureManagementBuilder builder, string featureName, VariantServiceMatch matchMode) where TService : class
+        {
             if (string.IsNullOrEmpty(featureName))
             {
                 throw new ArgumentNullException(nameof(featureName));
@@ -63,14 +78,16 @@ namespace Microsoft.FeatureManagement
                 builder.Services.AddScoped<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
                     featureName,
                     sp.GetRequiredService<IVariantFeatureManager>(),
-                    sp));
+                    sp,
+                    matchMode));
             }
             else
             {
                 builder.Services.AddSingleton<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
                     featureName,
                     sp.GetRequiredService<IVariantFeatureManager>(),
-                    sp));
+                    sp,
+                    matchMode));
             }
 
             return builder;

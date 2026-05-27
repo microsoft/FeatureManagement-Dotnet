@@ -37,4 +37,16 @@ namespace Tests.FeatureManagement
             Style = style;
         }
     }
+
+    [VariantServiceAlias(true)]
+    class EnabledAlgorithm : IAlgorithm
+    {
+        public string Style { get; } = "Enabled";
+    }
+
+    [VariantServiceAlias(false)]
+    class DisabledAlgorithm : IAlgorithm
+    {
+        public string Style { get; } = "Disabled";
+    }
 }

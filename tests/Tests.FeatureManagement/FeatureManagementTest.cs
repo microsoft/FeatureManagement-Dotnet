@@ -2386,6 +2386,116 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task VariantServiceProviderResolvesByFlagStatusWithKeyedServices()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            IServiceCollection enabledServices = new ServiceCollection();
+
+            enabledServices.AddKeyedSingleton<IAlgorithm, EnabledAlgorithm>(true);
+            enabledServices.AddKeyedSingleton<IAlgorithm, DisabledAlgorithm>(false);
+
+            enabledServices.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .WithVariantService<IAlgorithm>(Features.OnTestFeature, VariantServiceMatch.Status);
+
+            ServiceProvider enabledServiceProvider = enabledServices.BuildServiceProvider();
+
+            IVariantServiceProvider<IAlgorithm> enabledFeaturedAlgorithm = enabledServiceProvider.GetRequiredService<IVariantServiceProvider<IAlgorithm>>();
+
+            IAlgorithm algorithm = await enabledFeaturedAlgorithm.GetServiceAsync(CancellationToken.None);
+            Assert.NotNull(algorithm);
+            Assert.Equal("Enabled", algorithm.Style);
+
+            IServiceCollection disabledServices = new ServiceCollection();
+
+            disabledServices.AddKeyedSingleton<IAlgorithm, EnabledAlgorithm>(true);
+            disabledServices.AddKeyedSingleton<IAlgorithm, DisabledAlgorithm>(false);
+
+            disabledServices.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .WithVariantService<IAlgorithm>(Features.OffTestFeature, VariantServiceMatch.Status);
+
+            ServiceProvider disabledServiceProvider = disabledServices.BuildServiceProvider();
+
+            IVariantServiceProvider<IAlgorithm> disabledFeaturedAlgorithm = disabledServiceProvider.GetRequiredService<IVariantServiceProvider<IAlgorithm>>();
+
+            algorithm = await disabledFeaturedAlgorithm.GetServiceAsync(CancellationToken.None);
+            Assert.NotNull(algorithm);
+            Assert.Equal("Disabled", algorithm.Style);
+        }
+
+        [Fact]
+        public async Task VariantServiceProviderResolvesByFlagStatusWithAliasAttribute()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            IServiceCollection enabledServices = new ServiceCollection();
+
+            //
+            // Non-keyed registrations; matching relies on [VariantServiceAlias(bool)] attributes.
+            enabledServices.AddSingleton<IAlgorithm, EnabledAlgorithm>();
+            enabledServices.AddSingleton<IAlgorithm, DisabledAlgorithm>();
+
+            enabledServices.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .WithVariantService<IAlgorithm>(Features.OnTestFeature, VariantServiceMatch.Status);
+
+            ServiceProvider enabledServiceProvider = enabledServices.BuildServiceProvider();
+
+            IAlgorithm algorithm = await enabledServiceProvider.GetRequiredService<IVariantServiceProvider<IAlgorithm>>()
+                .GetServiceAsync(CancellationToken.None);
+            Assert.NotNull(algorithm);
+            Assert.Equal("Enabled", algorithm.Style);
+
+            IServiceCollection disabledServices = new ServiceCollection();
+
+            disabledServices.AddSingleton<IAlgorithm, EnabledAlgorithm>();
+            disabledServices.AddSingleton<IAlgorithm, DisabledAlgorithm>();
+
+            disabledServices.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .WithVariantService<IAlgorithm>(Features.OffTestFeature, VariantServiceMatch.Status);
+
+            ServiceProvider disabledServiceProvider = disabledServices.BuildServiceProvider();
+
+            algorithm = await disabledServiceProvider.GetRequiredService<IVariantServiceProvider<IAlgorithm>>()
+                .GetServiceAsync(CancellationToken.None);
+            Assert.NotNull(algorithm);
+            Assert.Equal("Disabled", algorithm.Style);
+        }
+
+        [Fact]
+        public async Task VariantServiceProviderStatusModeIgnoresVariantBoundImplementations()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            IServiceCollection services = new ServiceCollection();
+
+            //
+            // Only variant-bound implementations registered; none of them should match in Status mode.
+            services.AddSingleton<IAlgorithm, AlgorithmBeta>();
+            services.AddSingleton<IAlgorithm, AlgorithmSigma>();
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .WithVariantService<IAlgorithm>(Features.OnTestFeature, VariantServiceMatch.Status);
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IAlgorithm algorithm = await serviceProvider.GetRequiredService<IVariantServiceProvider<IAlgorithm>>()
+                .GetServiceAsync(CancellationToken.None);
+
+            Assert.Null(algorithm);
+        }
+
+        [Fact]
         public async Task VariantFeatureFlagWithContextualFeatureFilter()
         {
             IConfiguration configuration = new ConfigurationBuilder()

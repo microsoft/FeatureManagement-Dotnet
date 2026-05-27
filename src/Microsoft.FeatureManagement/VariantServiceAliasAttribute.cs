@@ -6,14 +6,15 @@ using System;
 namespace Microsoft.FeatureManagement
 {
     /// <summary>
-    /// Allows the name of a variant service to be customized to relate to the variant name specified in configuration.
+    /// Allows a variant service implementation to be associated with either the assigned variant name
+    /// or the enabled status of the bound feature flag.
     /// </summary>
     public class VariantServiceAliasAttribute : Attribute
     {
         /// <summary>
-        /// Creates a variant service alias using the provided alias.
+        /// Creates a variant service alias that matches the assigned variant name of the feature flag.
         /// </summary>
-        /// <param name="alias">The alias of the variant service.</param>
+        /// <param name="alias">The alias of the variant service. Used to match the assigned variant name specified in the configuration.</param>
         public VariantServiceAliasAttribute(string alias)
         {
             if (string.IsNullOrEmpty(alias))
@@ -22,11 +23,27 @@ namespace Microsoft.FeatureManagement
             }
 
             Alias = alias;
+            MatchMode = VariantServiceMatch.Variant;
         }
 
         /// <summary>
-        /// The name that will be used to match variant name specified in the configuration.
+        /// Creates a variant service alias that matches the enabled status of the feature flag.
+        /// </summary>
+        /// <param name="enabled">Whether the variant service should be selected when the feature flag is enabled (<c>true</c>) or disabled (<c>false</c>).</param>
+        public VariantServiceAliasAttribute(bool enabled)
+        {
+            Alias = enabled ? bool.TrueString : bool.FalseString;
+            MatchMode = VariantServiceMatch.Status;
+        }
+
+        /// <summary>
+        /// The name that will be used to match either the assigned variant name or the enabled status of the feature flag.
         /// </summary>
         public string Alias { get; }
+
+        /// <summary>
+        /// Describes whether the implementation is matched by variant name or by feature flag status.
+        /// </summary>
+        public VariantServiceMatch MatchMode { get; }
     }
 }
