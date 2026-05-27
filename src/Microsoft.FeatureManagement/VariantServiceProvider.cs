@@ -20,7 +20,7 @@ namespace Microsoft.FeatureManagement
         private readonly IServiceProvider _serviceProvider;
         private readonly IVariantFeatureManager _featureManager;
         private readonly string _featureName;
-        private readonly VariantServiceMatch _matchMode;
+        private readonly VariantServiceMatchMode _matchMode;
         private readonly ConcurrentDictionary<string, TService> _variantServiceCache;
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace Microsoft.FeatureManagement
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureManager"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="serviceProvider"/> is null.</exception>
         public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IServiceProvider serviceProvider)
-            : this(featureName, featureManager, serviceProvider, VariantServiceMatch.Variant)
+            : this(featureName, featureManager, serviceProvider, VariantServiceMatchMode.Variant)
         {
         }
 
@@ -47,7 +47,7 @@ namespace Microsoft.FeatureManagement
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureName"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureManager"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="serviceProvider"/> is null.</exception>
-        public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IServiceProvider serviceProvider, VariantServiceMatch matchMode)
+        public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IServiceProvider serviceProvider, VariantServiceMatchMode matchMode)
         {
             _featureName = featureName ?? throw new ArgumentNullException(nameof(featureName));
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
@@ -65,7 +65,7 @@ namespace Microsoft.FeatureManagement
         {
             Debug.Assert(_featureName != null);
 
-            if (_matchMode == VariantServiceMatch.Status)
+            if (_matchMode == VariantServiceMatchMode.Status)
             {
                 bool isEnabled = await _featureManager.IsEnabledAsync(_featureName, cancellationToken);
 
@@ -130,7 +130,7 @@ namespace Microsoft.FeatureManagement
 
             //
             // Implementations explicitly declared as status-bound do not participate in variant-name matching.
-            if (attribute != null && attribute.MatchMode == VariantServiceMatch.Status)
+            if (attribute != null && attribute.MatchMode == VariantServiceMatchMode.Status)
             {
                 return false;
             }
@@ -146,7 +146,7 @@ namespace Microsoft.FeatureManagement
 
             //
             // Only implementations explicitly declared as status-bound participate in status matching.
-            if (attribute == null || attribute.MatchMode != VariantServiceMatch.Status)
+            if (attribute == null || attribute.MatchMode != VariantServiceMatchMode.Status)
             {
                 return false;
             }

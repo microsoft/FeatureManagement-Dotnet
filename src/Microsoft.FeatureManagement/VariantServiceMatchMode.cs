@@ -6,7 +6,7 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// Describes how a variant service implementation is selected from the bound feature flag.
     /// </summary>
-    public enum VariantServiceMatch
+    public enum VariantServiceMatchMode
     {
         /// <summary>
         /// The implementation is selected based on the assigned variant name of the feature flag.

@@ -48,7 +48,7 @@ namespace Microsoft.FeatureManagement
         /// <exception cref="InvalidOperationException">Thrown if a variant service of the type has already been added.</exception>
         public static IFeatureManagementBuilder WithVariantService<TService>(this IFeatureManagementBuilder builder, string featureName) where TService : class
         {
-            return WithVariantService<TService>(builder, featureName, VariantServiceMatch.Variant);
+            return WithVariantService<TService>(builder, featureName, VariantServiceMatchMode.Variant);
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace Microsoft.FeatureManagement
         /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
         /// <exception cref="ArgumentNullException">Thrown if feature name parameter is null.</exception>
         /// <exception cref="InvalidOperationException">Thrown if a variant service of the type has already been added.</exception>
-        public static IFeatureManagementBuilder WithVariantService<TService>(this IFeatureManagementBuilder builder, string featureName, VariantServiceMatch matchMode) where TService : class
+        public static IFeatureManagementBuilder WithVariantService<TService>(this IFeatureManagementBuilder builder, string featureName, VariantServiceMatchMode matchMode) where TService : class
         {
             if (string.IsNullOrEmpty(featureName))
             {

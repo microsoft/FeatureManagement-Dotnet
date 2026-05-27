@@ -2399,7 +2399,7 @@ namespace Tests.FeatureManagement
 
             enabledServices.AddSingleton(configuration)
                 .AddFeatureManagement()
-                .WithVariantService<IAlgorithm>(Features.OnTestFeature, VariantServiceMatch.Status);
+                .WithVariantService<IAlgorithm>(Features.OnTestFeature, VariantServiceMatchMode.Status);
 
             ServiceProvider enabledServiceProvider = enabledServices.BuildServiceProvider();
 
@@ -2416,7 +2416,7 @@ namespace Tests.FeatureManagement
 
             disabledServices.AddSingleton(configuration)
                 .AddFeatureManagement()
-                .WithVariantService<IAlgorithm>(Features.OffTestFeature, VariantServiceMatch.Status);
+                .WithVariantService<IAlgorithm>(Features.OffTestFeature, VariantServiceMatchMode.Status);
 
             ServiceProvider disabledServiceProvider = disabledServices.BuildServiceProvider();
 
@@ -2443,7 +2443,7 @@ namespace Tests.FeatureManagement
 
             enabledServices.AddSingleton(configuration)
                 .AddFeatureManagement()
-                .WithVariantService<IAlgorithm>(Features.OnTestFeature, VariantServiceMatch.Status);
+                .WithVariantService<IAlgorithm>(Features.OnTestFeature, VariantServiceMatchMode.Status);
 
             ServiceProvider enabledServiceProvider = enabledServices.BuildServiceProvider();
 
@@ -2459,7 +2459,7 @@ namespace Tests.FeatureManagement
 
             disabledServices.AddSingleton(configuration)
                 .AddFeatureManagement()
-                .WithVariantService<IAlgorithm>(Features.OffTestFeature, VariantServiceMatch.Status);
+                .WithVariantService<IAlgorithm>(Features.OffTestFeature, VariantServiceMatchMode.Status);
 
             ServiceProvider disabledServiceProvider = disabledServices.BuildServiceProvider();
 
@@ -2485,7 +2485,7 @@ namespace Tests.FeatureManagement
 
             services.AddSingleton(configuration)
                 .AddFeatureManagement()
-                .WithVariantService<IAlgorithm>(Features.OnTestFeature, VariantServiceMatch.Status);
+                .WithVariantService<IAlgorithm>(Features.OnTestFeature, VariantServiceMatchMode.Status);
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 

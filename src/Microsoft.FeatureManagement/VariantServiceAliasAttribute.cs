@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
 using System;
@@ -23,7 +23,7 @@ namespace Microsoft.FeatureManagement
             }
 
             Alias = alias;
-            MatchMode = VariantServiceMatch.Variant;
+            MatchMode = VariantServiceMatchMode.Variant;
         }
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace Microsoft.FeatureManagement
         public VariantServiceAliasAttribute(bool enabled)
         {
             Alias = enabled ? bool.TrueString : bool.FalseString;
-            MatchMode = VariantServiceMatch.Status;
+            MatchMode = VariantServiceMatchMode.Status;
         }
 
         /// <summary>
@@ -44,6 +44,6 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// Describes whether the implementation is matched by variant name or by feature flag status.
         /// </summary>
-        public VariantServiceMatch MatchMode { get; }
+        public VariantServiceMatchMode MatchMode { get; }
     }
 }
