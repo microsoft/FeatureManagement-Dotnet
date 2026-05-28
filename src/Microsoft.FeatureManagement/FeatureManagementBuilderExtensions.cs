@@ -48,24 +48,6 @@ namespace Microsoft.FeatureManagement
         /// <exception cref="InvalidOperationException">Thrown if a variant service of the type has already been added.</exception>
         public static IFeatureManagementBuilder WithVariantService<TService>(this IFeatureManagementBuilder builder, string featureName) where TService : class
         {
-            return builder.WithVariantService<TService>(featureName, useKeyedService: false);
-        }
-
-        /// <summary>
-        /// Adds a <see cref="IVariantServiceProvider{TService}"/> to the feature management system.
-        /// </summary>
-        /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
-        /// <param name="featureName">The feature flag that should be used to determine which variant of the service should be used. The <see cref="IVariantServiceProvider{TService}"/> will return different implementations of TService according to the assigned variant.</param>
-        /// <param name="useKeyedService">Determines which implementation of <see cref="IVariantServiceProvider{TService}"/> will be used. If true <see cref="LazyVariantServiceProvider{TService}"/>, otherwise <see cref="VariantServiceProvider{TService}"/>.</param>
-        /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
-        /// <exception cref="ArgumentNullException">Thrown if feature name parameter is null.</exception>
-        /// <exception cref="InvalidOperationException">Thrown if a variant service of the type has already been added.</exception>
-        public static IFeatureManagementBuilder WithVariantService<TService>(
-            this IFeatureManagementBuilder builder,
-            string featureName,
-            bool useKeyedService)
-            where TService : class
-        {
             if (string.IsNullOrEmpty(featureName))
             {
                 throw new ArgumentNullException(nameof(featureName));
@@ -79,15 +61,7 @@ namespace Microsoft.FeatureManagement
             Func<IServiceProvider, IVariantServiceProvider<TService>> variantSpFactory = sp =>
             {
                 var featureManager = sp.GetRequiredService<IVariantFeatureManager>();
-                if (!useKeyedService)
-                    return new VariantServiceProvider<TService>(featureName, featureManager, sp.GetRequiredService<IEnumerable<TService>>());
-
-                if (sp is IKeyedServiceProvider keyedServiceProvider)
-                {
-                    return new LazyVariantServiceProvider<TService>(featureName, featureManager, keyedServiceProvider);
-                }
-
-                throw new InvalidOperationException("ServiceProvider does not support keyed services. Call 'WithVariantService' method with 'useKeyedService' set to 'false'.");
+                return new VariantServiceProvider<TService>(featureName, featureManager, sp);
             };
 
             if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
