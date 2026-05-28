@@ -50,34 +50,36 @@ namespace Microsoft.FeatureManagement
 
             Variant variant = await _featureManager.GetVariantAsync(_featureName, cancellationToken);
 
-            TService implementation = null;
-
-            if (variant != null)
-            {
-                implementation = _variantServiceCache.GetOrAdd(
-                    variant.Name,
-                    (variantName) => ResolveVariantService(variantName));
-            }
-
-            return implementation;
+            return variant != null ? _variantServiceCache.GetOrAdd(variant.Name, ResolveVariantService) : null;
         }
 
         private TService ResolveVariantService(string variantName)
         {
-            if (_serviceProvider is IKeyedServiceProvider)
+            if (TryGetKeyedVariantService(variantName, out var keyedVariantService))
             {
-                TService keyedService = _serviceProvider.GetKeyedService<TService>(variantName);
-
-                if (keyedService != null)
-                {
-                    return keyedService;
-                }
+                return keyedVariantService;
             }
 
-            IEnumerable<TService> services = _serviceProvider.GetRequiredService<IEnumerable<TService>>();
+            return GetVariantServiceFallback(variantName);
+        }
 
-            return services.FirstOrDefault(
-                service => IsMatchingVariantName(service.GetType(), variantName));
+        private bool TryGetKeyedVariantService(string variantName, out TService keyedService)
+        {
+            if (_serviceProvider is IKeyedServiceProvider keyedServiceProvider)
+            {
+                keyedService = keyedServiceProvider.GetKeyedService<TService>(variantName);
+                return keyedService != null;
+            }
+
+            keyedService = null;
+            return false;
+        }
+
+        private TService GetVariantServiceFallback(string variantName)
+        {
+            return _serviceProvider
+                .GetRequiredService<IEnumerable<TService>>()
+                .FirstOrDefault(service => IsMatchingVariantName(service.GetType(), variantName));
         }
 
         private bool IsMatchingVariantName(Type implementationType, string variantName)
