@@ -33,6 +33,7 @@ namespace Microsoft.FeatureManagement
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureName"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureManager"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="serviceProvider"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="options"/> is null.</exception>
         public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IServiceProvider serviceProvider, VariantServiceProviderOptions options)
         {
             _featureName = featureName ?? throw new ArgumentNullException(nameof(featureName));
@@ -77,6 +78,8 @@ namespace Microsoft.FeatureManagement
 
         private TService ResolveVariantService(object variantKey)
         {
+            //
+            // Prefer keyed resolution when supported. This enables lazy instantiation of variant implementations.
             if (TryGetKeyedVariantService(variantKey, out var keyedVariantService))
             {
                 return keyedVariantService;
@@ -84,6 +87,8 @@ namespace Microsoft.FeatureManagement
 
             if (variantKey is string variantName)
             {
+                //
+                // Fall back to scanning non-keyed registrations and matching by VariantServiceAliasAttribute or type name.
                 return GetVariantServiceFallback(variantName);
             }
 
