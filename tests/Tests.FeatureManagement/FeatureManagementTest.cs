@@ -2505,6 +2505,51 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task VariantServiceProviderStatusEagerResolution()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            //
+            // OnTestFeature has no variants and is always enabled; OffTestFeature has none and is always disabled.
+            // The provider should fall back to the FallbackWhenEnabled / FallbackWhenDisabled respectively.
+            IServiceCollection services = new ServiceCollection();
+
+            services.AddSingleton<IAlgorithm, AlgorithmBeta>();
+            services.AddSingleton<IAlgorithm, AlgorithmSigma>();
+
+            var options = new VariantServiceProviderOptions
+            {
+                FallbackWhenEnabled = nameof(AlgorithmBeta),
+                FallbackWhenDisabled = nameof(AlgorithmSigma)
+            };
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .WithVariantService<IAlgorithm>(Features.OnTestFeature, options);
+
+            IAlgorithm algorithm = await services.BuildServiceProvider()
+                .GetRequiredService<IVariantServiceProvider<IAlgorithm>>()
+                .GetServiceAsync(CancellationToken.None);
+            Assert.Equal("Beta", algorithm.Style);
+
+            services = new ServiceCollection();
+
+            services.AddSingleton<IAlgorithm, AlgorithmBeta>();
+            services.AddSingleton<IAlgorithm, AlgorithmSigma>();
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .WithVariantService<IAlgorithm>(Features.OffTestFeature, options);
+
+            algorithm = await services.BuildServiceProvider()
+                .GetRequiredService<IVariantServiceProvider<IAlgorithm>>()
+                .GetServiceAsync(CancellationToken.None);
+            Assert.Equal("Sigma", algorithm.Style);
+        }
+
+        [Fact]
         public async Task VariantServiceProviderFallsBackToStatusAlias()
         {
             IConfiguration configuration = new ConfigurationBuilder()
