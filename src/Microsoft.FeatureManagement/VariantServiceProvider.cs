@@ -20,7 +20,8 @@ namespace Microsoft.FeatureManagement
         private readonly IServiceProvider _serviceProvider;
         private readonly IVariantFeatureManager _featureManager;
         private readonly string _featureName;
-        private readonly ConcurrentDictionary<string, TService> _variantServiceCache;
+        private readonly VariantServiceProviderOptions _options;
+        private readonly ConcurrentDictionary<object, TService> _variantServiceCache;
 
         /// <summary>
         /// Creates a variant service provider.
@@ -28,15 +29,17 @@ namespace Microsoft.FeatureManagement
         /// <param name="featureName">The feature flag that should be used to determine which variant of the service should be used.</param>
         /// <param name="featureManager">The feature manager to get the assigned variant of the feature flag.</param>
         /// <param name="serviceProvider">The service provider used to resolve implementation variants of TService. If it implements <see cref="IKeyedServiceProvider"/>, keyed resolution is used to enable lazy instantiation; otherwise all registered implementations are enumerated.</param>
+        /// <param name="options">Options used to configure the variant service provider.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureName"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureManager"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="serviceProvider"/> is null.</exception>
-        public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IServiceProvider serviceProvider)
+        public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IServiceProvider serviceProvider, VariantServiceProviderOptions options)
         {
             _featureName = featureName ?? throw new ArgumentNullException(nameof(featureName));
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            _variantServiceCache = new ConcurrentDictionary<string, TService>();
+            _options = options ?? throw new ArgumentNullException(nameof(options));
+            _variantServiceCache = new ConcurrentDictionary<object, TService>();
         }
 
         /// <summary>
@@ -48,22 +51,46 @@ namespace Microsoft.FeatureManagement
         {
             Debug.Assert(_featureName != null);
 
-            Variant variant = await _featureManager.GetVariantAsync(_featureName, cancellationToken);
+            var variantService = await ResolveByVariantAsync(cancellationToken);
+            if (variantService != null)
+            {
+                return variantService;
+            }
+
+            return await ResolveByStatusAsync(cancellationToken);
+        }
+
+        private async Task<TService> ResolveByVariantAsync(CancellationToken cancellationToken)
+        {
+            var variant = await _featureManager.GetVariantAsync(_featureName, cancellationToken);
 
             return variant != null ? _variantServiceCache.GetOrAdd(variant.Name, ResolveVariantService) : null;
         }
 
-        private TService ResolveVariantService(string variantName)
+        private async Task<TService> ResolveByStatusAsync(CancellationToken cancellationToken)
         {
-            if (TryGetKeyedVariantService(variantName, out var keyedVariantService))
+            var isEnabled = await _featureManager.IsEnabledAsync(_featureName, cancellationToken);
+            var statusKey = isEnabled ? _options.FallbackWhenEnabled : _options.FallbackWhenDisabled;
+
+            return statusKey != null ? _variantServiceCache.GetOrAdd(statusKey, ResolveVariantService) : null;
+        }
+
+        private TService ResolveVariantService(object variantKey)
+        {
+            if (TryGetKeyedVariantService(variantKey, out var keyedVariantService))
             {
                 return keyedVariantService;
             }
 
-            return GetVariantServiceFallback(variantName);
+            if (variantKey is string variantName)
+            {
+                return GetVariantServiceFallback(variantName);
+            }
+
+            return null;
         }
 
-        private bool TryGetKeyedVariantService(string variantName, out TService keyedService)
+        private bool TryGetKeyedVariantService(object variantName, out TService keyedService)
         {
             if (_serviceProvider is IKeyedServiceProvider keyedServiceProvider)
             {
@@ -82,16 +109,16 @@ namespace Microsoft.FeatureManagement
                 .FirstOrDefault(service => IsMatchingVariantName(service.GetType(), variantName));
         }
 
-        private bool IsMatchingVariantName(Type implementationType, string variantName)
+        private static bool IsMatchingVariantName(Type implementationType, string name)
         {
-            string implementationName = ((VariantServiceAliasAttribute)Attribute.GetCustomAttribute(implementationType, typeof(VariantServiceAliasAttribute)))?.Alias;
+            var implementationName = ((VariantServiceAliasAttribute)Attribute.GetCustomAttribute(implementationType, typeof(VariantServiceAliasAttribute)))?.Alias;
 
             if (implementationName == null)
             {
                 implementationName = implementationType.Name;
             }
 
-            return string.Equals(implementationName, variantName, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(implementationName, name, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
