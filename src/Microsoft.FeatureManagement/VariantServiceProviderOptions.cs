@@ -11,11 +11,11 @@ namespace Microsoft.FeatureManagement
         /// <summary>
         /// The alias used to resolve the variant service when the feature flag is enabled and no allocated variant matches.
         /// </summary>
-        public string EnabledAlias { get; set; } = bool.TrueString;
+        public string FallbackWhenEnabled { get; set; } = DefaultServiceAlias.WhenEnabled;
 
         /// <summary>
         /// The alias used to resolve the variant service when the feature flag is disabled and no allocated variant matches.
         /// </summary>
-        public string DisabledAlias { get; set; } = bool.FalseString;
+        public string FallbackWhenDisabled { get; set; } = DefaultServiceAlias.WhenDisabled;
     }
 }

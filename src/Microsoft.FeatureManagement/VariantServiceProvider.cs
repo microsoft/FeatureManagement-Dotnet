@@ -84,7 +84,7 @@ namespace Microsoft.FeatureManagement
 
             bool isEnabled = await _featureManager.IsEnabledAsync(_featureName, cancellationToken);
 
-            string alias = isEnabled ? _options.EnabledAlias : _options.DisabledAlias;
+            string alias = isEnabled ? _options.FallbackWhenEnabled : _options.FallbackWhenDisabled;
 
             if (string.IsNullOrEmpty(alias))
             {

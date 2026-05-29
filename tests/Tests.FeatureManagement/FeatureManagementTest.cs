@@ -2394,7 +2394,7 @@ namespace Tests.FeatureManagement
 
             //
             // OnTestFeature has no variants and is always enabled; OffTestFeature has none and is always disabled.
-            // The provider should fall back to the EnabledAlias / DisabledAlias respectively.
+            // The provider should fall back to the FallbackWhenEnabled / FallbackWhenDisabled respectively.
             IServiceCollection services = new ServiceCollection();
 
             services.AddKeyedSingleton<IAlgorithm>("WhenEnabled", (sp, _) => new AlgorithmOmega("Enabled"));
@@ -2402,8 +2402,8 @@ namespace Tests.FeatureManagement
 
             var options = new VariantServiceProviderOptions
             {
-                EnabledAlias = "WhenEnabled",
-                DisabledAlias = "WhenDisabled"
+                FallbackWhenEnabled = "WhenEnabled",
+                FallbackWhenDisabled = "WhenDisabled"
             };
 
             services.AddSingleton(configuration)
@@ -2440,7 +2440,7 @@ namespace Tests.FeatureManagement
             IServiceCollection services = new ServiceCollection();
 
             //
-            // Conflict scenario: the allocated variant name "AlgorithmBeta" is also configured as the EnabledAlias.
+            // Conflict scenario: the allocated variant name "AlgorithmBeta" is also configured as the FallbackWhenEnabled.
             // The variant resolution path runs first, so the same key resolves to the registered service for both
             // a targeted user (variant allocated) and a non-targeted user (status fallback). The variant takes precedence
             // when both paths could match, and the cache slot is shared without contention.
@@ -2451,8 +2451,8 @@ namespace Tests.FeatureManagement
                 .AddFeatureFilter<TargetingFilter>()
                 .WithVariantService<IAlgorithm>(Features.VariantImplementationFeature, new VariantServiceProviderOptions
                 {
-                    EnabledAlias = "AlgorithmBeta",
-                    DisabledAlias = "AlgorithmBeta"
+                    FallbackWhenEnabled = "AlgorithmBeta",
+                    FallbackWhenDisabled = "AlgorithmBeta"
                 });
 
             var targetingContextAccessor = new OnDemandTargetingContextAccessor();
@@ -2471,7 +2471,7 @@ namespace Tests.FeatureManagement
 
             //
             // Guest is outside the targeting audience; no variant is allocated and the flag is disabled,
-            // so resolution falls back to DisabledAlias ("AlgorithmBeta") and resolves the same registration.
+            // so resolution falls back to FallbackWhenDisabled ("AlgorithmBeta") and resolves the same registration.
             targetingContextAccessor.Current = new TargetingContext { UserId = "Guest" };
             algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
             Assert.Equal("Beta", algorithm.Style);
