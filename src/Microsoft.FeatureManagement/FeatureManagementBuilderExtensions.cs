@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace Microsoft.FeatureManagement
@@ -48,6 +47,20 @@ namespace Microsoft.FeatureManagement
         /// <exception cref="InvalidOperationException">Thrown if a variant service of the type has already been added.</exception>
         public static IFeatureManagementBuilder WithVariantService<TService>(this IFeatureManagementBuilder builder, string featureName) where TService : class
         {
+            return WithVariantService<TService>(builder, featureName, new VariantServiceProviderOptions());
+        }
+
+        /// <summary>
+        /// Adds a <see cref="VariantServiceProvider{TService}"/> to the feature management system.
+        /// </summary>
+        /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
+        /// <param name="featureName">The feature flag that should be used to determine which variant of the service should be used.</param>
+        /// <param name="options">Options used to configure the variant service provider.</param>
+        /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if feature name parameter is null.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if a variant service of the type has already been added.</exception>
+        public static IFeatureManagementBuilder WithVariantService<TService>(this IFeatureManagementBuilder builder, string featureName, VariantServiceProviderOptions options) where TService : class
+        {
             if (string.IsNullOrEmpty(featureName))
             {
                 throw new ArgumentNullException(nameof(featureName));
@@ -63,14 +76,16 @@ namespace Microsoft.FeatureManagement
                 builder.Services.AddScoped<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
                     featureName,
                     sp.GetRequiredService<IVariantFeatureManager>(),
-                    sp));
+                    sp,
+                    options));
             }
             else
             {
                 builder.Services.AddSingleton<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
                     featureName,
                     sp.GetRequiredService<IVariantFeatureManager>(),
-                    sp));
+                    sp,
+                    options));
             }
 
             return builder;

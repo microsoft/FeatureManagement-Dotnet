@@ -524,12 +524,12 @@ namespace Tests.FeatureManagement
              * Feature1: true
              * Feature2: true
              * FeatureA: true
-             * 
+             *
              * appsettings2.json
              * Feature1: true
              * Feature2: false
              * FeatureB: true
-             * 
+             *
              * appsettings3.json
              * Feature1: false
              * Feature2: false
@@ -2383,6 +2383,98 @@ namespace Tests.FeatureManagement
             IAlgorithm algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
             Assert.NotNull(algorithm);
             Assert.Equal("KeyedBeta", algorithm.Style);
+        }
+
+        [Fact]
+        public async Task VariantServiceProviderFallsBackToStatusAlias()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            //
+            // OnTestFeature has no variants and is always enabled; OffTestFeature has none and is always disabled.
+            // The provider should fall back to the EnabledAlias / DisabledAlias respectively.
+            IServiceCollection services = new ServiceCollection();
+
+            services.AddKeyedSingleton<IAlgorithm>("WhenEnabled", (sp, _) => new AlgorithmOmega("Enabled"));
+            services.AddKeyedSingleton<IAlgorithm>("WhenDisabled", (sp, _) => new AlgorithmOmega("Disabled"));
+
+            var options = new VariantServiceProviderOptions
+            {
+                EnabledAlias = "WhenEnabled",
+                DisabledAlias = "WhenDisabled"
+            };
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .WithVariantService<IAlgorithm>(Features.OnTestFeature, options);
+
+            IAlgorithm algorithm = await services.BuildServiceProvider()
+                .GetRequiredService<IVariantServiceProvider<IAlgorithm>>()
+                .GetServiceAsync(CancellationToken.None);
+            Assert.Equal("Enabled", algorithm.Style);
+
+            services = new ServiceCollection();
+
+            services.AddKeyedSingleton<IAlgorithm>("WhenEnabled", (sp, _) => new AlgorithmOmega("Enabled"));
+            services.AddKeyedSingleton<IAlgorithm>("WhenDisabled", (sp, _) => new AlgorithmOmega("Disabled"));
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .WithVariantService<IAlgorithm>(Features.OffTestFeature, options);
+
+            algorithm = await services.BuildServiceProvider()
+                .GetRequiredService<IVariantServiceProvider<IAlgorithm>>()
+                .GetServiceAsync(CancellationToken.None);
+            Assert.Equal("Disabled", algorithm.Style);
+        }
+
+        [Fact]
+        public async Task VariantServiceProviderPrefersAllocatedVariantOverStatusAlias()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            IServiceCollection services = new ServiceCollection();
+
+            //
+            // Conflict scenario: the allocated variant name "AlgorithmBeta" is also configured as the EnabledAlias.
+            // The variant resolution path runs first, so the same key resolves to the registered service for both
+            // a targeted user (variant allocated) and a non-targeted user (status fallback). The variant takes precedence
+            // when both paths could match, and the cache slot is shared without contention.
+            services.AddKeyedSingleton<IAlgorithm, AlgorithmBeta>("AlgorithmBeta");
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TargetingFilter>()
+                .WithVariantService<IAlgorithm>(Features.VariantImplementationFeature, new VariantServiceProviderOptions
+                {
+                    EnabledAlias = "AlgorithmBeta",
+                    DisabledAlias = "AlgorithmBeta"
+                });
+
+            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
+
+            services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor);
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantServiceProvider<IAlgorithm> featuredAlgorithm = serviceProvider.GetRequiredService<IVariantServiceProvider<IAlgorithm>>();
+
+            //
+            // UserBeta is allocated the "AlgorithmBeta" variant; resolution succeeds via the variant path.
+            targetingContextAccessor.Current = new TargetingContext { UserId = "UserBeta" };
+            IAlgorithm algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+            Assert.Equal("Beta", algorithm.Style);
+
+            //
+            // Guest is outside the targeting audience; no variant is allocated and the flag is disabled,
+            // so resolution falls back to DisabledAlias ("AlgorithmBeta") and resolves the same registration.
+            targetingContextAccessor.Current = new TargetingContext { UserId = "Guest" };
+            algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+            Assert.Equal("Beta", algorithm.Style);
         }
 
         [Fact]
