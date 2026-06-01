@@ -33,12 +33,13 @@ namespace Microsoft.FeatureManagement
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureName"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureManager"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="serviceProvider"/> is null.</exception>
-        public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IServiceProvider serviceProvider, VariantServiceProviderOptions options = null)
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="options"/> is null.</exception>
+        public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IServiceProvider serviceProvider, VariantServiceProviderOptions options)
         {
             _featureName = featureName ?? throw new ArgumentNullException(nameof(featureName));
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            _options = options;
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _variantServiceCache = new ConcurrentDictionary<string, TService>();
         }
 
@@ -77,11 +78,6 @@ namespace Microsoft.FeatureManagement
 
         private async ValueTask<TService> ResolveByStatusAsync(CancellationToken cancellationToken)
         {
-            if (_options == null)
-            {
-                return null;
-            }
-
             bool isEnabled = await _featureManager.IsEnabledAsync(_featureName, cancellationToken);
 
             string alias = isEnabled ? _options.FallbackWhenEnabled : _options.FallbackWhenDisabled;
