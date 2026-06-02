@@ -64,6 +64,9 @@ namespace Microsoft.FeatureManagement
 
         private TService ResolveVariantService(string variantName)
         {
+            //
+            // If the service provider supports keyed services, try to resolve the variant by its name as the key first.
+            // This allows lazy instantiation of the variant service.
             if (_serviceProvider is IKeyedServiceProvider)
             {
                 TService keyedService = _serviceProvider.GetKeyedService<TService>(variantName);
@@ -74,6 +77,8 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
+            //
+            // Fall back to enumerating all non-keyed registrations of TService and matching by VariantServiceAliasAttribute or the implementation type name.
             IEnumerable<TService> services = _serviceProvider.GetRequiredService<IEnumerable<TService>>();
 
             return services.FirstOrDefault(
