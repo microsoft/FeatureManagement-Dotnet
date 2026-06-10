@@ -54,6 +54,9 @@ namespace Microsoft.FeatureManagement
                 return implementation;
             }
 
+            //
+            // If the service provider supports keyed services, try to resolve the implementation by the configured key first.
+            // This allows lazy instantiation of the feature service.
             if (_serviceProvider is IKeyedServiceProvider keyedServiceProvider)
             {
                 implementation = isEnabled
@@ -65,6 +68,8 @@ namespace Microsoft.FeatureManagement
                 }
             }
 
+            //
+            // Fall back to enumerating all non-keyed registrations of TService and matching by the implementation type.
             return isEnabled
                 ? _enabledService ??= _serviceProvider.GetServices<TService>().OfType<TEnabled>().FirstOrDefault()
                 : _disabledService ??= _serviceProvider.GetServices<TService>().OfType<TDisabled>().FirstOrDefault();
