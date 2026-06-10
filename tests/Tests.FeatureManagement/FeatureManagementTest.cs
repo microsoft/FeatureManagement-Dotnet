@@ -2386,6 +2386,121 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task VariantServiceProviderStatusEagerResolution()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("DotnetFeatureManagementSchema.json")
+                .Build();
+
+            //
+            // OnTestFeature has no variants and is always enabled; OffTestFeature has none and is always disabled.
+            // The provider should fall back to the EnabledKey / DisabledKey respectively.
+            IServiceCollection services = new ServiceCollection();
+
+            services.AddSingleton<IAlgorithm, AlgorithmBeta>();
+            services.AddSingleton<IAlgorithm, AlgorithmSigma>();
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .WithFeatureService<IAlgorithm, AlgorithmBeta, AlgorithmSigma>(Features.OnTestFeature);
+
+            IAlgorithm algorithm = await services.BuildServiceProvider()
+                .GetRequiredService<IFeatureServiceProvider<IAlgorithm>>()
+                .GetServiceAsync();
+            Assert.Equal("Beta", algorithm.Style);
+
+            services = new ServiceCollection();
+
+            services.AddSingleton<IAlgorithm, AlgorithmBeta>();
+            services.AddSingleton<IAlgorithm, AlgorithmSigma>();
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .WithFeatureService<IAlgorithm, AlgorithmBeta, AlgorithmSigma>(Features.OffTestFeature);
+
+            algorithm = await services.BuildServiceProvider()
+                .GetRequiredService<IFeatureServiceProvider<IAlgorithm>>()
+                .GetServiceAsync();
+            Assert.Equal("Sigma", algorithm.Style);
+        }
+
+        [Fact]
+        public async Task VariantServiceProviderStatusLazyResolution()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("DotnetFeatureManagementSchema.json")
+                .Build();
+
+            //
+            // OnTestFeature has no variants and is always enabled; OffTestFeature has none and is always disabled.
+            // The provider should fall back to the EnabledKey / DisabledKey respectively.
+            IServiceCollection services = new ServiceCollection();
+
+            services.AddKeyedSingleton<IAlgorithm, AlgorithmBeta>(true);
+            services.AddKeyedSingleton<IAlgorithm, AlgorithmSigma>(false);
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .WithFeatureService<IAlgorithm, AlgorithmBeta, AlgorithmSigma>(Features.OnTestFeature);
+
+            IAlgorithm algorithm = await services.BuildServiceProvider()
+                .GetRequiredService<IFeatureServiceProvider<IAlgorithm>>()
+                .GetServiceAsync();
+            Assert.Equal("Beta", algorithm.Style);
+
+            services = new ServiceCollection();
+
+            services.AddKeyedSingleton<IAlgorithm, AlgorithmBeta>(true);
+            services.AddKeyedSingleton<IAlgorithm, AlgorithmSigma>(false);
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .WithFeatureService<IAlgorithm, AlgorithmBeta, AlgorithmSigma>(Features.OffTestFeature);
+
+            algorithm = await services.BuildServiceProvider()
+                .GetRequiredService<IFeatureServiceProvider<IAlgorithm>>()
+                .GetServiceAsync();
+            Assert.Equal("Sigma", algorithm.Style);
+        }
+
+        [Fact]
+        public async Task VariantServiceProviderStatusLazyResolutionWithContextualFeatureFilter()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("DotnetFeatureManagementSchema.json")
+                .Build();
+
+            IServiceCollection services = new ServiceCollection();
+
+            services.AddSingleton<IAlgorithm, AlgorithmBeta>();
+            services.AddSingleton<IAlgorithm, AlgorithmSigma>();
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .AddFeatureFilter<StringContextualTestFilter>()
+                .WithFeatureService<IAlgorithm, AlgorithmBeta, AlgorithmSigma>(Features.ConditionalFeature);
+
+            ServiceProvider provider = services.BuildServiceProvider();
+
+            StringContextualTestFilter contextualTestFeatureFilter = provider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>().OfType<StringContextualTestFilter>().First();
+
+            contextualTestFeatureFilter.ContextualCallback = (ctx, stringContext) =>
+            {
+                var stringValue = ctx.Parameters.GetValue<string>("P1");
+
+                return stringValue == stringContext;
+            };
+
+            IFeatureServiceProvider<IAlgorithm> featureAlgorithm = provider.GetRequiredService<IFeatureServiceProvider<IAlgorithm>>();
+
+            IAlgorithm algorithm = await featureAlgorithm.GetServiceAsync("V1");
+            Assert.Equal("Beta", algorithm.Style);
+
+            algorithm = await featureAlgorithm.GetServiceAsync("V2");
+            Assert.Equal("Sigma", algorithm.Style);
+        }
+
+        [Fact]
         public async Task VariantFeatureFlagWithContextualFeatureFilter()
         {
             IConfiguration configuration = new ConfigurationBuilder()
