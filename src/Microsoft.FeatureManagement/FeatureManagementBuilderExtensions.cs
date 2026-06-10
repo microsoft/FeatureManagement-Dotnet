@@ -75,5 +75,51 @@ namespace Microsoft.FeatureManagement
 
             return builder;
         }
+
+        /// <summary>
+        /// Adds a <see cref="FeatureServiceProvider{TService,TEnabled,TDisabled}"/> to the feature management system.
+        /// </summary>
+        /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
+        /// <param name="featureName">The feature flag that should be used to determine which implementation of the service should be used. The <see cref="IFeatureServiceProvider{TService}"/> will return different implementations of TService according to the feature status.</param>
+        /// <param name="options">Options used to configure the feature service provider.</param>
+        /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if feature name parameter is null.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if a feature service of the type has already been added.</exception>
+        public static IFeatureManagementBuilder WithFeatureService<TService, TEnabled, TDisabled>(this IFeatureManagementBuilder builder, string featureName, FeatureServiceProviderOptions options = null)
+            where TService : class
+            where TEnabled : class, TService
+            where TDisabled : class, TService
+        {
+            if (string.IsNullOrEmpty(featureName))
+            {
+                throw new ArgumentNullException(nameof(featureName));
+            }
+
+            options ??= new FeatureServiceProviderOptions();
+
+            if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureServiceProvider<TService>)))
+            {
+                throw new InvalidOperationException($"A feature service of {typeof(TService).FullName} has already been added.");
+            }
+
+            if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
+            {
+                builder.Services.AddScoped<IFeatureServiceProvider<TService>>(sp => new FeatureServiceProvider<TService, TEnabled, TDisabled>(
+                    sp,
+                    sp.GetRequiredService<IFeatureManager>(),
+                    featureName,
+                    options));
+            }
+            else
+            {
+                builder.Services.AddSingleton<IFeatureServiceProvider<TService>>(sp => new FeatureServiceProvider<TService, TEnabled, TDisabled>(
+                    sp,
+                    sp.GetRequiredService<IFeatureManager>(),
+                    featureName,
+                    options));
+            }
+
+            return builder;
+        }
     }
 }
