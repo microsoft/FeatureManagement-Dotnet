@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     internal class VariantServiceProvider<TService> : IVariantServiceProvider<TService> where TService : class
     {
-        private readonly IEnumerable<TService> _services;
+        private readonly IServiceProvider _serviceProvider;
         private readonly IVariantFeatureManager _featureManager;
         private readonly string _featureName;
         private readonly ConcurrentDictionary<string, TService> _variantServiceCache;
@@ -26,15 +27,15 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         /// <param name="featureName">The feature flag that should be used to determine which variant of the service should be used.</param>
         /// <param name="featureManager">The feature manager to get the assigned variant of the feature flag.</param>
-        /// <param name="services">Implementation variants of TService.</param>
+        /// <param name="serviceProvider">The service provider used to resolve implementation variants of TService. If it implements <see cref="IKeyedServiceProvider"/>, keyed resolution is used to enable lazy instantiation; otherwise all registered implementations are enumerated.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureName"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="featureManager"/> is null.</exception>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="services"/> is null.</exception>
-        public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IEnumerable<TService> services)
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="serviceProvider"/> is null.</exception>
+        public VariantServiceProvider(string featureName, IVariantFeatureManager featureManager, IServiceProvider serviceProvider)
         {
             _featureName = featureName ?? throw new ArgumentNullException(nameof(featureName));
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
-            _services = services ?? throw new ArgumentNullException(nameof(services));
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _variantServiceCache = new ConcurrentDictionary<string, TService>();
         }
 
@@ -55,14 +56,33 @@ namespace Microsoft.FeatureManagement
             {
                 implementation = _variantServiceCache.GetOrAdd(
                     variant.Name,
-                    (_) => _services.FirstOrDefault(
-                        service => IsMatchingVariantName(
-                            service.GetType(),
-                            variant.Name))
-                );
+                    (variantName) => ResolveVariantService(variantName));
             }
 
             return implementation;
+        }
+
+        private TService ResolveVariantService(string variantName)
+        {
+            //
+            // If the service provider supports keyed services, try to resolve the variant by its name as the key first.
+            // This allows lazy instantiation of the variant service.
+            if (_serviceProvider is IKeyedServiceProvider)
+            {
+                TService keyedService = _serviceProvider.GetKeyedService<TService>(variantName);
+
+                if (keyedService != null)
+                {
+                    return keyedService;
+                }
+            }
+
+            //
+            // Fall back to enumerating all non-keyed registrations of TService and matching by VariantServiceAliasAttribute or the implementation type name.
+            IEnumerable<TService> services = _serviceProvider.GetRequiredService<IEnumerable<TService>>();
+
+            return services.FirstOrDefault(
+                service => IsMatchingVariantName(service.GetType(), variantName));
         }
 
         private bool IsMatchingVariantName(Type implementationType, string variantName)

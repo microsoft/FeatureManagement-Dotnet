@@ -524,12 +524,12 @@ namespace Tests.FeatureManagement
              * Feature1: true
              * Feature2: true
              * FeatureA: true
-             * 
+             *
              * appsettings2.json
              * Feature1: true
              * Feature2: false
              * FeatureB: true
-             * 
+             *
              * appsettings3.json
              * Feature1: false
              * Feature2: false
@@ -2232,6 +2232,157 @@ namespace Tests.FeatureManagement
                         .WithVariantService<IAlgorithm>("DummyFeature2");
                 }
             );
+        }
+
+        [Fact]
+        public async Task VariantServiceProviderResolvesKeyedService()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            IServiceCollection services = new ServiceCollection();
+
+            services.AddKeyedSingleton<IAlgorithm, AlgorithmBeta>("AlgorithmBeta");
+            services.AddKeyedSingleton<IAlgorithm, AlgorithmSigma>("Sigma");
+            services.AddKeyedSingleton<IAlgorithm>("Omega", (sp, _) => new AlgorithmOmega("OMEGA"));
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TargetingFilter>()
+                .WithVariantService<IAlgorithm>(Features.VariantImplementationFeature);
+
+            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
+
+            services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor);
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantServiceProvider<IAlgorithm> featuredAlgorithm = serviceProvider.GetRequiredService<IVariantServiceProvider<IAlgorithm>>();
+
+            targetingContextAccessor.Current = new TargetingContext { UserId = "UserBeta" };
+            IAlgorithm algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+            Assert.NotNull(algorithm);
+            Assert.Equal("Beta", algorithm.Style);
+
+            targetingContextAccessor.Current = new TargetingContext { UserId = "UserSigma" };
+            algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+            Assert.NotNull(algorithm);
+            Assert.Equal("Sigma", algorithm.Style);
+
+            targetingContextAccessor.Current = new TargetingContext { UserId = "UserOmega" };
+            algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+            Assert.NotNull(algorithm);
+            Assert.Equal("OMEGA", algorithm.Style);
+        }
+
+        [Fact]
+        public async Task VariantServiceProviderKeyedServiceIsLazilyInstantiated()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            IServiceCollection services = new ServiceCollection();
+
+            int betaInstantiationCount = 0;
+            int sigmaInstantiationCount = 0;
+            int omegaInstantiationCount = 0;
+
+            services.AddKeyedSingleton<IAlgorithm>("AlgorithmBeta", (sp, _) =>
+            {
+                betaInstantiationCount++;
+                return new AlgorithmBeta();
+            });
+            services.AddKeyedSingleton<IAlgorithm>("Sigma", (sp, _) =>
+            {
+                sigmaInstantiationCount++;
+                return new AlgorithmSigma();
+            });
+            services.AddKeyedSingleton<IAlgorithm>("Omega", (sp, _) =>
+            {
+                omegaInstantiationCount++;
+                return new AlgorithmOmega("OMEGA");
+            });
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TargetingFilter>()
+                .WithVariantService<IAlgorithm>(Features.VariantImplementationFeature);
+
+            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
+
+            services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor);
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantServiceProvider<IAlgorithm> featuredAlgorithm = serviceProvider.GetRequiredService<IVariantServiceProvider<IAlgorithm>>();
+
+            //
+            // No variant resolved yet - nothing should be instantiated.
+            Assert.Equal(0, betaInstantiationCount);
+            Assert.Equal(0, sigmaInstantiationCount);
+            Assert.Equal(0, omegaInstantiationCount);
+
+            //
+            // Resolve the Beta variant. Only AlgorithmBeta should be instantiated.
+            targetingContextAccessor.Current = new TargetingContext { UserId = "UserBeta" };
+            IAlgorithm algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+            Assert.Equal("Beta", algorithm.Style);
+            Assert.Equal(1, betaInstantiationCount);
+            Assert.Equal(0, sigmaInstantiationCount);
+            Assert.Equal(0, omegaInstantiationCount);
+
+            //
+            // Resolving Beta again should reuse the cached instance - no new instantiation.
+            algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+            Assert.Equal("Beta", algorithm.Style);
+            Assert.Equal(1, betaInstantiationCount);
+            Assert.Equal(0, sigmaInstantiationCount);
+            Assert.Equal(0, omegaInstantiationCount);
+
+            //
+            // Resolve the Sigma variant. Only AlgorithmSigma should be instantiated additionally.
+            targetingContextAccessor.Current = new TargetingContext { UserId = "UserSigma" };
+            algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+            Assert.Equal("Sigma", algorithm.Style);
+            Assert.Equal(1, betaInstantiationCount);
+            Assert.Equal(1, sigmaInstantiationCount);
+            Assert.Equal(0, omegaInstantiationCount);
+        }
+
+        [Fact]
+        public async Task VariantServiceProviderPrefersKeyedOverNonKeyed()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            IServiceCollection services = new ServiceCollection();
+
+            //
+            // Register both keyed and non-keyed implementations matching the same variant name.
+            // The keyed registration should take precedence.
+            services.AddSingleton<IAlgorithm, AlgorithmBeta>();
+            services.AddKeyedSingleton<IAlgorithm>("AlgorithmBeta", (sp, _) => new AlgorithmOmega("KeyedBeta"));
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TargetingFilter>()
+                .WithVariantService<IAlgorithm>(Features.VariantImplementationFeature);
+
+            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
+
+            services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor);
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantServiceProvider<IAlgorithm> featuredAlgorithm = serviceProvider.GetRequiredService<IVariantServiceProvider<IAlgorithm>>();
+
+            targetingContextAccessor.Current = new TargetingContext { UserId = "UserBeta" };
+            IAlgorithm algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
+            Assert.NotNull(algorithm);
+            Assert.Equal("KeyedBeta", algorithm.Style);
         }
 
         [Fact]
