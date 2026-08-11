@@ -12,12 +12,12 @@ namespace Microsoft.FeatureManagement
     public interface IContextualVariantServiceProvider<TService> : IVariantServiceProvider<TService> where TService : class
     {
         /// <summary>
-        /// Gets an implementation variant of TService, using the provided context to evaluate contextual feature filters when determining the assigned variant.
+        /// Gets an implementation variant of TService, using the provided context to evaluate contextual feature filters. If the context implements <see cref="Microsoft.FeatureManagement.FeatureFilters.ITargetingContext"/>, it is also used for variant assignment.
         /// </summary>
         /// <typeparam name="TContext">The type of the context.</typeparam>
-        /// <param name="context">A context that provides information used to evaluate contextual feature filters and to determine which variant will be assigned.</param>
+        /// <param name="context">A context used to evaluate contextual feature filters and, when applicable, to determine which variant will be assigned.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
-        /// <returns>An implementation of TService.</returns>
+        /// <returns>An implementation of TService, or null if no matching implementation is registered</returns>
         ValueTask<TService> GetServiceAsync<TContext>(TContext context, CancellationToken cancellationToken);
     }
 }

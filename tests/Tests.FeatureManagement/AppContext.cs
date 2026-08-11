@@ -14,9 +14,4 @@ namespace Tests.FeatureManagement
 
         public IEnumerable<string> Groups { get; set; }
     }
-
-    class AccountContext : IAccountContext
-    {
-        public string AccountId { get; set; }
-    }
 }

@@ -40,8 +40,6 @@ namespace Tests.FeatureManagement
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
-            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
-
             IVariantServiceProvider<IAlgorithm> featuredAlgorithm = serviceProvider.GetRequiredService<IVariantServiceProvider<IAlgorithm>>();
 
             targetingContextAccessor.Current = new TargetingContext

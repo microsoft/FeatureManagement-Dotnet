@@ -100,6 +100,11 @@ namespace Microsoft.FeatureManagement
 
             //
             // No implementation resolved from a variant. Fall back to the feature status.
+            if (_fallbackWhenEnabled == null && _fallbackWhenDisabled == null)
+            {
+                return null;
+            }
+
             bool enabled;
 
             if (useContext)

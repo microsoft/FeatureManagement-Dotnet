@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace Microsoft.FeatureManagement
@@ -52,10 +51,10 @@ namespace Microsoft.FeatureManagement
         }
 
         /// <summary>
-        /// Adds a <see cref="VariantServiceProvider{TService}"/> to the feature management system that falls back to the feature status when no variant is assigned.
+        /// Adds a <see cref="VariantServiceProvider{TService}"/> to the feature management system that can fall back to the feature status when no matching variant service is resolved.
         /// </summary>
         /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
-        /// <param name="featureName">The feature flag that should be used to determine which implementation of the service should be used. The <see cref="VariantServiceProvider{TService}"/> will return the implementation matching the assigned variant, or, when no variant is assigned, <typeparamref name="TEnabled"/> if the feature is enabled and <typeparamref name="TDisabled"/> if it is disabled.</param>
+        /// <param name="featureName">The feature flag that should be used to determine which implementation of the service should be used. The <see cref="VariantServiceProvider{TService}"/> will return the implementation matching the assigned variant, or, when no variant is assigned (or the assigned variant has no matching registration), <typeparamref name="TEnabled"/> if the feature is enabled and <typeparamref name="TDisabled"/> if it is disabled.</param>
         /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
         /// <exception cref="ArgumentNullException">Thrown if feature name parameter is null.</exception>
         /// <exception cref="InvalidOperationException">Thrown if a variant service of the type has already been added.</exception>
