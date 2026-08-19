@@ -155,7 +155,7 @@ namespace Microsoft.FeatureManagement
         /// <returns>True if the feature is enabled, otherwise false.</returns>
         public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
         {
-            if (appContext is null)
+            if (appContext == null)
             {
                 throw new ArgumentNullException(nameof(appContext));
             }
@@ -183,7 +183,7 @@ namespace Microsoft.FeatureManagement
         /// <returns>True if the feature is enabled, otherwise false.</returns>
         public async ValueTask<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, CancellationToken cancellationToken = default)
         {
-            if (appContext is null)
+            if (appContext == null)
             {
                 throw new ArgumentNullException(nameof(appContext));
             }
