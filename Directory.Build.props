@@ -2,6 +2,7 @@
 
    <PropertyGroup>
       <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+      <DotNet10PackageVersion Condition="'$(DotNet10PackageVersion)' == ''">10.0.11</DotNet10PackageVersion>
    </PropertyGroup>
 
 </Project>
