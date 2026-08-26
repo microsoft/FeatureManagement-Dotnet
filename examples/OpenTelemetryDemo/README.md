@@ -5,10 +5,11 @@ backend using `Microsoft.FeatureManagement.Telemetry.OpenTelemetry`. Evaluation 
 emitted each time a feature or variant is evaluated with telemetry enabled.
 
 This package is published alongside `Microsoft.FeatureManagement.Telemetry.ApplicationInsights`
-(see the [VariantAndTelemetryDemo](../VariantAndTelemetryDemo) sample), not as its replacement,
-so that applications not yet ready to move off Application Insights sink aren't forced to. However,
-an application should choose only one of the two sinks — wiring up both would emit duplicate
-`FeatureEvaluation` events for the same evaluation.
+(see the [VariantAndTelemetryDemo](../VariantAndTelemetryDemo) sample) so that applications not
+yet ready to move off the Application Insights sink aren't forced to. Choose only one of the two
+sinks — wiring up both emits duplicate `FeatureEvaluation` events. New applications are
+encouraged to use `Microsoft.FeatureManagement.Telemetry.OpenTelemetry`, the industry-standard,
+vendor-neutral observability framework.
 
 ## Quickstart
 
