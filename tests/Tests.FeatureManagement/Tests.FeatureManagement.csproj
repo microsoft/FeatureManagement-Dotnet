@@ -32,9 +32,9 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="$(DotNet10PackageVersion)" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="$(DotNet10PackageVersion)" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(DotNet10PackageVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
   </ItemGroup>
 
   <ItemGroup>
