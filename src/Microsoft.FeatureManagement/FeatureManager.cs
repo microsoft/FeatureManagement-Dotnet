@@ -155,6 +155,11 @@ namespace Microsoft.FeatureManagement
         /// <returns>True if the feature is enabled, otherwise false.</returns>
         public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
         {
+            if (appContext == null)
+            {
+                throw new ArgumentNullException(nameof(appContext));
+            }
+
             return (await EvaluateFeature(feature, context: appContext, useContext: true, CancellationToken.None).ConfigureAwait(false)).Enabled;
         }
 
@@ -178,6 +183,11 @@ namespace Microsoft.FeatureManagement
         /// <returns>True if the feature is enabled, otherwise false.</returns>
         public async ValueTask<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, CancellationToken cancellationToken = default)
         {
+            if (appContext == null)
+            {
+                throw new ArgumentNullException(nameof(appContext));
+            }
+
             return (await EvaluateFeature(feature, context: appContext, useContext: true, cancellationToken).ConfigureAwait(false)).Enabled;
         }
 

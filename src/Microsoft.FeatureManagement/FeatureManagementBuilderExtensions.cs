@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.FeatureManagement.FeatureFilters;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace Microsoft.FeatureManagement
@@ -48,6 +47,27 @@ namespace Microsoft.FeatureManagement
         /// <exception cref="InvalidOperationException">Thrown if a variant service of the type has already been added.</exception>
         public static IFeatureManagementBuilder WithVariantService<TService>(this IFeatureManagementBuilder builder, string featureName) where TService : class
         {
+            return builder.AddVariantService<TService>(featureName, fallbackWhenEnabled: null, fallbackWhenDisabled: null);
+        }
+
+        /// <summary>
+        /// Adds a <see cref="VariantServiceProvider{TService}"/> to the feature management system that can fall back to the feature status when no matching variant service is resolved.
+        /// </summary>
+        /// <param name="builder">The <see cref="IFeatureManagementBuilder"/> used to customize feature management functionality.</param>
+        /// <param name="featureName">The feature flag that should be used to determine which implementation of the service should be used. The <see cref="VariantServiceProvider{TService}"/> will return the implementation matching the assigned variant, or, when no variant is assigned (or the assigned variant has no matching registration), <typeparamref name="TEnabled"/> if the feature is enabled and <typeparamref name="TDisabled"/> if it is disabled.</param>
+        /// <returns>A <see cref="IFeatureManagementBuilder"/> that can be used to customize feature management functionality.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if feature name parameter is null.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if a variant service of the type has already been added.</exception>
+        public static IFeatureManagementBuilder WithVariantService<TService, TEnabled, TDisabled>(this IFeatureManagementBuilder builder, string featureName)
+            where TService : class
+            where TEnabled : class, TService
+            where TDisabled : class, TService
+        {
+            return builder.AddVariantService<TService>(featureName, typeof(TEnabled), typeof(TDisabled));
+        }
+
+        private static IFeatureManagementBuilder AddVariantService<TService>(this IFeatureManagementBuilder builder, string featureName, Type fallbackWhenEnabled, Type fallbackWhenDisabled) where TService : class
+        {
             if (string.IsNullOrEmpty(featureName))
             {
                 throw new ArgumentNullException(nameof(featureName));
@@ -60,17 +80,29 @@ namespace Microsoft.FeatureManagement
 
             if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IFeatureManager) && descriptor.Lifetime == ServiceLifetime.Scoped))
             {
-                builder.Services.AddScoped<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
+                builder.Services.AddScoped<VariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
                     featureName,
                     sp.GetRequiredService<IVariantFeatureManager>(),
-                    sp));
+                    sp,
+                    fallbackWhenEnabled,
+                    fallbackWhenDisabled));
+
+                builder.Services.AddScoped<IVariantServiceProvider<TService>>(sp => sp.GetRequiredService<VariantServiceProvider<TService>>());
+
+                builder.Services.AddScoped<IContextualVariantServiceProvider<TService>>(sp => sp.GetRequiredService<VariantServiceProvider<TService>>());
             }
             else
             {
-                builder.Services.AddSingleton<IVariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
+                builder.Services.AddSingleton<VariantServiceProvider<TService>>(sp => new VariantServiceProvider<TService>(
                     featureName,
                     sp.GetRequiredService<IVariantFeatureManager>(),
-                    sp));
+                    sp,
+                    fallbackWhenEnabled,
+                    fallbackWhenDisabled));
+
+                builder.Services.AddSingleton<IVariantServiceProvider<TService>>(sp => sp.GetRequiredService<VariantServiceProvider<TService>>());
+
+                builder.Services.AddSingleton<IContextualVariantServiceProvider<TService>>(sp => sp.GetRequiredService<VariantServiceProvider<TService>>());
             }
 
             return builder;
