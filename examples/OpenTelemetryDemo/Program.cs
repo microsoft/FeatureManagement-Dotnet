@@ -1,93 +1,80 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Azure.Monitor.OpenTelemetry.Exporter;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.FeatureManagement;
-using Microsoft.FeatureManagement.FeatureFilters;
-using Microsoft.FeatureManagement.Telemetry.OpenTelemetry;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Trace;
+using OpenTelemetry;
+using OpenTelemetry.Metrics;
 
-IHost host = Host.CreateDefaultBuilder(args)
-    .ConfigureAppConfiguration(config =>
+var builder = WebApplication.CreateBuilder(args);
+
+// Use cookie auth for simplicity and randomizing user
+builder.Services.AddAuthentication("CookieAuth")
+    .AddCookie("CookieAuth", options =>
     {
-        config.AddJsonFile("appsettings.json");
-    })
-    .ConfigureServices((context, services) =>
-    {
-        string connectionString = context.Configuration["ApplicationInsights:ConnectionString"];
-
-        //
-        // Emits the OpenTelemetry log-based "FeatureEvaluation" custom event produced by
-        // OpenTelemetryEventPublisher. This works independently of any TracerProvider.
-        services.AddLogging(logging =>
-        {
-            logging.AddOpenTelemetry(options =>
-            {
-                options.AddConsoleExporter();
-
-                if (!string.IsNullOrEmpty(connectionString))
-                {
-                    options.AddAzureMonitorLogExporter(o => o.ConnectionString = connectionString);
-                }
-            });
-        });
-
-        //
-        // Only needed if the app also wants to export the raw Activity/span data emitted from
-        // ActivitySource("Microsoft.FeatureManagement").
-        services.AddOpenTelemetry()
-            .WithTracing(tracing =>
-            {
-                tracing.AddSource("Microsoft.FeatureManagement");
-
-                tracing.AddConsoleExporter();
-
-                if (!string.IsNullOrEmpty(connectionString))
-                {
-                    tracing.AddAzureMonitorTraceExporter(o => o.ConnectionString = connectionString);
-                }
-            });
-
-        //
-        // Enter feature management
-        //
-        // Enhance the application with feature management and wire up OpenTelemetry evaluation
-        // event emission
-        services.AddFeatureManagement()
-            .AddOpenTelemetry();
-    })
-    .Build();
+        options.LoginPath = "/RandomizeUser";
+    });
 
 //
-// Register TargetingActivityProcessor with the TracerProvider so it stamps TargetingId onto
-// every Activity/span.
-host.Services.GetRequiredService<TracerProvider>()
-    .AddProcessor(host.Services.GetRequiredService<TargetingActivityProcessor>());
-
-await host.StartAsync();
-
-IVariantFeatureManager featureManager = host.Services.GetRequiredService<IVariantFeatureManager>();
-
-var users = new[] { "Alice", "Bob", "Carol" };
+// What a web app using OpenTelemetry looks like
+//
+// Add services to the container.
+builder.Services.AddRazorPages();
 
 //
-// Mimic work items in a task-driven console application
-foreach (string user in users)
+// UseAzureMonitor() (from Azure.Monitor.OpenTelemetry.AspNetCore) wires up tracing, logging, and
+// metrics along with the Azure Monitor exporter for all three in a single call. 
+// It requires a valid connection string, so it's only added when one is configured 
+// (via "APPLICATIONINSIGHTS_CONNECTION_STRING" in appsettings.json below,
+// or as an environment variable of the same name); otherwise it would throw at startup. 
+string connectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+
+OpenTelemetryBuilder openTelemetryBuilder = builder.Services.AddOpenTelemetry();
+
+if (!string.IsNullOrEmpty(connectionString))
 {
-    var targetingContext = new TargetingContext { UserId = user };
-
-    Variant variant = await featureManager.GetVariantAsync("ImageRating", targetingContext);
-
-    Console.WriteLine($"User '{user}' was assigned variant '{variant.Name}'.");
+    openTelemetryBuilder.UseAzureMonitor(o => o.ConnectionString = connectionString);
 }
 
-//
-// Allow batched telemetry (the console exporter, and Azure Monitor if configured) to flush
-await Task.Delay(TimeSpan.FromSeconds(2));
+openTelemetryBuilder
+    .WithMetrics(metrics => metrics.AddMeter("OpenTelemetryDemo"));
 
-await host.StopAsync();
+//
+// Enter feature management
+//
+// Enhance a web application with feature management
+// Including user targeting capability
+// Wire up OpenTelemetry evaluation event emission
+builder.Services.AddFeatureManagement()
+    .WithTargeting()
+    .AddOpenTelemetry();
+
+//
+// Default code from .NET template below
+//
+var app = builder.Build();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error");
+
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+
+app.UseStaticFiles();
+
+app.UseRouting();
+
+app.UseAuthentication();
+
+app.UseAuthorization();
+
+app.MapRazorPages();
+
+//
+// Add Targeting Id to HttpContext
+app.UseMiddleware<TargetingHttpContextMiddleware>();
+
+app.Run();
