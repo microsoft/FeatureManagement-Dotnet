@@ -39,6 +39,11 @@ foreach ($project in $targetProjects)
     $outputPath = "$PSScriptRoot\src\$project\$PublishRelativePath"
 
     & $dotnet pack -c $BuildConfig -o "$outputPath" "$projectPath" --no-build | Tee-Object -FilePath "$LogDirectory\build.log"
+
+    if ($LASTEXITCODE -ne 0)
+    {
+        exit $LASTEXITCODE
+    }
 }
 
 exit $LASTEXITCODE

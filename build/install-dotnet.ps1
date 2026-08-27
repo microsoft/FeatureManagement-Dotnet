@@ -1,4 +1,4 @@
-# Installs .NET 8 and .NET 9 for CI/CD environment
+# Installs .NET 8 and .NET 10 for CI/CD environment
 # see: https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-install-script#examples
 
 $ErrorActionPreference = "Stop"
@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 
 $installScript = [scriptblock]::Create((Invoke-WebRequest -UseBasicParsing 'https://dot.net/v1/dotnet-install.ps1'))
 
-$channels = @("8.0", "9.0")
+$channels = @("8.0", "10.0")
 
 foreach ($channel in $channels)
 {
