@@ -10,7 +10,7 @@ namespace OpenTelemetryDemo.Pages
 {
     public class RandomizeUserModel : PageModel
     {
-        public IActionResult OnGet()
+        public async Task<IActionResult> OnGetAsync()
         {
             // Generate new user claim
             var claims = new List<Claim>
@@ -21,7 +21,7 @@ namespace OpenTelemetryDemo.Pages
             var identity = new ClaimsIdentity(claims, "CookieAuth");
             var principal = new ClaimsPrincipal(identity);
 
-            HttpContext.SignInAsync("CookieAuth", principal);
+            await HttpContext.SignInAsync("CookieAuth", principal);
 
             return RedirectToPage("/Index");
         }

@@ -13,12 +13,14 @@ namespace OpenTelemetryDemo.Pages
     {
         private readonly IVariantFeatureManager _featureManager;
         private readonly Meter _meter;
+        private readonly Histogram<long> _imageRatingHistogram;
         private readonly ILogger<IndexModel> _logger;
 
         public IndexModel(IVariantFeatureManager featureManager, IMeterFactory meterFactory, ILogger<IndexModel> logger)
         {
             _featureManager = featureManager ?? throw new ArgumentNullException(nameof(featureManager));
             _meter = meterFactory?.Create("OpenTelemetryDemo") ?? throw new ArgumentNullException(nameof(meterFactory));
+            _imageRatingHistogram = _meter.CreateHistogram<long>("ImageRating");
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -57,9 +59,7 @@ namespace OpenTelemetryDemo.Pages
                     //
                     // Track the image rating metric using the OpenTelemetry metrics API
                     // (System.Diagnostics.Metrics), exported via WithMetrics/AddMeter.
-                    var imageRatingHistogram = _meter.CreateHistogram<long>("ImageRating");
-
-                    imageRatingHistogram.Record(rating);
+                    _imageRatingHistogram.Record(rating);
 
                     //
                     // Emits a log-based custom event, the OpenTelemetry equivalent of

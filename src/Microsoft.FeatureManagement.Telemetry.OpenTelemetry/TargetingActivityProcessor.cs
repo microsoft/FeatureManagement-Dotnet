@@ -33,7 +33,10 @@ namespace Microsoft.FeatureManagement.Telemetry.OpenTelemetry
                 return;
             }
 
-            activity.SetTag(TargetingIdKey, targetingId);
+            if (!activity.TagObjects.Any(tag => tag.Key == TargetingIdKey))
+            {
+                activity.SetTag(TargetingIdKey, targetingId);
+            }
         }
     }
 }

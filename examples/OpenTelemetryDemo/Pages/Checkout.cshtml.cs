@@ -10,11 +10,13 @@ namespace OpenTelemetryDemo.Pages
     public class CheckoutModel : PageModel
     {
         private readonly Meter _meter;
+        private readonly Histogram<long> _checkoutAmountHistogram;
         private readonly ILogger<CheckoutModel> _logger;
 
         public CheckoutModel(IMeterFactory meterFactory, ILogger<CheckoutModel> logger)
         {
             _meter = meterFactory?.Create("OpenTelemetryDemo") ?? throw new ArgumentNullException(nameof(meterFactory));
+            _checkoutAmountHistogram = _meter.CreateHistogram<long>("checkoutAmount");
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -29,9 +31,7 @@ namespace OpenTelemetryDemo.Pages
             //
             // Track the checkout amount metric using the OpenTelemetry metrics API
             // (System.Diagnostics.Metrics), exported via WithMetrics/AddMeter.
-            var checkoutAmountHistogram = _meter.CreateHistogram<long>("checkoutAmount");
-
-            checkoutAmountHistogram.Record(CheckoutAmount);
+            _checkoutAmountHistogram.Record(CheckoutAmount);
 
             //
             // Emits a log-based custom event, the OpenTelemetry equivalent of
