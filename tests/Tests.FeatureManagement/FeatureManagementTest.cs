@@ -256,6 +256,167 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task CustomMergingUsesConfigurationSourceOrderAcrossSchemas()
+        {
+            var microsoftSchemaFeature = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["feature_management:feature_flags:0:id"] = "CrossSchemaFeature",
+                ["feature_management:feature_flags:0:enabled"] = bool.FalseString
+            };
+            var dotnetSchemaFeature = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["FeatureManagement:crossschemafeature:EnabledFor:0:Name"] = "Test"
+            };
+            var dotnetSchemaFeatureParameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["FeatureManagement:crossschemafeature:EnabledFor:0:Parameters:Source"] = "Dotnet"
+            };
+            var mergeOptions = new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = true
+            };
+
+            IConfiguration microsoftThenDotnet = new ConfigurationBuilder()
+                .AddInMemoryCollection(microsoftSchemaFeature)
+                .AddInMemoryCollection(dotnetSchemaFeature)
+                .AddInMemoryCollection(dotnetSchemaFeatureParameters)
+                .Build();
+
+            using (var provider = new ConfigurationFeatureDefinitionProvider(microsoftThenDotnet, mergeOptions))
+            {
+                FeatureDefinition definition = await provider.GetFeatureDefinitionAsync("CROSSSCHEMAFEATURE");
+                FeatureFilterConfiguration filter = Assert.Single(definition.EnabledFor);
+
+                Assert.Equal(FeatureStatus.Conditional, definition.Status);
+                Assert.Equal("Test", filter.Name);
+                Assert.Equal("Dotnet", filter.Parameters["Source"]);
+            }
+
+            IConfiguration dotnetThenMicrosoft = new ConfigurationBuilder()
+                .AddInMemoryCollection(dotnetSchemaFeature)
+                .AddInMemoryCollection(microsoftSchemaFeature)
+                .Build();
+
+            using (var provider = new ConfigurationFeatureDefinitionProvider(dotnetThenMicrosoft, mergeOptions))
+            {
+                FeatureDefinition definition = await provider.GetFeatureDefinitionAsync("CrossSchemaFeature");
+
+                Assert.Equal(FeatureStatus.Disabled, definition.Status);
+                Assert.Empty(definition.EnabledFor);
+            }
+        }
+
+        [Fact]
+        public async Task CustomMergingPrefersMicrosoftSchemaWithinSameConfigurationSource()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["FeatureManagement:CrossSchemaFeature"] = bool.TrueString,
+                    ["feature_management:feature_flags:0:id"] = "CrossSchemaFeature",
+                    ["feature_management:feature_flags:0:enabled"] = bool.FalseString
+                })
+                .Build();
+            var mergeOptions = new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = true
+            };
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration, mergeOptions);
+
+            FeatureDefinition definition = await provider.GetFeatureDefinitionAsync("CrossSchemaFeature");
+
+            Assert.Equal(FeatureStatus.Disabled, definition.Status);
+        }
+
+        [Fact]
+        public async Task DefaultMergingContinuesToPreferMicrosoftSchema()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["feature_management:feature_flags:0:id"] = "CrossSchemaFeature",
+                    ["feature_management:feature_flags:0:enabled"] = bool.FalseString
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["FeatureManagement:CrossSchemaFeature"] = bool.TrueString
+                })
+                .Build();
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration);
+
+            FeatureDefinition definition = await provider.GetFeatureDefinitionAsync("CrossSchemaFeature");
+
+            Assert.Equal(FeatureStatus.Disabled, definition.Status);
+        }
+
+        [Fact]
+        public async Task CustomMergingDeduplicatesCrossSchemaFeaturesFromChainedConfiguration()
+        {
+            IConfiguration innerConfiguration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["feature_management:feature_flags:0:id"] = "CrossSchemaFeature",
+                    ["feature_management:feature_flags:0:enabled"] = bool.FalseString
+                })
+                .Build();
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddConfiguration(innerConfiguration)
+                .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["FeatureManagement:crossschemafeature"] = bool.TrueString
+                })
+                .Build();
+            var mergeOptions = new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = true
+            };
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration, mergeOptions);
+            var definitions = new List<FeatureDefinition>();
+
+            await foreach (FeatureDefinition definition in provider.GetAllFeatureDefinitionsAsync())
+            {
+                definitions.Add(definition);
+            }
+
+            FeatureDefinition crossSchemaDefinition = Assert.Single(definitions);
+            Assert.Equal(FeatureStatus.Conditional, crossSchemaDefinition.Status);
+            Assert.Single(crossSchemaDefinition.EnabledFor);
+        }
+
+        [Fact]
+        public async Task CustomMergingRecalculatesSchemaPrecedenceAfterReload()
+        {
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["feature_management:feature_flags:0:id"] = "ReloadFeature",
+                    ["feature_management:feature_flags:0:enabled"] = bool.FalseString
+                })
+                .AddInMemoryCollection()
+                .Build();
+            IConfigurationProvider lastConfigurationProvider = configuration.Providers.Last();
+            var mergeOptions = new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = true
+            };
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration, mergeOptions);
+
+            FeatureDefinition definition = await provider.GetFeatureDefinitionAsync("ReloadFeature");
+            Assert.Equal(FeatureStatus.Disabled, definition.Status);
+
+            lastConfigurationProvider.Set("FeatureManagement:ReloadFeature", bool.TrueString);
+            configuration.Reload();
+
+            definition = await provider.GetFeatureDefinitionAsync("ReloadFeature");
+            Assert.Equal(FeatureStatus.Conditional, definition.Status);
+            Assert.Single(definition.EnabledFor);
+        }
+
+        [Fact]
         public async Task ThrowsForMissingFeatures()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
