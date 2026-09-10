@@ -211,12 +211,9 @@ namespace Microsoft.FeatureManagement
 
             //
             // Root configuration fallback definitions cannot conflict with Microsoft schema definitions.
-            foreach (IConfigurationSection featureSection in _dotnetFeatureDefinitionSections)
+            foreach (IConfigurationSection featureSection in _dotnetFeatureDefinitionSections.Where(section => !featureDefinitionSchemas.ContainsKey(section.Key)))
             {
-                if (!featureDefinitionSchemas.ContainsKey(featureSection.Key))
-                {
-                    featureDefinitionSchemas[featureSection.Key] = FeatureDefinitionSchema.Dotnet;
-                }
+                featureDefinitionSchemas[featureSection.Key] = FeatureDefinitionSchema.Dotnet;
             }
 
             _microsoftFeatureDefinitionSections = microsoftFeatureDefinitionSections;
