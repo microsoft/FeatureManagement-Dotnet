@@ -7,6 +7,7 @@ using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -119,7 +120,7 @@ namespace Microsoft.FeatureManagement
         /// <returns>An enumerator which provides asynchronous iteration over feature definitions.</returns>
         //
         // The async key word is necessary for creating IAsyncEnumerable.
-        // The need to disable this warning occurs when implementing async stream synchronously. 
+        // The need to disable this warning occurs when implementing async stream synchronously.
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998
@@ -300,9 +301,9 @@ namespace Microsoft.FeatureManagement
         private FeatureDefinition ParseDotnetSchemaFeatureDefinition(IConfigurationSection configurationSection)
         {
             /*
-              
+
             We support
-            
+
             myFeature: {
               enabledFor: [{name: "myFeatureFilter1"}, {name: "myFeatureFilter2"}]
             },
@@ -391,7 +392,7 @@ namespace Microsoft.FeatureManagement
         private FeatureDefinition ParseMicrosoftSchemaFeatureDefinition(IConfigurationSection configurationSection)
         {
             /*
-            
+
             If Microsoft feature flag schema is enabled, we support
 
             FeatureFlags: [
@@ -554,10 +555,16 @@ namespace Microsoft.FeatureManagement
                         statusOverride = ParseEnum<StatusOverride>(configurationSection.Key, rawStatusOverride, MicrosoftFeatureManagementFields.VariantDefinitionStatusOverride);
                     }
 
+                    var configurationValue = section.GetSection(
+                        MicrosoftFeatureManagementFields.VariantDefinitionConfigurationValue);
+
                     var variant = new VariantDefinition()
                     {
                         Name = section[MicrosoftFeatureManagementFields.Name],
-                        ConfigurationValue = section.GetSection(MicrosoftFeatureManagementFields.VariantDefinitionConfigurationValue),
+                        ConfigurationValue = configurationValue,
+                        ConfigurationObject = configurationValue.Exists()
+                            ? CreateConfigurationObject(configurationValue)
+                            : null,
                         StatusOverride = statusOverride
                     };
 
@@ -600,6 +607,25 @@ namespace Microsoft.FeatureManagement
                     Metadata = telemetryMetadata
                 }
             };
+        }
+
+        private static IReadOnlyDictionary<string, string> CreateConfigurationObject(IConfigurationSection section)
+        {
+            var values = section
+                .AsEnumerable(makePathsRelative: true)
+                .Where(x => x.Value != null)
+                .ToDictionary(
+                    entry => entry.Key,
+                    entry => entry.Value,
+                    StringComparer.OrdinalIgnoreCase);
+
+            // Relative enumeration excludes the section's own value. Preserve it under the empty key.
+            if (section.Value != null)
+            {
+                values.Add(string.Empty, section.Value);
+            }
+
+            return new ReadOnlyDictionary<string, string>(values);
         }
 
         private static T ParseEnum<T>(string feature, string rawValue, string fieldKeyword)
