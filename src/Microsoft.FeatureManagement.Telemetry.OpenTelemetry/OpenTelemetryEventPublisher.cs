@@ -30,7 +30,7 @@ namespace Microsoft.FeatureManagement.Telemetry.OpenTelemetry
             _activityListener = new ActivityListener
             {
                 ShouldListenTo = (activitySource) => activitySource.Name == FeatureManagementActivitySourceName,
-                Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData,
+                Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
                 ActivityStopped = (activity) =>
                 {
                     ActivityEvent? evaluationEvent = activity.Events.FirstOrDefault((activityEvent) => activityEvent.Name == FeatureFlagActivityEventName);

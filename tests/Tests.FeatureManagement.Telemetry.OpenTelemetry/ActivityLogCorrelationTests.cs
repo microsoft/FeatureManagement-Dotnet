@@ -20,8 +20,11 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
         private const string FeatureEvaluationEventName = "FeatureEvaluation";
         private const string FeatureManagementActivitySourceName = "Microsoft.FeatureManagement";
 
-        [Fact]
-        public async Task ExportedLogRecordCarriesCustomEventNameAndTypedAttributes()
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task ExportedLogRecordCarriesCustomEventNameTypedAttributesAndRecordedContext(bool hasParent, bool parentRecorded)
         {
             var exportedLogRecords = new List<LogRecord>();
 
@@ -39,10 +42,33 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
                 await hostedService.StartAsync(default);
             }
 
+            Assert.Null(Activity.Current);
+
+            using Activity parent = hasParent ? new Activity("Parent").SetIdFormat(ActivityIdFormat.W3C).Start() : null;
+
+            if (parent != null)
+            {
+                parent.ActivityTraceFlags = parentRecorded ? ActivityTraceFlags.Recorded : ActivityTraceFlags.None;
+            }
+
+            ActivityTraceId evaluationTraceId;
+            ActivitySpanId evaluationSpanId;
+
             using (var activitySource = new ActivitySource(FeatureManagementActivitySourceName))
             using (Activity activity = activitySource.StartActivity("FeatureEvaluation"))
             {
                 Assert.NotNull(activity);
+                Assert.True(activity.Recorded);
+                Assert.True(activity.IsAllDataRequested);
+
+                evaluationTraceId = activity.TraceId;
+                evaluationSpanId = activity.SpanId;
+
+                if (parent != null)
+                {
+                    Assert.Equal(parent.TraceId, activity.TraceId);
+                    Assert.Equal(parent.SpanId, activity.ParentSpanId);
+                }
 
                 var tags = new ActivityTagsCollection
                 {
@@ -59,6 +85,17 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
             serviceProvider.GetRequiredService<LoggerProvider>().ForceFlush();
 
             LogRecord logRecord = Assert.Single(exportedLogRecords);
+
+            Assert.NotEqual(default(ActivitySpanId), logRecord.SpanId);
+            Assert.Equal(evaluationTraceId, logRecord.TraceId);
+            Assert.Equal(evaluationSpanId, logRecord.SpanId);
+            Assert.Equal(ActivityTraceFlags.Recorded, logRecord.TraceFlags);
+            Assert.Same(parent, Activity.Current);
+
+            if (parent != null)
+            {
+                Assert.Equal(parentRecorded, parent.Recorded);
+            }
 
             Assert.Equal(FeatureEvaluationEventName, logRecord.EventId.Name);
 
