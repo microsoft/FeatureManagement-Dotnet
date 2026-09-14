@@ -35,11 +35,6 @@ This app uses `Microsoft.FeatureManagement.Telemetry.OpenTelemetry` alongside th
 Monitor OpenTelemetry Distro to export logs, traces, and metrics. See `Program.cs` for how
 tracing/logging/metrics and Azure Monitor are wired up via `UseAzureMonitor()`.
 
-Feature evaluation activities are always marked recorded so their custom-event logs remain
-eligible for Azure Monitor's trace-based log export, even without a parent activity or with an
-unsampled parent. This does not change the parent's sampling decision. A tracing provider
-subscribed to `Microsoft.FeatureManagement` may also export these evaluation spans.
-
 ### Targeting Id
 
 In order to connect evaluation events with other telemetry from the user, a targeting id needs
