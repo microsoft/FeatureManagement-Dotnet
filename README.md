@@ -26,6 +26,22 @@ Feature management provides a way to develop and expose application functionalit
 * [ASP.NET Core Web App with Variant Service](./examples/VariantServiceDemo)
 * [ASP.NET Core Web App with Variants and OpenTelemetry](./examples/OpenTelemetryDemo)
 
+## OpenTelemetry integration
+
+`Microsoft.FeatureManagement.Telemetry.OpenTelemetry` provides feature-evaluation
+event publishing and targeting enrichment for spans and logs. Register feature
+management with `services.AddFeatureManagement()`, then call
+`WithFeatureManagement()` on the builder returned by `services.AddOpenTelemetry()`.
+The integration automatically attaches its targeting processors; applications
+configure their own providers and exporters.
+
+Register the integration before exporters, including exporters configured
+separately through logging APIs. An exporter integration with an explicit
+exporter-last guarantee may be registered in either order. This library does not
+reorder existing OpenTelemetry registrations.
+
+See the [OpenTelemetry sample](./examples/OpenTelemetryDemo) for complete setup.
+
 ## Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a

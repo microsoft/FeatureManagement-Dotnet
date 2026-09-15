@@ -9,7 +9,7 @@ namespace Microsoft.FeatureManagement.Telemetry.OpenTelemetry
     /// <summary>
     /// Listens to <see cref="Activity"/> events from feature management and emits them as OpenTelemetry log-based custom events.
     /// </summary>
-    internal sealed class OpenTelemetryEventPublisher : IDisposable
+    internal sealed class FeatureEvaluationEventPublisher : IDisposable
     {
         private const string AzureMonitorCustomEventNameKey = "microsoft.custom_event.name";
         private const string FeatureEvaluationEventName = "FeatureEvaluation";
@@ -20,10 +20,10 @@ namespace Microsoft.FeatureManagement.Telemetry.OpenTelemetry
         private readonly ActivityListener _activityListener;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="OpenTelemetryEventPublisher"/> class.
+        /// Initializes a new instance of the <see cref="FeatureEvaluationEventPublisher"/> class.
         /// </summary>
         /// <param name="logger">The logger used to emit the OpenTelemetry log-based custom event.</param>
-        public OpenTelemetryEventPublisher(ILogger<OpenTelemetryEventPublisher> logger)
+        public FeatureEvaluationEventPublisher(ILogger<FeatureEvaluationEventPublisher> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -46,7 +46,7 @@ namespace Microsoft.FeatureManagement.Telemetry.OpenTelemetry
         }
 
         /// <summary>
-        /// Disposes the resources used by the <see cref="OpenTelemetryEventPublisher"/>.
+        /// Disposes the resources used by the <see cref="FeatureEvaluationEventPublisher"/>.
         /// </summary>
         public void Dispose()
         {

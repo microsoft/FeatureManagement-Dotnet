@@ -92,15 +92,12 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
         [Fact]
         public void ExportedActivityAlreadyContainsTargetingIdWhenProcessorIsRegisteredBeforeExporter()
         {
-            var exportedActivities = new List<Activity>();
+            var exporter = new CapturingExporter<Activity>(activity => activity.TagObjects);
 
             using TracerProvider tracerProvider = Sdk.CreateTracerProviderBuilder()
                 .AddSource(ActivitySourceName)
-                // Register TargetingActivityProcessor before the in-memory exporter so it observes
-                // (and enriches) the activity before the exporter does, matching the fix applied to
-                // the sample apps' TracerProviderBuilder wiring.
                 .AddProcessor(new TargetingActivityProcessor())
-                .AddInMemoryExporter(exportedActivities)
+                .AddProcessor(new SimpleActivityExportProcessor(exporter))
                 .Build();
 
             using var activitySource = new ActivitySource(ActivitySourceName);
@@ -114,9 +111,9 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 
             tracerProvider.ForceFlush();
 
-            Activity exportedActivity = Assert.Single(exportedActivities);
+            IReadOnlyList<KeyValuePair<string, object>> attributes = Assert.Single(exporter.Records);
 
-            KeyValuePair<string, object> tag = Assert.Single(exportedActivity.TagObjects, t => t.Key == TargetingIdKey);
+            KeyValuePair<string, object> tag = Assert.Single(attributes, t => t.Key == TargetingIdKey);
 
             Assert.Equal("Bob", tag.Value);
         }
@@ -134,21 +131,34 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
             return listener;
         }
 
-        [Fact]
-        public void ExportedActivityIsEnrichedWithTargetingIdWhenProcessorIsAutomaticallyWired()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AutomaticallyWiredProcessorRespectsExporterRegistrationOrder(bool integrationFirst)
         {
-            var exportedActivities = new List<Activity>();
+            var exporter = new CapturingExporter<Activity>(activity => activity.TagObjects);
 
-            const string diActivitySourceName = "TargetingActivityProcessorTests.DI.BeforeExporters";
+            const string diActivitySourceName = "TargetingActivityProcessorTests.DI";
 
             var services = new ServiceCollection();
 
-            services.AddFeatureManagement().AddOpenTelemetry();
+            services.AddFeatureManagement();
 
-            services.AddOpenTelemetry()
-                .WithTracing(tracing => tracing
-                    .AddSource(diActivitySourceName)
-                    .AddInMemoryExporter(exportedActivities));
+            OpenTelemetryBuilder builder = services.AddOpenTelemetry();
+
+            if (integrationFirst)
+            {
+                builder.WithFeatureManagement();
+            }
+
+            builder.WithTracing(tracing => tracing
+                .AddSource(diActivitySourceName)
+                .AddProcessor(new SimpleActivityExportProcessor(exporter)));
+
+            if (!integrationFirst)
+            {
+                builder.WithFeatureManagement();
+            }
 
             using ServiceProvider serviceProvider = services.BuildServiceProvider();
 
@@ -165,52 +175,18 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 
             tracerProvider.ForceFlush();
 
-            Activity exportedActivity = Assert.Single(exportedActivities);
+            IReadOnlyList<KeyValuePair<string, object>> attributes = Assert.Single(exporter.Records);
 
-            KeyValuePair<string, object> tag = Assert.Single(exportedActivity.TagObjects, t => t.Key == TargetingIdKey);
-
-            Assert.Equal("Carol", tag.Value);
-        }
-
-        [Fact]
-        public void ExportedActivityIsEnrichedWithTargetingIdWhenAddOpenTelemetryIsCalledAfterTracingIsConfigured()
-        {
-            var exportedActivities = new List<Activity>();
-
-            const string diActivitySourceName = "TargetingActivityProcessorTests.DI.AfterExporters";
-
-            var services = new ServiceCollection();
-
-            // Configure tracing/exporters BEFORE AddFeatureManagement().AddOpenTelemetry() (the
-            // opposite order from the test above) to prove that TargetingActivityProcessor still
-            // runs ahead of the exporter regardless of call order.
-            services.AddOpenTelemetry()
-                .WithTracing(tracing => tracing
-                    .AddSource(diActivitySourceName)
-                    .AddInMemoryExporter(exportedActivities));
-
-            services.AddFeatureManagement().AddOpenTelemetry();
-
-            using ServiceProvider serviceProvider = services.BuildServiceProvider();
-
-            TracerProvider tracerProvider = serviceProvider.GetRequiredService<TracerProvider>();
-
-            using var activitySource = new ActivitySource(diActivitySourceName);
-
-            using (Activity activity = activitySource.StartActivity("TestActivity"))
+            if (integrationFirst)
             {
-                Assert.NotNull(activity);
+                KeyValuePair<string, object> tag = Assert.Single(attributes, t => t.Key == TargetingIdKey);
 
-                activity.AddBaggage(TargetingIdKey, "Dana");
+                Assert.Equal("Carol", tag.Value);
             }
-
-            tracerProvider.ForceFlush();
-
-            Activity exportedActivity = Assert.Single(exportedActivities);
-
-            KeyValuePair<string, object> tag = Assert.Single(exportedActivity.TagObjects, t => t.Key == TargetingIdKey);
-
-            Assert.Equal("Dana", tag.Value);
+            else
+            {
+                Assert.DoesNotContain(attributes, t => t.Key == TargetingIdKey);
+            }
         }
     }
 }

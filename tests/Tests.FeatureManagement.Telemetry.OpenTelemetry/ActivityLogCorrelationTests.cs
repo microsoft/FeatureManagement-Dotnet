@@ -30,10 +30,12 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 
             var services = new ServiceCollection();
 
+            services.AddFeatureManagement();
+
+            services.AddOpenTelemetry().WithFeatureManagement();
+
             services.AddLogging(builder =>
                 builder.AddOpenTelemetry(logging => logging.AddInMemoryExporter(exportedLogRecords)));
-
-            services.AddFeatureManagement().AddOpenTelemetry();
 
             using ServiceProvider serviceProvider = services.BuildServiceProvider();
 

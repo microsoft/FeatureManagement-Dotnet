@@ -7,7 +7,7 @@ using Microsoft.Extensions.Hosting;
 namespace Microsoft.FeatureManagement.Telemetry.OpenTelemetry
 {
     /// <summary>
-    /// A hosted service used to construct and dispose the <see cref="OpenTelemetryEventPublisher"/>
+    /// A hosted service used to construct and dispose the <see cref="FeatureEvaluationEventPublisher"/>
     /// </summary>
     internal sealed class OpenTelemetryHostedService : IHostedService
     {
@@ -23,13 +23,13 @@ namespace Microsoft.FeatureManagement.Telemetry.OpenTelemetry
         }
 
         /// <summary>
-        /// Uses the service provider to construct a <see cref="OpenTelemetryEventPublisher"/> which will start listening for activities.
+        /// Uses the service provider to construct a <see cref="FeatureEvaluationEventPublisher"/> which will start listening for activities.
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _serviceProvider.GetRequiredService<OpenTelemetryEventPublisher>();
+            _serviceProvider.GetRequiredService<FeatureEvaluationEventPublisher>();
 
             return Task.CompletedTask;
         }

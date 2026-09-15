@@ -25,7 +25,9 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 
             services.AddLogging(builder => builder.AddProvider(loggerProvider));
 
-            services.AddFeatureManagement().AddOpenTelemetry();
+            services.AddFeatureManagement();
+
+            services.AddOpenTelemetry().WithFeatureManagement();
 
             using ServiceProvider serviceProvider = services.BuildServiceProvider();
 
@@ -61,7 +63,9 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 
             services.AddLogging(builder => builder.AddProvider(loggerProvider));
 
-            services.AddFeatureManagement().AddOpenTelemetry();
+            services.AddFeatureManagement();
+
+            services.AddOpenTelemetry().WithFeatureManagement();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
@@ -79,7 +83,7 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
                 await hostedService.StopAsync(default);
             }
 
-            // Disposing the container disposes the OpenTelemetryEventPublisher singleton, which
+            // Disposing the container disposes the FeatureEvaluationEventPublisher singleton, which
             // disposes its ActivityListener.
             serviceProvider.Dispose();
 

@@ -16,7 +16,7 @@ using Xunit;
 namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 {
     /// <summary>
-    /// Tests that assert on the individual attribute values/types produced by <see cref="OpenTelemetryEventPublisher"/>,
+    /// Tests that assert on the individual attribute values/types produced by <see cref="FeatureEvaluationEventPublisher"/>,
     /// </summary>
     public class EventPropertiesTests
     {
@@ -152,7 +152,9 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 
             services.AddLogging(builder => builder.AddProvider(loggerProvider));
 
-            services.AddFeatureManagement().AddOpenTelemetry();
+            services.AddFeatureManagement();
+
+            services.AddOpenTelemetry().WithFeatureManagement();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 

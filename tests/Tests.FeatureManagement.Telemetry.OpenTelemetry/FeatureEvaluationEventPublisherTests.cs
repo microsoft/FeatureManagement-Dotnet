@@ -13,7 +13,7 @@ using Xunit;
 
 namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 {
-    public class OpenTelemetryEventPublisherTests
+    public class FeatureEvaluationEventPublisherTests
     {
         private const string AzureMonitorCustomEventNameKey = "microsoft.custom_event.name";
         private const string FeatureEvaluationEventName = "FeatureEvaluation";
@@ -73,7 +73,9 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 
             services.AddLogging(builder => builder.AddProvider(loggerProvider));
 
-            services.AddFeatureManagement().AddOpenTelemetry();
+            services.AddFeatureManagement();
+
+            services.AddOpenTelemetry().WithFeatureManagement();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 

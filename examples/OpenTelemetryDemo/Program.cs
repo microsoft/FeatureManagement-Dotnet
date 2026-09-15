@@ -4,7 +4,6 @@
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.FeatureManagement;
 using OpenTelemetry;
-using OpenTelemetry.Metrics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +30,10 @@ string connectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_
 
 OpenTelemetryBuilder openTelemetryBuilder = builder.Services.AddOpenTelemetry();
 
+// Register targeting processors before exporters so TargetingId is added before telemetry is exported.
+// Keep WithFeatureManagement() before the UseAzureMonitor() exporter configuration below.
+openTelemetryBuilder.WithFeatureManagement();
+
 if (!string.IsNullOrEmpty(connectionString))
 {
     openTelemetryBuilder.UseAzureMonitor(o => o.ConnectionString = connectionString);
@@ -44,10 +47,9 @@ openTelemetryBuilder
 //
 // Enhance a web application with feature management
 // Including user targeting capability
-// Wire up OpenTelemetry evaluation event emission
+// OpenTelemetry evaluation event emission is configured above.
 builder.Services.AddFeatureManagement()
-    .WithTargeting()
-    .AddOpenTelemetry();
+    .WithTargeting();
 
 //
 // Default code from .NET template below

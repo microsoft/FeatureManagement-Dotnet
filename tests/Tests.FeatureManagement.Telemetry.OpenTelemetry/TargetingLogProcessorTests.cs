@@ -2,15 +2,14 @@
 // Licensed under the MIT license.
 //
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Telemetry.OpenTelemetry;
+using OpenTelemetry;
 using OpenTelemetry.Logs;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
@@ -71,94 +70,65 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
             Assert.Equal("ExplicitValue", tag.Value);
         }
 
-        [Fact]
-        public async Task ExportedLogRecordIsEnrichedWithTargetingIdWhenProcessorIsAutomaticallyWired()
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public void AutomaticallyWiredProcessorRespectsExporterRegistrationOrder(bool integrationFirst, bool useLoggingBuilder)
         {
-            var exportedLogRecords = new List<LogRecord>();
+            var exporter = new CapturingExporter<LogRecord>(record => record.Attributes);
 
             var services = new ServiceCollection();
 
-            services.AddFeatureManagement().AddOpenTelemetry();
+            services.AddFeatureManagement();
 
-            services.AddLogging(logging =>
+            OpenTelemetryBuilder builder = services.AddOpenTelemetry();
+
+            if (integrationFirst)
             {
-                logging.AddOpenTelemetry(options =>
-                {
-                    options.AddInMemoryExporter(exportedLogRecords);
-                });
-            });
-
-            ServiceProvider serviceProvider = services.BuildServiceProvider();
-
-            using (serviceProvider)
-            {
-                foreach (IHostedService hostedService in serviceProvider.GetServices<IHostedService>())
-                {
-                    await hostedService.StartAsync(default);
-                }
-
-                ILogger logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Test");
-
-                using var activity = new Activity("WithBaggage");
-
-                activity.AddBaggage(TargetingIdKey, "Bob");
-
-                activity.Start();
-
-                logger.LogInformation("checkout");
-
-                activity.Stop();
-
-                LogRecord exportedRecord = Assert.Single(exportedLogRecords);
-
-                Assert.Contains(exportedRecord.Attributes, kvp => kvp.Key == TargetingIdKey && (string)kvp.Value == "Bob");
+                builder.WithFeatureManagement();
             }
-        }
 
-        [Fact]
-        public async Task ExportedLogRecordIsEnrichedWithTargetingIdWhenAddOpenTelemetryIsCalledAfterLogExportersAreConfigured()
-        {
-            var exportedLogRecords = new List<LogRecord>();
-
-            var services = new ServiceCollection();
-
-            // Configure the log exporter BEFORE AddFeatureManagement().AddOpenTelemetry() (the
-            // opposite order from the test above) to prove that TargetingLogProcessor still runs
-            // ahead of the exporter regardless of call order.
-            services.AddLogging(logging =>
+            if (useLoggingBuilder)
             {
-                logging.AddOpenTelemetry(options =>
-                {
-                    options.AddInMemoryExporter(exportedLogRecords);
-                });
-            });
-
-            services.AddFeatureManagement().AddOpenTelemetry();
-
-            ServiceProvider serviceProvider = services.BuildServiceProvider();
-
-            using (serviceProvider)
+                services.AddLogging(logging => logging.AddOpenTelemetry(options =>
+                    options.AddProcessor(new SimpleLogRecordExportProcessor(exporter))));
+            }
+            else
             {
-                foreach (IHostedService hostedService in serviceProvider.GetServices<IHostedService>())
-                {
-                    await hostedService.StartAsync(default);
-                }
+                builder.WithLogging(logging =>
+                    logging.AddProcessor(new SimpleLogRecordExportProcessor(exporter)));
+            }
 
-                ILogger logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Test");
+            if (!integrationFirst)
+            {
+                builder.WithFeatureManagement();
+            }
 
-                using var activity = new Activity("WithBaggage");
+            using ServiceProvider serviceProvider = services.BuildServiceProvider();
 
-                activity.AddBaggage(TargetingIdKey, "Dana");
+            ILogger logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Test");
 
-                activity.Start();
+            using var activity = new Activity("WithBaggage");
 
-                logger.LogInformation("checkout");
+            activity.Start();
 
-                activity.Stop();
+            activity.AddBaggage(TargetingIdKey, "Bob");
 
-                LogRecord exportedRecord = Assert.Single(exportedLogRecords);
+            logger.LogInformation("checkout");
 
-                Assert.Contains(exportedRecord.Attributes, kvp => kvp.Key == TargetingIdKey && (string)kvp.Value == "Dana");
+            activity.Stop();
+
+            IReadOnlyList<KeyValuePair<string, object>> attributes = Assert.Single(exporter.Records);
+
+            if (integrationFirst)
+            {
+                Assert.Contains(attributes, kvp => kvp.Key == TargetingIdKey && (string)kvp.Value == "Bob");
+            }
+            else
+            {
+                Assert.DoesNotContain(attributes, kvp => kvp.Key == TargetingIdKey);
             }
         }
 
@@ -170,8 +140,6 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
             {
                 builder.AddOpenTelemetry(options =>
                 {
-                    // Register TargetingLogProcessor ahead of the in-memory exporter, mirroring
-                    // how FeatureManagementBuilderExtensions.AddOpenTelemetry wires it in apps.
                     options.AddProcessor(new TargetingLogProcessor());
 
                     options.AddInMemoryExporter(exportedLogRecords);

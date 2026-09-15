@@ -35,9 +35,7 @@ namespace OpenTelemetryDemo.Pages
 
             //
             // Emits a log-based custom event, the OpenTelemetry equivalent of
-            // TelemetryClient.TrackEvent. TargetingLogProcessor (wired up automatically by
-            // AddFeatureManagement().AddOpenTelemetry()) enriches it with TargetingId, just like
-            // the FeatureEvaluation event.
+            // TelemetryClient.TrackEvent.
             _logger.LogCheckout(CheckoutAmount);
 
             CheckedOut = true;

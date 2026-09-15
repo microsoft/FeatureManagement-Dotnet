@@ -35,13 +35,33 @@ This app uses `Microsoft.FeatureManagement.Telemetry.OpenTelemetry` alongside th
 Monitor OpenTelemetry Distro to export logs, traces, and metrics. See `Program.cs` for how
 tracing/logging/metrics and Azure Monitor are wired up via `UseAzureMonitor()`.
 
+### Registration
+
+```csharp
+builder.Services.AddFeatureManagement()
+    .WithTargeting();
+
+var telemetry = builder.Services.AddOpenTelemetry();
+
+telemetry.WithFeatureManagement();
+
+if (!string.IsNullOrEmpty(connectionString))
+{
+    telemetry.UseAzureMonitor(o => o.ConnectionString = connectionString);
+}
+```
+
+Register targeting processors before exporters: call `WithFeatureManagement()`
+before `UseAzureMonitor()`. This ensures `TargetingId` is added to spans and logs before
+they are exported.
+
 ### Targeting Id
 
 In order to connect evaluation events with other telemetry from the user, a targeting id needs
 to be emitted. This sample uses the provided `TargetingHttpContextMiddleware`, which reads the
 targeting context and adds `TargetingId` to both the `HttpContext` and the current `Activity`'s
 baggage as a request comes in. `TargetingActivityProcessor` and `TargetingLogProcessor`
-(automatically registered by `AddFeatureManagement().AddOpenTelemetry()`) then read that baggage
+(automatically registered by `WithFeatureManagement()`) then read that baggage
 to enrich spans and logs respectively.
 
 ## Sample App Usage
