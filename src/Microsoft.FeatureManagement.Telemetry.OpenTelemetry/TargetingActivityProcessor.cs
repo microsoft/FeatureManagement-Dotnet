@@ -11,8 +11,6 @@ namespace Microsoft.FeatureManagement.Telemetry.OpenTelemetry
     /// </summary>
     public class TargetingActivityProcessor : BaseProcessor<Activity>
     {
-        private const string TargetingIdKey = "TargetingId";
-
         /// <summary>
         /// When an <see cref="Activity"/> ends, adds targeting information to it if available.
         /// </summary>
@@ -25,7 +23,7 @@ namespace Microsoft.FeatureManagement.Telemetry.OpenTelemetry
             }
 
             // Extract the targeting id from the activity's baggage
-            string targetingId = activity.Baggage.FirstOrDefault(t => t.Key == TargetingIdKey).Value;
+            string targetingId = activity.Baggage.FirstOrDefault(t => t.Key == TelemetryConstants.TargetingIdKey).Value;
 
             // Don't modify the activity if there's no available targeting id
             if (string.IsNullOrEmpty(targetingId))
@@ -33,9 +31,9 @@ namespace Microsoft.FeatureManagement.Telemetry.OpenTelemetry
                 return;
             }
 
-            if (!activity.TagObjects.Any(tag => tag.Key == TargetingIdKey))
+            if (!activity.TagObjects.Any(tag => tag.Key == TelemetryConstants.TargetingIdKey))
             {
-                activity.SetTag(TargetingIdKey, targetingId);
+                activity.SetTag(TelemetryConstants.TargetingIdKey, targetingId);
             }
         }
     }

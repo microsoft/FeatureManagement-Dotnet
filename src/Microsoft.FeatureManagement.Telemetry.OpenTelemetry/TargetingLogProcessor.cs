@@ -12,8 +12,6 @@ namespace Microsoft.FeatureManagement.Telemetry.OpenTelemetry
     /// </summary>
     public class TargetingLogProcessor : BaseProcessor<LogRecord>
     {
-        private const string TargetingIdKey = "TargetingId";
-
         /// <summary>
         /// When a <see cref="LogRecord"/> ends, adds targeting information to it if available.
         /// </summary>
@@ -33,7 +31,7 @@ namespace Microsoft.FeatureManagement.Telemetry.OpenTelemetry
             }
 
             // Extract the targeting id from the current activity's baggage
-            string targetingId = activity.Baggage.FirstOrDefault(t => t.Key == TargetingIdKey).Value;
+            string targetingId = activity.Baggage.FirstOrDefault(t => t.Key == TelemetryConstants.TargetingIdKey).Value;
 
             // Don't modify the log record if there's no available targeting id
             if (string.IsNullOrEmpty(targetingId))
@@ -42,14 +40,14 @@ namespace Microsoft.FeatureManagement.Telemetry.OpenTelemetry
             }
 
             // Don't overwrite a TargetingId attribute the log record already carries
-            if (data.Attributes != null && data.Attributes.Any(attribute => attribute.Key == TargetingIdKey))
+            if (data.Attributes != null && data.Attributes.Any(attribute => attribute.Key == TelemetryConstants.TargetingIdKey))
             {
                 return;
             }
 
             var attributes = new List<KeyValuePair<string, object>>(data.Attributes ?? Array.Empty<KeyValuePair<string, object>>())
             {
-                new KeyValuePair<string, object>(TargetingIdKey, targetingId)
+                new KeyValuePair<string, object>(TelemetryConstants.TargetingIdKey, targetingId)
             };
 
             data.Attributes = attributes;

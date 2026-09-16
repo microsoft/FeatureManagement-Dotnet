@@ -9,15 +9,15 @@ namespace Microsoft.FeatureManagement.Telemetry.OpenTelemetry
     /// <summary>
     /// A hosted service used to construct and dispose the <see cref="FeatureEvaluationEventPublisher"/>
     /// </summary>
-    internal sealed class OpenTelemetryHostedService : IHostedService
+    internal sealed class FeatureEvaluationEventPublisherHostedService : IHostedService
     {
         private readonly IServiceProvider _serviceProvider;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="OpenTelemetryHostedService"/> class.
+        /// Initializes a new instance of the <see cref="FeatureEvaluationEventPublisherHostedService"/> class.
         /// </summary>
         /// <param name="serviceProvider">The <see cref="IServiceProvider"/> to get the publisher from.</param>
-        public OpenTelemetryHostedService(IServiceProvider serviceProvider)
+        public FeatureEvaluationEventPublisherHostedService(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         }

@@ -14,15 +14,17 @@ namespace OpenTelemetryDemo
     /// </summary>
     public static class LoggerExtensions
     {
+        private const string AzureMonitorCustomEventNameKey = "microsoft.custom_event.name";
+
         private static readonly Action<ILogger, string, int, Exception> _vote = LoggerMessage.Define<string, int>(
             LogLevel.Information,
-            new EventId(1, "microsoft.custom_event.name"),
-            "{microsoft.custom_event.name} {ImageRating}");
+            new EventId(1, AzureMonitorCustomEventNameKey),
+            "{" + AzureMonitorCustomEventNameKey + "} {ImageRating}");
 
         private static readonly Action<ILogger, string, string, long, Exception> _checkout = LoggerMessage.Define<string, string, long>(
             LogLevel.Information,
-            new EventId(2, "microsoft.custom_event.name"),
-            "{microsoft.custom_event.name} {success} {checkoutAmount}");
+            new EventId(2, AzureMonitorCustomEventNameKey),
+            "{" + AzureMonitorCustomEventNameKey + "} {success} {checkoutAmount}");
 
         public static void LogVote(this ILogger logger, int rating)
         {

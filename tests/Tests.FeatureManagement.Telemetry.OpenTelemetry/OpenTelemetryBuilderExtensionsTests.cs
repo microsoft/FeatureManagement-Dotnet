@@ -16,8 +16,10 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 {
     public class OpenTelemetryBuilderExtensionsTests
     {
-        [Fact]
-        public void WithFeatureManagementCalledTwiceDoesNotDuplicateRegistrations()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void WithFeatureManagementCalledTwiceDoesNotDuplicateRegistrations(bool useNewBuilder)
         {
             var services = new ServiceCollection();
 
@@ -29,7 +31,12 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 
             ServiceDescriptor[] descriptors = services.ToArray();
 
-            builder.WithFeatureManagement();
+            if (useNewBuilder)
+            {
+                builder = new TestOpenTelemetryBuilder(services);
+            }
+
+            Assert.Same(builder, builder.WithFeatureManagement());
 
             Assert.Equal(descriptors, services.ToArray());
             Assert.Single(services, d => d.ServiceType == typeof(TargetingActivityProcessor));

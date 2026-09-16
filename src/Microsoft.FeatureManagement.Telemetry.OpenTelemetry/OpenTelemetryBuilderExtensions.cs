@@ -22,6 +22,9 @@ namespace Microsoft.FeatureManagement
         /// <remarks>
         /// Automatically registers <see cref="TargetingActivityProcessor"/> and <see cref="TargetingLogProcessor"/>
         /// to enrich spans and logs with <c>TargetingId</c> from activity baggage.
+        /// Call this method before configuring exporters, including <c>UseAzureMonitor()</c>
+        /// or <c>UseAzureMonitorExporter()</c>.
+        /// Repeated calls for the same service collection have no effect.
         /// </remarks>
         /// <param name="builder">The OpenTelemetry builder.</param>
         /// <returns>The supplied OpenTelemetry builder.</returns>
@@ -37,12 +40,10 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentException($"The provided builder's services must not be null.", nameof(builder));
             }
 
-            if (builder.Services.Any(d => d.ServiceType == typeof(FeatureManagementTelemetryRegistration)))
+            if (builder.Services.Any(d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(FeatureEvaluationEventPublisherHostedService)))
             {
                 return builder;
             }
-
-            builder.Services.AddSingleton(new FeatureManagementTelemetryRegistration());
 
             builder.Services.TryAddSingleton<FeatureEvaluationEventPublisher>();
 
@@ -56,16 +57,9 @@ namespace Microsoft.FeatureManagement
             builder.Services.ConfigureOpenTelemetryLoggerProvider((serviceProvider, loggerProviderBuilder) =>
                 loggerProviderBuilder.AddProcessor(serviceProvider.GetRequiredService<TargetingLogProcessor>()));
 
-            if (!builder.Services.Any((ServiceDescriptor d) => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(OpenTelemetryHostedService)))
-            {
-                builder.Services.Insert(0, ServiceDescriptor.Singleton<IHostedService, OpenTelemetryHostedService>());
-            }
+            builder.Services.Insert(0, ServiceDescriptor.Singleton<IHostedService, FeatureEvaluationEventPublisherHostedService>());
 
             return builder;
-        }
-
-        private sealed class FeatureManagementTelemetryRegistration
-        {
         }
     }
 }
