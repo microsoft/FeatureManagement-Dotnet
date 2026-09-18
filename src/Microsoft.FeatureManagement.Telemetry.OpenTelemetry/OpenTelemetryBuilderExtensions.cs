@@ -28,7 +28,7 @@ namespace Microsoft.FeatureManagement
         /// </remarks>
         /// <param name="builder">The OpenTelemetry builder.</param>
         /// <returns>The supplied OpenTelemetry builder.</returns>
-        public static IOpenTelemetryBuilder WithFeatureManagement(this IOpenTelemetryBuilder builder)
+        public static IOpenTelemetryBuilder AddFeatureManagementProcessors(this IOpenTelemetryBuilder builder)
         {
             if (builder == null)
             {

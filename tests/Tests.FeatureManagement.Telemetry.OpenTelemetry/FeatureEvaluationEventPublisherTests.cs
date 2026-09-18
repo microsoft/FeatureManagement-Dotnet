@@ -75,7 +75,7 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 
             services.AddFeatureManagement();
 
-            services.AddOpenTelemetry().WithFeatureManagement();
+            services.AddOpenTelemetry().AddFeatureManagementProcessors();
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 

@@ -43,7 +43,7 @@ builder.Services.AddFeatureManagement()
 
 var telemetry = builder.Services.AddOpenTelemetry();
 
-telemetry.WithFeatureManagement();
+telemetry.AddFeatureManagementProcessors();
 
 if (!string.IsNullOrEmpty(connectionString))
 {
@@ -51,7 +51,7 @@ if (!string.IsNullOrEmpty(connectionString))
 }
 ```
 
-Register targeting processors before exporters: call `WithFeatureManagement()`
+Register targeting processors before exporters: call `AddFeatureManagementProcessors()`
 before `UseAzureMonitor()`. This ensures `TargetingId` is added to spans and logs before
 they are exported.
 
@@ -61,7 +61,7 @@ In order to connect evaluation events with other telemetry from the user, a targ
 to be emitted. This sample uses the provided `TargetingHttpContextMiddleware`, which reads the
 targeting context and adds `TargetingId` to both the `HttpContext` and the current `Activity`'s
 baggage as a request comes in. `TargetingActivityProcessor` and `TargetingLogProcessor`
-(automatically registered by `WithFeatureManagement()`) then read that baggage
+(automatically registered by `AddFeatureManagementProcessors()`) then read that baggage
 to enrich spans and logs respectively.
 
 ## Sample App Usage

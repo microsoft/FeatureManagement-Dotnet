@@ -87,7 +87,7 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 
             if (integrationFirst)
             {
-                builder.WithFeatureManagement();
+                builder.AddFeatureManagementProcessors();
             }
 
             if (useLoggingBuilder)
@@ -103,7 +103,7 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 
             if (!integrationFirst)
             {
-                builder.WithFeatureManagement();
+                builder.AddFeatureManagementProcessors();
             }
 
             using ServiceProvider serviceProvider = services.BuildServiceProvider();

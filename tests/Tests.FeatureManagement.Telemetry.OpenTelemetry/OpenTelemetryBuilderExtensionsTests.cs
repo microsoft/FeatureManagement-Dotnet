@@ -19,7 +19,7 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void WithFeatureManagementCalledTwiceDoesNotDuplicateRegistrations(bool useNewBuilder)
+        public void AddFeatureManagementProcessorsCalledTwiceDoesNotDuplicateRegistrations(bool useNewBuilder)
         {
             var services = new ServiceCollection();
 
@@ -27,7 +27,7 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 
             var builder = new TestOpenTelemetryBuilder(services);
 
-            builder.WithFeatureManagement();
+            builder.AddFeatureManagementProcessors();
 
             ServiceDescriptor[] descriptors = services.ToArray();
 
@@ -36,7 +36,7 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
                 builder = new TestOpenTelemetryBuilder(services);
             }
 
-            Assert.Same(builder, builder.WithFeatureManagement());
+            Assert.Same(builder, builder.AddFeatureManagementProcessors());
 
             Assert.Equal(descriptors, services.ToArray());
             Assert.Single(services, d => d.ServiceType == typeof(TargetingActivityProcessor));
@@ -49,37 +49,37 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
         }
 
         [Fact]
-        public void WithFeatureManagementReturnsSameBuilderInstance()
+        public void AddFeatureManagementProcessorsReturnsSameBuilderInstance()
         {
             var builder = new TestOpenTelemetryBuilder(new ServiceCollection());
 
-            IOpenTelemetryBuilder returnedBuilder = builder.WithFeatureManagement();
+            IOpenTelemetryBuilder returnedBuilder = builder.AddFeatureManagementProcessors();
 
             Assert.Same(builder, returnedBuilder);
         }
 
         [Fact]
-        public void WithFeatureManagementRejectsNullBuilder()
+        public void AddFeatureManagementProcessorsRejectsNullBuilder()
         {
             IOpenTelemetryBuilder builder = null;
 
-            Assert.Throws<ArgumentNullException>("builder", () => builder.WithFeatureManagement());
+            Assert.Throws<ArgumentNullException>("builder", () => builder.AddFeatureManagementProcessors());
         }
 
         [Fact]
-        public void WithFeatureManagementRejectsNullServices()
+        public void AddFeatureManagementProcessorsRejectsNullServices()
         {
             var builder = new TestOpenTelemetryBuilder(null);
 
-            Assert.Throws<ArgumentException>("builder", () => builder.WithFeatureManagement());
+            Assert.Throws<ArgumentException>("builder", () => builder.AddFeatureManagementProcessors());
         }
 
         [Fact]
-        public void WithFeatureManagementDoesNotEnableProviders()
+        public void AddFeatureManagementProcessorsDoesNotEnableProviders()
         {
             var services = new ServiceCollection();
 
-            services.AddOpenTelemetry().WithFeatureManagement();
+            services.AddOpenTelemetry().AddFeatureManagementProcessors();
 
             using ServiceProvider serviceProvider = services.BuildServiceProvider();
 
@@ -88,7 +88,7 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
         }
 
         [Fact]
-        public void WithFeatureManagementPreservesExistingDescriptors()
+        public void AddFeatureManagementProcessorsPreservesExistingDescriptors()
         {
             var services = new ServiceCollection();
 
@@ -98,7 +98,7 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 
             ServiceDescriptor[] descriptors = services.ToArray();
 
-            builder.WithFeatureManagement();
+            builder.AddFeatureManagementProcessors();
 
             // Only our hosted service is prepended; existing provider configuration stays in place.
             Assert.Equal(typeof(IHostedService), services[0].ServiceType);

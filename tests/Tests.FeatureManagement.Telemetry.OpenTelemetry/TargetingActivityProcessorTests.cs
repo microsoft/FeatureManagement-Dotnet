@@ -148,7 +148,7 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 
             if (integrationFirst)
             {
-                builder.WithFeatureManagement();
+                builder.AddFeatureManagementProcessors();
             }
 
             builder.WithTracing(tracing => tracing
@@ -157,7 +157,7 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 
             if (!integrationFirst)
             {
-                builder.WithFeatureManagement();
+                builder.AddFeatureManagementProcessors();
             }
 
             using ServiceProvider serviceProvider = services.BuildServiceProvider();

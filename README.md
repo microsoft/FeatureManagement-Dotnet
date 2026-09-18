@@ -31,7 +31,7 @@ Feature management provides a way to develop and expose application functionalit
 `Microsoft.FeatureManagement.Telemetry.OpenTelemetry` provides feature-evaluation
 event publishing and targeting enrichment for spans and logs. Register feature
 management with `services.AddFeatureManagement()`, then call
-`WithFeatureManagement()` on the builder returned by `services.AddOpenTelemetry()`.
+`AddFeatureManagementProcessors()` on the builder returned by `services.AddOpenTelemetry()`.
 The integration automatically attaches its targeting processors; applications
 configure their own providers and exporters.
 

@@ -31,8 +31,8 @@ string connectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_
 OpenTelemetryBuilder openTelemetryBuilder = builder.Services.AddOpenTelemetry();
 
 // Register targeting processors before exporters so TargetingId is added before telemetry is exported.
-// Keep WithFeatureManagement() before the UseAzureMonitor() exporter configuration below.
-openTelemetryBuilder.WithFeatureManagement();
+// Keep AddFeatureManagementProcessors() before the UseAzureMonitor() exporter configuration below.
+openTelemetryBuilder.AddFeatureManagementProcessors();
 
 if (!string.IsNullOrEmpty(connectionString))
 {

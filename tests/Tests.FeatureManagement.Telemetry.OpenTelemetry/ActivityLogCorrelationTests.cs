@@ -32,7 +32,7 @@ namespace Tests.FeatureManagement.Telemetry.OpenTelemetry
 
             services.AddFeatureManagement();
 
-            services.AddOpenTelemetry().WithFeatureManagement();
+            services.AddOpenTelemetry().AddFeatureManagementProcessors();
 
             services.AddLogging(builder =>
                 builder.AddOpenTelemetry(logging => logging.AddInMemoryExporter(exportedLogRecords)));
