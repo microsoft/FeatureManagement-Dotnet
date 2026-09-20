@@ -17,9 +17,12 @@ namespace Microsoft.FeatureManagement
         /// defines a feature flag wins, even when earlier and later sources use different feature management schemas. If the same configuration source defines a
         /// feature flag in both the .NET schema and the Microsoft schema, the Microsoft schema definition takes precedence.
         ///
-        /// .NET schema feature flags continue to use .NET's native configuration merging behavior within that schema.
-        /// When custom merging is enabled, the provider bypasses .NET's native array merging behavior which merges arrays by index position and can lead to unexpected results when feature flags are defined across multiple configuration sources.
-        /// When custom merging is disabled, Microsoft schema definitions take precedence over .NET schema definitions regardless of configuration source order.
+        /// When custom merging is enabled, both .NET and Microsoft schema feature flag definitions are selected as a whole from the winning source.
+        /// Properties, feature filters, and filter parameters are not merged across sources. Each overriding source must supply the complete intended definition.
+        /// This bypasses .NET's native array merging behavior, which merges arrays by index position and can lead to unexpected results when feature flags are defined across multiple configuration sources.
+        /// For configuration that cannot be inspected provider by provider, the combined configuration is treated as a single source.
+        /// When custom merging is disabled (the default), .NET's native configuration merging behavior is used, and Microsoft schema definitions take precedence
+        /// over .NET schema definitions regardless of configuration source order.
         ///
         /// Consider the following configuration sources:
         /// Configuration Source 1:

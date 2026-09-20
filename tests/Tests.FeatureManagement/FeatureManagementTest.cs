@@ -75,8 +75,10 @@ namespace Tests.FeatureManagement
             Assert.True(hasItems);
         }
 
-        [Fact]
-        public async Task ReadsTopLevelConfiguration()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ReadsTopLevelConfiguration(bool customMergingEnabled)
         {
             var stream = new MemoryStream(Encoding.UTF8.GetBytes($"{{\"AllowedHosts\": \"*\", \"FeatureFlags\": {{\"FeatureX\": true}}}}"));
 
@@ -84,6 +86,8 @@ namespace Tests.FeatureManagement
 
             var services = new ServiceCollection();
 
+            services.Configure<ConfigurationFeatureDefinitionProviderOptions>(options =>
+                options.CustomConfigurationMergingEnabled = customMergingEnabled);
             services.AddFeatureManagement(config.GetSection("FeatureFlags"));
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
@@ -113,6 +117,8 @@ namespace Tests.FeatureManagement
 
             services = new ServiceCollection();
 
+            services.Configure<ConfigurationFeatureDefinitionProviderOptions>(options =>
+                options.CustomConfigurationMergingEnabled = customMergingEnabled);
             services.AddFeatureManagement(config.GetSection("FeatureFlags"));
 
             serviceProvider = services.BuildServiceProvider();
@@ -265,10 +271,7 @@ namespace Tests.FeatureManagement
             };
             var dotnetSchemaFeature = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                ["FeatureManagement:crossschemafeature:EnabledFor:0:Name"] = "Test"
-            };
-            var dotnetSchemaFeatureParameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
+                ["FeatureManagement:crossschemafeature:EnabledFor:0:Name"] = "Test",
                 ["FeatureManagement:crossschemafeature:EnabledFor:0:Parameters:Source"] = "Dotnet"
             };
             var mergeOptions = new ConfigurationFeatureDefinitionProviderOptions
@@ -279,7 +282,6 @@ namespace Tests.FeatureManagement
             IConfiguration microsoftThenDotnet = new ConfigurationBuilder()
                 .AddInMemoryCollection(microsoftSchemaFeature)
                 .AddInMemoryCollection(dotnetSchemaFeature)
-                .AddInMemoryCollection(dotnetSchemaFeatureParameters)
                 .Build();
 
             using (var provider = new ConfigurationFeatureDefinitionProvider(microsoftThenDotnet, mergeOptions))
@@ -351,23 +353,38 @@ namespace Tests.FeatureManagement
             Assert.Equal(FeatureStatus.Disabled, definition.Status);
         }
 
-        [Fact]
-        public async Task CustomMergingDeduplicatesCrossSchemaFeaturesFromChainedConfiguration()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CustomMergingDeduplicatesCrossSchemaFeaturesFromChainedConfiguration(bool chainedSourceLast)
         {
+            var microsoftSchemaFeature = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["feature_management:feature_flags:0:id"] = "CrossSchemaFeature",
+                ["feature_management:feature_flags:0:enabled"] = bool.FalseString
+            };
             IConfiguration innerConfiguration = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    ["feature_management:feature_flags:0:id"] = "CrossSchemaFeature",
-                    ["feature_management:feature_flags:0:enabled"] = bool.FalseString
-                })
-                .Build();
-            IConfiguration configuration = new ConfigurationBuilder()
-                .AddConfiguration(innerConfiguration)
+                .AddInMemoryCollection(microsoftSchemaFeature)
                 .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["FeatureManagement:crossschemafeature"] = bool.TrueString
                 })
                 .Build();
+            IConfiguration chainedConfiguration = new ConfigurationBuilder()
+                .AddConfiguration(innerConfiguration)
+                .Build();
+            var builder = new ConfigurationBuilder();
+
+            if (chainedSourceLast)
+            {
+                builder.AddInMemoryCollection(microsoftSchemaFeature).AddConfiguration(chainedConfiguration);
+            }
+            else
+            {
+                builder.AddConfiguration(chainedConfiguration).AddInMemoryCollection(microsoftSchemaFeature);
+            }
+
+            IConfiguration configuration = builder.Build();
             var mergeOptions = new ConfigurationFeatureDefinitionProviderOptions
             {
                 CustomConfigurationMergingEnabled = true
@@ -382,8 +399,18 @@ namespace Tests.FeatureManagement
             }
 
             FeatureDefinition crossSchemaDefinition = Assert.Single(definitions);
-            Assert.Equal(FeatureStatus.Conditional, crossSchemaDefinition.Status);
-            Assert.Single(crossSchemaDefinition.EnabledFor);
+            Assert.Equal(chainedSourceLast ? FeatureStatus.Conditional : FeatureStatus.Disabled, crossSchemaDefinition.Status);
+
+            var featureManager = new FeatureManager(provider);
+            var featureNames = new List<string>();
+
+            await foreach (string featureName in featureManager.GetFeatureNamesAsync())
+            {
+                featureNames.Add(featureName);
+            }
+
+            Assert.Single(featureNames);
+            Assert.Equal(chainedSourceLast, await featureManager.IsEnabledAsync("CROSSSCHEMAFEATURE"));
         }
 
         [Fact]
@@ -414,6 +441,256 @@ namespace Tests.FeatureManagement
             definition = await provider.GetFeatureDefinitionAsync("ReloadFeature");
             Assert.Equal(FeatureStatus.Conditional, definition.Status);
             Assert.Single(definition.EnabledFor);
+
+            lastConfigurationProvider.Set("feature_management:feature_flags:0:id", "ReloadFeature");
+            lastConfigurationProvider.Set("feature_management:feature_flags:0:enabled", bool.FalseString);
+            configuration.Reload();
+
+            var definitions = new List<FeatureDefinition>();
+
+            await foreach (FeatureDefinition currentDefinition in provider.GetAllFeatureDefinitionsAsync())
+            {
+                definitions.Add(currentDefinition);
+            }
+
+            Assert.Equal(FeatureStatus.Disabled, Assert.Single(definitions).Status);
+            Assert.Equal(FeatureStatus.Disabled, (await provider.GetFeatureDefinitionAsync("ReloadFeature")).Status);
+            Assert.Null(await provider.GetFeatureDefinitionAsync("RenamedFeature"));
+
+            lastConfigurationProvider.Set("feature_management:feature_flags:0:id", "RenamedFeature");
+            configuration.Reload();
+
+            Assert.Equal(FeatureStatus.Conditional, (await provider.GetFeatureDefinitionAsync("ReloadFeature")).Status);
+            Assert.Equal(FeatureStatus.Disabled, (await provider.GetFeatureDefinitionAsync("RenamedFeature")).Status);
+        }
+
+        [Fact]
+        public async Task CustomMergingDoesNotInheritEarlierAlwaysOnValue()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:TargetedFeature"] = bool.TrueString
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["feature_management:feature_flags:0:id"] = "TargetedFeature",
+                    ["feature_management:feature_flags:0:enabled"] = bool.FalseString
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:TargetedFeature:EnabledFor:0:Name"] = "Microsoft.Targeting",
+                    ["FeatureManagement:TargetedFeature:EnabledFor:0:Parameters:Audience:Users:0"] = "Alice",
+                    ["FeatureManagement:TargetedFeature:EnabledFor:0:Parameters:Audience:DefaultRolloutPercentage"] = "0"
+                })
+                .Build();
+            var services = new ServiceCollection();
+
+            services.AddSingleton(configuration).AddFeatureManagement();
+            services.Configure<ConfigurationFeatureDefinitionProviderOptions>(options =>
+                options.CustomConfigurationMergingEnabled = true);
+
+            using ServiceProvider serviceProvider = services.BuildServiceProvider();
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync("TargetedFeature", new TargetingContext { UserId = "Alice" }));
+            Assert.False(await featureManager.IsEnabledAsync("TargetedFeature", new TargetingContext { UserId = "Bob" }));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task MergesDotnetPropertiesOnlyWhenCustomMergingIsDisabled(bool customMergingEnabled)
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:Feature:RequirementType"] = "All",
+                    ["FeatureManagement:Feature:EnabledFor:0:Name"] = "Test",
+                    ["FeatureManagement:Feature:EnabledFor:0:Parameters:Inherited"] = "Earlier",
+                    ["FeatureManagement:Feature:EnabledFor:0:Parameters:Shared"] = "Earlier",
+                    ["FeatureManagement:Feature:EnabledFor:1:Name"] = "AlwaysOn"
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:Feature:EnabledFor:0:Name"] = "Test",
+                    ["FeatureManagement:Feature:EnabledFor:0:Parameters:Shared"] = "Later"
+                })
+                .Build();
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration, new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = customMergingEnabled
+            });
+
+            FeatureDefinition definition = await provider.GetFeatureDefinitionAsync("Feature");
+            List<FeatureFilterConfiguration> filters = definition.EnabledFor.ToList();
+
+            Assert.Equal(customMergingEnabled ? RequirementType.Any : RequirementType.All, definition.RequirementType);
+            Assert.Equal(customMergingEnabled ? 1 : 2, filters.Count);
+            Assert.Equal("Test", filters[0].Name);
+            Assert.Equal("Later", filters[0].Parameters["Shared"]);
+            Assert.Equal(customMergingEnabled ? null : "Earlier", filters[0].Parameters["Inherited"]);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task MergesPartialDotnetDefinitionsOnlyWhenCustomMergingIsDisabled(bool customMergingEnabled)
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:Feature:EnabledFor:0:Name"] = "Test"
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:Feature:EnabledFor:0:Parameters:Source"] = "Later"
+                })
+                .Build();
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration, new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = customMergingEnabled
+            });
+
+            FeatureDefinition definition = await provider.GetFeatureDefinitionAsync("Feature");
+
+            if (customMergingEnabled)
+            {
+                Assert.Empty(definition.EnabledFor);
+            }
+            else
+            {
+                FeatureFilterConfiguration filter = Assert.Single(definition.EnabledFor);
+
+                Assert.Equal("Test", filter.Name);
+                Assert.Equal("Later", filter.Parameters["Source"]);
+            }
+        }
+
+        [Fact]
+        public async Task CustomMergingDoesNotInheritFiltersForDisabledDotnetDefinition()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:Feature:EnabledFor:0:Name"] = "AlwaysOn"
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:Feature"] = bool.FalseString
+                })
+                .Build();
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration, new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = true
+            });
+            var featureManager = new FeatureManager(provider);
+
+            Assert.Empty((await provider.GetFeatureDefinitionAsync("Feature")).EnabledFor);
+            Assert.False(await featureManager.IsEnabledAsync("Feature"));
+        }
+
+        [Fact]
+        public async Task CustomMergingTreatsConfigurationSectionAsOneSource()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Flags:feature_management:feature_flags:0:id"] = "Feature",
+                    ["Flags:feature_management:feature_flags:0:enabled"] = bool.FalseString
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Flags:FeatureManagement:Feature"] = bool.TrueString
+                })
+                .Build();
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration.GetSection("Flags"), new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = true
+            });
+
+            Assert.Equal(FeatureStatus.Disabled, (await provider.GetFeatureDefinitionAsync("Feature")).Status);
+        }
+
+        [Fact]
+        public async Task CustomMergingParsesOnlyRequestedWinningDefinitions()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:Feature"] = bool.TrueString,
+                    ["feature_management:feature_flags:0:id"] = "Feature",
+                    ["feature_management:feature_flags:0:enabled"] = "Invalid",
+                    ["feature_management:feature_flags:1:id"] = "Feature",
+                    ["feature_management:feature_flags:1:enabled"] = bool.FalseString,
+                    ["feature_management:feature_flags:2:id"] = "UnrequestedFeature",
+                    ["feature_management:feature_flags:2:enabled"] = "Invalid"
+                })
+                .Build();
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration, new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = true
+            });
+
+            Assert.Equal(FeatureStatus.Disabled, (await provider.GetFeatureDefinitionAsync("Feature")).Status);
+            Assert.Null(await provider.GetFeatureDefinitionAsync("MissingFeature"));
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        public async Task CustomMergingDeterminesRootFallbackAcrossAllSources(bool hasDotnetSection, bool hasMicrosoftSection)
+        {
+            var laterSource = new Dictionary<string, string>
+            {
+                ["RootFeature"] = bool.FalseString
+            };
+
+            if (hasDotnetSection)
+            {
+                laterSource["FeatureManagement:DotnetFeature"] = bool.TrueString;
+            }
+
+            if (hasMicrosoftSection)
+            {
+                laterSource["feature_management:feature_flags:0:id"] = "MicrosoftFeature";
+                laterSource["feature_management:feature_flags:0:enabled"] = bool.TrueString;
+            }
+
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["RootFeature"] = bool.TrueString
+                })
+                .AddInMemoryCollection(laterSource)
+                .Build();
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration, new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = true
+            })
+            {
+                RootConfigurationFallbackEnabled = true
+            };
+
+            FeatureDefinition rootFeature = await provider.GetFeatureDefinitionAsync("RootFeature");
+
+            if (hasDotnetSection || hasMicrosoftSection)
+            {
+                Assert.Null(rootFeature);
+                Assert.NotNull(await provider.GetFeatureDefinitionAsync(hasDotnetSection ? "DotnetFeature" : "MicrosoftFeature"));
+            }
+            else
+            {
+                Assert.NotNull(rootFeature);
+                Assert.Empty(rootFeature.EnabledFor);
+            }
         }
 
         [Fact]
