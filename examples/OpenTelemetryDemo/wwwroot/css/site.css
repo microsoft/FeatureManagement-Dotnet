@@ -1,0 +1,30 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+img {
+    width: 100%;
+}
+
+.mb-5 {
+    margin-bottom: 5px!important;
+}
+
+.mb-40 {
+    margin-bottom: 40px!important;
+}

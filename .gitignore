@@ -352,3 +352,6 @@ __pycache__/
 # Secrets file
 appsettings.Secrets.json
 
+
+# Local, machine-specific build notes (not for public repo)
+BUILD-NOTES.local.md
