@@ -847,10 +847,11 @@ namespace Microsoft.FeatureManagement
                 variantConfiguration = variantDefinition.ConfigurationValue;
             }
 
-            return new Variant()
+            return new Variant
             {
                 Name = variantDefinition.Name,
-                Configuration = variantConfiguration
+                Configuration = variantConfiguration,
+                ConfigurationObject = variantDefinition.ConfigurationObject,
             };
         }
     }

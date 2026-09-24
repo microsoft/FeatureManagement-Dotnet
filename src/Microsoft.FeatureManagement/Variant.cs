@@ -19,5 +19,11 @@ namespace Microsoft.FeatureManagement
         /// The configuration of the variant.
         /// </summary>
         public IConfigurationSection Configuration { get; set; }
+
+        /// <summary>
+        /// The configuration of the variant.
+        /// When set, variants should prefer this over <see cref="Configuration"/>.
+        /// </summary>
+        public object ConfigurationObject { get; set; }
     }
 }

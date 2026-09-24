@@ -22,6 +22,14 @@ namespace Microsoft.FeatureManagement
         public IConfigurationSection ConfigurationValue { get; set; }
 
         /// <summary>
+        /// A configuration object that can be used as an alternative to <see cref="ConfigurationValue"/>.
+        /// Custom <see cref="IFeatureDefinitionProvider"/> implementations can populate this property directly
+        /// instead of constructing an <see cref="IConfiguration"/> instance.
+        /// When set, variants should prefer this over <see cref="ConfigurationValue"/>.
+        /// </summary>
+        public object ConfigurationObject { get; set; }
+
+        /// <summary>
         /// Overrides the state of the feature if this variant has been assigned.
         /// </summary>
         public StatusOverride StatusOverride { get; set; } = StatusOverride.None;
