@@ -9,14 +9,20 @@ namespace Microsoft.FeatureManagement
     public class ConfigurationFeatureDefinitionProviderOptions
     {
         /// <summary>
-        /// Controls whether to enable the custom configuration merging logic for Microsoft schema feature flags or fall back to .NET's native configuration merging behavior.
+        /// Controls whether to enable custom configuration merging for feature flags from multiple configuration sources.
         /// </summary>
         /// <remarks>
-        /// This option only affects Microsoft schema feature flags (e.g. feature_management:feature_flags arrays). .NET schema feature flags are not affected by this setting.
-        /// 
-        /// The <see cref="ConfigurationFeatureDefinitionProvider"/> uses custom configuration merging logic for Microsoft schema feature flags to ensure that
-        /// feature flags with the same ID from different configuration sources are merged correctly based on their logical identity rather than array position.
-        /// By default, the provider bypasses .NET's native array merging behavior which merges arrays by index position and can lead to unexpected results when feature flags are defined across multiple configuration sources.
+        /// The <see cref="ConfigurationFeatureDefinitionProvider"/> uses custom configuration merging logic to ensure that feature flags with the same ID from
+        /// different configuration sources are merged correctly based on their logical identity rather than array position. The last configuration source that
+        /// defines a feature flag wins, even when earlier and later sources use different feature management schemas. If the same configuration source defines a
+        /// feature flag in both the .NET schema and the Microsoft schema, the Microsoft schema definition takes precedence.
+        ///
+        /// When custom merging is enabled, both .NET and Microsoft schema feature flag definitions are selected as a whole from the winning source.
+        /// Properties, feature filters, and filter parameters are not merged across sources. Each overriding source must supply the complete intended definition.
+        /// This bypasses .NET's native array merging behavior, which merges arrays by index position and can lead to unexpected results when feature flags are defined across multiple configuration sources.
+        /// For configuration that cannot be inspected provider by provider, the combined configuration is treated as a single source.
+        /// When custom merging is disabled (the default), .NET's native configuration merging behavior is used, and Microsoft schema definitions take precedence
+        /// over .NET schema definitions regardless of configuration source order.
         ///
         /// Consider the following configuration sources:
         /// Configuration Source 1:
