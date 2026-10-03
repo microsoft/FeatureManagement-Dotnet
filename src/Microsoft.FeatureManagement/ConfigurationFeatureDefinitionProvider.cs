@@ -544,6 +544,8 @@ namespace Microsoft.FeatureManagement
                 {
                     StatusOverride statusOverride = StatusOverride.None;
 
+                    IConfigurationSection variantConfiguration = section.GetSection(MicrosoftFeatureManagementFields.VariantDefinitionConfigurationValue);
+
                     string rawStatusOverride = section[MicrosoftFeatureManagementFields.VariantDefinitionStatusOverride];
 
                     if (!string.IsNullOrEmpty(rawStatusOverride))
@@ -554,7 +556,10 @@ namespace Microsoft.FeatureManagement
                     var variant = new VariantDefinition()
                     {
                         Name = section[MicrosoftFeatureManagementFields.Name],
-                        ConfigurationValue = section.GetSection(MicrosoftFeatureManagementFields.VariantDefinitionConfigurationValue),
+                        ConfigurationValue = variantConfiguration,
+                        ConfigurationCache = variantConfiguration.Exists()
+                            ? new VariantConfigurationCache(variantConfiguration)
+                            : null,
                         StatusOverride = statusOverride
                     };
 

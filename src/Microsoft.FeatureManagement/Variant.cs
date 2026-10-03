@@ -25,5 +25,7 @@ namespace Microsoft.FeatureManagement
         /// When set, variants should prefer this over <see cref="Configuration"/>.
         /// </summary>
         public object ConfigurationObject { get; set; }
+
+        internal VariantConfigurationCache ConfigurationCache { get; set; }
     }
 }

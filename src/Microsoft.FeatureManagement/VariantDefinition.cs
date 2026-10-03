@@ -29,6 +29,8 @@ namespace Microsoft.FeatureManagement
         /// </summary>
         public object ConfigurationObject { get; set; }
 
+        internal VariantConfigurationCache ConfigurationCache { get; set; }
+
         /// <summary>
         /// Overrides the state of the feature if this variant has been assigned.
         /// </summary>

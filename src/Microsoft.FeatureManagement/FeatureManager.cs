@@ -842,9 +842,18 @@ namespace Microsoft.FeatureManagement
         {
             IConfigurationSection variantConfiguration = null;
 
-            if (variantDefinition.ConfigurationValue.Exists())
+            IConfigurationSection definitionConfiguration = variantDefinition.ConfigurationValue;
+
+            if (definitionConfiguration?.Exists() == true)
             {
-                variantConfiguration = variantDefinition.ConfigurationValue;
+                variantConfiguration = definitionConfiguration;
+            }
+
+            VariantConfigurationCache configurationCache = variantDefinition.ConfigurationCache;
+
+            if (!ReferenceEquals(configurationCache?.Configuration, variantConfiguration))
+            {
+                configurationCache = null;
             }
 
             return new Variant
@@ -852,6 +861,7 @@ namespace Microsoft.FeatureManagement
                 Name = variantDefinition.Name,
                 Configuration = variantConfiguration,
                 ConfigurationObject = variantDefinition.ConfigurationObject,
+                ConfigurationCache = configurationCache,
             };
         }
     }
