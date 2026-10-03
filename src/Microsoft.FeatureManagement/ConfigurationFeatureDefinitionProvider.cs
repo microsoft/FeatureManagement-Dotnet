@@ -7,7 +7,6 @@ using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -552,16 +551,10 @@ namespace Microsoft.FeatureManagement
                         statusOverride = ParseEnum<StatusOverride>(configurationSection.Key, rawStatusOverride, MicrosoftFeatureManagementFields.VariantDefinitionStatusOverride);
                     }
 
-                    var configurationValue = section.GetSection(
-                        MicrosoftFeatureManagementFields.VariantDefinitionConfigurationValue);
-
                     var variant = new VariantDefinition()
                     {
                         Name = section[MicrosoftFeatureManagementFields.Name],
-                        ConfigurationValue = configurationValue,
-                        ConfigurationObject = configurationValue.Exists()
-                            ? CreateConfigurationObject(configurationValue)
-                            : null,
+                        ConfigurationValue = section.GetSection(MicrosoftFeatureManagementFields.VariantDefinitionConfigurationValue),
                         StatusOverride = statusOverride
                     };
 
@@ -604,25 +597,6 @@ namespace Microsoft.FeatureManagement
                     Metadata = telemetryMetadata
                 }
             };
-        }
-
-        private static IReadOnlyDictionary<string, string> CreateConfigurationObject(IConfigurationSection section)
-        {
-            var values = section
-                .AsEnumerable(makePathsRelative: true)
-                .Where(x => x.Value != null)
-                .ToDictionary(
-                    entry => entry.Key,
-                    entry => entry.Value,
-                    StringComparer.OrdinalIgnoreCase);
-
-            // Relative enumeration excludes the section's own value. Preserve it under the empty key.
-            if (section.Value != null)
-            {
-                values.Add(string.Empty, section.Value);
-            }
-
-            return new ReadOnlyDictionary<string, string>(values);
         }
 
         private static T ParseEnum<T>(string feature, string rawValue, string fieldKeyword)

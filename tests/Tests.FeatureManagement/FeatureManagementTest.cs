@@ -2524,17 +2524,9 @@ namespace Tests.FeatureManagement
 
             // Test DefaultWhenEnabled and ConfigurationValue with inline IConfigurationSection
             variant = await featureManager.GetVariantAsync(Features.VariantFeatureDefaultEnabled, cancellationToken);
-            var configurationObject = (IReadOnlyDictionary<string, string>)variant.ConfigurationObject;
-            Assert.True(configurationObject.Keys.ToHashSet().SetEquals(new[]
-            {
-                "Size",
-                "Color",
-                "Platform:Id",
-                "Platform:Screens:0",
-                "Platform:Screens:1"
-            }));
 
             Assert.Equal("Medium", variant.Name);
+            Assert.Null(variant.ConfigurationObject);
             Assert.Equal("450px", variant.Configuration["Size"]);
             Assert.True(await featureManager.IsEnabledAsync(Features.VariantFeatureDefaultEnabled, cancellationToken));
 
