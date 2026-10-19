@@ -26,8 +26,24 @@ namespace Tests.FeatureManagement.AspNetCore
 
         [Route("/gateAny")]
         [HttpGet]
-        [FeatureGate(RequirementType.Any, Features.ConditionalFeature, Features.ConditionalFeature2)]
+        [FeatureGate(requirementType: RequirementType.Any, Features.ConditionalFeature, Features.ConditionalFeature2)]
         public IActionResult GateAny()
+        {
+            return Ok();
+        }
+
+        [Route("/gateAllNegate")]
+        [HttpGet]
+        [FeatureGate(negate: true, Features.ConditionalFeature, Features.ConditionalFeature2)]
+        public IActionResult GateAllNegate()
+        {
+            return Ok();
+        }
+
+        [Route("/gateAnyNegate")]
+        [HttpGet]
+        [FeatureGate(requirementType: RequirementType.Any, negate: true, Features.ConditionalFeature, Features.ConditionalFeature2)]
+        public IActionResult GateAnyNegate()
         {
             return Ok();
         }

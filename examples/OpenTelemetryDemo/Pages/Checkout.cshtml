@@ -1,0 +1,20 @@
+@page
+@model CheckoutModel
+@{
+    ViewData["Title"] = "Checkout";
+}
+<h1>@ViewData["Title"]</h1>
+
+<p>Click Below To Check Out!</p>
+
+<form method="post">
+    @Html.AntiForgeryToken()
+    <button id="checkout" name="checkout" type="submit" class="btn btn-primary btn-sm">
+        Check Out
+    </button>
+</form>
+
+@if (Model.CheckedOut)
+{
+    <p class="mt-3">Checked Out! Amount: @Model.CheckoutAmount</p>
+}

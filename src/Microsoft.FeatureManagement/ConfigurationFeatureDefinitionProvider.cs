@@ -17,31 +17,63 @@ namespace Microsoft.FeatureManagement
     /// <summary>
     /// A feature definition provider that pulls feature definitions from the .NET Core <see cref="IConfiguration"/> system.
     /// </summary>
-    public sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable, IFeatureDefinitionProviderCacheable
+    public sealed class ConfigurationFeatureDefinitionProvider : IFeatureDefinitionProvider, IDisposable
     {
-        //
-        // IFeatureDefinitionProviderCacheable interface is only used to mark this provider as cacheable. This allows our test suite's
-        // provider to be marked for caching as well.
-
         private readonly IConfiguration _configuration;
-        private readonly ConcurrentDictionary<string, FeatureDefinition> _definitions;
+        private readonly ConfigurationFeatureDefinitionProviderOptions _options;
+        private IEnumerable<FeatureDefinitionSectionsBySource> _featureDefinitionSources;
+        private readonly ConcurrentDictionary<string, Task<FeatureDefinition>> _definitions;
         private IDisposable _changeSubscription;
         private int _stale = 0;
+        private int _initialized = 0;
+        private readonly Func<string, Task<FeatureDefinition>> _getFeatureDefinitionFunc;
 
         const string ParseValueErrorString = "Invalid setting '{0}' with value '{1}' for feature '{2}'.";
+
+        private sealed class FeatureDefinitionSectionsBySource
+        {
+            public FeatureDefinitionSectionsBySource(
+                IEnumerable<IConfigurationSection> dotnetSections,
+                IEnumerable<IConfigurationSection> microsoftSections)
+            {
+                DotnetSections = dotnetSections;
+                MicrosoftSections = microsoftSections;
+            }
+
+            public IEnumerable<IConfigurationSection> DotnetSections { get; }
+
+            public IEnumerable<IConfigurationSection> MicrosoftSections { get; }
+        }
 
         /// <summary>
         /// Creates a configuration feature definition provider.
         /// </summary>
         /// <param name="configuration">The configuration of feature definitions.</param>
-        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration)
+        public ConfigurationFeatureDefinitionProvider(IConfiguration configuration) : this(configuration, null)
+        {
+        }
+
+        /// <summary>
+        /// Creates a configuration feature definition provider.
+        /// </summary>
+        /// <param name="configuration">The configuration of feature definitions.</param>
+        /// <param name="options">The options for the configuration feature definition provider.</param>
+        public ConfigurationFeatureDefinitionProvider(
+            IConfiguration configuration,
+            ConfigurationFeatureDefinitionProviderOptions options)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _definitions = new ConcurrentDictionary<string, FeatureDefinition>();
+            _options = options ?? new ConfigurationFeatureDefinitionProviderOptions();
+            _definitions = new ConcurrentDictionary<string, Task<FeatureDefinition>>();
 
             _changeSubscription = ChangeToken.OnChange(
                 () => _configuration.GetReloadToken(),
                 () => _stale = 1);
+
+            _getFeatureDefinitionFunc = (featureName) =>
+            {
+                return Task.FromResult(GetFeatureDefinition(featureName));
+            };
         }
 
         /// <summary>
@@ -81,15 +113,16 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentException($"The value '{ConfigurationPath.KeyDelimiter}' is not allowed in the feature name.", nameof(featureName));
             }
 
+            EnsureInit();
+
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
+                LoadFeatureDefinitionSections();
+
                 _definitions.Clear();
             }
 
-            return Task.FromResult(
-                _definitions.GetOrAdd(
-                    featureName,
-                    (_) => GetMicrosoftSchemaFeatureDefinition(featureName) ?? GetDotnetSchemaFeatureDefinition(featureName)));
+            return _definitions.GetOrAdd(featureName, _getFeatureDefinitionFunc);
         }
 
         /// <summary>
@@ -98,119 +131,167 @@ namespace Microsoft.FeatureManagement
         /// <returns>An enumerator which provides asynchronous iteration over feature definitions.</returns>
         //
         // The async key word is necessary for creating IAsyncEnumerable.
-        // The need to disable this warning occurs when implementaing async stream synchronously. 
+        // The need to disable this warning occurs when implementing async stream synchronously. 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998
         {
+            EnsureInit();
+
             if (Interlocked.Exchange(ref _stale, 0) != 0)
             {
+                LoadFeatureDefinitionSections();
+
                 _definitions.Clear();
             }
 
-            IEnumerable<IConfigurationSection> microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
+            HashSet<string> processedFeatureNames = _options.CustomConfigurationMergingEnabled
+                ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                : null;
 
-            foreach (IConfigurationSection featureSection in microsoftFeatureDefinitionSections)
+            foreach (FeatureDefinitionSectionsBySource source in _featureDefinitionSources)
             {
-                string featureName = featureSection[MicrosoftFeatureManagementFields.Id];
+                IEnumerable<string> featureNames = source.MicrosoftSections
+                    .Select(section => section[MicrosoftFeatureManagementFields.Id])
+                    .Concat(source.DotnetSections.Select(section => section.Key));
 
-                if (string.IsNullOrEmpty(featureName))
+                foreach (string featureName in featureNames)
                 {
-                    continue;
-                }
+                    if (string.IsNullOrEmpty(featureName) ||
+                        (processedFeatureNames != null && !processedFeatureNames.Add(featureName)))
+                    {
+                        continue;
+                    }
 
-                //
-                // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                FeatureDefinition definition = _definitions.GetOrAdd(featureName, (_) => ParseMicrosoftSchemaFeatureDefinition(featureSection));
+                    FeatureDefinition definition = _definitions.GetOrAdd(featureName, _getFeatureDefinitionFunc).Result;
 
-                if (definition != null)
-                {
-                    yield return definition;
-                }
-            }
-
-            IEnumerable<IConfigurationSection> dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
-
-            foreach (IConfigurationSection featureSection in dotnetFeatureDefinitionSections)
-            {
-                string featureName = featureSection.Key;
-
-                if (string.IsNullOrEmpty(featureName))
-                {
-                    continue;
-                }
-
-                //
-                // Underlying IConfigurationSection data is dynamic so latest feature definitions are returned
-                FeatureDefinition definition = _definitions.GetOrAdd(featureName, (_) => ParseDotnetSchemaFeatureDefinition(featureSection));
-
-                if (definition != null)
-                {
-                    yield return definition;
+                    if (definition != null)
+                    {
+                        yield return definition;
+                    }
                 }
             }
         }
 
-        private FeatureDefinition GetDotnetSchemaFeatureDefinition(string featureName)
+        private void EnsureInit()
         {
-            IEnumerable<IConfigurationSection> dotnetFeatureDefinitionSections = GetDotnetFeatureDefinitionSections();
+            if (_initialized == 0)
+            {
+                LoadFeatureDefinitionSections();
 
-            IConfigurationSection configuration = dotnetFeatureDefinitionSections
+                _initialized = 1;
+            }
+        }
+
+        private void LoadFeatureDefinitionSections()
+        {
+            //
+            // Determine root fallback from the full configuration, not from individual providers.
+            bool useRootConfiguration = RootConfigurationFallbackEnabled &&
+                !_configuration.GetSection(DotnetFeatureManagementFields.FeatureManagementSectionName).Exists() &&
+                !_configuration.GetChildren().Any(section =>
+                    string.Equals(section.Key, MicrosoftFeatureManagementFields.FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase));
+
+            if (!_options.CustomConfigurationMergingEnabled)
+            {
+                _featureDefinitionSources = new[] { GetFeatureDefinitionSections(_configuration, useRootConfiguration) };
+                return;
+            }
+
+            var featureDefinitionSources = new List<FeatureDefinitionSectionsBySource>();
+
+            FindFeatureDefinitionSources(_configuration, useRootConfiguration, featureDefinitionSources);
+
+            _featureDefinitionSources = featureDefinitionSources;
+        }
+
+        private FeatureDefinition GetFeatureDefinition(string featureName)
+        {
+            foreach (FeatureDefinitionSectionsBySource source in _featureDefinitionSources)
+            {
+                FeatureDefinition definition = GetMicrosoftSchemaFeatureDefinition(featureName, source.MicrosoftSections) ??
+                    GetDotnetSchemaFeatureDefinition(featureName, source.DotnetSections);
+
+                if (definition != null)
+                {
+                    return definition;
+                }
+            }
+
+            return null;
+        }
+
+        private FeatureDefinition GetDotnetSchemaFeatureDefinition(string featureName, IEnumerable<IConfigurationSection> sections)
+        {
+            IConfigurationSection dotnetFeatureDefinitionConfiguration = sections
                 .FirstOrDefault(section =>
                     string.Equals(section.Key, featureName, StringComparison.OrdinalIgnoreCase));
 
-            if (configuration == null)
+            if (dotnetFeatureDefinitionConfiguration == null)
             {
                 return null;
             }
 
-            return ParseDotnetSchemaFeatureDefinition(configuration);
+            return ParseDotnetSchemaFeatureDefinition(dotnetFeatureDefinitionConfiguration);
         }
 
-        private FeatureDefinition GetMicrosoftSchemaFeatureDefinition(string featureName)
+        private FeatureDefinition GetMicrosoftSchemaFeatureDefinition(string featureName, IEnumerable<IConfigurationSection> sections)
         {
-            IEnumerable<IConfigurationSection> microsoftFeatureDefinitionSections = GetMicrosoftFeatureDefinitionSections();
-
-            IConfigurationSection configuration = microsoftFeatureDefinitionSections
+            IConfigurationSection microsoftFeatureDefinitionConfiguration = sections
                 .LastOrDefault(section =>
                     string.Equals(section[MicrosoftFeatureManagementFields.Id], featureName, StringComparison.OrdinalIgnoreCase));
 
-            if (configuration == null)
+            if (microsoftFeatureDefinitionConfiguration == null)
             {
                 return null;
             }
 
-            return ParseMicrosoftSchemaFeatureDefinition(configuration);
+            return ParseMicrosoftSchemaFeatureDefinition(microsoftFeatureDefinitionConfiguration);
         }
 
-        private IEnumerable<IConfigurationSection> GetDotnetFeatureDefinitionSections()
+        private FeatureDefinitionSectionsBySource GetFeatureDefinitionSections(IConfiguration configuration, bool useRootConfiguration)
         {
-            IConfigurationSection featureManagementConfigurationSection = _configuration.GetSection(DotnetFeatureManagementFields.FeatureManagementSectionName);
+            return new FeatureDefinitionSectionsBySource(
+                useRootConfiguration
+                    ? configuration.GetChildren()
+                    : configuration.GetSection(DotnetFeatureManagementFields.FeatureManagementSectionName).GetChildren(),
+                configuration.GetSection(MicrosoftFeatureManagementFields.FeatureManagementSectionName)
+                    .GetSection(MicrosoftFeatureManagementFields.FeatureFlagsSectionName)
+                    .GetChildren());
+        }
 
-            if (featureManagementConfigurationSection.Exists())
+        private void FindFeatureDefinitionSources(
+            IConfiguration configuration,
+            bool useRootConfiguration,
+            List<FeatureDefinitionSectionsBySource> featureDefinitionSources)
+        {
+            if (!(configuration is IConfigurationRoot configurationRoot) ||
+                configurationRoot.Providers.Any(provider =>
+                    !(provider is ConfigurationProvider) && !(provider is ChainedConfigurationProvider)))
             {
-                return featureManagementConfigurationSection.GetChildren();
+                featureDefinitionSources.Add(GetFeatureDefinitionSections(configuration, useRootConfiguration));
+                return;
             }
 
             //
-            // Root configuration fallback only applies to .NET schema.
-            // If Microsoft schema can be found, root configuration fallback will not be effective.
-            if (RootConfigurationFallbackEnabled &&
-                !_configuration.GetChildren()
-                    .Any(section =>
-                        string.Equals(section.Key, MicrosoftFeatureManagementFields.FeatureManagementSectionName, StringComparison.OrdinalIgnoreCase)))
+            // Keep sources in highest-to-lowest precedence order, including chained providers.
+            foreach (IConfigurationProvider provider in configurationRoot.Providers.Reverse())
             {
-                return _configuration.GetChildren();
+                if (provider is ConfigurationProvider configurationProvider)
+                {
+                    //
+                    // Cannot use the original provider directly as its reload token is subscribed
+                    var onDemandConfigurationProvider = new OnDemandConfigurationProvider(configurationProvider);
+
+                    var onDemandConfigurationRoot = new ConfigurationRoot(new[] { onDemandConfigurationProvider });
+
+                    featureDefinitionSources.Add(GetFeatureDefinitionSections(onDemandConfigurationRoot, useRootConfiguration));
+                }
+                else if (provider is ChainedConfigurationProvider chainedProvider)
+                {
+                    FindFeatureDefinitionSources(chainedProvider.Configuration, useRootConfiguration, featureDefinitionSources);
+                }
             }
-
-            return Enumerable.Empty<IConfigurationSection>();
-        }
-
-        private IEnumerable<IConfigurationSection> GetMicrosoftFeatureDefinitionSections()
-        {
-            return _configuration.GetSection(MicrosoftFeatureManagementFields.FeatureManagementSectionName)
-                .GetSection(MicrosoftFeatureManagementFields.FeatureFlagsSectionName)
-                .GetChildren();
         }
 
         private FeatureDefinition ParseDotnetSchemaFeatureDefinition(IConfigurationSection configurationSection)
@@ -518,7 +599,7 @@ namespace Microsoft.FeatureManagement
             };
         }
 
-        private T ParseEnum<T>(string feature, string rawValue, string fieldKeyword)
+        private static T ParseEnum<T>(string feature, string rawValue, string fieldKeyword)
             where T : struct, Enum
         {
             Debug.Assert(!string.IsNullOrEmpty(rawValue));
@@ -533,7 +614,7 @@ namespace Microsoft.FeatureManagement
             return value;
         }
 
-        private double ParseDouble(string feature, string rawValue, string fieldKeyword)
+        private static double ParseDouble(string feature, string rawValue, string fieldKeyword)
         {
             Debug.Assert(!string.IsNullOrEmpty(rawValue));
 
@@ -547,7 +628,7 @@ namespace Microsoft.FeatureManagement
             return value;
         }
 
-        private bool ParseBool(string feature, string rawValue, string fieldKeyword)
+        private static bool ParseBool(string feature, string rawValue, string fieldKeyword)
         {
             Debug.Assert(!string.IsNullOrEmpty(rawValue));
 

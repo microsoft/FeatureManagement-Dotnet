@@ -49,6 +49,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 throw new ArgumentNullException(nameof(context));
             }
 
+            if (context.Settings != null && !(context.Settings is PercentageFilterSettings))
+            {
+                throw new ArgumentException(
+                    $"The '{Alias}' feature filter for feature '{context.FeatureName}' has a {nameof(context.Settings)} value of type '{context.Settings.GetType()}', but expected '{typeof(PercentageFilterSettings)}'.",
+                    nameof(context.Settings));
+            }
+
             //
             // Check if prebound settings available, otherwise bind from parameters.
             PercentageFilterSettings settings = (PercentageFilterSettings)context.Settings ?? (PercentageFilterSettings)BindParameters(context.Parameters);

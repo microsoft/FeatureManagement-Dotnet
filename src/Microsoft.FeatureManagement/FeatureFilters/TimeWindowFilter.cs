@@ -37,9 +37,9 @@ namespace Microsoft.FeatureManagement.FeatureFilters
         public IMemoryCache Cache { get; set; }
 
         /// <summary>
-        /// This property allows the time window filter in our test suite to use simulated time.
+        /// This property allows the time window filter to use custom <see cref="TimeProvider"/>.
         /// </summary>
-        internal TimeProvider SystemClock { get; set; }
+        public TimeProvider SystemClock { get; set; }
 
         /// <summary>
         /// Binds configuration representing filter parameters to <see cref="TimeWindowFilterSettings"/>.
@@ -68,6 +68,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
+            }
+
+            if (context.Settings != null && !(context.Settings is TimeWindowFilterSettings))
+            {
+                throw new ArgumentException(
+                    $"The '{Alias}' feature filter for feature '{context.FeatureName}' has a {nameof(context.Settings)} value of type '{context.Settings.GetType()}', but expected '{typeof(TimeWindowFilterSettings)}'.",
+                    nameof(context.Settings));
             }
 
             //

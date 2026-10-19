@@ -1,9 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 //
-using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.FeatureManagement;
-using Microsoft.FeatureManagement.Telemetry.ApplicationInsights;
 using VariantServiceDemo;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,19 +12,18 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages();
 
-builder.Services.AddHttpContextAccessor();
+//
+// Use cookie auth for simplicity and randomizing user
+builder.Services.AddAuthentication("CookieAuth");
 
 builder.Services.AddApplicationInsightsTelemetry();
 
 //
-// App Insights TargetingId Tagging
-builder.Services.AddSingleton<ITelemetryInitializer, TargetingTelemetryInitializer>();
+// Add variant implementations of ICalculator using keyed services so that only the
+// implementation matching the assigned variant is instantiated on demand.
+builder.Services.AddKeyedSingleton<ICalculator, DefaultCalculator>("DefaultCalculator");
 
-//
-// Add variant implementations of ICalculator
-builder.Services.AddSingleton<ICalculator, DefaultCalculator>();
-
-builder.Services.AddSingleton<ICalculator, RemoteCalculator>();
+builder.Services.AddKeyedSingleton<ICalculator, RemoteCalculator>("RemoteCalculator");
 
 //
 // Enter feature management
@@ -35,7 +32,7 @@ builder.Services.AddSingleton<ICalculator, RemoteCalculator>();
 // Including user targeting capability and the variant service provider of ICalculator which is bounded with the variant feature flag "Calculator"
 // Wire up evaluation event emission
 builder.Services.AddFeatureManagement()
-    .WithTargeting<HttpContextTargetingContextAccessor>()
+    .WithTargeting()
     .WithVariantService<ICalculator>("Calculator")
     .AddApplicationInsightsTelemetry();
 

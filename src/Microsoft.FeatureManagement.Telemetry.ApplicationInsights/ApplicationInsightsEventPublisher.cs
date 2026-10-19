@@ -51,7 +51,41 @@ namespace Microsoft.FeatureManagement.Telemetry.ApplicationInsights
 
             foreach (var tag in activityEvent.Tags)
             {
-                properties[tag.Key] = tag.Value?.ToString();
+                // FeatureEvaluation event schema: https://github.com/microsoft/FeatureManagement/blob/main/Schema/FeatureEvaluationEvent/FeatureEvaluationEvent.v1.0.0.schema.json
+                if (tag.Value is VariantAssignmentReason reason)
+                {
+                    switch (reason)
+                    {
+                        case VariantAssignmentReason.None:
+                            properties[tag.Key] = "None";
+                            break;
+                        case VariantAssignmentReason.DefaultWhenDisabled:
+                            properties[tag.Key] = "DefaultWhenDisabled";
+                            break;
+                        case VariantAssignmentReason.DefaultWhenEnabled:
+                            properties[tag.Key] = "DefaultWhenEnabled";
+                            break;
+                        case VariantAssignmentReason.User:
+                            properties[tag.Key] = "User";
+                            break;
+                        case VariantAssignmentReason.Group:
+                            properties[tag.Key] = "Group";
+                            break;
+                        case VariantAssignmentReason.Percentile:
+                            properties[tag.Key] = "Percentile";
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException(nameof(activityEvent), "The variant assignment reason is unrecognizable.");
+                    }
+                }
+                else if (tag.Value is bool val)
+                {
+                    properties[tag.Key] = val ? "True" : "False";
+                }
+                else
+                {
+                    properties[tag.Key] = tag.Value?.ToString();
+                }
             }
 
             _telemetryClient.TrackEvent("FeatureEvaluation", properties);

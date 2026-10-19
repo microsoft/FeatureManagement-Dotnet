@@ -75,8 +75,10 @@ namespace Tests.FeatureManagement
             Assert.True(hasItems);
         }
 
-        [Fact]
-        public async Task ReadsTopLevelConfiguration()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ReadsTopLevelConfiguration(bool customMergingEnabled)
         {
             var stream = new MemoryStream(Encoding.UTF8.GetBytes($"{{\"AllowedHosts\": \"*\", \"FeatureFlags\": {{\"FeatureX\": true}}}}"));
 
@@ -84,13 +86,15 @@ namespace Tests.FeatureManagement
 
             var services = new ServiceCollection();
 
+            services.Configure<ConfigurationFeatureDefinitionProviderOptions>(options =>
+                options.CustomConfigurationMergingEnabled = customMergingEnabled);
             services.AddFeatureManagement(config.GetSection("FeatureFlags"));
 
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
-            //Assert.True(await featureManager.IsEnabledAsync("FeatureX"));
+            Assert.True(await featureManager.IsEnabledAsync("FeatureX"));
 
             string json = @"
             {
@@ -113,6 +117,8 @@ namespace Tests.FeatureManagement
 
             services = new ServiceCollection();
 
+            services.Configure<ConfigurationFeatureDefinitionProviderOptions>(options =>
+                options.CustomConfigurationMergingEnabled = customMergingEnabled);
             services.AddFeatureManagement(config.GetSection("FeatureFlags"));
 
             serviceProvider = services.BuildServiceProvider();
@@ -256,6 +262,438 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
+        public async Task CustomMergingUsesConfigurationSourceOrderAcrossSchemas()
+        {
+            var microsoftSchemaFeature = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["feature_management:feature_flags:0:id"] = "CrossSchemaFeature",
+                ["feature_management:feature_flags:0:enabled"] = bool.FalseString
+            };
+            var dotnetSchemaFeature = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["FeatureManagement:crossschemafeature:EnabledFor:0:Name"] = "Test",
+                ["FeatureManagement:crossschemafeature:EnabledFor:0:Parameters:Source"] = "Dotnet"
+            };
+            var mergeOptions = new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = true
+            };
+
+            IConfiguration microsoftThenDotnet = new ConfigurationBuilder()
+                .AddInMemoryCollection(microsoftSchemaFeature)
+                .AddInMemoryCollection(dotnetSchemaFeature)
+                .Build();
+
+            using (var provider = new ConfigurationFeatureDefinitionProvider(microsoftThenDotnet, mergeOptions))
+            {
+                FeatureDefinition definition = await provider.GetFeatureDefinitionAsync("CROSSSCHEMAFEATURE");
+                FeatureFilterConfiguration filter = Assert.Single(definition.EnabledFor);
+
+                Assert.Equal(FeatureStatus.Conditional, definition.Status);
+                Assert.Equal("Test", filter.Name);
+                Assert.Equal("Dotnet", filter.Parameters["Source"]);
+            }
+
+            IConfiguration dotnetThenMicrosoft = new ConfigurationBuilder()
+                .AddInMemoryCollection(dotnetSchemaFeature)
+                .AddInMemoryCollection(microsoftSchemaFeature)
+                .Build();
+
+            using (var provider = new ConfigurationFeatureDefinitionProvider(dotnetThenMicrosoft, mergeOptions))
+            {
+                FeatureDefinition definition = await provider.GetFeatureDefinitionAsync("CrossSchemaFeature");
+
+                Assert.Equal(FeatureStatus.Disabled, definition.Status);
+                Assert.Empty(definition.EnabledFor);
+            }
+        }
+
+        [Fact]
+        public async Task CustomMergingPrefersMicrosoftSchemaWithinSameConfigurationSource()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["FeatureManagement:CrossSchemaFeature"] = bool.TrueString,
+                    ["feature_management:feature_flags:0:id"] = "CrossSchemaFeature",
+                    ["feature_management:feature_flags:0:enabled"] = bool.FalseString
+                })
+                .Build();
+            var mergeOptions = new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = true
+            };
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration, mergeOptions);
+
+            FeatureDefinition definition = await provider.GetFeatureDefinitionAsync("CrossSchemaFeature");
+
+            Assert.Equal(FeatureStatus.Disabled, definition.Status);
+        }
+
+        [Fact]
+        public async Task DefaultMergingContinuesToPreferMicrosoftSchema()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["feature_management:feature_flags:0:id"] = "CrossSchemaFeature",
+                    ["feature_management:feature_flags:0:enabled"] = bool.FalseString
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["FeatureManagement:CrossSchemaFeature"] = bool.TrueString
+                })
+                .Build();
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration);
+
+            FeatureDefinition definition = await provider.GetFeatureDefinitionAsync("CrossSchemaFeature");
+
+            Assert.Equal(FeatureStatus.Disabled, definition.Status);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CustomMergingDeduplicatesCrossSchemaFeaturesFromChainedConfiguration(bool chainedSourceLast)
+        {
+            var microsoftSchemaFeature = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["feature_management:feature_flags:0:id"] = "CrossSchemaFeature",
+                ["feature_management:feature_flags:0:enabled"] = bool.FalseString
+            };
+            IConfiguration innerConfiguration = new ConfigurationBuilder()
+                .AddInMemoryCollection(microsoftSchemaFeature)
+                .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["FeatureManagement:crossschemafeature"] = bool.TrueString
+                })
+                .Build();
+            IConfiguration chainedConfiguration = new ConfigurationBuilder()
+                .AddConfiguration(innerConfiguration)
+                .Build();
+            var builder = new ConfigurationBuilder();
+
+            if (chainedSourceLast)
+            {
+                builder.AddInMemoryCollection(microsoftSchemaFeature).AddConfiguration(chainedConfiguration);
+            }
+            else
+            {
+                builder.AddConfiguration(chainedConfiguration).AddInMemoryCollection(microsoftSchemaFeature);
+            }
+
+            IConfiguration configuration = builder.Build();
+            var mergeOptions = new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = true
+            };
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration, mergeOptions);
+            var definitions = new List<FeatureDefinition>();
+
+            await foreach (FeatureDefinition definition in provider.GetAllFeatureDefinitionsAsync())
+            {
+                definitions.Add(definition);
+            }
+
+            FeatureDefinition crossSchemaDefinition = Assert.Single(definitions);
+            Assert.Equal(chainedSourceLast ? FeatureStatus.Conditional : FeatureStatus.Disabled, crossSchemaDefinition.Status);
+
+            var featureManager = new FeatureManager(provider);
+            var featureNames = new List<string>();
+
+            await foreach (string featureName in featureManager.GetFeatureNamesAsync())
+            {
+                featureNames.Add(featureName);
+            }
+
+            Assert.Single(featureNames);
+            Assert.Equal(chainedSourceLast, await featureManager.IsEnabledAsync("CROSSSCHEMAFEATURE"));
+        }
+
+        [Fact]
+        public async Task CustomMergingRecalculatesSchemaPrecedenceAfterReload()
+        {
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["feature_management:feature_flags:0:id"] = "ReloadFeature",
+                    ["feature_management:feature_flags:0:enabled"] = bool.FalseString
+                })
+                .AddInMemoryCollection()
+                .Build();
+            IConfigurationProvider lastConfigurationProvider = configuration.Providers.Last();
+            var mergeOptions = new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = true
+            };
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration, mergeOptions);
+
+            FeatureDefinition definition = await provider.GetFeatureDefinitionAsync("ReloadFeature");
+            Assert.Equal(FeatureStatus.Disabled, definition.Status);
+
+            lastConfigurationProvider.Set("FeatureManagement:ReloadFeature", bool.TrueString);
+            configuration.Reload();
+
+            definition = await provider.GetFeatureDefinitionAsync("ReloadFeature");
+            Assert.Equal(FeatureStatus.Conditional, definition.Status);
+            Assert.Single(definition.EnabledFor);
+
+            lastConfigurationProvider.Set("feature_management:feature_flags:0:id", "ReloadFeature");
+            lastConfigurationProvider.Set("feature_management:feature_flags:0:enabled", bool.FalseString);
+            configuration.Reload();
+
+            var definitions = new List<FeatureDefinition>();
+
+            await foreach (FeatureDefinition currentDefinition in provider.GetAllFeatureDefinitionsAsync())
+            {
+                definitions.Add(currentDefinition);
+            }
+
+            Assert.Equal(FeatureStatus.Disabled, Assert.Single(definitions).Status);
+            Assert.Equal(FeatureStatus.Disabled, (await provider.GetFeatureDefinitionAsync("ReloadFeature")).Status);
+            Assert.Null(await provider.GetFeatureDefinitionAsync("RenamedFeature"));
+
+            lastConfigurationProvider.Set("feature_management:feature_flags:0:id", "RenamedFeature");
+            configuration.Reload();
+
+            Assert.Equal(FeatureStatus.Conditional, (await provider.GetFeatureDefinitionAsync("ReloadFeature")).Status);
+            Assert.Equal(FeatureStatus.Disabled, (await provider.GetFeatureDefinitionAsync("RenamedFeature")).Status);
+        }
+
+        [Fact]
+        public async Task CustomMergingDoesNotInheritEarlierAlwaysOnValue()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:TargetedFeature"] = bool.TrueString
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["feature_management:feature_flags:0:id"] = "TargetedFeature",
+                    ["feature_management:feature_flags:0:enabled"] = bool.FalseString
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:TargetedFeature:EnabledFor:0:Name"] = "Microsoft.Targeting",
+                    ["FeatureManagement:TargetedFeature:EnabledFor:0:Parameters:Audience:Users:0"] = "Alice",
+                    ["FeatureManagement:TargetedFeature:EnabledFor:0:Parameters:Audience:DefaultRolloutPercentage"] = "0"
+                })
+                .Build();
+            var services = new ServiceCollection();
+
+            services.AddSingleton(configuration).AddFeatureManagement();
+            services.Configure<ConfigurationFeatureDefinitionProviderOptions>(options =>
+                options.CustomConfigurationMergingEnabled = true);
+
+            using ServiceProvider serviceProvider = services.BuildServiceProvider();
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync("TargetedFeature", new TargetingContext { UserId = "Alice" }));
+            Assert.False(await featureManager.IsEnabledAsync("TargetedFeature", new TargetingContext { UserId = "Bob" }));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task MergesDotnetPropertiesOnlyWhenCustomMergingIsDisabled(bool customMergingEnabled)
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:Feature:RequirementType"] = "All",
+                    ["FeatureManagement:Feature:EnabledFor:0:Name"] = "Test",
+                    ["FeatureManagement:Feature:EnabledFor:0:Parameters:Inherited"] = "Earlier",
+                    ["FeatureManagement:Feature:EnabledFor:0:Parameters:Shared"] = "Earlier",
+                    ["FeatureManagement:Feature:EnabledFor:1:Name"] = "AlwaysOn"
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:Feature:EnabledFor:0:Name"] = "Test",
+                    ["FeatureManagement:Feature:EnabledFor:0:Parameters:Shared"] = "Later"
+                })
+                .Build();
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration, new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = customMergingEnabled
+            });
+
+            FeatureDefinition definition = await provider.GetFeatureDefinitionAsync("Feature");
+            List<FeatureFilterConfiguration> filters = definition.EnabledFor.ToList();
+
+            Assert.Equal(customMergingEnabled ? RequirementType.Any : RequirementType.All, definition.RequirementType);
+            Assert.Equal(customMergingEnabled ? 1 : 2, filters.Count);
+            Assert.Equal("Test", filters[0].Name);
+            Assert.Equal("Later", filters[0].Parameters["Shared"]);
+            Assert.Equal(customMergingEnabled ? null : "Earlier", filters[0].Parameters["Inherited"]);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task MergesPartialDotnetDefinitionsOnlyWhenCustomMergingIsDisabled(bool customMergingEnabled)
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:Feature:EnabledFor:0:Name"] = "Test"
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:Feature:EnabledFor:0:Parameters:Source"] = "Later"
+                })
+                .Build();
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration, new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = customMergingEnabled
+            });
+
+            FeatureDefinition definition = await provider.GetFeatureDefinitionAsync("Feature");
+
+            if (customMergingEnabled)
+            {
+                Assert.Empty(definition.EnabledFor);
+            }
+            else
+            {
+                FeatureFilterConfiguration filter = Assert.Single(definition.EnabledFor);
+
+                Assert.Equal("Test", filter.Name);
+                Assert.Equal("Later", filter.Parameters["Source"]);
+            }
+        }
+
+        [Fact]
+        public async Task CustomMergingDoesNotInheritFiltersForDisabledDotnetDefinition()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:Feature:EnabledFor:0:Name"] = "AlwaysOn"
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:Feature"] = bool.FalseString
+                })
+                .Build();
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration, new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = true
+            });
+            var featureManager = new FeatureManager(provider);
+
+            Assert.Empty((await provider.GetFeatureDefinitionAsync("Feature")).EnabledFor);
+            Assert.False(await featureManager.IsEnabledAsync("Feature"));
+        }
+
+        [Fact]
+        public async Task CustomMergingTreatsConfigurationSectionAsOneSource()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Flags:feature_management:feature_flags:0:id"] = "Feature",
+                    ["Flags:feature_management:feature_flags:0:enabled"] = bool.FalseString
+                })
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Flags:FeatureManagement:Feature"] = bool.TrueString
+                })
+                .Build();
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration.GetSection("Flags"), new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = true
+            });
+
+            Assert.Equal(FeatureStatus.Disabled, (await provider.GetFeatureDefinitionAsync("Feature")).Status);
+        }
+
+        [Fact]
+        public async Task CustomMergingParsesOnlyRequestedWinningDefinitions()
+        {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["FeatureManagement:Feature"] = bool.TrueString,
+                    ["feature_management:feature_flags:0:id"] = "Feature",
+                    ["feature_management:feature_flags:0:enabled"] = "Invalid",
+                    ["feature_management:feature_flags:1:id"] = "Feature",
+                    ["feature_management:feature_flags:1:enabled"] = bool.FalseString,
+                    ["feature_management:feature_flags:2:id"] = "UnrequestedFeature",
+                    ["feature_management:feature_flags:2:enabled"] = "Invalid"
+                })
+                .Build();
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration, new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = true
+            });
+
+            Assert.Equal(FeatureStatus.Disabled, (await provider.GetFeatureDefinitionAsync("Feature")).Status);
+            Assert.Null(await provider.GetFeatureDefinitionAsync("MissingFeature"));
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        public async Task CustomMergingDeterminesRootFallbackAcrossAllSources(bool hasDotnetSection, bool hasMicrosoftSection)
+        {
+            var laterSource = new Dictionary<string, string>
+            {
+                ["RootFeature"] = bool.FalseString
+            };
+
+            if (hasDotnetSection)
+            {
+                laterSource["FeatureManagement:DotnetFeature"] = bool.TrueString;
+            }
+
+            if (hasMicrosoftSection)
+            {
+                laterSource["feature_management:feature_flags:0:id"] = "MicrosoftFeature";
+                laterSource["feature_management:feature_flags:0:enabled"] = bool.TrueString;
+            }
+
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["RootFeature"] = bool.TrueString
+                })
+                .AddInMemoryCollection(laterSource)
+                .Build();
+
+            using var provider = new ConfigurationFeatureDefinitionProvider(configuration, new ConfigurationFeatureDefinitionProviderOptions
+            {
+                CustomConfigurationMergingEnabled = true
+            })
+            {
+                RootConfigurationFallbackEnabled = true
+            };
+
+            FeatureDefinition rootFeature = await provider.GetFeatureDefinitionAsync("RootFeature");
+
+            if (hasDotnetSection || hasMicrosoftSection)
+            {
+                Assert.Null(rootFeature);
+                Assert.NotNull(await provider.GetFeatureDefinitionAsync(hasDotnetSection ? "DotnetFeature" : "MicrosoftFeature"));
+            }
+            else
+            {
+                Assert.NotNull(rootFeature);
+                Assert.Empty(rootFeature.EnabledFor);
+            }
+        }
+
+        [Fact]
         public async Task ThrowsForMissingFeatures()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
@@ -281,7 +719,62 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task ThreadsafeSnapshot()
+        public async Task SessionManagerQueriedWhenFeatureDefinitionIsNull()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            ISessionManager sessionManager = new TestSessionManager();
+
+            await sessionManager.SetAsync("UnexistedFeature", true);
+
+            services
+                .AddSingleton(config)
+                .AddSingleton<ISessionManager>(sessionManager)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            // Feature doesn't exist in configuration, but should return true from session
+            Assert.True(await featureManager.IsEnabledAsync("UnexistedFeature"));
+
+            // Set the feature to false in session
+            await sessionManager.SetAsync("UnexistedFeature", false);
+
+            // Should return false from session
+            Assert.False(await featureManager.IsEnabledAsync("UnexistedFeature"));
+        }
+
+        [Fact]
+        public async Task SetResultInSessionManagerWhenFeatureDefinitionIsNull()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            ISessionManager sessionManager = new TestSessionManager();
+
+            services
+                .AddSingleton(config)
+                .AddSingleton<ISessionManager>(sessionManager)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            // session manager is clean here
+            var result = await featureManager.IsEnabledAsync("UnexistedFeature");
+
+            // session manager should store the result after evaluation
+            Assert.Equal(result, await sessionManager.GetAsync("UnexistedFeature"));
+        }
+
+        [Fact]
+        public async Task ThreadSafeSnapshot()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
@@ -330,6 +823,67 @@ namespace Tests.FeatureManagement
             {
                 Assert.Equal(result, await t);
             }
+        }
+
+        [Fact]
+        public async Task ReturnsCachedResultFromSnapshot()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton(config)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            IVariantFeatureManager featureManagerSnapshot = serviceProvider.GetRequiredService<IVariantFeatureManagerSnapshot>();
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            int callCount = 0;
+            bool filterEnabled = true;
+
+            testFeatureFilter.Callback = (evaluationContext) =>
+            {
+                callCount++;
+                return Task.FromResult(filterEnabled);
+            };
+
+            // First evaluation - filter is enabled and should return true
+            bool result1 = await featureManagerSnapshot.IsEnabledAsync(Features.ConditionalFeature);
+            Assert.Equal(1, callCount);
+            Assert.True(result1);
+
+            Variant variant1 = await featureManagerSnapshot.GetVariantAsync(Features.ConditionalFeature);
+            Assert.Equal(2, callCount);
+            Assert.Equal("DefaultWhenEnabled", variant1.Name);
+
+            // "Shut down" the feature filter
+            filterEnabled = false;
+
+            // Second evaluation - should use cached value despite filter being shut down
+            bool result2 = await featureManagerSnapshot.IsEnabledAsync(Features.ConditionalFeature);
+            Assert.Equal(2, callCount);
+            Assert.True(result2);
+
+            Variant variant2 = await featureManagerSnapshot.GetVariantAsync(Features.ConditionalFeature);
+            Assert.Equal(2, callCount);
+            Assert.Equal("DefaultWhenEnabled", variant2.Name);
+
+            bool result3 = await featureManager.IsEnabledAsync(Features.ConditionalFeature);
+            Assert.Equal(3, callCount);
+            Assert.False(result3);
+
+            Variant variant3 = await featureManager.GetVariantAsync(Features.ConditionalFeature);
+            Assert.Equal(4, callCount);
+            Assert.Equal("DefaultWhenDisabled", variant3.Name);
         }
 
         [Fact]
@@ -393,6 +947,150 @@ namespace Tests.FeatureManagement
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
             Assert.True(await featureManager.IsEnabledAsync(Features.DuplicateFlag));
+        }
+
+        [Fact]
+        public async Task MergesFeatureFlagsFromDifferentConfigurationSources()
+        {
+            var mergeOptions = new ConfigurationFeatureDefinitionProviderOptions()
+            {
+                CustomConfigurationMergingEnabled = true
+            };
+
+            /*
+             * appsettings1.json
+             * Feature1: true
+             * Feature2: true
+             * FeatureA: true
+             *
+             * appsettings2.json
+             * Feature1: true
+             * Feature2: false
+             * FeatureB: true
+             *
+             * appsettings3.json
+             * Feature1: false
+             * Feature2: false
+             * FeatureC: true
+             */
+
+            IConfiguration configuration1 = new ConfigurationBuilder()
+                .AddJsonFile("appsettings1.json")
+                .AddJsonFile("appsettings2.json")
+                .Build();
+
+            IConfiguration configuration2 = new ConfigurationBuilder()
+                .AddConfiguration(configuration1) // chained configuration
+                .AddJsonFile("appsettings3.json")
+                .Build();
+
+            var featureManager1 = new FeatureManager(new ConfigurationFeatureDefinitionProvider(configuration1, mergeOptions));
+            Assert.True(await featureManager1.IsEnabledAsync("FeatureA"));
+            Assert.True(await featureManager1.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager1.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager1.IsEnabledAsync("Feature2")); // appsettings2 should override appsettings1
+
+            var featureManager2 = new FeatureManager(new ConfigurationFeatureDefinitionProvider(configuration2, mergeOptions));
+            Assert.True(await featureManager2.IsEnabledAsync("FeatureA"));
+            Assert.True(await featureManager2.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager2.IsEnabledAsync("FeatureC"));
+            Assert.False(await featureManager2.IsEnabledAsync("Feature1")); // appsettings3 should override previous settings
+            Assert.False(await featureManager2.IsEnabledAsync("Feature2")); // appsettings3 should override previous settings
+
+            //
+            // default behavior
+            var featureManager3 = new FeatureManager(new ConfigurationFeatureDefinitionProvider(configuration1));
+            Assert.False(await featureManager3.IsEnabledAsync("FeatureA")); // it will be overridden by FeatureB
+            Assert.True(await featureManager3.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager3.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager3.IsEnabledAsync("Feature2")); // appsettings2 should override appsettings1
+
+            IConfiguration configuration3 = new ConfigurationBuilder()
+                .AddJsonFile("appsettings1.json")
+                .AddInMemoryCollection(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["feature_management:feature_flags:0:enabled"] = bool.FalseString,
+                    ["feature_management:feature_flags:1:enabled"] = bool.FalseString,
+                })
+                .Build();
+            var featureManager4 = new FeatureManager(new ConfigurationFeatureDefinitionProvider(configuration3));
+            Assert.False(await featureManager4.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager4.IsEnabledAsync("Feature2"));
+            Assert.True(await featureManager4.IsEnabledAsync("FeatureA"));
+
+            //
+            // DI usage
+            var services1 = new ServiceCollection();
+            services1
+                .AddSingleton(configuration2)
+                .AddFeatureManagement();
+            services1.Configure<ConfigurationFeatureDefinitionProviderOptions>(o =>
+            {
+                o.CustomConfigurationMergingEnabled = true;
+            });
+            ServiceProvider serviceProvider1 = services1.BuildServiceProvider();
+            IFeatureManager featureManager5 = serviceProvider1.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager5.IsEnabledAsync("FeatureA"));
+            Assert.True(await featureManager5.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager5.IsEnabledAsync("FeatureC"));
+            Assert.False(await featureManager5.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager5.IsEnabledAsync("Feature2"));
+
+            var services2 = new ServiceCollection();
+            services2
+                .AddSingleton(configuration2)
+                .AddFeatureManagement();
+            ServiceProvider serviceProvider2 = services2.BuildServiceProvider();
+            IFeatureManager featureManager6 = serviceProvider2.GetRequiredService<IFeatureManager>();
+
+            Assert.False(await featureManager6.IsEnabledAsync("FeatureA"));
+            Assert.False(await featureManager6.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager6.IsEnabledAsync("FeatureC"));
+            Assert.False(await featureManager6.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager6.IsEnabledAsync("Feature2"));
+
+            var services3 = new ServiceCollection();
+            services3
+                .AddFeatureManagement(configuration2);
+            services3.Configure<ConfigurationFeatureDefinitionProviderOptions>(o =>
+            {
+                o.CustomConfigurationMergingEnabled = true;
+            });
+            ServiceProvider serviceProvider3 = services3.BuildServiceProvider();
+            IFeatureManager featureManager7 = serviceProvider3.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager7.IsEnabledAsync("FeatureA"));
+            Assert.True(await featureManager7.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager7.IsEnabledAsync("FeatureC"));
+            Assert.False(await featureManager7.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager7.IsEnabledAsync("Feature2"));
+
+            var services4 = new ServiceCollection();
+            services4
+                .AddFeatureManagement(configuration2);
+            ServiceProvider serviceProvider4 = services4.BuildServiceProvider();
+            IFeatureManager featureManager8 = serviceProvider4.GetRequiredService<IFeatureManager>();
+
+            Assert.False(await featureManager8.IsEnabledAsync("FeatureA"));
+            Assert.False(await featureManager8.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager8.IsEnabledAsync("FeatureC"));
+            Assert.False(await featureManager8.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager8.IsEnabledAsync("Feature2"));
+
+            var configurationManager = new ConfigurationManager();
+            configurationManager
+                .AddJsonFile("appsettings1.json")
+                .AddJsonFile("appsettings2.json");
+
+            var services = new ServiceCollection();
+            services.AddFeatureManagement();
+
+            var featureManager9 = new FeatureManager(new ConfigurationFeatureDefinitionProvider(configurationManager, mergeOptions));
+            Assert.True(await featureManager9.IsEnabledAsync("FeatureA"));
+            Assert.True(await featureManager9.IsEnabledAsync("FeatureB"));
+            Assert.True(await featureManager9.IsEnabledAsync("Feature1"));
+            Assert.False(await featureManager9.IsEnabledAsync("Feature2")); // appsettings2 should override appsettings1
         }
     }
 
@@ -536,7 +1234,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task RequirementTypeAllExceptions()
+        public async Task RequirementTypeAllWithIgnoreMissingFeatureFilters()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
@@ -556,12 +1254,12 @@ namespace Tests.FeatureManagement
 
             IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
 
+            //
+            // AllFilterFeature has RequirementType.All with missing filters.
+            // With IgnoreMissingFeatureFilters enabled, the feature should be treated as disabled.
             string allFilterFeature = Features.AllFilterFeature;
 
-            await Assert.ThrowsAsync<FeatureManagementException>(async () =>
-            {
-                await featureManager.IsEnabledAsync(allFilterFeature);
-            });
+            Assert.False(await featureManager.IsEnabledAsync(allFilterFeature));
         }
 
         [Fact]
@@ -707,10 +1405,10 @@ namespace Tests.FeatureManagement
             FeatureFilterConfiguration testFilterConfiguration = new FeatureFilterConfiguration
             {
                 Name = "Test",
-                Parameters = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()
+                Parameters = new ConfigurationWrapper(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()
                 {
                     { "P1", "V1" },
-                }).Build()
+                }).Build())
             };
 
             var services = new ServiceCollection();
@@ -779,7 +1477,7 @@ namespace Tests.FeatureManagement
 
             //
             // Cache break.
-            testFilterConfiguration.Parameters = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()).Build();
+            testFilterConfiguration.Parameters = new ConfigurationWrapper(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>()).Build());
 
             binderCalled = false;
 
@@ -791,9 +1489,126 @@ namespace Tests.FeatureManagement
 
             Assert.True(called);
         }
+
+        [Fact]
+        public async Task UsesParametersObject()
+        {
+            var parameterObject = new object();
+
+            FeatureFilterConfiguration testFilterConfiguration = new FeatureFilterConfiguration
+            {
+                Name = "Test",
+                ParametersObject = parameterObject
+            };
+
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = Features.ConditionalFeature,
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            testFilterConfiguration
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            testFeatureFilter.Callback = (evaluationContext) =>
+            {
+                //
+                // When ParametersObject is set, it should be available on the context via settings
+                // so custom filters can use it.
+                Assert.Same(parameterObject, evaluationContext.Settings);
+
+                return Task.FromResult(true);
+            };
+
+            bool result = await featureManager.IsEnabledAsync(Features.ConditionalFeature);
+
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task ParametersObjectFallsBackToParametersWhenNull()
+        {
+            FeatureFilterConfiguration testFilterConfiguration = new FeatureFilterConfiguration
+            {
+                Name = "Test",
+                ParametersObject = null
+            };
+
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = Features.ConditionalFeature,
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            testFilterConfiguration
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement()
+                    .AddFeatureFilter<TestFilter>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            IEnumerable<IFeatureFilterMetadata> featureFilters = serviceProvider.GetRequiredService<IEnumerable<IFeatureFilterMetadata>>();
+
+            TestFilter testFeatureFilter = (TestFilter)featureFilters.First(f => f is TestFilter);
+
+            bool binderCalled = false;
+
+            testFeatureFilter.ParametersBinderCallback = (parameters) =>
+            {
+                binderCalled = true;
+
+                return parameters;
+            };
+
+            testFeatureFilter.Callback = (evaluationContext) =>
+            {
+                //
+                // When ParametersObject is null, Settings should be populated
+                // by IFilterParametersBinder as usual.
+                Assert.NotNull(evaluationContext.Settings);
+
+                return Task.FromResult(true);
+            };
+
+            bool result = await featureManager.IsEnabledAsync(Features.ConditionalFeature);
+
+            Assert.True(result);
+
+            Assert.True(binderCalled);
+        }
     }
 
-    public class FeatureManagementBuiltinFeatureFilterTest
+    public class FeatureManagementBuiltInFeatureFilterTest
     {
         [Fact]
         public async Task TimeWindow()
@@ -849,6 +1664,13 @@ namespace Tests.FeatureManagement
             Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Start", DateTimeOffset.UtcNow.AddDays(-2).ToString("r"));
             Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:End", DateTimeOffset.UtcNow.AddDays(-1).ToString("r"));
             Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:Type", "Weekly");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:DaysOfWeek:0", "Monday");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:DaysOfWeek:1", "Tuesday");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:DaysOfWeek:2", "Wednesday");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:DaysOfWeek:3", "Thursday");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:DaysOfWeek:4", "Friday");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:DaysOfWeek:5", "Saturday");
+            Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Pattern:DaysOfWeek:6", "Sunday");
             Environment.SetEnvironmentVariable("feature_management:feature_flags:6:conditions:client_filters:0:parameters:Recurrence:Range:Type", "NoEnd");
 
             foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
@@ -874,11 +1696,7 @@ namespace Tests.FeatureManagement
             Assert.False(await featureManager.IsEnabledAsync(feature4));
             Assert.True(await featureManager.IsEnabledAsync(feature5));
             Assert.False(await featureManager.IsEnabledAsync(feature6));
-
-            for (int i = 0; i < 10; i++)
-            {
-                Assert.True(await featureManager.IsEnabledAsync(feature7));
-            }
+            Assert.True(await featureManager.IsEnabledAsync(feature7));
         }
 
         [Fact]
@@ -1242,7 +2060,7 @@ namespace Tests.FeatureManagement
         }
 
         [Fact]
-        public async Task ThreadsafeSnapshot()
+        public async Task ThreadSafeSnapshot()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
@@ -1408,6 +2226,257 @@ namespace Tests.FeatureManagement
 
             Assert.True(await featureManager.IsEnabledAsync("CustomFilterFeature"));
         }
+
+        [Fact]
+        public async Task PercentageFilterUsesParametersObject()
+        {
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = "PercentageFeature",
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            new FeatureFilterConfiguration
+                            {
+                                Name = "Microsoft.Percentage",
+                                ParametersObject = new PercentageFilterSettings { Value = 100 }
+                            }
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync("PercentageFeature"));
+        }
+
+        [Fact]
+        public async Task TimeWindowFilterUsesParametersObject()
+        {
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = "TimeWindowFeature",
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            new FeatureFilterConfiguration
+                            {
+                                Name = "Microsoft.TimeWindow",
+                                ParametersObject = new TimeWindowFilterSettings
+                                {
+                                    Start = DateTimeOffset.UtcNow.AddDays(-1),
+                                    End = DateTimeOffset.UtcNow.AddDays(1)
+                                }
+                            }
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            Assert.True(await featureManager.IsEnabledAsync("TimeWindowFeature"));
+        }
+
+        [Fact]
+        public async Task PercentageFilterThrowsOnInvalidParametersObjectType()
+        {
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = "BadFeature",
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            new FeatureFilterConfiguration
+                            {
+                                Name = "Microsoft.Percentage",
+                                ParametersObject = "wrong type"
+                            }
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            await Assert.ThrowsAsync<ArgumentException>(() => featureManager.IsEnabledAsync("BadFeature"));
+        }
+
+        [Fact]
+        public async Task TimeWindowFilterThrowsOnInvalidParametersObjectType()
+        {
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = "BadFeature",
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            new FeatureFilterConfiguration
+                            {
+                                Name = "Microsoft.TimeWindow",
+                                ParametersObject = 42
+                            }
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IFeatureManager featureManager = serviceProvider.GetRequiredService<IFeatureManager>();
+
+            await Assert.ThrowsAsync<ArgumentException>(() => featureManager.IsEnabledAsync("BadFeature"));
+        }
+
+        [Fact]
+        public async Task TargetingFilterUsesParametersObject()
+        {
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = "TargetingFeature",
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            new FeatureFilterConfiguration
+                            {
+                                Name = "Microsoft.Targeting",
+                                ParametersObject = new TargetingFilterSettings
+                                {
+                                    Audience = new Audience
+                                    {
+                                        Users = new List<string> { "Jeff" },
+                                        Groups = new List<GroupRollout>
+                                        {
+                                            new GroupRollout
+                                            {
+                                                Name = "Ring1",
+                                                RolloutPercentage = 100
+                                            }
+                                        },
+                                        DefaultRolloutPercentage = 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            //
+            // Targeted user should be enabled
+            var targetingContext = new TargetingContext
+            {
+                UserId = "Jeff",
+                Groups = new List<string> { "Ring0" }
+            };
+
+            Assert.True(await featureManager.IsEnabledAsync("TargetingFeature", targetingContext));
+
+            //
+            // User in targeted group should be enabled
+            targetingContext = new TargetingContext
+            {
+                UserId = "NotTargeted",
+                Groups = new List<string> { "Ring1" }
+            };
+
+            Assert.True(await featureManager.IsEnabledAsync("TargetingFeature", targetingContext));
+
+            //
+            // Non-targeted user should be disabled (0% default rollout)
+            targetingContext = new TargetingContext
+            {
+                UserId = "NotTargeted",
+                Groups = new List<string> { "Ring0" }
+            };
+
+            Assert.False(await featureManager.IsEnabledAsync("TargetingFeature", targetingContext));
+        }
+
+        [Fact]
+        public async Task TargetingFilterThrowsOnInvalidParametersObjectType()
+        {
+            var services = new ServiceCollection();
+
+            var definitionProvider = new InMemoryFeatureDefinitionProvider(
+                new FeatureDefinition[]
+                {
+                    new FeatureDefinition
+                    {
+                        Name = "BadFeature",
+                        EnabledFor = new List<FeatureFilterConfiguration>()
+                        {
+                            new FeatureFilterConfiguration
+                            {
+                                Name = "Microsoft.Targeting",
+                                ParametersObject = "wrong type"
+                            }
+                        }
+                    }
+                });
+
+            services.AddSingleton<IFeatureDefinitionProvider>(definitionProvider)
+                    .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                    .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            var targetingContext = new TargetingContext
+            {
+                UserId = "Jeff",
+                Groups = new List<string>()
+            };
+
+            await Assert.ThrowsAsync<ArgumentException>(() => featureManager.IsEnabledAsync("BadFeature", targetingContext).AsTask());
+        }
     }
 
     public class FeatureManagementVariantTest
@@ -1524,83 +2593,6 @@ namespace Tests.FeatureManagement
 
             Assert.Equal(FeatureManagementError.InvalidConfigurationSetting, e.Error);
             Assert.Contains(MicrosoftFeatureManagementFields.PercentileAllocationFrom, e.Message);
-        }
-
-        [Fact]
-        public async Task VariantBasedInjection()
-        {
-            IConfiguration configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json")
-                .Build();
-
-            IServiceCollection services = new ServiceCollection();
-
-            services.AddSingleton<IAlgorithm, AlgorithmBeta>();
-            services.AddSingleton<IAlgorithm, AlgorithmSigma>();
-            services.AddSingleton<IAlgorithm>(sp => new AlgorithmOmega("OMEGA"));
-
-            services.AddSingleton(configuration)
-                .AddFeatureManagement()
-                .AddFeatureFilter<TargetingFilter>()
-                .WithVariantService<IAlgorithm>(Features.VariantImplementationFeature);
-
-            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
-
-            services.AddSingleton<ITargetingContextAccessor>(targetingContextAccessor);
-
-            ServiceProvider serviceProvider = services.BuildServiceProvider();
-
-            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
-
-            IVariantServiceProvider<IAlgorithm> featuredAlgorithm = serviceProvider.GetRequiredService<IVariantServiceProvider<IAlgorithm>>();
-
-            targetingContextAccessor.Current = new TargetingContext
-            {
-                UserId = "Guest"
-            };
-
-            IAlgorithm algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
-
-            Assert.Null(algorithm);
-
-            targetingContextAccessor.Current = new TargetingContext
-            {
-                UserId = "UserSigma"
-            };
-
-            algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
-
-            Assert.Null(algorithm);
-
-            targetingContextAccessor.Current = new TargetingContext
-            {
-                UserId = "UserBeta"
-            };
-
-            algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
-
-            Assert.NotNull(algorithm);
-            Assert.Equal("Beta", algorithm.Style);
-
-            targetingContextAccessor.Current = new TargetingContext
-            {
-                UserId = "UserOmega"
-            };
-
-            algorithm = await featuredAlgorithm.GetServiceAsync(CancellationToken.None);
-
-            Assert.NotNull(algorithm);
-            Assert.Equal("OMEGA", algorithm.Style);
-
-            services = new ServiceCollection();
-
-            Assert.Throws<InvalidOperationException>(() =>
-                {
-                    services.AddFeatureManagement()
-                        .WithVariantService<IAlgorithm>("DummyFeature1")
-                        .WithVariantService<IAlgorithm>("DummyFeature2");
-                }
-            );
         }
 
         [Fact]
@@ -2006,6 +2998,53 @@ namespace Tests.FeatureManagement
             await featureManager.IsEnabledAsync(Features.ConditionalFeature);
 
             Assert.True(called);
+        }
+    }
+
+    public class PerformanceTests
+    {
+        [Fact]
+        public async Task BooleanFlagManyTimes()
+        {
+            var services = new ServiceCollection();
+
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            services.AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            bool result;
+
+            for (int i = 0; i < 100000; i++)
+            {
+                result = await featureManager.IsEnabledAsync("OnTestFeature");
+            }
+        }
+
+        [Fact]
+        public async Task MissingFlagManyTimes()
+        {
+            var services = new ServiceCollection();
+
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            services.AddSingleton(config)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            bool result;
+
+            for (int i = 0; i < 100000; i++)
+            {
+                result = await featureManager.IsEnabledAsync("DoesNotExist");
+            }
         }
     }
 }

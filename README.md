@@ -13,6 +13,8 @@ Feature management provides a way to develop and expose application functionalit
 
 [**API reference**](https://go.microsoft.com/fwlink/?linkid=2091700): This API reference details the API surface of the libraries contained within this repository.
 
+[**Release Notes**](https://github.com/Azure/AppConfiguration/blob/main/releaseNotes/Microsoft.Featuremanagement.md): The release notes for all versions of the feature management libraries can be found here.
+
 ## Examples
 
 * [.NET Console App](./examples/ConsoleApp)
@@ -22,6 +24,23 @@ Feature management provides a way to develop and expose application functionalit
 * [Blazor Server App](./examples/BlazorServerApp)
 * [ASP.NET Core Web App with Variants and Telemetry](./examples/VariantAndTelemetryDemo)
 * [ASP.NET Core Web App with Variant Service](./examples/VariantServiceDemo)
+* [ASP.NET Core Web App with Variants and OpenTelemetry](./examples/OpenTelemetryDemo)
+
+## OpenTelemetry integration
+
+`Microsoft.FeatureManagement.Telemetry.OpenTelemetry` provides feature-evaluation
+event publishing and targeting enrichment for spans and logs. Register feature
+management with `services.AddFeatureManagement()`, then call
+`AddFeatureManagementProcessors()` on the builder returned by `services.AddOpenTelemetry()`.
+The integration automatically attaches its targeting processors; applications
+configure their own providers and exporters.
+
+Register the integration before exporters, including exporters configured
+separately through logging APIs. An exporter integration with an explicit
+exporter-last guarantee may be registered in either order. This library does not
+reorder existing OpenTelemetry registrations.
+
+See the [OpenTelemetry sample](./examples/OpenTelemetryDemo) for complete setup.
 
 ## Contributing
 

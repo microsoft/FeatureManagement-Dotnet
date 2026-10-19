@@ -23,6 +23,13 @@ namespace Microsoft.FeatureManagement
     /// </summary>
     public sealed class FeatureManager : IFeatureManager, IVariantFeatureManager
     {
+        private const string FeatureDefinitionNotFoundError = "The feature definition for the feature '{0}' was not found.";
+        private const string FeatureFilterNotFoundError = "The feature filter '{0}' specified for feature '{1}' was not found.";
+
+        private const string AlwaysOnFilterName = "AlwaysOn";
+        private const string OnFilterName = "On";
+        private const string FilterSuffix = "filter";
+
         private readonly TimeSpan ParametersCacheSlidingExpiration = TimeSpan.FromMinutes(5);
         private readonly TimeSpan ParametersCacheAbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
 
@@ -61,9 +68,8 @@ namespace Microsoft.FeatureManagement
             _options = options ?? new FeatureManagementOptions();
             _filterMetadataCache = new ConcurrentDictionary<string, IFeatureFilterMetadata>();
             _contextualFeatureFilterCache = new ConcurrentDictionary<string, ContextualFeatureFilterEvaluator>();
-            _featureFilters = Enumerable.Empty<IFeatureFilterMetadata>();
-            _sessionManagers = Enumerable.Empty<ISessionManager>();
             _assignerOptions = new TargetingEvaluationOptions();
+            _featureFilters = Enumerable.Empty<IFeatureFilterMetadata>();
         }
 
         /// <summary>
@@ -86,7 +92,15 @@ namespace Microsoft.FeatureManagement
         /// <exception cref="ArgumentNullException">Thrown if it is set to null.</exception>
         public IEnumerable<ISessionManager> SessionManagers
         {
-            get => _sessionManagers;
+            get
+            {
+                if (_sessionManagers == null)
+                {
+                    _sessionManagers = Enumerable.Empty<ISessionManager>();
+                }
+
+                return _sessionManagers;
+            }
 
             set
             {
@@ -130,9 +144,7 @@ namespace Microsoft.FeatureManagement
         /// <returns>True if the feature is enabled, otherwise false.</returns>
         public async Task<bool> IsEnabledAsync(string feature)
         {
-            EvaluationEvent evaluationEvent = await EvaluateFeature<object>(feature, context: null, useContext: false, CancellationToken.None);
-
-            return evaluationEvent.Enabled;
+            return (await EvaluateFeature<object>(feature, context: null, useContext: false, CancellationToken.None).ConfigureAwait(false)).Enabled;
         }
 
         /// <summary>
@@ -143,9 +155,12 @@ namespace Microsoft.FeatureManagement
         /// <returns>True if the feature is enabled, otherwise false.</returns>
         public async Task<bool> IsEnabledAsync<TContext>(string feature, TContext appContext)
         {
-            EvaluationEvent evaluationEvent = await EvaluateFeature(feature, context: appContext, useContext: true, CancellationToken.None);
+            if (appContext == null)
+            {
+                throw new ArgumentNullException(nameof(appContext));
+            }
 
-            return evaluationEvent.Enabled;
+            return (await EvaluateFeature(feature, context: appContext, useContext: true, CancellationToken.None).ConfigureAwait(false)).Enabled;
         }
 
         /// <summary>
@@ -156,9 +171,7 @@ namespace Microsoft.FeatureManagement
         /// <returns>True if the feature is enabled, otherwise false.</returns>
         public async ValueTask<bool> IsEnabledAsync(string feature, CancellationToken cancellationToken = default)
         {
-            EvaluationEvent evaluationEvent = await EvaluateFeature<object>(feature, context: null, useContext: false, cancellationToken);
-
-            return evaluationEvent.Enabled;
+            return (await EvaluateFeature<object>(feature, context: null, useContext: false, cancellationToken).ConfigureAwait(false)).Enabled;
         }
 
         /// <summary>
@@ -170,9 +183,12 @@ namespace Microsoft.FeatureManagement
         /// <returns>True if the feature is enabled, otherwise false.</returns>
         public async ValueTask<bool> IsEnabledAsync<TContext>(string feature, TContext appContext, CancellationToken cancellationToken = default)
         {
-            EvaluationEvent evaluationEvent = await EvaluateFeature(feature, context: appContext, useContext: true, cancellationToken);
+            if (appContext == null)
+            {
+                throw new ArgumentNullException(nameof(appContext));
+            }
 
-            return evaluationEvent.Enabled;
+            return (await EvaluateFeature(feature, context: appContext, useContext: true, cancellationToken).ConfigureAwait(false)).Enabled;
         }
 
         /// <summary>
@@ -211,9 +227,7 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(feature));
             }
 
-            EvaluationEvent evaluationEvent = await EvaluateFeature<object>(feature, context: null, useContext: false, cancellationToken);
-
-            return evaluationEvent.Variant;
+            return (await EvaluateFeature<object>(feature, context: null, useContext: false, cancellationToken).ConfigureAwait(false)).Variant;
         }
 
         /// <summary>
@@ -235,9 +249,7 @@ namespace Microsoft.FeatureManagement
                 throw new ArgumentNullException(nameof(context));
             }
 
-            EvaluationEvent evaluationEvent = await EvaluateFeature(feature, context, useContext: true, cancellationToken);
-
-            return evaluationEvent.Variant;
+            return (await EvaluateFeature(feature, context, useContext: true, cancellationToken).ConfigureAwait(false)).Variant;
         }
 
         private async ValueTask<EvaluationEvent> EvaluateFeature<TContext>(string feature, TContext context, bool useContext, CancellationToken cancellationToken)
@@ -247,46 +259,40 @@ namespace Microsoft.FeatureManagement
                 FeatureDefinition = await GetFeatureDefinition(feature).ConfigureAwait(false)
             };
 
-            bool telemetryEnabled = evaluationEvent.FeatureDefinition?.Telemetry?.Enabled ?? false;
-
-            //
-            // Only start an activity if telemetry is enabled for the feature
-            using Activity activity = telemetryEnabled
-                ? ActivitySource.StartActivity("FeatureEvaluation")
-                : null;
-
-            //
-            // Determine Targeting Context
-            TargetingContext targetingContext = null;
-
-            if (!useContext)
-            {
-                targetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
-            }
-            else if (context is ITargetingContext targetingInfo)
-            {
-                targetingContext = new TargetingContext
-                {
-                    UserId = targetingInfo.UserId,
-                    Groups = targetingInfo.Groups
-                };
-            }
-
-            evaluationEvent.TargetingContext = targetingContext;
-
             if (evaluationEvent.FeatureDefinition != null)
             {
+                bool telemetryEnabled = evaluationEvent.FeatureDefinition.Telemetry?.Enabled ?? false;
+
+                //
+                // Only start an activity if telemetry is enabled for the feature
+                using Activity activity = telemetryEnabled
+                    ? ActivitySource.StartActivity("FeatureEvaluation")
+                    : null;
+
                 //
                 // Determine IsEnabled
                 evaluationEvent.Enabled = await IsEnabledAsync(evaluationEvent.FeatureDefinition, context, useContext, cancellationToken).ConfigureAwait(false);
 
                 //
                 // Determine Variant
-                VariantDefinition variantDefinition = null;
-
                 if (evaluationEvent.FeatureDefinition.Variants != null &&
                     evaluationEvent.FeatureDefinition.Variants.Any())
                 {
+                    VariantDefinition variantDefinition = null;
+
+                    if (!useContext)
+                    {
+                        evaluationEvent.TargetingContext = await ResolveTargetingContextAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    else if (context is ITargetingContext targetingInfo)
+                    {
+                        evaluationEvent.TargetingContext = new TargetingContext
+                        {
+                            UserId = targetingInfo.UserId,
+                            Groups = targetingInfo.Groups
+                        };
+                    }
+
                     if (evaluationEvent.FeatureDefinition.Allocation == null)
                     {
                         evaluationEvent.VariantAssignmentReason = evaluationEvent.Enabled
@@ -307,29 +313,25 @@ namespace Microsoft.FeatureManagement
                     }
                     else
                     {
-                        if (targetingContext == null)
+                        if (evaluationEvent.TargetingContext == null)
                         {
-                            string message;
-
                             if (useContext)
                             {
-                                message = $"The context of type {context.GetType().Name} does not implement {nameof(ITargetingContext)} for variant assignment.";
+                                Logger?.LogWarning("The context of type {contextType} does not implement {targetingContextInterface} for variant assignment.", context.GetType().Name, nameof(ITargetingContext));
                             }
                             else if (TargetingContextAccessor == null)
                             {
-                                message = $"No instance of {nameof(ITargetingContextAccessor)} could be found for variant assignment.";
+                                Logger?.LogWarning("No instance of {targetingContextAccessorClass} could be found for variant assignment.", nameof(ITargetingContextAccessor));
                             }
                             else
                             {
-                                message = $"No instance of {nameof(TargetingContext)} could be found using {nameof(ITargetingContextAccessor)} for variant assignment.";
+                                Logger?.LogWarning("No instance of {targetingContextClass} could be found using {targetingContextAccessorClass} for variant assignment.", nameof(TargetingContext), nameof(ITargetingContextAccessor));
                             }
-
-                            Logger?.LogWarning(message);
                         }
 
-                        if (targetingContext != null && evaluationEvent.FeatureDefinition.Allocation != null)
+                        if (evaluationEvent.TargetingContext != null && evaluationEvent.FeatureDefinition.Allocation != null)
                         {
-                            variantDefinition = await AssignVariantAsync(evaluationEvent, targetingContext, cancellationToken).ConfigureAwait(false);
+                            variantDefinition = await AssignVariantAsync(evaluationEvent, evaluationEvent.TargetingContext, cancellationToken).ConfigureAwait(false);
                         }
 
                         if (evaluationEvent.VariantAssignmentReason == VariantAssignmentReason.None)
@@ -363,17 +365,34 @@ namespace Microsoft.FeatureManagement
                     }
                 }
 
-                foreach (ISessionManager sessionManager in _sessionManagers)
-                {
-                    await sessionManager.SetAsync(evaluationEvent.FeatureDefinition.Name, evaluationEvent.Enabled).ConfigureAwait(false);
-                }
-
                 // Only add an activity event if telemetry is enabled for the feature and the activity is valid
                 if (telemetryEnabled &&
                     Activity.Current != null &&
                     Activity.Current.IsAllDataRequested)
                 {
                     FeatureEvaluationTelemetry.Publish(evaluationEvent, Logger);
+                }
+            }
+            else if (_sessionManagers != null)
+            {
+                foreach (ISessionManager sessionManager in _sessionManagers)
+                {
+                    bool? readSessionResult = await sessionManager.GetAsync(feature).ConfigureAwait(false);
+
+                    if (readSessionResult.HasValue)
+                    {
+                        evaluationEvent.Enabled = readSessionResult.Value;
+
+                        break;
+                    }
+                }
+            }
+
+            if (_sessionManagers != null)
+            {
+                foreach (ISessionManager sessionManager in _sessionManagers)
+                {
+                    await sessionManager.SetAsync(feature, evaluationEvent.Enabled).ConfigureAwait(false);
                 }
             }
 
@@ -384,13 +403,16 @@ namespace Microsoft.FeatureManagement
         {
             Debug.Assert(featureDefinition != null);
 
-            foreach (ISessionManager sessionManager in _sessionManagers)
+            if (_sessionManagers != null)
             {
-                bool? readSessionResult = await sessionManager.GetAsync(featureDefinition.Name).ConfigureAwait(false);
-
-                if (readSessionResult.HasValue)
+                foreach (ISessionManager sessionManager in _sessionManagers)
                 {
-                    return readSessionResult.Value;
+                    bool? readSessionResult = await sessionManager.GetAsync(featureDefinition.Name).ConfigureAwait(false);
+
+                    if (readSessionResult.HasValue)
+                    {
+                        return readSessionResult.Value;
+                    }
                 }
             }
 
@@ -407,15 +429,6 @@ namespace Microsoft.FeatureManagement
             else
             {
                 //
-                // Ensure no conflicts in the feature definition
-                if (featureDefinition.RequirementType == RequirementType.All && _options.IgnoreMissingFeatureFilters)
-                {
-                    throw new FeatureManagementException(
-                        FeatureManagementError.Conflict,
-                        $"The 'IgnoreMissingFeatureFilters' flag cannot be used in combination with a feature of requirement type 'All'.");
-                }
-
-                //
                 // If the requirement type is all, we default to true. Requirement type All will end on a false
                 enabled = featureDefinition.RequirementType == RequirementType.All;
 
@@ -431,12 +444,14 @@ namespace Microsoft.FeatureManagement
                 // For all enabling filters listed in the feature's state, evaluate them according to requirement type
                 foreach (FeatureFilterConfiguration featureFilterConfiguration in featureDefinition.EnabledFor)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     filterIndex++;
 
                     //
                     // Handle AlwaysOn and On filters
-                    if (string.Equals(featureFilterConfiguration.Name, "AlwaysOn", StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(featureFilterConfiguration.Name, "On", StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(featureFilterConfiguration.Name, AlwaysOnFilterName, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(featureFilterConfiguration.Name, OnFilterName, StringComparison.OrdinalIgnoreCase))
                     {
                         if (featureDefinition.RequirementType == RequirementType.Any)
                         {
@@ -470,14 +485,21 @@ namespace Microsoft.FeatureManagement
                             continue;
                         }
 
-                        string errorMessage = $"The feature filter '{featureFilterConfiguration.Name}' specified for feature '{featureDefinition.Name}' was not found.";
-
                         if (!_options.IgnoreMissingFeatureFilters)
                         {
-                            throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, errorMessage);
+                            throw new FeatureManagementException(FeatureManagementError.MissingFeatureFilter, string.Format(FeatureFilterNotFoundError, featureFilterConfiguration.Name, featureDefinition.Name));
                         }
 
-                        Logger?.LogWarning(errorMessage);
+                        Logger?.LogWarning(FeatureFilterNotFoundError, featureFilterConfiguration.Name, featureDefinition.Name);
+
+                        //
+                        // If requirement type is All, a missing filter means the feature cannot be enabled
+                        if (featureDefinition.RequirementType == RequirementType.All)
+                        {
+                            enabled = false;
+
+                            break;
+                        }
 
                         continue;
                     }
@@ -485,10 +507,15 @@ namespace Microsoft.FeatureManagement
                     var context = new FeatureFilterEvaluationContext()
                     {
                         FeatureName = featureDefinition.Name,
-                        Parameters = featureFilterConfiguration.Parameters
+                        Parameters = featureFilterConfiguration.Parameters,
+                        Settings = featureFilterConfiguration.ParametersObject,
+                        CancellationToken = cancellationToken
                     };
 
-                    BindSettings(filter, context, filterIndex);
+                    if (context.Settings == null)
+                    {
+                        BindSettings(filter, context, filterIndex);
+                    }
 
                     //
                     // IContextualFeatureFilter
@@ -530,14 +557,15 @@ namespace Microsoft.FeatureManagement
 
             if (featureDefinition == null)
             {
-                string errorMessage = $"The feature definition for the feature '{feature}' was not found.";
-
                 if (!_options.IgnoreMissingFeatures)
                 {
-                    throw new FeatureManagementException(FeatureManagementError.MissingFeature, errorMessage);
+                    throw new FeatureManagementException(FeatureManagementError.MissingFeature, string.Format(FeatureDefinitionNotFoundError, feature));
                 }
 
-                Logger?.LogDebug(errorMessage);
+                if (Logger?.IsEnabled(LogLevel.Debug) == true)
+                {
+                    Logger.LogDebug(FeatureDefinitionNotFoundError, feature);
+                }
             }
 
             return featureDefinition;
@@ -571,11 +599,13 @@ namespace Microsoft.FeatureManagement
             {
                 foreach (UserAllocation user in evaluationEvent.FeatureDefinition.Allocation.User)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     if (TargetingEvaluator.IsTargeted(targetingContext.UserId, user.Users, _assignerOptions.IgnoreCase))
                     {
                         if (string.IsNullOrEmpty(user.Variant))
                         {
-                            Logger?.LogWarning($"Missing variant name for user allocation in feature {evaluationEvent.FeatureDefinition.Name}");
+                            Logger?.LogWarning("Missing variant name for user allocation in feature {featureName}", evaluationEvent.FeatureDefinition.Name);
 
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
@@ -597,11 +627,13 @@ namespace Microsoft.FeatureManagement
             {
                 foreach (GroupAllocation group in evaluationEvent.FeatureDefinition.Allocation.Group)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     if (TargetingEvaluator.IsTargeted(targetingContext.Groups, group.Groups, _assignerOptions.IgnoreCase))
                     {
                         if (string.IsNullOrEmpty(group.Variant))
                         {
-                            Logger?.LogWarning($"Missing variant name for group allocation in feature {evaluationEvent.FeatureDefinition.Name}");
+                            Logger?.LogWarning("Missing variant name for group allocation in feature {featureName}", evaluationEvent.FeatureDefinition.Name);
 
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
@@ -623,6 +655,8 @@ namespace Microsoft.FeatureManagement
             {
                 foreach (PercentileAllocation percentile in evaluationEvent.FeatureDefinition.Allocation.Percentile)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     if (TargetingEvaluator.IsTargeted(
                         targetingContext,
                         percentile.From,
@@ -632,7 +666,7 @@ namespace Microsoft.FeatureManagement
                     {
                         if (string.IsNullOrEmpty(percentile.Variant))
                         {
-                            Logger?.LogWarning($"Missing variant name for percentile allocation in feature {evaluationEvent.FeatureDefinition.Name}");
+                            Logger?.LogWarning("Missing variant name for percentile allocation in feature {featureName}", evaluationEvent.FeatureDefinition.Name);
 
                             return new ValueTask<VariantDefinition>((VariantDefinition)null);
                         }
@@ -660,7 +694,13 @@ namespace Microsoft.FeatureManagement
                 return;
             }
 
-            if (!(_featureDefinitionProvider is IFeatureDefinitionProviderCacheable) || Cache == null)
+            // Skip parameter binding if the provider has already supplied a parameters object.
+            if (context.Settings != null)
+            {
+                return;
+            }
+
+            if (!(context.Parameters is ConfigurationWrapper) || Cache == null)
             {
                 context.Settings = binder.BindParameters(context.Parameters);
 
@@ -745,19 +785,17 @@ namespace Microsoft.FeatureManagement
 
         private bool IsMatchingName(Type filterType, string filterName)
         {
-            const string filterSuffix = "filter";
-
             string name = ((FilterAliasAttribute)Attribute.GetCustomAttribute(filterType, typeof(FilterAliasAttribute)))?.Alias;
 
             if (name == null)
             {
-                name = filterType.Name.EndsWith(filterSuffix, StringComparison.OrdinalIgnoreCase) ? filterType.Name.Substring(0, filterType.Name.Length - filterSuffix.Length) : filterType.Name;
+                name = filterType.Name.EndsWith(FilterSuffix, StringComparison.OrdinalIgnoreCase) ? filterType.Name.Substring(0, filterType.Name.Length - FilterSuffix.Length) : filterType.Name;
             }
 
             //
             // Feature filters can have namespaces in their alias
             // If a feature is configured to use a filter without a namespace such as 'MyFilter', then it can match 'MyOrg.MyProduct.MyFilter' or simply 'MyFilter'
-            // If a feature is configured to use a filter with a namespace such as 'MyOrg.MyProduct.MyFilter' then it can only match 'MyOrg.MyProduct.MyFilter' 
+            // If a feature is configured to use a filter with a namespace such as 'MyOrg.MyProduct.MyFilter' then it can only match 'MyOrg.MyProduct.MyFilter'
             if (filterName.Contains('.'))
             {
                 //

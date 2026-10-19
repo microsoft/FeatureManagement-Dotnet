@@ -67,6 +67,13 @@ namespace Microsoft.FeatureManagement.FeatureFilters
                 throw new ArgumentNullException(nameof(targetingContext));
             }
 
+            if (context.Settings != null && !(context.Settings is TargetingFilterSettings))
+            {
+                throw new ArgumentException(
+                    $"The '{Alias}' feature filter for feature '{context.FeatureName}' has a {nameof(context.Settings)} value of type '{context.Settings.GetType()}', but expected '{typeof(TargetingFilterSettings)}'.",
+                    nameof(context.Settings));
+            }
+
             //
             // Check if prebound settings available, otherwise bind from parameters.
             TargetingFilterSettings settings = (TargetingFilterSettings)context.Settings ?? (TargetingFilterSettings)BindParameters(context.Parameters);

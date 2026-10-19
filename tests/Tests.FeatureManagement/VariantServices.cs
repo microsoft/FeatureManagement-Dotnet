@@ -37,4 +37,16 @@ namespace Tests.FeatureManagement
             Style = style;
         }
     }
+
+    [VariantServiceAlias("Big")]
+    class BigAlgorithm : IAlgorithm
+    {
+        public string Style { get; } = "Big";
+    }
+
+    [VariantServiceAlias("Small")]
+    class SmallAlgorithm : IAlgorithm
+    {
+        public string Style { get; } = "Small";
+    }
 }
