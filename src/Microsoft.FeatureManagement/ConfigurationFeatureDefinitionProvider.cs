@@ -131,7 +131,7 @@ namespace Microsoft.FeatureManagement
         /// <returns>An enumerator which provides asynchronous iteration over feature definitions.</returns>
         //
         // The async key word is necessary for creating IAsyncEnumerable.
-        // The need to disable this warning occurs when implementing async stream synchronously. 
+        // The need to disable this warning occurs when implementing async stream synchronously.
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         public async IAsyncEnumerable<FeatureDefinition> GetAllFeatureDefinitionsAsync()
 #pragma warning restore CS1998
@@ -297,9 +297,9 @@ namespace Microsoft.FeatureManagement
         private FeatureDefinition ParseDotnetSchemaFeatureDefinition(IConfigurationSection configurationSection)
         {
             /*
-              
+
             We support
-            
+
             myFeature: {
               enabledFor: [{name: "myFeatureFilter1"}, {name: "myFeatureFilter2"}]
             },
@@ -388,7 +388,7 @@ namespace Microsoft.FeatureManagement
         private FeatureDefinition ParseMicrosoftSchemaFeatureDefinition(IConfigurationSection configurationSection)
         {
             /*
-            
+
             If Microsoft feature flag schema is enabled, we support
 
             FeatureFlags: [
@@ -544,6 +544,8 @@ namespace Microsoft.FeatureManagement
                 {
                     StatusOverride statusOverride = StatusOverride.None;
 
+                    IConfigurationSection variantConfiguration = section.GetSection(MicrosoftFeatureManagementFields.VariantDefinitionConfigurationValue);
+
                     string rawStatusOverride = section[MicrosoftFeatureManagementFields.VariantDefinitionStatusOverride];
 
                     if (!string.IsNullOrEmpty(rawStatusOverride))
@@ -554,7 +556,10 @@ namespace Microsoft.FeatureManagement
                     var variant = new VariantDefinition()
                     {
                         Name = section[MicrosoftFeatureManagementFields.Name],
-                        ConfigurationValue = section.GetSection(MicrosoftFeatureManagementFields.VariantDefinitionConfigurationValue),
+                        ConfigurationValue = variantConfiguration,
+                        ConfigurationCache = variantConfiguration.Exists()
+                            ? new VariantConfigurationCache(variantConfiguration)
+                            : null,
                         StatusOverride = statusOverride
                     };
 

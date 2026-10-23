@@ -2526,6 +2526,7 @@ namespace Tests.FeatureManagement
             variant = await featureManager.GetVariantAsync(Features.VariantFeatureDefaultEnabled, cancellationToken);
 
             Assert.Equal("Medium", variant.Name);
+            Assert.Null(variant.ConfigurationObject);
             Assert.Equal("450px", variant.Configuration["Size"]);
             Assert.True(await featureManager.IsEnabledAsync(Features.VariantFeatureDefaultEnabled, cancellationToken));
 

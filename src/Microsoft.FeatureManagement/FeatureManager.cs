@@ -842,15 +842,26 @@ namespace Microsoft.FeatureManagement
         {
             IConfigurationSection variantConfiguration = null;
 
-            if (variantDefinition.ConfigurationValue.Exists())
+            IConfigurationSection definitionConfiguration = variantDefinition.ConfigurationValue;
+
+            if (definitionConfiguration?.Exists() == true)
             {
-                variantConfiguration = variantDefinition.ConfigurationValue;
+                variantConfiguration = definitionConfiguration;
             }
 
-            return new Variant()
+            VariantConfigurationCache configurationCache = variantDefinition.ConfigurationCache;
+
+            if (!ReferenceEquals(configurationCache?.Configuration, variantConfiguration))
+            {
+                configurationCache = null;
+            }
+
+            return new Variant
             {
                 Name = variantDefinition.Name,
-                Configuration = variantConfiguration
+                Configuration = variantConfiguration,
+                ConfigurationObject = variantDefinition.ConfigurationObject,
+                ConfigurationCache = configurationCache,
             };
         }
     }
