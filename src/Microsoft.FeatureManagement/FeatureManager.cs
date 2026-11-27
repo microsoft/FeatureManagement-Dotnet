@@ -842,7 +842,7 @@ namespace Microsoft.FeatureManagement
         {
             IConfigurationSection variantConfiguration = null;
 
-            if (variantDefinition.ConfigurationValue.Exists())
+            if (ConfigurationValueExists(variantDefinition))
             {
                 variantConfiguration = variantDefinition.ConfigurationValue;
             }
@@ -852,6 +852,20 @@ namespace Microsoft.FeatureManagement
                 Name = variantDefinition.Name,
                 Configuration = variantConfiguration
             };
+        }
+
+        private static bool ConfigurationValueExists(VariantDefinition variantDefinition)
+        {
+            IConfigurationSection configurationValue = variantDefinition.ConfigurationValue;
+
+            //
+            // Exists() enumerates the whole configuration, so reuse the cached result unless the configuration value has been replaced.
+            if (configurationValue != null && ReferenceEquals(configurationValue, variantDefinition.ParsedConfigurationValue))
+            {
+                return variantDefinition.ParsedConfigurationValueExists.Value;
+            }
+
+            return configurationValue.Exists();
         }
     }
 }
