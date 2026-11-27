@@ -551,10 +551,14 @@ namespace Microsoft.FeatureManagement
                         statusOverride = ParseEnum<StatusOverride>(configurationSection.Key, rawStatusOverride, MicrosoftFeatureManagementFields.VariantDefinitionStatusOverride);
                     }
 
+                    IConfigurationSection configurationValue = section.GetSection(MicrosoftFeatureManagementFields.VariantDefinitionConfigurationValue);
+
                     var variant = new VariantDefinition()
                     {
                         Name = section[MicrosoftFeatureManagementFields.Name],
-                        ConfigurationValue = section.GetSection(MicrosoftFeatureManagementFields.VariantDefinitionConfigurationValue),
+                        ConfigurationValue = configurationValue,
+                        ParsedConfigurationValue = configurationValue,
+                        ParsedConfigurationValueExists = new Lazy<bool>(() => configurationValue.Exists(), LazyThreadSafetyMode.PublicationOnly),
                         StatusOverride = statusOverride
                     };
 

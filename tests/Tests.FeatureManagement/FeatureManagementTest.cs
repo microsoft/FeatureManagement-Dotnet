@@ -2641,6 +2641,69 @@ namespace Tests.FeatureManagement
 
             Assert.Equal("Big", variant.Name);
         }
+
+        [Fact]
+        public async Task ChecksVariantConfigurationExistenceOnce()
+        {
+            var configurationProvider = new GetChildKeysCountingConfigurationProvider();
+
+            configurationProvider.Set("feature_management:feature_flags:0:id", "FeatureWithConfiguration");
+            configurationProvider.Set("feature_management:feature_flags:0:enabled", "true");
+            configurationProvider.Set("feature_management:feature_flags:0:variants:0:name", "Big");
+            configurationProvider.Set("feature_management:feature_flags:0:variants:0:configuration_value:Size", "500px");
+            configurationProvider.Set("feature_management:feature_flags:0:allocation:default_when_enabled", "Big");
+            configurationProvider.Set("feature_management:feature_flags:1:id", "FeatureWithoutConfiguration");
+            configurationProvider.Set("feature_management:feature_flags:1:enabled", "true");
+            configurationProvider.Set("feature_management:feature_flags:1:variants:0:name", "Small");
+            configurationProvider.Set("feature_management:feature_flags:1:allocation:default_when_enabled", "Small");
+
+            IConfiguration configuration = new ConfigurationRoot(new List<IConfigurationProvider> { configurationProvider });
+
+            var services = new ServiceCollection();
+
+            services.AddSingleton(configuration)
+                .AddFeatureManagement();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IVariantFeatureManager featureManager = serviceProvider.GetRequiredService<IVariantFeatureManager>();
+
+            //
+            // The first evaluation parses the feature definitions.
+            await featureManager.GetVariantAsync("FeatureWithConfiguration");
+
+            await featureManager.GetVariantAsync("FeatureWithoutConfiguration");
+
+            int getChildKeysCount = configurationProvider.GetChildKeysCount;
+
+            Variant variant = await featureManager.GetVariantAsync("FeatureWithConfiguration");
+
+            Assert.Equal("Big", variant.Name);
+
+            Assert.Equal("500px", variant.Configuration["Size"]);
+
+            variant = await featureManager.GetVariantAsync("FeatureWithoutConfiguration");
+
+            Assert.Equal("Small", variant.Name);
+
+            Assert.Null(variant.Configuration);
+
+            //
+            // Calling Exists() on a configuration section enumerates the child keys of the configuration.
+            Assert.Equal(getChildKeysCount, configurationProvider.GetChildKeysCount);
+        }
+
+        private class GetChildKeysCountingConfigurationProvider : ConfigurationProvider
+        {
+            public int GetChildKeysCount { get; private set; }
+
+            public override IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string parentPath)
+            {
+                GetChildKeysCount++;
+
+                return base.GetChildKeys(earlierKeys, parentPath);
+            }
+        }
     }
 
     public class FeatureManagementTelemetryTest

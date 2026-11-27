@@ -3,6 +3,7 @@
 //
 
 using Microsoft.Extensions.Configuration;
+using System;
 
 namespace Microsoft.FeatureManagement
 {
@@ -25,5 +26,11 @@ namespace Microsoft.FeatureManagement
         /// Overrides the state of the feature if this variant has been assigned.
         /// </summary>
         public StatusOverride StatusOverride { get; set; } = StatusOverride.None;
+
+        //
+        // Set by ConfigurationFeatureDefinitionProvider, so the feature manager doesn't need to call ConfigurationValue.Exists() on every evaluation.
+        internal IConfigurationSection ParsedConfigurationValue { get; set; }
+
+        internal Lazy<bool> ParsedConfigurationValueExists { get; set; }
     }
 }
